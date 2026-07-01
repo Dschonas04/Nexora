@@ -1,0 +1,24 @@
+# Environment
+.env
+
+# Node
+node_modules/
+npm-debug.log*
+frontend/dist/
+
+# Go
+backend/nexora
+*.test
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
+
+# Temp
+tmp/
+temp/
+*.tmp
