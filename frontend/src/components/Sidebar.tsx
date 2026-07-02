@@ -1,21 +1,46 @@
 import { useEffect, useState } from "react";
-import { PageMeta, Tag, api } from "../api/client";
+import { PageMeta, Space, Tag, api } from "../api/client";
 import { useAuth } from "../auth";
 import PageTree from "./PageTree";
 
 interface Props {
   pages: PageMeta[];
+  shared: PageMeta[];
   favorites: PageMeta[];
   tags: Tag[];
+  spaces: Space[];
   activeId?: string;
   onSelect: (id: string) => void;
   onCreateRoot: () => void;
   onCreateChild: (parentId: string) => void;
+  onCreateInSpace: (spaceId: string) => void;
   onDelete: (id: string) => void;
+  onCreateSpace: () => void;
+  onRenameSpace: (id: string, current: string) => void;
+  onDeleteSpace: (id: string) => void;
+  onNavigate: (to: string) => void;
+  currentPath: string;
 }
 
 export default function Sidebar(props: Props) {
-  const { pages, favorites, tags, activeId, onSelect, onCreateRoot, onCreateChild, onDelete } = props;
+  const {
+    pages,
+    shared,
+    favorites,
+    tags,
+    spaces,
+    activeId,
+    onSelect,
+    onCreateRoot,
+    onCreateChild,
+    onCreateInSpace,
+    onDelete,
+    onCreateSpace,
+    onRenameSpace,
+    onDeleteSpace,
+    onNavigate,
+    currentPath,
+  } = props;
   const { user, logout } = useAuth();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
@@ -45,10 +70,11 @@ export default function Sidebar(props: Props) {
       className={"tree-row" + (activeId === p.id ? " active" : "")}
       onClick={() => onSelect(p.id)}
     >
-      <span className="tree-icon">{p.icon || "📄"}</span>
       <span className="tree-label">{p.title || "Untitled"}</span>
     </div>
   );
+
+  const ungrouped = pages.filter((p) => !p.spaceId);
 
   return (
     <div className="sidebar">
@@ -79,18 +105,58 @@ export default function Sidebar(props: Props) {
               </div>
             )}
 
+            {spaces.map((sp) => {
+              const spacePages = pages.filter((p) => p.spaceId === sp.id);
+              return (
+                <div className="sidebar-section" key={sp.id}>
+                  <div className="sidebar-section-title">
+                    <span onClick={() => onRenameSpace(sp.id, sp.name)} style={{ cursor: "pointer" }}>
+                      {sp.name}
+                    </span>
+                    <span className="tree-actions" style={{ display: "flex" }}>
+                      <button className="icon-btn" title="New page" onClick={() => onCreateInSpace(sp.id)}>
+                        +
+                      </button>
+                      <button className="icon-btn" title="Delete space" onClick={() => onDeleteSpace(sp.id)}>
+                        ✕
+                      </button>
+                    </span>
+                  </div>
+                  {spacePages.length === 0 ? (
+                    <div className="tree-row muted">Empty</div>
+                  ) : (
+                    <PageTree
+                      pages={spacePages}
+                      parentId={null}
+                      activeId={activeId}
+                      expanded={expanded}
+                      onToggle={toggle}
+                      onSelect={onSelect}
+                      onCreateChild={onCreateChild}
+                      onDelete={onDelete}
+                    />
+                  )}
+                </div>
+              );
+            })}
+
             <div className="sidebar-section">
               <div className="sidebar-section-title">
                 Pages
-                <button className="icon-btn" title="New page" onClick={onCreateRoot}>
-                  +
-                </button>
+                <span className="tree-actions" style={{ display: "flex", gap: 8 }}>
+                  <button className="text-btn" title="New space" onClick={onCreateSpace}>
+                    + Space
+                  </button>
+                  <button className="icon-btn" title="New page" onClick={onCreateRoot}>
+                    +
+                  </button>
+                </span>
               </div>
-              {pages.length === 0 ? (
+              {ungrouped.length === 0 ? (
                 <div className="tree-row muted">No pages yet</div>
               ) : (
                 <PageTree
-                  pages={pages}
+                  pages={ungrouped}
                   parentId={null}
                   activeId={activeId}
                   expanded={expanded}
@@ -102,19 +168,48 @@ export default function Sidebar(props: Props) {
               )}
             </div>
 
+            {shared.length > 0 && (
+              <div className="sidebar-section">
+                <div className="sidebar-section-title">Shared with me</div>
+                {shared.map(flatRow)}
+              </div>
+            )}
+
             {tags.length > 0 && (
               <div className="sidebar-section">
                 <div className="sidebar-section-title">Tags</div>
                 {tags.map((t) => (
                   <div key={t.id} className="tree-row">
-                    <span className="tree-icon" style={{ color: t.color }}>
-                      ●
-                    </span>
+                    <span className="tag-dot" style={{ background: t.color }} />
                     <span className="tree-label">{t.name}</span>
                   </div>
                 ))}
               </div>
             )}
+
+            <div className="sidebar-section">
+              <div className="sidebar-section-title">Workspace</div>
+              <div
+                className={"tree-row" + (currentPath === "/graph" ? " active" : "")}
+                onClick={() => onNavigate("/graph")}
+              >
+                <span className="tree-label">Knowledge graph</span>
+              </div>
+              <div
+                className={"tree-row" + (currentPath === "/trash" ? " active" : "")}
+                onClick={() => onNavigate("/trash")}
+              >
+                <span className="tree-label">Trash</span>
+              </div>
+              {user?.role === "admin" && (
+                <div
+                  className={"tree-row" + (currentPath === "/admin" ? " active" : "")}
+                  onClick={() => onNavigate("/admin")}
+                >
+                  <span className="tree-label">Users &amp; roles</span>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>

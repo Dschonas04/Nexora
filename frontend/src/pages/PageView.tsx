@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import type { Block } from "@blocknote/core";
+import type { Block, BlockNoteEditor } from "@blocknote/core";
 import { Page, PagePatch, Tag, api } from "../api/client";
 import Editor from "../components/Editor";
+import VersionPanel from "../components/VersionPanel";
+import ShareDialog from "../components/ShareDialog";
+import Attachments from "../components/Attachments";
 
 interface Props {
   allTags: Tag[];
@@ -19,11 +22,16 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const { id } = useParams();
   const [page, setPage] = useState<Page | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showVersions, setShowVersions] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const saveTimer = useRef<number | undefined>(undefined);
+  const editorRef = useRef<BlockNoteEditor | null>(null);
 
   useEffect(() => {
     if (!id) return;
     setLoading(true);
+    setShowVersions(false);
+    setShowShare(false);
     api
       .getPage(id)
       .then(setPage)
@@ -48,15 +56,15 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   if (loading) return <div className="empty-state">Loading…</div>;
   if (!page) return <div className="empty-state">Page not found.</div>;
 
+  const canEdit = page.canEdit;
+
   const setTitle = (title: string) => {
     setPage({ ...page, title });
     scheduleSave({ title });
   };
-  const setIcon = (icon: string) => {
-    setPage({ ...page, icon });
-    scheduleSave({ icon });
+  const onContent = (blocks: Block[]) => {
+    if (canEdit) scheduleSave({ content: blocks });
   };
-  const onContent = (blocks: Block[]) => scheduleSave({ content: blocks });
 
   const toggleFav = async () => {
     if (page.isFavorite) await api.removeFavorite(page.id);
@@ -65,26 +73,17 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     onFavChange();
   };
 
-  const share = async () => {
-    if (page.isPublic) {
-      await api.unsharePage(page.id);
-      setPage({ ...page, isPublic: false, publicToken: null });
-    } else {
-      const r = await api.sharePage(page.id);
-      setPage({ ...page, isPublic: true, publicToken: r.publicToken });
-      const url = `${window.location.origin}/share/${r.publicToken}`;
-      try {
-        await navigator.clipboard.writeText(url);
-      } catch {
-        /* clipboard may be unavailable */
-      }
-      alert("Public link copied to clipboard:\n" + url);
-    }
-  };
-
-  const changeIcon = () => {
-    const v = prompt("Emoji icon:", page.icon || "📄");
-    if (v !== null) setIcon(v.trim());
+  const exportMarkdown = async () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const md = await editor.blocksToMarkdownLossy(editor.document);
+    const blob = new Blob([md], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(page.title || "untitled").replace(/[^\w.-]+/g, "-")}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const addTag = async () => {
@@ -104,52 +103,97 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     setPage({ ...page, tags: page.tags.filter((t) => t.id !== tagId) });
   };
 
+  const restoredFromVersion = (p: Page) => {
+    setPage(p);
+    setShowVersions(false);
+    onMetaChange();
+  };
+
   return (
-    <>
-      <div className="topbar">
-        <span className="topbar-title">
-          {page.icon || "📄"} {page.title || "Untitled"}
-        </span>
-        <div className="topbar-actions">
-          <button className="btn" onClick={toggleFav}>
-            {page.isFavorite ? "★ Favorited" : "☆ Favorite"}
-          </button>
-          <button className="btn" onClick={share}>
-            {page.isPublic ? "🔗 Shared" : "Share"}
-          </button>
-          <button className="btn" onClick={() => onDelete(page.id)}>
-            Delete
-          </button>
+    <div className="page-layout">
+      <div className="page-main">
+        <div className="topbar">
+          <span className="topbar-title">{page.title || "Untitled"}</span>
+          <div className="topbar-actions">
+            {!canEdit && <span className="pill readonly">Read-only</span>}
+            <button className={"btn" + (page.isFavorite ? " active" : "")} onClick={toggleFav}>
+              {page.isFavorite ? "Favorited" : "Favorite"}
+            </button>
+            <button className="btn" onClick={() => setShowVersions((v) => !v)}>
+              History
+            </button>
+            <button className="btn" onClick={exportMarkdown}>
+              Export
+            </button>
+            {page.isOwner && (
+              <button className={"btn" + (page.isPublic ? " active" : "")} onClick={() => setShowShare(true)}>
+                Share
+              </button>
+            )}
+            {page.isOwner && (
+              <button className="btn" onClick={() => onDelete(page.id)}>
+                Delete
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="editor-scroll">
+          <div className="page">
+            <input
+              className="page-title"
+              value={page.title}
+              placeholder="Untitled"
+              disabled={!canEdit}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <div className="page-tags">
+              {page.tags.map((t) => (
+                <span key={t.id} className="tag" style={{ background: t.color }}>
+                  {t.name}
+                  {canEdit && (
+                    <span className="x" onClick={() => detachTag(t.id)}>
+                      ✕
+                    </span>
+                  )}
+                </span>
+              ))}
+              {canEdit && (
+                <button className="tag-add" onClick={addTag}>
+                  + Tag
+                </button>
+              )}
+            </div>
+            <Editor
+              key={page.id}
+              initialContent={page.content}
+              editable={canEdit}
+              onChange={onContent}
+              onEditorReady={(e) => (editorRef.current = e)}
+            />
+            <Attachments pageId={page.id} canEdit={canEdit} />
+          </div>
         </div>
       </div>
 
-      <div className="editor-scroll">
-        <div className="page">
-          <div className="page-icon" title="Change icon" onClick={changeIcon}>
-            {page.icon || "📄"}
-          </div>
-          <input
-            className="page-title"
-            value={page.title}
-            placeholder="Untitled"
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <div className="page-tags">
-            {page.tags.map((t) => (
-              <span key={t.id} className="tag" style={{ background: t.color }}>
-                {t.name}
-                <span className="x" onClick={() => detachTag(t.id)}>
-                  ✕
-                </span>
-              </span>
-            ))}
-            <button className="tag-add" onClick={addTag}>
-              + Tag
-            </button>
-          </div>
-          <Editor key={page.id} initialContent={page.content} onChange={onContent} />
-        </div>
-      </div>
-    </>
+      {showVersions && (
+        <VersionPanel
+          pageId={page.id}
+          canEdit={canEdit}
+          onRestored={restoredFromVersion}
+          onClose={() => setShowVersions(false)}
+        />
+      )}
+
+      {showShare && (
+        <ShareDialog
+          pageId={page.id}
+          isPublic={page.isPublic}
+          publicToken={page.publicToken}
+          onPublicChange={(isPublic, token) => setPage({ ...page, isPublic, publicToken: token })}
+          onClose={() => setShowShare(false)}
+        />
+      )}
+    </div>
   );
 }

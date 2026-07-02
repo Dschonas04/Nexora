@@ -20,6 +20,9 @@ services:
       DATABASE_URL: postgres://nexora:${POSTGRES_PASSWORD:-nexora}@db:5432/nexora?sslmode=disable
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       PORT: "8080"
+      NEXORA_DATA_DIR: /data/attachments
+    volumes:
+      - nexora_files:/data/attachments
     depends_on:
       db:
         condition: service_healthy
@@ -35,3 +38,4 @@ services:
 
 volumes:
   nexora_db:
+  nexora_files:

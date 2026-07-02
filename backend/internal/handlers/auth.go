@@ -46,9 +46,9 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	var u models.User
 	err = s.Pool.QueryRow(r.Context(),
 		`INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3)
-		 RETURNING id, email, name, created_at`,
+		 RETURNING id, email, name, role, created_at`,
 		req.Email, req.Name, hash,
-	).Scan(&u.ID, &u.Email, &u.Name, &u.CreatedAt)
+	).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -57,6 +57,14 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		}
 		writeErr(w, http.StatusInternalServerError, "could not create user")
 		return
+	}
+
+	// The very first account becomes the workspace admin.
+	var count int
+	if s.Pool.QueryRow(r.Context(), `SELECT count(*) FROM users`).Scan(&count) == nil && count == 1 {
+		if _, err := s.Pool.Exec(r.Context(), `UPDATE users SET role='admin' WHERE id=$1`, u.ID); err == nil {
+			u.Role = "admin"
+		}
 	}
 
 	s.issueSession(w, u.ID)
@@ -79,9 +87,9 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	var u models.User
 	var hash string
 	err := s.Pool.QueryRow(r.Context(),
-		`SELECT id, email, name, password_hash, created_at FROM users WHERE email = $1`,
+		`SELECT id, email, name, password_hash, role, created_at FROM users WHERE email = $1`,
 		req.Email,
-	).Scan(&u.ID, &u.Email, &u.Name, &hash, &u.CreatedAt)
+	).Scan(&u.ID, &u.Email, &u.Name, &hash, &u.Role, &u.CreatedAt)
 	if err != nil || !auth.CheckPassword(hash, req.Password) {
 		writeErr(w, http.StatusUnauthorized, "invalid credentials")
 		return
@@ -100,8 +108,8 @@ func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var u models.User
 	err := s.Pool.QueryRow(r.Context(),
-		`SELECT id, email, name, created_at FROM users WHERE id = $1`, uid,
-	).Scan(&u.ID, &u.Email, &u.Name, &u.CreatedAt)
+		`SELECT id, email, name, role, created_at FROM users WHERE id = $1`, uid,
+	).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt)
 	if err != nil {
 		writeErr(w, http.StatusUnauthorized, "unauthorized")
 		return

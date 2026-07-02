@@ -26,6 +26,7 @@ func main() {
 	dbURL := env("DATABASE_URL", "postgres://nexora:nexora@localhost:5432/nexora?sslmode=disable")
 	secret := env("JWT_SECRET", "change-me-in-production")
 	port := env("PORT", "8080")
+	dataDir := env("NEXORA_DATA_DIR", "/data/attachments")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -41,7 +42,7 @@ func main() {
 	}
 	log.Println("database ready")
 
-	h := &handlers.Server{Pool: pool, Secret: []byte(secret)}
+	h := &handlers.Server{Pool: pool, Secret: []byte(secret), DataDir: dataDir}
 
 	r := chi.NewRouter()
 	r.Use(chimw.RealIP)
@@ -63,16 +64,47 @@ func main() {
 			r.Get("/auth/me", h.Me)
 
 			r.Get("/pages", h.ListPages)
+			r.Get("/pages/shared", h.ListSharedPages)
+			r.Get("/pages/trash", h.ListTrash)
 			r.Post("/pages", h.CreatePage)
 			r.Get("/pages/{id}", h.GetPage)
 			r.Put("/pages/{id}", h.UpdatePage)
 			r.Delete("/pages/{id}", h.DeletePage)
+			r.Post("/pages/{id}/restore", h.RestorePage)
+			r.Delete("/pages/{id}/purge", h.PurgePage)
 			r.Post("/pages/{id}/favorite", h.AddFavorite)
 			r.Delete("/pages/{id}/favorite", h.RemoveFavorite)
 			r.Post("/pages/{id}/share", h.SharePage)
 			r.Delete("/pages/{id}/share", h.UnsharePage)
 			r.Post("/pages/{id}/tags", h.AttachTag)
 			r.Delete("/pages/{id}/tags/{tagId}", h.DetachTag)
+
+			// Version history
+			r.Get("/pages/{id}/versions", h.ListVersions)
+			r.Get("/pages/{id}/versions/{versionId}", h.GetVersion)
+			r.Post("/pages/{id}/versions/{versionId}/restore", h.RestoreVersion)
+
+			// Attachments
+			r.Get("/pages/{id}/attachments", h.ListAttachments)
+			r.Post("/pages/{id}/attachments", h.UploadAttachment)
+			r.Get("/pages/{id}/attachments/{attId}", h.DownloadAttachment)
+			r.Delete("/pages/{id}/attachments/{attId}", h.DeleteAttachment)
+
+			// Per-user sharing + roles
+			r.Get("/pages/{id}/shares", h.ListShares)
+			r.Post("/pages/{id}/shares", h.AddShare)
+			r.Delete("/pages/{id}/shares/{userId}", h.RemoveShare)
+			r.Get("/users", h.ListUsers)
+			r.Put("/users/{id}/role", h.SetUserRole)
+
+			// Spaces
+			r.Get("/spaces", h.ListSpaces)
+			r.Post("/spaces", h.CreateSpace)
+			r.Put("/spaces/{id}", h.RenameSpace)
+			r.Delete("/spaces/{id}", h.DeleteSpace)
+
+			// Knowledge graph
+			r.Get("/graph", h.Graph)
 
 			r.Get("/favorites", h.ListFavorites)
 			r.Get("/tags", h.ListTags)

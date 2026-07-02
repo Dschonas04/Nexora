@@ -47,7 +47,6 @@ export default function PageTree({
               >
                 {kids.length ? (isOpen ? "▾" : "▸") : ""}
               </span>
-              <span className="tree-icon">{p.icon || "📄"}</span>
               <span className="tree-label">{p.title || "Untitled"}</span>
               <span className="tree-actions">
                 <button
