@@ -742,7 +742,7 @@ a {
   cursor: grabbing;
 }
 .graph-node text {
-  pointer-events: none;
+  user-select: none;
 }
 .graph-hint {
   position: absolute;
