@@ -15,16 +15,16 @@ import (
 // wikiLinkRe matches explicit [[Page title]] references inside page text.
 var wikiLinkRe = regexp.MustCompile(`\[\[([^\[\]]+)\]\]`)
 
-// extractText walks decoded BlockNote content and collects the visible text
-// (the "text" field of every inline node), so we scan real content — not the
-// structural JSON — for [[links]].
+// extractText walks decoded BlockNote content and collects every string value.
+// [[links]] only occur in visible text; structural JSON (types, ids, styles)
+// never contains "[[", so gathering all strings safely covers both the editor's
+// inline-node format and the plain-string content shorthand.
 func extractText(v interface{}, sb *strings.Builder) {
 	switch t := v.(type) {
+	case string:
+		sb.WriteString(t)
+		sb.WriteString(" ")
 	case map[string]interface{}:
-		if s, ok := t["text"].(string); ok {
-			sb.WriteString(s)
-			sb.WriteString(" ")
-		}
 		for _, val := range t {
 			extractText(val, sb)
 		}
