@@ -22,9 +22,6 @@ export default function PublicPage() {
   return (
     <div className="editor-scroll">
       <div className="page">
-        <div className="page-icon" style={{ cursor: "default" }}>
-          {page.icon || "📄"}
-        </div>
         <h1 className="page-title" style={{ cursor: "default" }}>
           {page.title || "Untitled"}
         </h1>

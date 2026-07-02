@@ -74,6 +74,57 @@ CREATE TABLE IF NOT EXISTS favorites (
 	page_id uuid REFERENCES pages(id)  ON DELETE CASCADE,
 	PRIMARY KEY (user_id, page_id)
 );
+
+-- Roles: 'admin' can see and edit every page; 'user' is the default.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role text NOT NULL DEFAULT 'user';
+
+-- Spaces group pages into top-level workspaces (beyond page nesting).
+CREATE TABLE IF NOT EXISTS spaces (
+	id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	owner_id   uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	name       text NOT NULL,
+	created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS spaces_owner_idx ON spaces(owner_id);
+
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS space_id   uuid REFERENCES spaces(id) ON DELETE SET NULL;
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+CREATE INDEX IF NOT EXISTS pages_space_idx   ON pages(space_id);
+CREATE INDEX IF NOT EXISTS pages_deleted_idx ON pages(deleted_at);
+
+-- Immutable snapshots of a page, written on save (coalesced).
+CREATE TABLE IF NOT EXISTS page_versions (
+	id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	page_id    uuid NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+	title      text NOT NULL,
+	content    jsonb NOT NULL DEFAULT '[]'::jsonb,
+	icon       text NOT NULL DEFAULT '',
+	author_id  uuid REFERENCES users(id) ON DELETE SET NULL,
+	created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS page_versions_idx ON page_versions(page_id, created_at DESC);
+
+-- File attachments stored on disk (path = attachments/<id>), metadata here.
+CREATE TABLE IF NOT EXISTS attachments (
+	id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	page_id    uuid NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+	owner_id   uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	filename   text NOT NULL,
+	mime       text NOT NULL DEFAULT 'application/octet-stream',
+	size       bigint NOT NULL DEFAULT 0,
+	created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS attachments_page_idx ON attachments(page_id);
+
+-- Explicit per-user sharing with a read/edit permission.
+CREATE TABLE IF NOT EXISTS page_shares (
+	page_id    uuid REFERENCES pages(id)  ON DELETE CASCADE,
+	user_id    uuid REFERENCES users(id)  ON DELETE CASCADE,
+	permission text NOT NULL DEFAULT 'read',
+	created_at timestamptz NOT NULL DEFAULT now(),
+	PRIMARY KEY (page_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS page_shares_user_idx ON page_shares(user_id);
 `
 
 // Migrate creates the schema if it does not yet exist (idempotent).

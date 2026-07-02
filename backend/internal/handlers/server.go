@@ -17,8 +17,9 @@ const (
 )
 
 type Server struct {
-	Pool   *pgxpool.Pool
-	Secret []byte
+	Pool    *pgxpool.Pool
+	Secret  []byte
+	DataDir string // directory where uploaded attachments are stored on disk
 }
 
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
@@ -58,20 +59,17 @@ func (s *Server) clearAuthCookie(w http.ResponseWriter) {
 	})
 }
 
-// loadPage returns a full page (with tags + favorite flag) for the given owner.
-// If ownerID is empty, the ownership filter is skipped (used for public pages).
-func (s *Server) loadPage(ctx context.Context, ownerID, pageID string) (*models.Page, error) {
+// loadPage returns a full (non-deleted) page with tags and, for a logged-in
+// viewer, its favorite flag and permission flags. viewerID == "" is used for
+// public pages and skips per-user fields. Callers are responsible for checking
+// read access (see pagePerm) before returning the page to a user.
+func (s *Server) loadPage(ctx context.Context, viewerID, pageID string) (*models.Page, error) {
 	var p models.Page
 	var content []byte
-	q := `SELECT id, owner_id, parent_id, title, content, icon, is_public, public_token, created_at, updated_at
-	      FROM pages WHERE id = $1`
-	args := []interface{}{pageID}
-	if ownerID != "" {
-		q += ` AND owner_id = $2`
-		args = append(args, ownerID)
-	}
-	err := s.Pool.QueryRow(ctx, q, args...).Scan(
-		&p.ID, &p.OwnerID, &p.ParentID, &p.Title, &content, &p.Icon,
+	err := s.Pool.QueryRow(ctx,
+		`SELECT id, owner_id, parent_id, space_id, title, content, icon, is_public, public_token, created_at, updated_at
+		 FROM pages WHERE id = $1 AND deleted_at IS NULL`, pageID).Scan(
+		&p.ID, &p.OwnerID, &p.ParentID, &p.SpaceID, &p.Title, &content, &p.Icon,
 		&p.IsPublic, &p.PublicToken, &p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
@@ -92,10 +90,13 @@ func (s *Server) loadPage(ctx context.Context, ownerID, pageID string) (*models.
 		rows.Close()
 	}
 
-	if ownerID != "" {
+	if viewerID != "" {
+		_, canEdit, isOwner, _ := s.pagePerm(ctx, viewerID, pageID)
+		p.CanEdit = canEdit
+		p.IsOwner = isOwner
 		var exists bool
 		_ = s.Pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM favorites WHERE user_id=$1 AND page_id=$2)`,
-			ownerID, pageID).Scan(&exists)
+			viewerID, pageID).Scan(&exists)
 		p.IsFavorite = exists
 	}
 	return &p, nil
