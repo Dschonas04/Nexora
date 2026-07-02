@@ -95,6 +95,8 @@ func main() {
 			r.Post("/pages/{id}/shares", h.AddShare)
 			r.Delete("/pages/{id}/shares/{userId}", h.RemoveShare)
 			r.Get("/users", h.ListUsers)
+			r.Post("/users", h.CreateUser)
+			r.Delete("/users/{id}", h.DeleteUser)
 			r.Put("/users/{id}/role", h.SetUserRole)
 
 			// Spaces

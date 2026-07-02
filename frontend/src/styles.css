@@ -529,6 +529,36 @@ a {
   font-size: 13px;
 }
 
+.user-add {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--sidebar-bg);
+}
+.user-add-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.user-add-row input,
+.user-add-row select {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  font-size: 13px;
+  outline: none;
+  background: #fff;
+}
+.user-add-row input {
+  flex: 1;
+  min-width: 140px;
+}
+.user-add-row input:focus {
+  border-color: var(--accent);
+}
+
 /* Right side panel (version history) */
 .side-panel {
   width: 300px;
