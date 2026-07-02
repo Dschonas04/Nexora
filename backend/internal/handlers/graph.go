@@ -109,19 +109,19 @@ func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 		g.Edges = append(g.Edges, models.GraphEdge{Source: src, Target: dst, Kind: kind})
 	}
 
+	// Hierarchy edges first so they take precedence over a wiki-link between the
+	// same two pages.
 	for id, n := range pages {
-		// Hierarchy edges.
 		if n.parent != nil {
 			if _, ok := pages[*n.parent]; ok {
 				addEdge(*n.parent, id, "parent")
 			}
 		}
-		// Explicit [[wiki-link]] edges.
+	}
+	// Explicit [[wiki-link]] edges.
+	for id, n := range pages {
 		for _, title := range n.links {
 			if otherID, ok := titles[title]; ok {
-				if n.parent != nil && *n.parent == otherID {
-					continue // already a hierarchy edge
-				}
 				addEdge(id, otherID, "link")
 			}
 		}
