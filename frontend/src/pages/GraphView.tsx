@@ -63,11 +63,27 @@ function layout(graph: Graph, width: number, height: number): Record<string, Pos
   return pos;
 }
 
+const DRAG_THRESHOLD = 4; // px moved before a press counts as a drag, not a click
+
 export default function GraphView() {
   const nav = useNavigate();
   const [graph, setGraph] = useState<Graph>({ nodes: [], edges: [] });
   const wrapRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState({ w: 900, h: 600 });
+  const [positions, setPositions] = useState<Record<string, Pos>>({});
+  const [view, setView] = useState({ x: 0, y: 0, scale: 1 });
+  const [hover, setHover] = useState<string | null>(null);
+
+  // Interaction state kept in a ref so handlers don't need to re-bind.
+  const drag = useRef<{
+    kind: "node" | "pan" | null;
+    id?: string;
+    startX: number;
+    startY: number;
+    origin: Pos;
+    moved: boolean;
+  }>({ kind: null, startX: 0, startY: 0, origin: { x: 0, y: 0 }, moved: false });
 
   useEffect(() => {
     api.graph().then(setGraph).catch(() => setGraph({ nodes: [], edges: [] }));
@@ -83,42 +99,140 @@ export default function GraphView() {
     return () => ro.disconnect();
   }, []);
 
-  const pos = useMemo(() => layout(graph, size.w, size.h), [graph, size.w, size.h]);
+  const initial = useMemo(() => layout(graph, size.w, size.h), [graph, size.w, size.h]);
+  useEffect(() => setPositions(initial), [initial]);
+
+  // Convert a client point to graph coordinates (undo pan + zoom).
+  const toGraph = (clientX: number, clientY: number): Pos => {
+    const rect = svgRef.current!.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left - view.x) / view.scale,
+      y: (clientY - rect.top - view.y) / view.scale,
+    };
+  };
+
+  const onNodeDown = (e: React.PointerEvent, id: string) => {
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    drag.current = {
+      kind: "node",
+      id,
+      startX: e.clientX,
+      startY: e.clientY,
+      origin: positions[id] ?? { x: 0, y: 0 },
+      moved: false,
+    };
+  };
+
+  const onBackgroundDown = (e: React.PointerEvent) => {
+    svgRef.current?.setPointerCapture?.(e.pointerId);
+    drag.current = {
+      kind: "pan",
+      startX: e.clientX,
+      startY: e.clientY,
+      origin: { x: view.x, y: view.y },
+      moved: false,
+    };
+  };
+
+  const onMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d.kind) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (!d.moved && Math.hypot(dx, dy) > DRAG_THRESHOLD) d.moved = true;
+    if (d.kind === "node" && d.id) {
+      const p = toGraph(e.clientX, e.clientY);
+      setPositions((prev) => ({ ...prev, [d.id!]: p }));
+    } else if (d.kind === "pan") {
+      setView((v) => ({ ...v, x: d.origin.x + dx, y: d.origin.y + dy }));
+    }
+  };
+
+  const onUp = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (d.kind === "node" && d.id && !d.moved) nav(`/page/${d.id}`);
+    drag.current = { kind: null, startX: 0, startY: 0, origin: { x: 0, y: 0 }, moved: false };
+    (e.target as Element).releasePointerCapture?.(e.pointerId);
+  };
+
+  const onWheel = (e: React.WheelEvent) => {
+    const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    const rect = svgRef.current!.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    setView((v) => {
+      const scale = Math.max(0.3, Math.min(3, v.scale * factor));
+      // Zoom towards the cursor.
+      return {
+        scale,
+        x: mx - ((mx - v.x) / v.scale) * scale,
+        y: my - ((my - v.y) / v.scale) * scale,
+      };
+    });
+  };
+
+  const reset = () => setView({ x: 0, y: 0, scale: 1 });
 
   return (
     <div className="graph-wrap" ref={wrapRef}>
       {graph.nodes.length === 0 ? (
         <div className="empty-state">No pages to graph yet.</div>
       ) : (
-        <svg width={size.w} height={size.h}>
-          {graph.edges.map((e, i) =>
-            pos[e.source] && pos[e.target] ? (
-              <line
-                key={i}
-                x1={pos[e.source].x}
-                y1={pos[e.source].y}
-                x2={pos[e.target].x}
-                y2={pos[e.target].y}
-                stroke={e.kind === "parent" ? "#c7c7c4" : "#dcdcda"}
-                strokeWidth={e.kind === "parent" ? 1.5 : 1}
-                strokeDasharray={e.kind === "link" ? "4 3" : undefined}
-              />
-            ) : null
-          )}
-          {graph.nodes.map((node) => (
-            <g
-              key={node.id}
-              transform={`translate(${pos[node.id]?.x ?? 0}, ${pos[node.id]?.y ?? 0})`}
-              className="graph-node"
-              onClick={() => nav(`/page/${node.id}`)}
-            >
-              <circle r={7} fill="#2383e2" />
-              <text x={11} y={4} fontSize={12} fill="#37352f">
-                {node.title || "Untitled"}
-              </text>
+        <>
+          <div className="graph-hint">Drag nodes · drag background to pan · scroll to zoom</div>
+          <button className="btn graph-reset" onClick={reset}>
+            Reset view
+          </button>
+          <svg
+            ref={svgRef}
+            width={size.w}
+            height={size.h}
+            className="graph-svg"
+            onPointerDown={onBackgroundDown}
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onWheel={onWheel}
+          >
+            <g transform={`translate(${view.x}, ${view.y}) scale(${view.scale})`}>
+              {graph.edges.map((edge, i) =>
+                positions[edge.source] && positions[edge.target] ? (
+                  <line
+                    key={i}
+                    x1={positions[edge.source].x}
+                    y1={positions[edge.source].y}
+                    x2={positions[edge.target].x}
+                    y2={positions[edge.target].y}
+                    stroke={
+                      hover && (edge.source === hover || edge.target === hover)
+                        ? "#2383e2"
+                        : edge.kind === "parent"
+                        ? "#c7c7c4"
+                        : "#dcdcda"
+                    }
+                    strokeWidth={edge.kind === "parent" ? 1.5 : 1}
+                    strokeDasharray={edge.kind === "link" ? "4 3" : undefined}
+                  />
+                ) : null
+              )}
+              {graph.nodes.map((node) => (
+                <g
+                  key={node.id}
+                  transform={`translate(${positions[node.id]?.x ?? 0}, ${positions[node.id]?.y ?? 0})`}
+                  className="graph-node"
+                  onPointerDown={(e) => onNodeDown(e, node.id)}
+                  onPointerEnter={() => setHover(node.id)}
+                  onPointerLeave={() => setHover(null)}
+                >
+                  <circle r={hover === node.id ? 9 : 7} fill={hover === node.id ? "#1a73d0" : "#2383e2"} />
+                  <text x={12} y={4} fontSize={12} fill="#37352f">
+                    {node.title || "Untitled"}
+                  </text>
+                </g>
+              ))}
             </g>
-          ))}
-        </svg>
+          </svg>
+        </>
       )}
     </div>
   );

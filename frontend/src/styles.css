@@ -691,16 +691,44 @@ a {
 
 /* Knowledge graph */
 .graph-wrap {
+  position: relative;
   height: 100%;
   width: 100%;
   overflow: hidden;
 }
-.graph-node {
-  cursor: pointer;
+.graph-svg {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  display: block;
 }
-.graph-node:hover circle {
-  fill: #1a73d0;
+.graph-svg:active {
+  cursor: grabbing;
+}
+.graph-node {
+  cursor: grab;
+}
+.graph-node:active {
+  cursor: grabbing;
 }
 .graph-node text {
   pointer-events: none;
+}
+.graph-hint {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.8);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  pointer-events: none;
+  z-index: 2;
+}
+.graph-reset {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  z-index: 2;
 }
