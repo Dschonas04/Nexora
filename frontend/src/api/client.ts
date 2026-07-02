@@ -190,6 +190,12 @@ export const api = {
   removeShare: (id: string, userId: string) =>
     req<void>(`/pages/${id}/shares/${userId}`, { method: "DELETE" }),
   listUsers: () => req<User[]>("/users"),
+  createUser: (email: string, name: string, password: string, role: string) =>
+    req<User>("/users", {
+      method: "POST",
+      body: JSON.stringify({ email, name, password, role }),
+    }),
+  deleteUser: (id: string) => req<void>(`/users/${id}`, { method: "DELETE" }),
   setUserRole: (id: string, role: string) =>
     req<{ role: string }>(`/users/${id}/role`, { method: "PUT", body: JSON.stringify({ role }) }),
 
