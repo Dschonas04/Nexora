@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -10,9 +12,50 @@ import (
 	"nexora/internal/models"
 )
 
+// wikiLinkRe matches explicit [[Page title]] references inside page text.
+var wikiLinkRe = regexp.MustCompile(`\[\[([^\[\]]+)\]\]`)
+
+// extractText walks decoded BlockNote content and collects the visible text
+// (the "text" field of every inline node), so we scan real content — not the
+// structural JSON — for [[links]].
+func extractText(v interface{}, sb *strings.Builder) {
+	switch t := v.(type) {
+	case map[string]interface{}:
+		if s, ok := t["text"].(string); ok {
+			sb.WriteString(s)
+			sb.WriteString(" ")
+		}
+		for _, val := range t {
+			extractText(val, sb)
+		}
+	case []interface{}:
+		for _, item := range t {
+			extractText(item, sb)
+		}
+	}
+}
+
+// wikiLinks returns the lowercased titles referenced via [[...]] in a page's
+// JSON content.
+func wikiLinks(content string) []string {
+	var doc interface{}
+	if json.Unmarshal([]byte(content), &doc) != nil {
+		return nil
+	}
+	var sb strings.Builder
+	extractText(doc, &sb)
+	var out []string
+	for _, m := range wikiLinkRe.FindAllStringSubmatch(sb.String(), -1) {
+		if title := strings.ToLower(strings.TrimSpace(m[1])); title != "" {
+			out = append(out, title)
+		}
+	}
+	return out
+}
+
 // Graph returns the knowledge graph the user can see: one node per accessible
-// page, plus edges for parent-child nesting and for pages that mention another
-// page's title in their content.
+// page, plus edges for parent-child nesting and for explicit [[Page title]]
+// wiki-links found in a page's content.
 func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 
@@ -35,8 +78,8 @@ func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type node struct {
-		title, content string
-		parent         *string
+		parent *string
+		links  []string // lowercased [[titles]] referenced by this page
 	}
 	pages := map[string]node{}
 	titles := map[string]string{} // lowercased title -> id
@@ -48,11 +91,9 @@ func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 		if err := rows.Scan(&id, &title, &parent, &content); err != nil {
 			continue
 		}
-		pages[id] = node{title: title, content: strings.ToLower(content), parent: parent}
+		pages[id] = node{parent: parent, links: wikiLinks(content)}
 		g.Nodes = append(g.Nodes, models.GraphNode{ID: id, Title: title})
-		if t := strings.ToLower(strings.TrimSpace(title)); len(t) >= 3 {
-			titles[t] = id
-		}
+		titles[strings.ToLower(strings.TrimSpace(title))] = id
 	}
 
 	seen := map[string]bool{}
@@ -75,15 +116,12 @@ func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 				addEdge(*n.parent, id, "parent")
 			}
 		}
-		// Mention edges: this page's content references another page's title.
-		for t, otherID := range titles {
-			if otherID == id {
-				continue
-			}
-			if n.parent != nil && *n.parent == otherID {
-				continue // already a hierarchy edge
-			}
-			if strings.Contains(n.content, t) {
+		// Explicit [[wiki-link]] edges.
+		for _, title := range n.links {
+			if otherID, ok := titles[title]; ok {
+				if n.parent != nil && *n.parent == otherID {
+					continue // already a hierarchy edge
+				}
 				addEdge(id, otherID, "link")
 			}
 		}
