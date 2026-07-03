@@ -63,10 +63,13 @@ func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 	var err error
 	if s.isAdmin(r.Context(), uid) {
 		rows, err = s.Pool.Query(r.Context(),
-			`SELECT id, title, parent_id, content::text FROM pages WHERE deleted_at IS NULL`)
+			`SELECT p.id, p.title, p.parent_id, p.content::text, p.space_id, COALESCE(s.name, '')
+			 FROM pages p LEFT JOIN spaces s ON s.id = p.space_id
+			 WHERE p.deleted_at IS NULL`)
 	} else {
 		rows, err = s.Pool.Query(r.Context(),
-			`SELECT p.id, p.title, p.parent_id, p.content::text FROM pages p
+			`SELECT p.id, p.title, p.parent_id, p.content::text, p.space_id, COALESCE(s.name, '')
+			 FROM pages p LEFT JOIN spaces s ON s.id = p.space_id
 			 WHERE p.deleted_at IS NULL AND (
 			   p.owner_id=$1 OR p.id IN (SELECT page_id FROM page_shares WHERE user_id=$1)
 			 )`, uid)
@@ -86,13 +89,13 @@ func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 	g := models.Graph{Nodes: []models.GraphNode{}, Edges: []models.GraphEdge{}}
 
 	for rows.Next() {
-		var id, title, content string
-		var parent *string
-		if err := rows.Scan(&id, &title, &parent, &content); err != nil {
+		var id, title, content, space string
+		var parent, spaceID *string
+		if err := rows.Scan(&id, &title, &parent, &content, &spaceID, &space); err != nil {
 			continue
 		}
 		pages[id] = node{parent: parent, links: wikiLinks(content)}
-		g.Nodes = append(g.Nodes, models.GraphNode{ID: id, Title: title})
+		g.Nodes = append(g.Nodes, models.GraphNode{ID: id, Title: title, SpaceID: spaceID, Space: space})
 		titles[strings.ToLower(strings.TrimSpace(title))] = id
 	}
 
