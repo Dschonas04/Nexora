@@ -87,8 +87,10 @@ type ShareEntry struct {
 
 // GraphNode / GraphEdge power the knowledge graph view.
 type GraphNode struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
+	ID      string  `json:"id"`
+	Title   string  `json:"title"`
+	SpaceID *string `json:"spaceId"`
+	Space   string  `json:"space"` // space name, "" for pages not in a space
 }
 
 type GraphEdge struct {

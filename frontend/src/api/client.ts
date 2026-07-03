@@ -82,6 +82,8 @@ export interface ShareEntry {
 export interface GraphNode {
   id: string;
   title: string;
+  spaceId: string | null;
+  space: string;
 }
 
 export interface GraphEdge {
