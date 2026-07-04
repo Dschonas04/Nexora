@@ -70,7 +70,7 @@ export default function Sidebar(props: Props) {
       className={"tree-row" + (activeId === p.id ? " active" : "")}
       onClick={() => onSelect(p.id)}
     >
-      <span className="tree-label">{p.title || "Untitled"}</span>
+      <span className="tree-label">{p.title || "Ohne Titel"}</span>
     </div>
   );
 
@@ -80,27 +80,27 @@ export default function Sidebar(props: Props) {
     <div className="sidebar">
       <div className="sidebar-header">
         <span className="brand">Nexora</span>
-        <button className="icon-btn" title="New page" onClick={onCreateRoot}>
+        <button className="icon-btn" title="Neue Seite" onClick={onCreateRoot}>
           +
         </button>
       </div>
 
       <div className="search-box">
-        <input placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input placeholder="Suchen…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
       <div className="sidebar-scroll">
         {results !== null ? (
           <div className="sidebar-section">
-            <div className="sidebar-section-title">Results</div>
-            {results.length === 0 && <div className="tree-row muted">No matches</div>}
+            <div className="sidebar-section-title">Ergebnisse</div>
+            {results.length === 0 && <div className="tree-row muted">Keine Treffer</div>}
             {results.map(flatRow)}
           </div>
         ) : (
           <>
             {favorites.length > 0 && (
               <div className="sidebar-section">
-                <div className="sidebar-section-title">Favorites</div>
+                <div className="sidebar-section-title">Favoriten</div>
                 {favorites.map(flatRow)}
               </div>
             )}
@@ -114,16 +114,16 @@ export default function Sidebar(props: Props) {
                       {sp.name}
                     </span>
                     <span className="tree-actions" style={{ display: "flex" }}>
-                      <button className="icon-btn" title="New page" onClick={() => onCreateInSpace(sp.id)}>
+                      <button className="icon-btn" title="Neue Seite" onClick={() => onCreateInSpace(sp.id)}>
                         +
                       </button>
-                      <button className="icon-btn" title="Delete space" onClick={() => onDeleteSpace(sp.id)}>
+                      <button className="icon-btn" title="Space löschen" onClick={() => onDeleteSpace(sp.id)}>
                         ✕
                       </button>
                     </span>
                   </div>
                   {spacePages.length === 0 ? (
-                    <div className="tree-row muted">Empty</div>
+                    <div className="tree-row muted">Leer</div>
                   ) : (
                     <PageTree
                       pages={spacePages}
@@ -142,18 +142,18 @@ export default function Sidebar(props: Props) {
 
             <div className="sidebar-section">
               <div className="sidebar-section-title">
-                Pages
+                Seiten
                 <span className="tree-actions" style={{ display: "flex", gap: 8 }}>
-                  <button className="text-btn" title="New space" onClick={onCreateSpace}>
+                  <button className="text-btn" title="Neuer Space" onClick={onCreateSpace}>
                     + Space
                   </button>
-                  <button className="icon-btn" title="New page" onClick={onCreateRoot}>
+                  <button className="icon-btn" title="Neue Seite" onClick={onCreateRoot}>
                     +
                   </button>
                 </span>
               </div>
               {ungrouped.length === 0 ? (
-                <div className="tree-row muted">No pages yet</div>
+                <div className="tree-row muted">Noch keine Seiten</div>
               ) : (
                 <PageTree
                   pages={ungrouped}
@@ -170,14 +170,14 @@ export default function Sidebar(props: Props) {
 
             {shared.length > 0 && (
               <div className="sidebar-section">
-                <div className="sidebar-section-title">Shared with me</div>
+                <div className="sidebar-section-title">Mit mir geteilt</div>
                 {shared.map(flatRow)}
               </div>
             )}
 
             {tags.length > 0 && (
               <div className="sidebar-section">
-                <div className="sidebar-section-title">Tags</div>
+                <div className="sidebar-section-title">Schlagwörter</div>
                 {tags.map((t) => (
                   <div key={t.id} className="tree-row">
                     <span className="tag-dot" style={{ background: t.color }} />
@@ -193,20 +193,20 @@ export default function Sidebar(props: Props) {
                 className={"tree-row" + (currentPath === "/graph" ? " active" : "")}
                 onClick={() => onNavigate("/graph")}
               >
-                <span className="tree-label">Knowledge graph</span>
+                <span className="tree-label">Wissensgraph</span>
               </div>
               <div
                 className={"tree-row" + (currentPath === "/trash" ? " active" : "")}
                 onClick={() => onNavigate("/trash")}
               >
-                <span className="tree-label">Trash</span>
+                <span className="tree-label">Papierkorb</span>
               </div>
               {user?.role === "admin" && (
                 <div
                   className={"tree-row" + (currentPath === "/admin" ? " active" : "")}
                   onClick={() => onNavigate("/admin")}
                 >
-                  <span className="tree-label">Users &amp; roles</span>
+                  <span className="tree-label">Nutzer &amp; Rollen</span>
                 </div>
               )}
             </div>
@@ -217,7 +217,7 @@ export default function Sidebar(props: Props) {
       <div className="sidebar-footer">
         <span className="tree-label">{user?.name}</span>
         <button className="btn" onClick={logout}>
-          Sign out
+          Abmelden
         </button>
       </div>
     </div>

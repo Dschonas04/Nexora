@@ -7,7 +7,7 @@ import PublicPage from "./pages/PublicPage";
 
 export default function App() {
   const { user, loading } = useAuth();
-  if (loading) return <div className="empty-state">Loading…</div>;
+  if (loading) return <div className="empty-state">Lädt…</div>;
   return (
     <Routes>
       <Route path="/share/:token" element={<PublicPage />} />

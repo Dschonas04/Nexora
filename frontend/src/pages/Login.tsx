@@ -16,7 +16,7 @@ export default function Login() {
     try {
       await login(email, password);
     } catch (err) {
-      setError((err as Error).message || "Login failed");
+      setError((err as Error).message || "Anmeldung fehlgeschlagen");
     } finally {
       setBusy(false);
     }
@@ -26,21 +26,21 @@ export default function Login() {
     <div className="auth">
       <form className="auth-card" onSubmit={submit}>
         <h1>Nexora</h1>
-        <p className="sub">Sign in to your workspace</p>
+        <p className="sub">Melde dich in deinem Workspace an</p>
         {error && <div className="error">{error}</div>}
         <div className="field">
-          <label>Email</label>
+          <label>E-Mail</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
         </div>
         <div className="field">
-          <label>Password</label>
+          <label>Passwort</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
         <button className="btn-primary" type="submit" disabled={busy}>
-          {busy ? "Signing in…" : "Sign in"}
+          {busy ? "Anmelden…" : "Anmelden"}
         </button>
         <div className="switch">
-          No account? <Link to="/register">Create one</Link>
+          Kein Konto? <Link to="/register">Registrieren</Link>
         </div>
       </form>
     </div>

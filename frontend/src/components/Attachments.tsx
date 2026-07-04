@@ -45,7 +45,7 @@ export default function Attachments({ pageId, canEdit }: Props) {
   return (
     <div className="attachments">
       <div className="attachments-head">
-        <span className="section-label">Attachments</span>
+        <span className="section-label">Anhänge</span>
         {canEdit && (
           <>
             <input
@@ -56,13 +56,13 @@ export default function Attachments({ pageId, canEdit }: Props) {
               onChange={(e) => upload(e.target.files)}
             />
             <button className="btn" disabled={busy} onClick={() => fileRef.current?.click()}>
-              {busy ? "Uploading…" : "Upload file"}
+              {busy ? "Hochladen…" : "Datei hochladen"}
             </button>
           </>
         )}
       </div>
       <div className="attachment-list">
-        {items.length === 0 && <div className="muted small">No files attached.</div>}
+        {items.length === 0 && <div className="muted small">Keine Dateien angehängt.</div>}
         {items.map((a) => (
           <div key={a.id} className="attachment-row">
             <a href={api.attachmentUrl(pageId, a.id)} target="_blank" rel="noreferrer">
@@ -70,7 +70,7 @@ export default function Attachments({ pageId, canEdit }: Props) {
             </a>
             <span className="muted small">{humanSize(a.size)}</span>
             {canEdit && (
-              <button className="icon-btn" title="Remove" onClick={() => remove(a.id)}>
+              <button className="icon-btn" title="Entfernen" onClick={() => remove(a.id)}>
                 ✕
               </button>
             )}

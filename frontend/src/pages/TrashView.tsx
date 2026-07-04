@@ -15,7 +15,7 @@ export default function TrashView({ onChange }: { onChange: () => void }) {
     onChange();
   };
   const purge = async (id: string) => {
-    if (!confirm("Permanently delete this page and its subpages? This cannot be undone.")) return;
+    if (!confirm("Diese Seite und ihre Unterseiten endgültig löschen? Das kann nicht rückgängig gemacht werden.")) return;
     await api.purgePage(id);
     refresh();
     onChange();
@@ -24,23 +24,23 @@ export default function TrashView({ onChange }: { onChange: () => void }) {
   return (
     <div className="editor-scroll">
       <div className="page wide">
-        <h1 className="view-title">Trash</h1>
-        <p className="muted">Deleted pages are kept here until you restore or permanently remove them.</p>
+        <h1 className="view-title">Papierkorb</h1>
+        <p className="muted">Gelöschte Seiten bleiben hier, bis du sie wiederherstellst oder endgültig entfernst.</p>
         {items.length === 0 ? (
           <div className="muted" style={{ marginTop: 20 }}>
-            The trash is empty.
+            Der Papierkorb ist leer.
           </div>
         ) : (
           <div className="list">
             {items.map((p) => (
               <div key={p.id} className="list-row">
-                <span className="list-title">{p.title || "Untitled"}</span>
+                <span className="list-title">{p.title || "Ohne Titel"}</span>
                 <span className="row-actions">
                   <button className="btn" onClick={() => restore(p.id)}>
-                    Restore
+                    Wiederherstellen
                   </button>
                   <button className="btn danger" onClick={() => purge(p.id)}>
-                    Delete forever
+                    Endgültig löschen
                   </button>
                 </span>
               </div>

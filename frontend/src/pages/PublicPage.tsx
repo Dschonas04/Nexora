@@ -16,14 +16,14 @@ export default function PublicPage() {
       .catch(() => setErr(true));
   }, [token]);
 
-  if (err) return <div className="empty-state">This page is not available.</div>;
-  if (!page) return <div className="empty-state">Loading…</div>;
+  if (err) return <div className="empty-state">Diese Seite ist nicht verfügbar.</div>;
+  if (!page) return <div className="empty-state">Lädt…</div>;
 
   return (
     <div className="editor-scroll">
       <div className="page">
         <h1 className="page-title" style={{ cursor: "default" }}>
-          {page.title || "Untitled"}
+          {page.title || "Ohne Titel"}
         </h1>
         <Editor initialContent={page.content} editable={false} />
       </div>

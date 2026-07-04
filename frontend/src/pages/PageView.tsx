@@ -56,8 +56,8 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     }, 500);
   };
 
-  if (loading) return <div className="empty-state">Loading…</div>;
-  if (!page) return <div className="empty-state">Page not found.</div>;
+  if (loading) return <div className="empty-state">Lädt…</div>;
+  if (!page) return <div className="empty-state">Seite nicht gefunden.</div>;
 
   const canEdit = page.canEdit;
 
@@ -90,7 +90,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   };
 
   const addTag = async () => {
-    const name = prompt("Tag name:")?.trim();
+    const name = prompt("Schlagwort:")?.trim();
     if (!name) return;
     let tag = allTags.find((t) => t.name.toLowerCase() === name.toLowerCase());
     if (!tag) {
@@ -116,26 +116,26 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     <div className="page-layout">
       <div className="page-main">
         <div className="topbar">
-          <span className="topbar-title">{page.title || "Untitled"}</span>
+          <span className="topbar-title">{page.title || "Ohne Titel"}</span>
           <div className="topbar-actions">
-            {!canEdit && <span className="pill readonly">Read-only</span>}
+            {!canEdit && <span className="pill readonly">Nur Lesen</span>}
             <button className={"btn" + (page.isFavorite ? " active" : "")} onClick={toggleFav}>
-              {page.isFavorite ? "Favorited" : "Favorite"}
+              {page.isFavorite ? "Favorisiert" : "Favorit"}
             </button>
             <button className="btn" onClick={() => setShowVersions((v) => !v)}>
-              History
+              Verlauf
             </button>
             <button className="btn" onClick={exportMarkdown}>
               Export
             </button>
             {page.isOwner && (
               <button className={"btn" + (page.isPublic ? " active" : "")} onClick={() => setShowShare(true)}>
-                Share
+                Teilen
               </button>
             )}
             {page.isOwner && (
               <button className="btn" onClick={() => onDelete(page.id)}>
-                Delete
+                Löschen
               </button>
             )}
           </div>
@@ -146,7 +146,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
             <input
               className="page-title"
               value={page.title}
-              placeholder="Untitled"
+              placeholder="Ohne Titel"
               disabled={!canEdit}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -163,7 +163,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
               ))}
               {canEdit && (
                 <button className="tag-add" onClick={addTag}>
-                  + Tag
+                  + Schlagwort
                 </button>
               )}
             </div>
@@ -178,12 +178,12 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
             {backlinks.length > 0 && (
               <div className="backlinks">
                 <div className="backlinks-title">
-                  Linked from {backlinks.length} {backlinks.length === 1 ? "page" : "pages"}
+                  Verlinkt von {backlinks.length} {backlinks.length === 1 ? "Seite" : "Seiten"}
                 </div>
                 <div className="backlinks-list">
                   {backlinks.map((b) => (
                     <button key={b.id} className="backlink" onClick={() => nav(`/page/${b.id}`)}>
-                      {b.title || "Untitled"}
+                      {b.title || "Ohne Titel"}
                     </button>
                   ))}
                 </div>

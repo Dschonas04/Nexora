@@ -53,33 +53,33 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Share</h3>
+          <h3>Teilen</h3>
           <button className="icon-btn" onClick={onClose}>
             ✕
           </button>
         </div>
 
         <div className="modal-section">
-          <div className="modal-label">Invite people</div>
+          <div className="modal-label">Personen einladen</div>
           <div className="share-add">
             <input
-              placeholder="email address"
+              placeholder="E-Mail-Adresse"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && add()}
             />
             <select value={perm} onChange={(e) => setPerm(e.target.value)}>
-              <option value="read">Can view</option>
-              <option value="edit">Can edit</option>
+              <option value="read">Kann ansehen</option>
+              <option value="edit">Kann bearbeiten</option>
             </select>
             <button className="btn btn-primary" onClick={add}>
-              Add
+              Hinzufügen
             </button>
           </div>
           {err && <div className="error">{err}</div>}
 
           <div className="share-list">
-            {shares.length === 0 && <div className="muted small">Not shared with anyone yet.</div>}
+            {shares.length === 0 && <div className="muted small">Noch mit niemandem geteilt.</div>}
             {shares.map((s) => (
               <div key={s.userId} className="share-row">
                 <div>
@@ -87,8 +87,8 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
                   <div className="muted small">{s.email}</div>
                 </div>
                 <div className="share-perm">
-                  <span className="pill">{s.permission === "edit" ? "Can edit" : "Can view"}</span>
-                  <button className="icon-btn" title="Remove" onClick={() => remove(s.userId)}>
+                  <span className="pill">{s.permission === "edit" ? "Kann bearbeiten" : "Kann ansehen"}</span>
+                  <button className="icon-btn" title="Entfernen" onClick={() => remove(s.userId)}>
                     ✕
                   </button>
                 </div>
@@ -98,16 +98,16 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
         </div>
 
         <div className="modal-section">
-          <div className="modal-label">Public link</div>
+          <div className="modal-label">Öffentlicher Link</div>
           <label className="toggle-row">
             <input type="checkbox" checked={isPublic} onChange={togglePublic} />
-            <span>Anyone with the link can view</span>
+            <span>Jeder mit dem Link kann ansehen</span>
           </label>
           {isPublic && publicUrl && (
             <div className="share-add">
               <input readOnly value={publicUrl} onFocus={(e) => e.currentTarget.select()} />
               <button className="btn" onClick={() => navigator.clipboard?.writeText(publicUrl)}>
-                Copy
+                Kopieren
               </button>
             </div>
           )}

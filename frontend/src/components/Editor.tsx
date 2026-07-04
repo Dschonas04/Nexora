@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
+import { locales } from "@blocknote/core";
 import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
 
 export default function Editor({
@@ -21,7 +22,7 @@ export default function Editor({
       ? (initialContent as PartialBlock[])
       : undefined;
 
-  const editor = useCreateBlockNote({ initialContent: content });
+  const editor = useCreateBlockNote({ initialContent: content, dictionary: locales.de });
 
   useEffect(() => {
     onEditorReady?.(editor);
