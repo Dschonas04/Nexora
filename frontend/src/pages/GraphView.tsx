@@ -384,13 +384,20 @@ export default function GraphView() {
     return 0.15;
   };
 
+  // Labels stay hidden until you zoom in past this scale (LogSeq-style), so the
+  // overview isn't cluttered; hovering a node always reveals it and its
+  // neighbours' labels regardless of zoom.
+  const LABEL_ZOOM = 1.3;
+  const showLabel = (id: string) =>
+    view.scale >= LABEL_ZOOM || id === hover || (!!hover && derived.neighbours[hover]?.has(id));
+
   return (
     <div className="graph-wrap" ref={wrapRef}>
       {graph.nodes.length === 0 ? (
         <div className="empty-state">Noch keine Seiten für den Graphen.</div>
       ) : (
         <>
-          <div className="graph-hint">Knoten ziehen · Hintergrund ziehen zum Verschieben · scrollen zum Zoomen</div>
+          <div className="graph-hint">Namen bei Hover/Zoom · Knoten ziehen · Hintergrund ziehen · scrollen zum Zoomen</div>
           {derived.legend.length > 1 && (
             <div className="graph-legend">
               {derived.legend.map((l) => (
@@ -456,18 +463,20 @@ export default function GraphView() {
                       stroke={hover === node.id ? "#37352f" : "#ffffff"}
                       strokeWidth={hover === node.id ? 2 : 1}
                     />
-                    <text
-                      x={r + 5}
-                      y={4}
-                      fontSize={12}
-                      fill="#37352f"
-                      stroke="#ffffff"
-                      strokeWidth={3.5}
-                      paintOrder="stroke"
-                      strokeLinejoin="round"
-                    >
-                      {node.title || "Ohne Titel"}
-                    </text>
+                    {showLabel(node.id) && (
+                      <text
+                        x={r + 5}
+                        y={4}
+                        fontSize={12}
+                        fill="#37352f"
+                        stroke="#ffffff"
+                        strokeWidth={3.5}
+                        paintOrder="stroke"
+                        strokeLinejoin="round"
+                      >
+                        {node.title || "Ohne Titel"}
+                      </text>
+                    )}
                   </g>
                 );
               })}
