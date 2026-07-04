@@ -42,12 +42,12 @@ interface Particle {
 // force simulation (LogSeq-style): nodes repel, edges pull like springs with
 // hierarchy edges far stiffer than loose [[wiki-links]], and a gentle gravity
 // keeps the whole graph centred in the canvas.
-const CHARGE = 8500; // repulsion strength (spreads the graph across the canvas)
+const CHARGE = 13000; // repulsion strength (spreads the graph so labels don't collide)
 const SPRING_PARENT = 0.006;
 const SPRING_LINK = 0.0022;
-const REST_PARENT = 80;
-const REST_LINK = 175;
-const GRAVITY = 0.016; // mild pull toward centre → contains stray nodes
+const REST_PARENT = 95;
+const REST_LINK = 210;
+const GRAVITY = 0.014; // mild pull toward centre → contains stray nodes
 const SAME_SPACE_PULL = 0.0016; // loose grouping by folder, not rigid anchors
 const VELOCITY_DECAY = 0.82;
 const ALPHA_DECAY = 0.985;
@@ -456,7 +456,16 @@ export default function GraphView() {
                       stroke={hover === node.id ? "#37352f" : "#ffffff"}
                       strokeWidth={hover === node.id ? 2 : 1}
                     />
-                    <text x={r + 4} y={4} fontSize={12} fill="#37352f">
+                    <text
+                      x={r + 5}
+                      y={4}
+                      fontSize={12}
+                      fill="#37352f"
+                      stroke="#ffffff"
+                      strokeWidth={3.5}
+                      paintOrder="stroke"
+                      strokeLinejoin="round"
+                    >
                       {node.title || "Ohne Titel"}
                     </text>
                   </g>
