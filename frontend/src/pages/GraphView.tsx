@@ -42,12 +42,12 @@ interface Particle {
 // force simulation (LogSeq-style): nodes repel, edges pull like springs with
 // hierarchy edges far stiffer than loose [[wiki-links]], and a gentle gravity
 // keeps the whole graph centred in the canvas.
-const CHARGE = 5200; // repulsion strength
+const CHARGE = 8500; // repulsion strength (spreads the graph across the canvas)
 const SPRING_PARENT = 0.006;
 const SPRING_LINK = 0.0022;
-const REST_PARENT = 74;
-const REST_LINK = 150;
-const GRAVITY = 0.025; // pull toward canvas centre → keeps it centred
+const REST_PARENT = 80;
+const REST_LINK = 175;
+const GRAVITY = 0.016; // mild pull toward centre → contains stray nodes
 const SAME_SPACE_PULL = 0.0016; // loose grouping by folder, not rigid anchors
 const VELOCITY_DECAY = 0.82;
 const ALPHA_DECAY = 0.985;
@@ -221,6 +221,30 @@ export default function GraphView() {
       pp.vy *= VELOCITY_DECAY;
       pp.x += pp.vx;
       pp.y += pp.vy;
+    }
+
+    // Keep the whole graph centred: shift every node so their centroid sits at
+    // the canvas centre. Skipped while dragging so the grabbed node stays put.
+    if (!fixed.current) {
+      let cx = 0;
+      let cy = 0;
+      for (const n of nodes) {
+        const pp = p[n.id];
+        if (pp) {
+          cx += pp.x;
+          cy += pp.y;
+        }
+      }
+      const cnt = nodes.length || 1;
+      const shiftX = w / 2 - cx / cnt;
+      const shiftY = h / 2 - cy / cnt;
+      for (const n of nodes) {
+        const pp = p[n.id];
+        if (pp) {
+          pp.x += shiftX;
+          pp.y += shiftY;
+        }
+      }
     }
   };
 
