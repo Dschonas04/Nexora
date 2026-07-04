@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import type { Block, BlockNoteEditor } from "@blocknote/core";
-import { Page, PagePatch, Tag, api } from "../api/client";
+import { Page, PageMeta, PagePatch, Tag, api } from "../api/client";
 import Editor from "../components/Editor";
 import VersionPanel from "../components/VersionPanel";
 import ShareDialog from "../components/ShareDialog";
@@ -20,7 +20,9 @@ const randomColor = () => PALETTE[Math.floor(Math.random() * PALETTE.length)];
 
 export default function PageView({ allTags, onMetaChange, onFavChange, onTagsChange, onDelete }: Props) {
   const { id } = useParams();
+  const nav = useNavigate();
   const [page, setPage] = useState<Page | null>(null);
+  const [backlinks, setBacklinks] = useState<PageMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [showVersions, setShowVersions] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -37,6 +39,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
       .then(setPage)
       .catch(() => setPage(null))
       .finally(() => setLoading(false));
+    api.backlinks(id).then(setBacklinks).catch(() => setBacklinks([]));
     return () => window.clearTimeout(saveTimer.current);
   }, [id]);
 
@@ -172,6 +175,20 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
               onEditorReady={(e) => (editorRef.current = e)}
             />
             <Attachments pageId={page.id} canEdit={canEdit} />
+            {backlinks.length > 0 && (
+              <div className="backlinks">
+                <div className="backlinks-title">
+                  Linked from {backlinks.length} {backlinks.length === 1 ? "page" : "pages"}
+                </div>
+                <div className="backlinks-list">
+                  {backlinks.map((b) => (
+                    <button key={b.id} className="backlink" onClick={() => nav(`/page/${b.id}`)}>
+                      {b.title || "Untitled"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

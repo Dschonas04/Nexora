@@ -788,3 +788,33 @@ a {
   border-radius: 50%;
   display: inline-block;
 }
+.backlinks {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.backlinks-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.backlinks-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.backlink {
+  border: 1px solid var(--border);
+  background: var(--bg-subtle, #f7f7f5);
+  color: var(--text, #37352f);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.backlink:hover {
+  border-color: #2383e2;
+  color: #2383e2;
+}

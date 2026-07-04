@@ -105,6 +105,9 @@ func main() {
 			r.Put("/spaces/{id}", h.RenameSpace)
 			r.Delete("/spaces/{id}", h.DeleteSpace)
 
+			// Backlinks (pages linking here via [[wiki-link]])
+			r.Get("/pages/{id}/backlinks", h.Backlinks)
+
 			// Knowledge graph
 			r.Get("/graph", h.Graph)
 

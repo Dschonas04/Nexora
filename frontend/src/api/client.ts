@@ -144,6 +144,7 @@ export const api = {
       body: JSON.stringify({ parentId: parentId ?? null, spaceId: spaceId ?? null }),
     }),
   getPage: (id: string) => req<Page>(`/pages/${id}`),
+  backlinks: (id: string) => req<PageMeta[]>(`/pages/${id}/backlinks`),
   updatePage: (id: string, patch: PagePatch) =>
     req<Page>(`/pages/${id}`, { method: "PUT", body: JSON.stringify(patch) }),
   deletePage: (id: string) => req<void>(`/pages/${id}`, { method: "DELETE" }),
