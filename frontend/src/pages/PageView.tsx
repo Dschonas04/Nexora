@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Block, BlockNoteEditor } from "@blocknote/core";
-import { Page, PageMeta, PagePatch, Tag, api } from "../api/client";
+import { Graph, Page, PageMeta, PagePatch, Tag, api } from "../api/client";
 import Editor from "../components/Editor";
 import VersionPanel from "../components/VersionPanel";
 import ShareDialog from "../components/ShareDialog";
 import Attachments from "../components/Attachments";
+import LocalGraph from "../components/LocalGraph";
 
 interface Props {
   allTags: Tag[];
@@ -23,6 +24,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const nav = useNavigate();
   const [page, setPage] = useState<Page | null>(null);
   const [backlinks, setBacklinks] = useState<PageMeta[]>([]);
+  const [graph, setGraph] = useState<Graph>({ nodes: [], edges: [] });
   const [loading, setLoading] = useState(true);
   const [showVersions, setShowVersions] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -40,8 +42,18 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
       .catch(() => setPage(null))
       .finally(() => setLoading(false));
     api.backlinks(id).then(setBacklinks).catch(() => setBacklinks([]));
+    api.graph().then(setGraph).catch(() => setGraph({ nodes: [], edges: [] }));
     return () => window.clearTimeout(saveTimer.current);
   }, [id]);
+
+  // Resolve a [[Title]] to a page id (case-insensitive) so wiki-links in the
+  // editor become clickable.
+  const titleToId = (() => {
+    const m: Record<string, string> = {};
+    for (const n of graph.nodes) m[(n.title || "").toLowerCase().trim()] = n.id;
+    return m;
+  })();
+  const resolveLink = (t: string) => titleToId[t.toLowerCase().trim()] ?? null;
 
   const scheduleSave = (patch: PagePatch) => {
     if (!id) return;
@@ -173,6 +185,8 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
               editable={canEdit}
               onChange={onContent}
               onEditorReady={(e) => (editorRef.current = e)}
+              linkResolver={resolveLink}
+              onOpenLink={(pid) => nav(`/page/${pid}`)}
             />
             <Attachments pageId={page.id} canEdit={canEdit} />
             {backlinks.length > 0 && (
@@ -189,6 +203,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                 </div>
               </div>
             )}
+            <LocalGraph graph={graph} pageId={page.id} onOpen={(pid) => nav(`/page/${pid}`)} />
           </div>
         </div>
       </div>

@@ -818,3 +818,28 @@ a {
   border-color: #2383e2;
   color: #2383e2;
 }
+.local-graph {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.local-graph-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.local-graph-svg {
+  max-width: 560px;
+  display: block;
+}
+.local-node {
+  cursor: pointer;
+}
+.local-node:hover circle {
+  fill: #1a73d0;
+}
+.local-node:hover text {
+  fill: #2383e2;
+}
