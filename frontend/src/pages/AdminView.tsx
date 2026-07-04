@@ -40,7 +40,7 @@ export default function AdminView() {
   };
 
   const removeUser = async (id: string, label: string) => {
-    if (!confirm(`Delete user ${label}? Their pages are removed too. This cannot be undone.`)) return;
+    if (!confirm(`Nutzer ${label} löschen? Seine Seiten werden ebenfalls entfernt. Das kann nicht rückgängig gemacht werden.`)) return;
     await api.deleteUser(id);
     refresh();
   };
@@ -48,27 +48,27 @@ export default function AdminView() {
   return (
     <div className="editor-scroll">
       <div className="page wide">
-        <h1 className="view-title">Users &amp; roles</h1>
-        <p className="muted">Admins can read and edit every page in the workspace.</p>
+        <h1 className="view-title">Nutzer &amp; Rollen</h1>
+        <p className="muted">Admins können jede Seite im Workspace lesen und bearbeiten.</p>
 
         <div className="user-add">
-          <div className="modal-label">Add a user</div>
+          <div className="modal-label">Nutzer hinzufügen</div>
           <div className="user-add-row">
-            <input placeholder="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <input placeholder="name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
+            <input placeholder="E-Mail" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input placeholder="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
             <input
               type="password"
-              placeholder="password (min. 6)"
+              placeholder="Passwort (mind. 6)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addUser()}
             />
             <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="user">User</option>
+              <option value="user">Nutzer</option>
               <option value="admin">Admin</option>
             </select>
             <button className="btn btn-primary" disabled={busy} onClick={addUser}>
-              {busy ? "…" : "Add user"}
+              {busy ? "…" : "Hinzufügen"}
             </button>
           </div>
           {err && <div className="error">{err}</div>}
@@ -87,7 +87,7 @@ export default function AdminView() {
                   disabled={u.id === user?.id}
                   onChange={(e) => setUserRole(u.id, e.target.value)}
                 >
-                  <option value="user">User</option>
+                  <option value="user">Nutzer</option>
                   <option value="admin">Admin</option>
                 </select>
                 <button
@@ -95,7 +95,7 @@ export default function AdminView() {
                   disabled={u.id === user?.id}
                   onClick={() => removeUser(u.id, u.email)}
                 >
-                  Delete
+                  Löschen
                 </button>
               </span>
             </div>

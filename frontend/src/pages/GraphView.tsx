@@ -128,6 +128,28 @@ function layout(graph: Graph, width: number, height: number): Record<string, Pos
   return pos;
 }
 
+// fitView centres the whole graph in the viewport (LogSeq-style): it measures
+// the nodes' bounding box and returns the pan/zoom that puts its middle in the
+// middle of the canvas, scaled to fit with a margin.
+function fitView(pos: Record<string, Pos>, width: number, height: number): { x: number; y: number; scale: number } {
+  const pts = Object.values(pos);
+  if (pts.length === 0) return { x: 0, y: 0, scale: 1 };
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of pts) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  const pad = 80; // room for node labels
+  const gw = Math.max(maxX - minX, 1);
+  const gh = Math.max(maxY - minY, 1);
+  const scale = Math.max(0.3, Math.min(1.4, Math.min((width - 2 * pad) / gw, (height - 2 * pad) / gh)));
+  const cx = (minX + maxX) / 2;
+  const cy = (minY + maxY) / 2;
+  return { x: width / 2 - cx * scale, y: height / 2 - cy * scale, scale };
+}
+
 const DRAG_THRESHOLD = 4; // px before a press counts as a drag, not a click
 
 export default function GraphView() {
@@ -149,7 +171,7 @@ export default function GraphView() {
       const k = spaceKey(n);
       if (seen.has(k)) continue;
       seen.add(k);
-      out.push({ key: k, label: k === "__none__" ? "No space" : n.space || "Space", color: spaceColor[k] });
+      out.push({ key: k, label: k === "__none__" ? "Kein Space" : n.space || "Space", color: spaceColor[k] });
     }
     return out;
   })();
@@ -193,7 +215,11 @@ export default function GraphView() {
       return;
     }
     const el = wrapRef.current;
-    setPositions(layout(graph, el?.clientWidth || 900, el?.clientHeight || 600));
+    const w = el?.clientWidth || 900;
+    const h = el?.clientHeight || 600;
+    const p = layout(graph, w, h);
+    setPositions(p);
+    setView(fitView(p, w, h)); // always start centred in the middle
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey]);
 
@@ -268,18 +294,25 @@ export default function GraphView() {
   };
 
   const reset = () => {
-    setView({ x: 0, y: 0, scale: 1 });
     const el = wrapRef.current;
-    if (graph.nodes.length) setPositions(layout(graph, el?.clientWidth || 900, el?.clientHeight || 600));
+    const w = el?.clientWidth || 900;
+    const h = el?.clientHeight || 600;
+    if (graph.nodes.length) {
+      const p = layout(graph, w, h);
+      setPositions(p);
+      setView(fitView(p, w, h));
+    } else {
+      setView({ x: 0, y: 0, scale: 1 });
+    }
   };
 
   return (
     <div className="graph-wrap" ref={wrapRef}>
       {graph.nodes.length === 0 ? (
-        <div className="empty-state">No pages to graph yet.</div>
+        <div className="empty-state">Noch keine Seiten für den Graphen.</div>
       ) : (
         <>
-          <div className="graph-hint">Drag nodes · drag background to pan · scroll to zoom</div>
+          <div className="graph-hint">Knoten ziehen · Hintergrund ziehen zum Verschieben · scrollen zum Zoomen</div>
           {legend.length > 1 && (
             <div className="graph-legend">
               {legend.map((l) => (
@@ -291,7 +324,7 @@ export default function GraphView() {
             </div>
           )}
           <button className="btn graph-reset" onClick={reset}>
-            Reset view
+            Zentrieren
           </button>
           <svg
             ref={svgRef}
@@ -341,7 +374,7 @@ export default function GraphView() {
                   strokeWidth={hover === node.id ? 2 : 0}
                 />
                     <text x={12} y={4} fontSize={12} fill="#37352f">
-                      {node.title || "Untitled"}
+                      {node.title || "Ohne Titel"}
                     </text>
                   </g>
                 );

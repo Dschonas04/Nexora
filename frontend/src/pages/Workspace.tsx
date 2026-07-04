@@ -37,7 +37,7 @@ export default function Workspace() {
   };
 
   const deletePage = async (id: string) => {
-    if (!confirm("Move this page and its subpages to the trash?")) return;
+    if (!confirm("Diese Seite und ihre Unterseiten in den Papierkorb verschieben?")) return;
     await api.deletePage(id);
     await refreshPages();
     await refreshFav();
@@ -45,21 +45,21 @@ export default function Workspace() {
   };
 
   const createSpace = async () => {
-    const name = prompt("Space name:")?.trim();
+    const name = prompt("Space-Name:")?.trim();
     if (!name) return;
     await api.createSpace(name);
     refreshSpaces();
   };
 
   const renameSpace = async (id: string, current: string) => {
-    const name = prompt("Rename space:", current)?.trim();
+    const name = prompt("Space umbenennen:", current)?.trim();
     if (!name) return;
     await api.renameSpace(id, name);
     refreshSpaces();
   };
 
   const deleteSpace = async (id: string) => {
-    if (!confirm("Delete this space? Its pages are kept and become ungrouped.")) return;
+    if (!confirm("Diesen Space löschen? Seine Seiten bleiben erhalten und werden gruppenlos.")) return;
     await api.deleteSpace(id);
     await refreshSpaces();
     await refreshPages();
@@ -128,9 +128,9 @@ export default function Workspace() {
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="empty-state">
-      <div>Nothing open yet.</div>
+      <div>Noch nichts geöffnet.</div>
       <button className="btn btn-primary" onClick={onCreate}>
-        Create a page
+        Seite erstellen
       </button>
     </div>
   );

@@ -17,7 +17,7 @@ export default function Register() {
     try {
       await register(email, name, password);
     } catch (err) {
-      setError((err as Error).message || "Registration failed");
+      setError((err as Error).message || "Registrierung fehlgeschlagen");
     } finally {
       setBusy(false);
     }
@@ -26,31 +26,31 @@ export default function Register() {
   return (
     <div className="auth">
       <form className="auth-card" onSubmit={submit}>
-        <h1>Create account</h1>
-        <p className="sub">Start your Nexora workspace</p>
+        <h1>Konto erstellen</h1>
+        <p className="sub">Starte deinen Nexora-Workspace</p>
         {error && <div className="error">{error}</div>}
         <div className="field">
           <label>Name</label>
           <input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
         </div>
         <div className="field">
-          <label>Email</label>
+          <label>E-Mail</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div className="field">
-          <label>Password</label>
+          <label>Passwort</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="min. 6 characters"
+            placeholder="mind. 6 Zeichen"
           />
         </div>
         <button className="btn-primary" type="submit" disabled={busy}>
-          {busy ? "Creating…" : "Create account"}
+          {busy ? "Erstellen…" : "Konto erstellen"}
         </button>
         <div className="switch">
-          Already have an account? <Link to="/login">Sign in</Link>
+          Schon ein Konto? <Link to="/login">Anmelden</Link>
         </div>
       </form>
     </div>

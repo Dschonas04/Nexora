@@ -47,11 +47,11 @@ export default function PageTree({
               >
                 {kids.length ? (isOpen ? "▾" : "▸") : ""}
               </span>
-              <span className="tree-label">{p.title || "Untitled"}</span>
+              <span className="tree-label">{p.title || "Ohne Titel"}</span>
               <span className="tree-actions">
                 <button
                   className="icon-btn"
-                  title="Add subpage"
+                  title="Unterseite hinzufügen"
                   onClick={(e) => {
                     e.stopPropagation();
                     onCreateChild(p.id);
@@ -61,7 +61,7 @@ export default function PageTree({
                 </button>
                 <button
                   className="icon-btn"
-                  title="Delete"
+                  title="Löschen"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(p.id);
