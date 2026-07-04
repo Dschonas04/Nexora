@@ -18,6 +18,7 @@ interface Props {
   onCreateSpace: () => void;
   onRenameSpace: (id: string, current: string) => void;
   onDeleteSpace: (id: string) => void;
+  onMovePage: (id: string, parentId: string | null, spaceId: string | null) => void;
   onNavigate: (to: string) => void;
   currentPath: string;
 }
@@ -38,6 +39,7 @@ export default function Sidebar(props: Props) {
     onCreateSpace,
     onRenameSpace,
     onDeleteSpace,
+    onMovePage,
     onNavigate,
     currentPath,
   } = props;
@@ -45,6 +47,39 @@ export default function Sidebar(props: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
   const [results, setResults] = useState<PageMeta[] | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null); // page id | "space:<id>" | "root"
+
+  // Descendants of the dragged page — dropping onto one would create a cycle.
+  const descendantsOf = (rootId: string): Set<string> => {
+    const out = new Set<string>();
+    const walk = (pid: string) => {
+      for (const c of pages) {
+        if ((c.parentId ?? null) === pid && !out.has(c.id)) {
+          out.add(c.id);
+          walk(c.id);
+        }
+      }
+    };
+    walk(rootId);
+    return out;
+  };
+  const canDropOnPage = (targetId: string) =>
+    !!dragId && dragId !== targetId && !descendantsOf(dragId).has(targetId);
+
+  // Drop handlers. Moving onto a page nests under it (inheriting its space);
+  // onto a space header moves it there at top level; onto the ungrouped
+  // "Seiten" section moves it to the very top level with no space.
+  const dropOnPage = (target: PageMeta) => {
+    if (dragId && canDropOnPage(target.id)) onMovePage(dragId, target.id, target.spaceId ?? null);
+    setDragId(null);
+    setDropTarget(null);
+  };
+  const dropOnSpace = (spaceId: string | null) => {
+    if (dragId) onMovePage(dragId, null, spaceId);
+    setDragId(null);
+    setDropTarget(null);
+  };
 
   const toggle = (id: string) =>
     setExpanded((prev) => {
@@ -75,6 +110,23 @@ export default function Sidebar(props: Props) {
   );
 
   const ungrouped = pages.filter((p) => !p.spaceId);
+
+  // Drag-and-drop bundle handed to the page tree.
+  const dnd = {
+    dragId,
+    dropTarget,
+    onDragStartPage: (id: string) => setDragId(id),
+    onDragEndPage: () => {
+      setDragId(null);
+      setDropTarget(null);
+    },
+    onDragOverPage: (id: string) => {
+      if (canDropOnPage(id)) setDropTarget(id);
+    },
+    onDragLeavePage: (id: string) => setDropTarget((t) => (t === id ? null : t)),
+    onDropPage: (page: PageMeta) => dropOnPage(page),
+    canDropOnPage,
+  };
 
   return (
     <div className="sidebar">
@@ -109,7 +161,19 @@ export default function Sidebar(props: Props) {
               const spacePages = pages.filter((p) => p.spaceId === sp.id);
               return (
                 <div className="sidebar-section" key={sp.id}>
-                  <div className="sidebar-section-title">
+                  <div
+                    className={"sidebar-section-title" + (dropTarget === "space:" + sp.id ? " drop-target" : "")}
+                    onDragOver={(e) => {
+                      if (!dragId) return;
+                      e.preventDefault();
+                      setDropTarget("space:" + sp.id);
+                    }}
+                    onDragLeave={() => setDropTarget((t) => (t === "space:" + sp.id ? null : t))}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      dropOnSpace(sp.id);
+                    }}
+                  >
                     <span onClick={() => onRenameSpace(sp.id, sp.name)} style={{ cursor: "pointer" }}>
                       {sp.name}
                     </span>
@@ -123,7 +187,20 @@ export default function Sidebar(props: Props) {
                     </span>
                   </div>
                   {spacePages.length === 0 ? (
-                    <div className="tree-row muted">Leer</div>
+                    <div
+                      className={"tree-row muted" + (dropTarget === "space:" + sp.id ? " drop-target" : "")}
+                      onDragOver={(e) => {
+                        if (!dragId) return;
+                        e.preventDefault();
+                        setDropTarget("space:" + sp.id);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        dropOnSpace(sp.id);
+                      }}
+                    >
+                      Leer
+                    </div>
                   ) : (
                     <PageTree
                       pages={spacePages}
@@ -134,6 +211,7 @@ export default function Sidebar(props: Props) {
                       onSelect={onSelect}
                       onCreateChild={onCreateChild}
                       onDelete={onDelete}
+                      dnd={dnd}
                     />
                   )}
                 </div>
@@ -141,7 +219,19 @@ export default function Sidebar(props: Props) {
             })}
 
             <div className="sidebar-section">
-              <div className="sidebar-section-title">
+              <div
+                className={"sidebar-section-title" + (dropTarget === "root" ? " drop-target" : "")}
+                onDragOver={(e) => {
+                  if (!dragId) return;
+                  e.preventDefault();
+                  setDropTarget("root");
+                }}
+                onDragLeave={() => setDropTarget((t) => (t === "root" ? null : t))}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  dropOnSpace(null);
+                }}
+              >
                 Seiten
                 <span className="tree-actions" style={{ display: "flex", gap: 8 }}>
                   <button className="text-btn" title="Neuer Space" onClick={onCreateSpace}>
@@ -153,7 +243,20 @@ export default function Sidebar(props: Props) {
                 </span>
               </div>
               {ungrouped.length === 0 ? (
-                <div className="tree-row muted">Noch keine Seiten</div>
+                <div
+                  className={"tree-row muted" + (dropTarget === "root" ? " drop-target" : "")}
+                  onDragOver={(e) => {
+                    if (!dragId) return;
+                    e.preventDefault();
+                    setDropTarget("root");
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    dropOnSpace(null);
+                  }}
+                >
+                  Noch keine Seiten
+                </div>
               ) : (
                 <PageTree
                   pages={ungrouped}
@@ -164,6 +267,7 @@ export default function Sidebar(props: Props) {
                   onSelect={onSelect}
                   onCreateChild={onCreateChild}
                   onDelete={onDelete}
+                  dnd={dnd}
                 />
               )}
             </div>

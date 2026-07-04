@@ -65,6 +65,13 @@ export default function Workspace() {
     await refreshPages();
   };
 
+  // Reparent / move a page via sidebar drag-and-drop. parentId null = top level,
+  // spaceId null = no space.
+  const movePage = async (id: string, parentId: string | null, spaceId: string | null) => {
+    await api.updatePage(id, { parentId, spaceId });
+    await refreshPages();
+  };
+
   const match = loc.pathname.match(/^\/page\/(.+)$/);
   const activeId = match ? match[1] : undefined;
 
@@ -85,6 +92,7 @@ export default function Workspace() {
         onCreateSpace={createSpace}
         onRenameSpace={renameSpace}
         onDeleteSpace={deleteSpace}
+        onMovePage={movePage}
         onNavigate={(to) => nav(to)}
         currentPath={loc.pathname}
       />
