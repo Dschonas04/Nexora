@@ -1,5 +1,16 @@
 import { PageMeta } from "../api/client";
 
+export interface TreeDnD {
+  dragId: string | null;
+  dropTarget: string | null;
+  onDragStartPage: (id: string) => void;
+  onDragEndPage: () => void;
+  onDragOverPage: (id: string) => void;
+  onDragLeavePage: (id: string) => void;
+  onDropPage: (page: PageMeta) => void;
+  canDropOnPage: (id: string) => boolean;
+}
+
 interface Props {
   pages: PageMeta[];
   parentId: string | null;
@@ -9,6 +20,7 @@ interface Props {
   onSelect: (id: string) => void;
   onCreateChild: (parentId: string) => void;
   onDelete: (id: string) => void;
+  dnd?: TreeDnD;
   depth?: number;
 }
 
@@ -21,6 +33,7 @@ export default function PageTree({
   onSelect,
   onCreateChild,
   onDelete,
+  dnd,
   depth = 0,
 }: Props) {
   const children = pages.filter((p) => (p.parentId ?? null) === parentId);
@@ -31,12 +44,41 @@ export default function PageTree({
       {children.map((p) => {
         const kids = pages.filter((c) => (c.parentId ?? null) === p.id);
         const isOpen = expanded.has(p.id);
+        const isDropTarget = dnd?.dropTarget === p.id;
+        const isDragging = dnd?.dragId === p.id;
         return (
           <div key={p.id}>
             <div
-              className={"tree-row" + (activeId === p.id ? " active" : "")}
+              className={
+                "tree-row" +
+                (activeId === p.id ? " active" : "") +
+                (isDropTarget ? " drop-target" : "") +
+                (isDragging ? " dragging" : "")
+              }
               style={{ paddingLeft: 6 + depth * 14 }}
               onClick={() => onSelect(p.id)}
+              draggable={!!dnd}
+              onDragStart={(e) => {
+                if (!dnd) return;
+                e.dataTransfer.setData("text/plain", p.id);
+                e.dataTransfer.effectAllowed = "move";
+                dnd.onDragStartPage(p.id);
+              }}
+              onDragEnd={() => dnd?.onDragEndPage()}
+              onDragOver={(e) => {
+                if (!dnd || !dnd.dragId || dnd.dragId === p.id) return;
+                if (!dnd.canDropOnPage(p.id)) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                dnd.onDragOverPage(p.id);
+              }}
+              onDragLeave={() => dnd?.onDragLeavePage(p.id)}
+              onDrop={(e) => {
+                if (!dnd) return;
+                e.preventDefault();
+                e.stopPropagation();
+                dnd.onDropPage(p);
+              }}
             >
               <span
                 className="tree-caret"
@@ -81,6 +123,7 @@ export default function PageTree({
                 onSelect={onSelect}
                 onCreateChild={onCreateChild}
                 onDelete={onDelete}
+                dnd={dnd}
                 depth={depth + 1}
               />
             )}

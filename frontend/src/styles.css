@@ -843,3 +843,16 @@ a {
 .local-node:hover text {
   fill: #2383e2;
 }
+.tree-row.drop-target,
+.sidebar-section-title.drop-target {
+  outline: 2px solid #2383e2;
+  outline-offset: -2px;
+  border-radius: var(--radius);
+  background: rgba(35, 131, 226, 0.08);
+}
+.tree-row.dragging {
+  opacity: 0.45;
+}
+.tree-row[draggable="true"] {
+  cursor: grab;
+}
