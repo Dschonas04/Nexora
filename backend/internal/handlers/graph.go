@@ -129,6 +129,22 @@ func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	// Manual page-to-page links (edited via the UI). Only edges between pages the
+	// user can already see are added.
+	if lrows, lerr := s.Pool.Query(r.Context(), `SELECT source_id, target_id FROM page_links`); lerr == nil {
+		defer lrows.Close()
+		for lrows.Next() {
+			var src, dst string
+			if lrows.Scan(&src, &dst) != nil {
+				continue
+			}
+			if _, okS := pages[src]; okS {
+				if _, okD := pages[dst]; okD {
+					addEdge(src, dst, "link")
+				}
+			}
+		}
+	}
 
 	writeJSON(w, http.StatusOK, g)
 }

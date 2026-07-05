@@ -145,6 +145,13 @@ export const api = {
     }),
   getPage: (id: string) => req<Page>(`/pages/${id}`),
   backlinks: (id: string) => req<PageMeta[]>(`/pages/${id}/backlinks`),
+
+  // Manual page-to-page links (edited via the UI, independent of [[wiki-links]])
+  listLinks: (id: string) => req<PageMeta[]>(`/pages/${id}/links`),
+  addLink: (id: string, targetId: string) =>
+    req<void>(`/pages/${id}/links`, { method: "POST", body: JSON.stringify({ targetId }) }),
+  removeLink: (id: string, targetId: string) =>
+    req<void>(`/pages/${id}/links/${targetId}`, { method: "DELETE" }),
   updatePage: (id: string, patch: PagePatch) =>
     req<Page>(`/pages/${id}`, { method: "PUT", body: JSON.stringify(patch) }),
   deletePage: (id: string) => req<void>(`/pages/${id}`, { method: "DELETE" }),
