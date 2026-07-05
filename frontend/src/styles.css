@@ -959,6 +959,9 @@ a {
   padding: 2px 4px 2px 10px;
   font-size: 13px;
 }
+.page-link-chip-text {
+  border-style: dashed;
+}
 .page-link-open {
   background: none;
   border: none;
@@ -966,6 +969,10 @@ a {
   cursor: pointer;
   font-size: 13px;
   padding: 0;
+}
+.page-link-open.muted {
+  color: var(--muted);
+  cursor: default;
 }
 .page-link-chip:hover .page-link-open {
   color: #2383e2;
