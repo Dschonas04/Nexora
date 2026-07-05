@@ -29,6 +29,8 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const [loading, setLoading] = useState(true);
   const [showVersions, setShowVersions] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [linkQuery, setLinkQuery] = useState("");
+  const [linkOpen, setLinkOpen] = useState(false);
   const saveTimer = useRef<number | undefined>(undefined);
   const editorRef = useRef<BlockNoteEditor | null>(null);
 
@@ -147,6 +149,14 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const linkCandidates = graph.nodes
     .filter((n) => n.id !== page.id && !links.some((l) => l.id === n.id))
     .sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+  const filteredCandidates = linkCandidates
+    .filter((n) => (n.title || "").toLowerCase().includes(linkQuery.toLowerCase()))
+    .slice(0, 8);
+  const pickLink = (targetId: string) => {
+    addLink(targetId);
+    setLinkQuery("");
+    setLinkOpen(false);
+  };
 
   return (
     <div className="page-layout">
@@ -211,6 +221,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
               onEditorReady={(e) => (editorRef.current = e)}
               linkResolver={resolveLink}
               onOpenLink={(pid) => nav(`/page/${pid}`)}
+              mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}
             />
             <Attachments pageId={page.id} canEdit={canEdit} />
             {(links.length > 0 || canEdit) && (
@@ -230,22 +241,37 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                     </span>
                   ))}
                   {canEdit && (
-                    <select
-                      className="page-link-add"
-                      value=""
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        e.target.value = "";
-                        addLink(v);
-                      }}
-                    >
-                      <option value="">+ Verknüpfung…</option>
-                      {linkCandidates.map((n) => (
-                        <option key={n.id} value={n.id}>
-                          {n.title || "Ohne Titel"}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="page-link-picker">
+                      <input
+                        className="page-link-search"
+                        placeholder="+ Seite suchen & verknüpfen…"
+                        value={linkQuery}
+                        onChange={(e) => {
+                          setLinkQuery(e.target.value);
+                          setLinkOpen(true);
+                        }}
+                        onFocus={() => setLinkOpen(true)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && filteredCandidates[0]) pickLink(filteredCandidates[0].id);
+                          if (e.key === "Escape") setLinkOpen(false);
+                        }}
+                        onBlur={() => setTimeout(() => setLinkOpen(false), 150)}
+                      />
+                      {linkOpen && filteredCandidates.length > 0 && (
+                        <div className="page-link-dropdown">
+                          {filteredCandidates.map((n) => (
+                            <button
+                              key={n.id}
+                              className="page-link-option"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => pickLink(n.id)}
+                            >
+                              {n.title || "Ohne Titel"}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
                 {links.length === 0 && (

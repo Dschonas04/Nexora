@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useCreateBlockNote } from "@blocknote/react";
+import { DefaultReactSuggestionItem, SuggestionMenuController, useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { locales } from "@blocknote/core";
@@ -32,6 +32,7 @@ export default function Editor({
   onEditorReady,
   linkResolver,
   onOpenLink,
+  mentionTargets,
 }: {
   initialContent: unknown;
   editable?: boolean;
@@ -41,6 +42,9 @@ export default function Editor({
   // wiki-link in the text opens that page.
   linkResolver?: (title: string) => string | null;
   onOpenLink?: (id: string) => void;
+  // Pages selectable via an "@" mention in running text. Picking one inserts a
+  // [[Title]] wiki-link, so it feeds the graph/backlinks like any other link.
+  mentionTargets?: { id: string; title: string }[];
 }) {
   // BlockNote rejects an empty array as initialContent — use undefined instead.
   const content =
@@ -51,9 +55,26 @@ export default function Editor({
   const editor = useCreateBlockNote({ initialContent: content, dictionary: locales.de });
   const wrapRef = useRef<HTMLDivElement>(null);
 
+  // Read the latest page list on each "@" trigger without recreating the editor.
+  const targetsRef = useRef(mentionTargets ?? []);
+  targetsRef.current = mentionTargets ?? [];
+
   useEffect(() => {
     onEditorReady?.(editor);
   }, [editor, onEditorReady]);
+
+  // Items shown in the "@" mention menu: filter pages by the typed query and,
+  // on selection, insert a [[Title]] wiki-link at the cursor.
+  const mentionItems = (query: string): DefaultReactSuggestionItem[] => {
+    const q = query.toLowerCase().trim();
+    return targetsRef.current
+      .filter((t) => (t.title || "").toLowerCase().includes(q))
+      .slice(0, 12)
+      .map((t) => ({
+        title: t.title || "Ohne Titel",
+        onItemClick: () => editor.insertInlineContent(`[[${t.title}]] `),
+      }));
+  };
 
   // Navigate when a [[wiki-link]] token is clicked. Runs in the capture phase
   // and stops propagation so BlockNote doesn't just place the caret there.
@@ -84,7 +105,14 @@ export default function Editor({
         editable={editable}
         theme="light"
         onChange={() => onChange?.(editor.document)}
-      />
+      >
+        {mentionTargets && (
+          <SuggestionMenuController
+            triggerCharacter="@"
+            getItems={async (query) => mentionItems(query)}
+          />
+        )}
+      </BlockNoteView>
     </div>
   );
 }

@@ -994,6 +994,54 @@ a {
   border-color: #2383e2;
   color: #2383e2;
 }
+.page-link-picker {
+  position: relative;
+  display: inline-block;
+}
+.page-link-search {
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text, #37352f);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  font-size: 13px;
+  min-width: 220px;
+}
+.page-link-search:focus {
+  outline: none;
+  border-style: solid;
+  border-color: #2383e2;
+}
+.page-link-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 240px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--bg, #fff);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  padding: 4px;
+}
+.page-link-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--text, #37352f);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.page-link-option:hover {
+  background: var(--bg-subtle, #f2f5fb);
+  color: #2383e2;
+}
 .page-links-hint {
   margin-top: 8px;
   font-size: 12px;
