@@ -24,6 +24,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const nav = useNavigate();
   const [page, setPage] = useState<Page | null>(null);
   const [backlinks, setBacklinks] = useState<PageMeta[]>([]);
+  const [links, setLinks] = useState<PageMeta[]>([]);
   const [graph, setGraph] = useState<Graph>({ nodes: [], edges: [] });
   const [loading, setLoading] = useState(true);
   const [showVersions, setShowVersions] = useState(false);
@@ -42,6 +43,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
       .catch(() => setPage(null))
       .finally(() => setLoading(false));
     api.backlinks(id).then(setBacklinks).catch(() => setBacklinks([]));
+    api.listLinks(id).then(setLinks).catch(() => setLinks([]));
     api.graph().then(setGraph).catch(() => setGraph({ nodes: [], edges: [] }));
     return () => window.clearTimeout(saveTimer.current);
   }, [id]);
@@ -124,6 +126,28 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     onMetaChange();
   };
 
+  // Manual links: refresh links, backlinks and the graph together so the local
+  // mini-graph and "linked from" list stay in sync after an edit.
+  const refreshLinks = () => {
+    if (!id) return;
+    api.listLinks(id).then(setLinks).catch(() => {});
+    api.backlinks(id).then(setBacklinks).catch(() => {});
+    api.graph().then(setGraph).catch(() => {});
+  };
+  const addLink = async (targetId: string) => {
+    if (!id || !targetId) return;
+    await api.addLink(id, targetId);
+    refreshLinks();
+  };
+  const removeLink = async (targetId: string) => {
+    if (!id) return;
+    await api.removeLink(id, targetId);
+    refreshLinks();
+  };
+  const linkCandidates = graph.nodes
+    .filter((n) => n.id !== page.id && !links.some((l) => l.id === n.id))
+    .sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+
   return (
     <div className="page-layout">
       <div className="page-main">
@@ -189,6 +213,48 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
               onOpenLink={(pid) => nav(`/page/${pid}`)}
             />
             <Attachments pageId={page.id} canEdit={canEdit} />
+            {(links.length > 0 || canEdit) && (
+              <div className="page-links">
+                <div className="page-links-title">Verknüpfungen</div>
+                <div className="page-links-list">
+                  {links.map((l) => (
+                    <span key={l.id} className="page-link-chip">
+                      <button className="page-link-open" onClick={() => nav(`/page/${l.id}`)}>
+                        {l.title || "Ohne Titel"}
+                      </button>
+                      {canEdit && (
+                        <span className="x" title="Verknüpfung entfernen" onClick={() => removeLink(l.id)}>
+                          ✕
+                        </span>
+                      )}
+                    </span>
+                  ))}
+                  {canEdit && (
+                    <select
+                      className="page-link-add"
+                      value=""
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        e.target.value = "";
+                        addLink(v);
+                      }}
+                    >
+                      <option value="">+ Verknüpfung…</option>
+                      {linkCandidates.map((n) => (
+                        <option key={n.id} value={n.id}>
+                          {n.title || "Ohne Titel"}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                {links.length === 0 && (
+                  <div className="page-links-hint">
+                    Noch keine manuellen Verknüpfungen. Wähle oben eine Seite, um sie zu verbinden.
+                  </div>
+                )}
+              </div>
+            )}
             {backlinks.length > 0 && (
               <div className="backlinks">
                 <div className="backlinks-title">

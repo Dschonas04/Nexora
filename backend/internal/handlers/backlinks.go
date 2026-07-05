@@ -55,6 +55,7 @@ func (s *Server) Backlinks(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	list := []models.PageMeta{}
+	seen := map[string]bool{}
 	for rows.Next() {
 		var p models.PageMeta
 		var content string
@@ -64,7 +65,38 @@ func (s *Server) Backlinks(w http.ResponseWriter, r *http.Request) {
 		for _, l := range wikiLinks(content) {
 			if l == target {
 				list = append(list, p)
+				seen[p.ID] = true
 				break
+			}
+		}
+	}
+
+	// Manual links pointing at this page (edited via the UI), respecting the
+	// requester's visibility. Deduped against the wiki-link backlinks above.
+	var mrows pgx.Rows
+	if s.isAdmin(r.Context(), uid) {
+		mrows, err = s.Pool.Query(r.Context(),
+			`SELECT p.id, p.parent_id, p.space_id, p.title, p.icon, p.updated_at
+			 FROM page_links pl JOIN pages p ON p.id = pl.source_id
+			 WHERE pl.target_id=$1 AND p.deleted_at IS NULL`, id)
+	} else {
+		mrows, err = s.Pool.Query(r.Context(),
+			`SELECT p.id, p.parent_id, p.space_id, p.title, p.icon, p.updated_at
+			 FROM page_links pl JOIN pages p ON p.id = pl.source_id
+			 WHERE pl.target_id=$1 AND p.deleted_at IS NULL AND (
+			   p.owner_id=$2 OR p.id IN (SELECT page_id FROM page_shares WHERE user_id=$2)
+			 )`, id, uid)
+	}
+	if err == nil {
+		defer mrows.Close()
+		for mrows.Next() {
+			var p models.PageMeta
+			if err := mrows.Scan(&p.ID, &p.ParentID, &p.SpaceID, &p.Title, &p.Icon, &p.UpdatedAt); err != nil {
+				continue
+			}
+			if !seen[p.ID] {
+				list = append(list, p)
+				seen[p.ID] = true
 			}
 		}
 	}

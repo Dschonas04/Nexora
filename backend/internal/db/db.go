@@ -125,6 +125,16 @@ CREATE TABLE IF NOT EXISTS page_shares (
 	PRIMARY KEY (page_id, user_id)
 );
 CREATE INDEX IF NOT EXISTS page_shares_user_idx ON page_shares(user_id);
+
+-- Manual page-to-page links, edited via the UI (independent of [[wiki-links]]
+-- written into the text). Feed the knowledge graph and backlinks like wiki-links.
+CREATE TABLE IF NOT EXISTS page_links (
+	source_id  uuid NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+	target_id  uuid NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+	created_at timestamptz NOT NULL DEFAULT now(),
+	PRIMARY KEY (source_id, target_id)
+);
+CREATE INDEX IF NOT EXISTS page_links_target_idx ON page_links(target_id);
 `
 
 // Migrate creates the schema if it does not yet exist (idempotent).
