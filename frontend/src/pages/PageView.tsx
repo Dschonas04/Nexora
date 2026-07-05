@@ -31,6 +31,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const [showShare, setShowShare] = useState(false);
   const [linkQuery, setLinkQuery] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
+  const [editorKey, setEditorKey] = useState(0);
   const saveTimer = useRef<number | undefined>(undefined);
   const editorRef = useRef<BlockNoteEditor | null>(null);
 
@@ -146,6 +147,50 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     await api.removeLink(id, targetId);
     refreshLinks();
   };
+
+  // Outgoing links embedded in the page text via [[Title]] (also what an
+  // @-mention inserts). Parsed from the content, deduped case-insensitively.
+  const textLinkTitles = (() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    const re = /\[\[([^[\]]+)\]\]/g;
+    let m: RegExpExecArray | null;
+    const s = JSON.stringify((page.content as unknown) ?? []);
+    while ((m = re.exec(s))) {
+      const raw = m[1].trim();
+      const k = raw.toLowerCase();
+      if (raw && !seen.has(k)) {
+        seen.add(k);
+        out.push(raw);
+      }
+    }
+    return out;
+  })();
+
+  // Remove a [[Title]] link from the text: strip the brackets everywhere the
+  // title occurs (keeping the word), save, and remount the editor to reflect it.
+  const removeTextLink = async (title: string) => {
+    if (!id) return;
+    const esc = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(`\\[\\[\\s*${esc}\\s*\\]\\]`, "gi");
+    const strip = (v: unknown): unknown => {
+      if (Array.isArray(v)) return v.map(strip);
+      if (v && typeof v === "object") {
+        const o = { ...(v as Record<string, unknown>) };
+        if (typeof o.text === "string") {
+          o.text = o.text.replace(re, (mm) => mm.replace(/^\[\[\s*/, "").replace(/\s*\]\]$/, ""));
+        }
+        for (const key of Object.keys(o)) if (key !== "text") o[key] = strip(o[key]);
+        return o;
+      }
+      return v;
+    };
+    const newContent = strip(page.content);
+    await api.updatePage(id, { content: newContent });
+    setPage({ ...page, content: newContent });
+    setEditorKey((k) => k + 1);
+    refreshLinks();
+  };
   const linkCandidates = graph.nodes
     .filter((n) => n.id !== page.id && !links.some((l) => l.id === n.id))
     .sort((a, b) => (a.title || "").localeCompare(b.title || ""));
@@ -214,7 +259,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
               )}
             </div>
             <Editor
-              key={page.id}
+              key={`${page.id}:${editorKey}`}
               initialContent={page.content}
               editable={canEdit}
               onChange={onContent}
@@ -224,7 +269,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
               mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}
             />
             <Attachments pageId={page.id} canEdit={canEdit} />
-            {(links.length > 0 || canEdit) && (
+            {(links.length > 0 || textLinkTitles.length > 0 || canEdit) && (
               <div className="page-links">
                 <div className="page-links-title">Verknüpfungen</div>
                 <div className="page-links-list">
@@ -240,6 +285,33 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                       )}
                     </span>
                   ))}
+                  {textLinkTitles.map((t) => {
+                    const tid = resolveLink(t);
+                    return (
+                      <span
+                        key={"t:" + t}
+                        className="page-link-chip page-link-chip-text"
+                        title="Aus dem Text ([[…]] / @-Erwähnung)"
+                      >
+                        {tid ? (
+                          <button className="page-link-open" onClick={() => nav(`/page/${tid}`)}>
+                            {t}
+                          </button>
+                        ) : (
+                          <span className="page-link-open muted">{t}</span>
+                        )}
+                        {canEdit && (
+                          <span
+                            className="x"
+                            title="Verknüpfung aus dem Text entfernen"
+                            onClick={() => removeTextLink(t)}
+                          >
+                            ✕
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })}
                   {canEdit && (
                     <div className="page-link-picker">
                       <input
@@ -274,9 +346,9 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                     </div>
                   )}
                 </div>
-                {links.length === 0 && (
+                {links.length === 0 && textLinkTitles.length === 0 && (
                   <div className="page-links-hint">
-                    Noch keine manuellen Verknüpfungen. Wähle oben eine Seite, um sie zu verbinden.
+                    Noch keine Verknüpfungen. Wähle oben eine Seite, oder tippe @ bzw. [[…]] im Text.
                   </div>
                 )}
               </div>
