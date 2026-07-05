@@ -626,6 +626,119 @@ a {
   gap: 10px;
   padding: 4px 0;
 }
+.attachment-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  flex: 0 0 auto;
+  background: var(--bg-subtle, #f7f7f5);
+}
+.attachment-thumb-file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: default;
+}
+.attachment-name {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 14px;
+  color: #2383e2;
+  cursor: pointer;
+  text-align: left;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attachment-name:hover {
+  text-decoration: underline;
+}
+
+/* Quick view (attachment preview lightbox) */
+.qv-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 15, 15, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  padding: 24px;
+}
+.qv-box {
+  background: var(--bg, #fff);
+  border-radius: 10px;
+  width: 900px;
+  max-width: 95vw;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+.qv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.qv-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qv-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.qv-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1113;
+  min-height: 200px;
+}
+.qv-image {
+  max-width: 100%;
+  max-height: 82vh;
+  display: block;
+}
+.qv-frame {
+  width: 100%;
+  height: 82vh;
+  border: none;
+  background: #fff;
+}
+.qv-text {
+  align-self: stretch;
+  margin: 0;
+  padding: 16px;
+  width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+  background: var(--bg, #fff);
+  color: var(--text, #37352f);
+}
+.qv-none {
+  padding: 40px;
+  color: var(--muted);
+}
 
 /* Modal (share dialog) */
 .modal-backdrop {
