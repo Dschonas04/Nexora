@@ -24,13 +24,27 @@ Please include a description, steps to reproduce, and potential impact.
 - [ ] Set a strong `POSTGRES_PASSWORD` (≥ 24 random characters)
 - [ ] Set a strong `JWT_SECRET` (≥ 32 random characters): `openssl rand -hex 32`
 - [ ] Never commit `.env` to version control
+- [ ] Confirm `.env` is actually being read
+
+> **A missing `.env` does not stop the stack.** `docker-compose.yml` declares
+> fallbacks (`${POSTGRES_PASSWORD:-nexora}`, `${JWT_SECRET:-change-me-in-production}`),
+> so an instance without the file starts happily with a known database password and a
+> publicly documented signing secret — and logs no warning about it. Anyone holding
+> that secret can mint a session token for any account. Verify after deploying:
+>
+> ```bash
+> docker compose exec backend printenv JWT_SECRET
+> ```
 
 ### Recommended
 
 - [ ] Terminate TLS in front of Nexora (reverse proxy with Let's Encrypt)
 - [ ] Bind the exposed port to localhost (`127.0.0.1:3000:80`) if not public
 - [ ] Regularly rebuild with fresh base images: `docker compose build --pull`
-- [ ] Back up the PostgreSQL volume (`nexora_db`) regularly
+- [ ] Back up **both** volumes: `nexora_db` (pages, users, versions) and
+      `nexora_files` (attachments). The database alone is not a complete backup —
+      uploaded files live outside it, and restoring only `nexora_db` leaves every
+      attachment row pointing at a file that is gone
 
 ## Notes
 
