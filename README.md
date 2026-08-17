@@ -223,28 +223,9 @@ frontend/                      React SPA (Vite + TypeScript)
                                VersionPanel, ShareDialog, LocalGraph
   src/pages                    Login, Register, Workspace, PageView,
                                PublicPage, TrashView, GraphView, AdminView
-mcp/                           MCP server, exposes Nexora to AI agents
 docker-compose.yml             db + backend + frontend
 ```
 
-## MCP Server
-
-`mcp/` ships a Model Context Protocol server so an agent can read and write the
-knowledge base. It authenticates as a normal user over the HTTP API and honours the
-same permissions.
-
-| Tool                 | Purpose                        |
-| -------------------- | ------------------------------ |
-| `nexora_search`      | full-text search               |
-| `nexora_list_spaces` | list spaces                    |
-| `nexora_list_pages`  | list pages                     |
-| `nexora_get_page`    | read one page                  |
-| `nexora_create_page` | create a page                  |
-| `nexora_update_page` | update title or content        |
-| `nexora_backlinks`   | what links to a page           |
-
-Configure it with `NEXORA_URL`, `NEXORA_EMAIL` and `NEXORA_PASSWORD`. See
-[mcp/README.md](mcp/README.md).
 
 ## Local Development
 
