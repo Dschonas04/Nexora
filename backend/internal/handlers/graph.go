@@ -1,3 +1,4 @@
+// The knowledge graph, plus the wiki-link parsing that backlinks.go also uses.
 package handlers
 
 import (
@@ -53,9 +54,15 @@ func wikiLinks(content string) []string {
 	return out
 }
 
-// Graph returns the knowledge graph the user can see: one node per accessible
-// page, plus edges for parent-child nesting and for explicit [[Page title]]
-// wiki-links found in a page's content.
+// Graph builds the whole visible workspace as nodes and edges.
+//
+// Everything is assembled in memory: the pages are read once, then edges are
+// derived from three sources. That keeps the permission rule in one place,
+// because a page missing from the map simply cannot gain an edge, so no link
+// can point at something the caller may not see.
+//
+// The response grows with the size of the workspace and is not paginated, which
+// is the practical limit of this endpoint.
 func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 
@@ -99,6 +106,8 @@ func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 		titles[strings.ToLower(strings.TrimSpace(title))] = id
 	}
 
+	// addEdge deduplicates by direction, so two pages linking to each other still
+	// produce two distinct edges while a repeated link produces one.
 	seen := map[string]bool{}
 	addEdge := func(src, dst, kind string) {
 		if src == dst {
@@ -112,8 +121,9 @@ func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 		g.Edges = append(g.Edges, models.GraphEdge{Source: src, Target: dst, Kind: kind})
 	}
 
-	// Hierarchy edges first so they take precedence over a wiki-link between the
-	// same two pages.
+	// Hierarchy first: because addEdge keeps whichever edge arrives first, a
+	// parent-child pair that also links to each other stays drawn as nesting,
+	// which is the stronger relationship.
 	for id, n := range pages {
 		if n.parent != nil {
 			if _, ok := pages[*n.parent]; ok {
@@ -121,7 +131,9 @@ func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	// Explicit [[wiki-link]] edges.
+	// Wiki-links, resolved through the title map. A [[link]] to a title that does
+	// not exist, or to a page outside the caller's view, is dropped. If two pages
+	// share a title, the last one read wins.
 	for id, n := range pages {
 		for _, title := range n.links {
 			if otherID, ok := titles[title]; ok {
@@ -129,8 +141,9 @@ func (s *Server) Graph(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	// Manual page-to-page links (edited via the UI). Only edges between pages the
-	// user can already see are added.
+	// Explicit links. The table is read whole, without a permission clause, and
+	// filtered against the pages map instead: an edge is only kept when both ends
+	// are already visible nodes.
 	if lrows, lerr := s.Pool.Query(r.Context(), `SELECT source_id, target_id FROM page_links`); lerr == nil {
 		defer lrows.Close()
 		for lrows.Next() {

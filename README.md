@@ -1,6 +1,6 @@
 # Nexora
 
-A minimal, self-hosted knowledge base — think Notion / Outline, but small and yours.
+A minimal, self-hosted knowledge base: think Notion or Outline, but small and yours.
 
 Nested pages in a block editor, spaces, per-user sharing with roles, version history,
 attachments, a trash can, backlinks and a knowledge graph. **Go** backend,
@@ -8,44 +8,44 @@ attachments, a trash can, backlinks and a knowledge graph. **Go** backend,
 
 ## Stack
 
-| Layer    | Tech                                                        |
-| -------- | ----------------------------------------------------------- |
-| Backend  | Go 1.22 · chi router · pgx · JWT (httpOnly cookie) · bcrypt |
-| Frontend | React 18 · Vite · TypeScript · BlockNote editor             |
-| Database | PostgreSQL 16                                               |
-| Delivery | Docker Compose (nginx serves the SPA and proxies `/api`)    |
+| Layer    | Tech                                                     |
+| -------- | -------------------------------------------------------- |
+| Backend  | Go 1.22, chi router, pgx, JWT (httpOnly cookie), bcrypt  |
+| Frontend | React 18, Vite, TypeScript, BlockNote editor             |
+| Database | PostgreSQL 16                                            |
+| Delivery | Docker Compose (nginx serves the SPA and proxies `/api`) |
 
 ## Features
 
 ### Writing
 
-- **Nested pages** — infinite hierarchy in a collapsible sidebar, drag to reorder
-- **Block editor** — slash menu and markdown shortcuts via BlockNote
-- **Autosave** — title and content persist as you type
-- **Markdown export** — download the current page as `.md`
-- **Version history** — a snapshot is written before every content change; browse
+- **Nested pages**: infinite hierarchy in a collapsible sidebar, drag to reorder
+- **Block editor**: slash menu and markdown shortcuts via BlockNote
+- **Autosave**: title and content persist as you type
+- **Markdown export**: download the current page as `.md`
+- **Version history**: a snapshot is written before every content change; browse
   and restore any earlier revision
-- **Attachments** — upload files per page (25 MiB per file), with inline preview
+- **Attachments**: upload files per page (25 MiB per file), with inline preview
   for images, PDFs and plain text
 
 ### Organising
 
-- **Spaces** — group pages into separate areas; a page may belong to one space
-- **Tags** — colored, per-user, attach any number to a page
-- **Favorites** — quick access section in the sidebar
-- **Trash** — deleting moves a page to the trash; restore it or purge permanently
-- **Search** — full text over titles and content
-- **Backlinks and links** — link pages explicitly or with `@` mentions in the text,
+- **Spaces**: group pages into separate areas; a page may belong to one space
+- **Tags**: colored, per-user, attach any number to a page
+- **Favorites**: quick access section in the sidebar
+- **Trash**: deleting moves a page to the trash; restore it or purge permanently
+- **Search**: full text over titles and content
+- **Backlinks and links**: link pages explicitly or with `@` mentions in the text,
   and see what points back at the current page
-- **Knowledge graph** — a global graph of all pages plus a local view around one page
+- **Knowledge graph**: a global graph of all pages plus a local view around one page
 
 ### Access
 
-- **Multi-user** — email and password, JWT session cookie, bcrypt-hashed passwords
-- **Roles** — the very first account created becomes `admin`; every later account is
+- **Multi-user**: email and password, JWT session cookie, bcrypt-hashed passwords
+- **Roles**: the very first account created becomes `admin`; every later account is
   `user`. Admins manage accounts under the admin view
-- **Per-user sharing** — share a page with named accounts, each as `read` or `write`
-- **Public links** — publish a single page read-only behind a random token
+- **Per-user sharing**: share a page with named accounts, each as `read` or `write`
+- **Public links**: publish a single page read-only behind a random token
 
 ## Quick Start
 
@@ -56,7 +56,7 @@ docker compose up -d --build
 ```
 
 Open **http://localhost:3000** (or whichever `PORT` you set) and create the first
-account — it becomes the workspace admin.
+account, which becomes the workspace admin.
 
 ## Configuration
 
@@ -75,7 +75,7 @@ Two notes worth knowing before the first start:
 - **PostgreSQL fixes the password on first launch.** It is written into the data
   directory at initialisation. Changing `POSTGRES_PASSWORD` afterwards locks the
   backend out unless you also change it inside the running database
-  (`ALTER USER nexora WITH PASSWORD …`) or discard the volume.
+  (`ALTER USER nexora WITH PASSWORD ...`) or discard the volume.
 - **A missing `.env` does not stop the stack.** Compose falls back to the defaults
   above, so you get a running instance with the password `nexora` and a publicly
   known signing secret, without any warning.
@@ -230,13 +230,13 @@ docker-compose.yml             db + backend + frontend
 ## Local Development
 
 ```bash
-# backend — needs a local PostgreSQL, or point DATABASE_URL at the compose db
+# backend: needs a local PostgreSQL, or point DATABASE_URL at the compose db
 cd backend && go run .
 
-# frontend — proxies /api to localhost:8080
+# frontend: proxies /api to localhost:8080
 cd frontend && npm install && npm run dev
 ```
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE). Copyright 2026 Jonas Groll.
+Apache License 2.0, see [LICENSE](LICENSE). Copyright 2026 Jonas Groll.

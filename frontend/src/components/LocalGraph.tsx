@@ -1,3 +1,5 @@
+// The small graph shown under a page. It reuses the workspace graph the page
+// already fetched, so it costs no extra request.
 import { Graph } from "../api/client";
 
 interface Props {
@@ -13,7 +15,11 @@ export default function LocalGraph({ graph, pageId, onOpen }: Props) {
   const title: Record<string, string> = {};
   for (const n of graph.nodes) title[n.id] = n.title || "Ohne Titel";
 
-  // Collect neighbours and remember the edge kind for styling.
+  // Edges are undirected here: a page that links here and one linked from here
+  // are both neighbours, because for "what is related to this page" the
+  // direction does not matter. The kind of the first edge found decides the
+  // styling, and nodes outside the title map are skipped because they are
+  // outside what this user may see.
   const neighbours: { id: string; kind: string }[] = [];
   const seen = new Set<string>();
   for (const e of graph.edges) {
@@ -26,11 +32,14 @@ export default function LocalGraph({ graph, pageId, onOpen }: Props) {
     }
   }
 
+  // An isolated page shows nothing at all rather than a lone dot.
   if (neighbours.length === 0) return null;
 
   const W = 520;
   const cx = W / 2;
   const cy = 150;
+  // The radius grows with the number of neighbours so labels do not collide,
+  // but is capped so the block stays a sidebar-sized figure.
   const R = Math.min(120, 40 + neighbours.length * 12);
   const H = cy + R + 40;
 

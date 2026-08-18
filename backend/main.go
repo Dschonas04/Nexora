@@ -1,3 +1,5 @@
+// Command nexora is the API server: it opens the database, applies the schema
+// migration and serves the JSON API under /api.
 package main
 
 import (
@@ -15,6 +17,10 @@ import (
 	"nexora/internal/middleware"
 )
 
+// env reads an environment variable and falls back to def when it is unset or
+// empty. Every setting has a working default so the binary starts without any
+// configuration, which is convenient for local runs but means a missing .env in
+// production silently uses the weak defaults below.
 func env(key, def string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
@@ -26,8 +32,10 @@ func main() {
 	dbURL := env("DATABASE_URL", "postgres://nexora:nexora@localhost:5432/nexora?sslmode=disable")
 	secret := env("JWT_SECRET", "change-me-in-production")
 	port := env("PORT", "8080")
-	dataDir := env("NEXORA_DATA_DIR", "/data/attachments")
+	dataDir := env("NEXORA_DATA_DIR", "/data/attachments") // attachments live on disk, not in the database
 
+	// Startup budget for connecting and migrating. The pool itself outlives this
+	// context, only the setup below is bounded by it.
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -37,6 +45,8 @@ func main() {
 	}
 	defer pool.Close()
 
+	// Migrate is idempotent and runs on every boot, so a fresh volume and an
+	// existing one end up at the same schema.
 	if err := db.Migrate(ctx, pool); err != nil {
 		log.Fatalf("db migrate: %v", err)
 	}
@@ -45,33 +55,37 @@ func main() {
 	h := &handlers.Server{Pool: pool, Secret: []byte(secret), DataDir: dataDir}
 
 	r := chi.NewRouter()
-	r.Use(chimw.RealIP)
+	r.Use(chimw.RealIP) // trust X-Forwarded-For, the SPA is served through nginx
 	r.Use(chimw.Logger)
-	r.Use(chimw.Recoverer)
+	r.Use(chimw.Recoverer) // a panicking handler must not take the process down
 	r.Use(chimw.Timeout(30 * time.Second))
 
 	r.Route("/api", func(r chi.Router) {
-		// Public
+		// Public: no session required. Registration is open, and the very first
+		// account created becomes the workspace admin.
 		r.Post("/auth/register", h.Register)
 		r.Post("/auth/login", h.Login)
 		r.Post("/auth/logout", h.Logout)
 		r.Get("/public/{token}", h.GetPublicPage)
 
-		// Authenticated
+		// Everything below requires a valid session cookie. Ownership and sharing
+		// are checked per request inside the handlers, not here.
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Auth([]byte(secret)))
 
 			r.Get("/auth/me", h.Me)
 
+			// The static /pages/... routes must be registered before /pages/{id},
+			// otherwise chi would match "shared" and "trash" as page ids.
 			r.Get("/pages", h.ListPages)
 			r.Get("/pages/shared", h.ListSharedPages)
 			r.Get("/pages/trash", h.ListTrash)
 			r.Post("/pages", h.CreatePage)
 			r.Get("/pages/{id}", h.GetPage)
 			r.Put("/pages/{id}", h.UpdatePage)
-			r.Delete("/pages/{id}", h.DeletePage)
+			r.Delete("/pages/{id}", h.DeletePage) // moves to the trash
 			r.Post("/pages/{id}/restore", h.RestorePage)
-			r.Delete("/pages/{id}/purge", h.PurgePage)
+			r.Delete("/pages/{id}/purge", h.PurgePage) // deletes for good, cascades to subpages
 			r.Post("/pages/{id}/favorite", h.AddFavorite)
 			r.Delete("/pages/{id}/favorite", h.RemoveFavorite)
 			r.Post("/pages/{id}/share", h.SharePage)
@@ -90,7 +104,8 @@ func main() {
 			r.Get("/pages/{id}/attachments/{attId}", h.DownloadAttachment)
 			r.Delete("/pages/{id}/attachments/{attId}", h.DeleteAttachment)
 
-			// Per-user sharing + roles
+			// Per-user sharing plus account administration. The /users routes are
+			// admin-only, which the handlers enforce.
 			r.Get("/pages/{id}/shares", h.ListShares)
 			r.Post("/pages/{id}/shares", h.AddShare)
 			r.Delete("/pages/{id}/shares/{userId}", h.RemoveShare)
@@ -124,6 +139,8 @@ func main() {
 		})
 	})
 
+	// Liveness probe, deliberately outside /api so it needs no session. It pings
+	// the database because a backend without one cannot serve anything useful.
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if err := pool.Ping(r.Context()); err != nil {
 			http.Error(w, "db down", http.StatusServiceUnavailable)
@@ -135,7 +152,7 @@ func main() {
 	srv := &http.Server{
 		Addr:              ":" + port,
 		Handler:           r,
-		ReadHeaderTimeout: 10 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second, // guards against slow-header clients
 	}
 	log.Printf("nexora backend listening on :%s", port)
 	if err := srv.ListenAndServe(); err != nil {

@@ -1,3 +1,5 @@
+// Admin-only account management. Self-registration lives in auth.go; this is
+// the path an admin uses to add and remove accounts from the admin view.
 package handlers
 
 import (
@@ -20,7 +22,9 @@ type newUserReq struct {
 	Role     string `json:"role"`
 }
 
-// CreateUser lets an admin add a new account directly (no self-registration).
+// CreateUser lets an admin add an account directly, including its role. The
+// validation mirrors Register, minus the first-account-becomes-admin rule: by
+// the time an admin uses this, one already exists.
 func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {
@@ -75,7 +79,12 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, u)
 }
 
-// DeleteUser removes an account (admin only, cannot delete yourself).
+// DeleteUser removes an account. Everything owned by it goes too, through the
+// cascades on pages, tags, spaces and attachment rows, so this is not a soft
+// delete and there is no trash to recover from.
+//
+// An admin cannot delete themselves, which also keeps the last admin from
+// disappearing by accident.
 func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {

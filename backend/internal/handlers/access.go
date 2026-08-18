@@ -1,3 +1,6 @@
+// Access control lives here. Both helpers hit the database on every call rather
+// than caching, so a share revoked in one tab takes effect in the next request
+// made from another.
 package handlers
 
 import "context"

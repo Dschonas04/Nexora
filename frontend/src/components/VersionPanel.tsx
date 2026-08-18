@@ -1,3 +1,5 @@
+// Side panel listing a page's history. The list carries metadata only; the
+// content of a version is fetched when one is restored.
 import { useEffect, useState } from "react";
 import { Page, PageVersion, api } from "../api/client";
 
@@ -16,6 +18,8 @@ export default function VersionPanel({ pageId, canEdit, onRestored, onClose }: P
     api.listVersions(pageId).then(setVersions).catch(() => setVersions([]));
   }, [pageId]);
 
+  // Restoring is safe because the backend snapshots the current state first,
+  // which the confirmation says so nobody fears losing their work.
   const restore = async (versionId: string) => {
     if (!confirm("Diese Version wiederherstellen? Der aktuelle Stand wird zuerst im Verlauf gespeichert.")) return;
     setBusy(versionId);
@@ -47,7 +51,8 @@ export default function VersionPanel({ pageId, canEdit, onRestored, onClose }: P
                 {fmt(v.createdAt)} · {v.authorName}
               </div>
             </div>
-            {canEdit && (
+            {/* Read-only viewers see the history but cannot roll the page back. */}
+        {canEdit && (
               <button className="btn" disabled={busy === v.id} onClick={() => restore(v.id)}>
                 {busy === v.id ? "…" : "Wiederherstellen"}
               </button>

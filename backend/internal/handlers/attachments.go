@@ -1,3 +1,6 @@
+// File attachments. Metadata lives in the database, the bytes live on disk in
+// DataDir, one file per attachment id. That split means a backup has to cover
+// both, otherwise rows point at files that are gone.
 package handlers
 
 import (
@@ -15,7 +18,8 @@ import (
 
 const maxUploadBytes = 25 << 20 // 25 MiB, mirrors the nginx client_max_body_size
 
-// ListAttachments returns the files attached to a page.
+// ListAttachments returns the metadata of the files on a page. Read access to
+// the page is enough, matching what a reader sees in the editor.
 func (s *Server) ListAttachments(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -42,7 +46,12 @@ func (s *Server) ListAttachments(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, list)
 }
 
-// UploadAttachment stores an uploaded file on disk and records its metadata.
+// UploadAttachment stores an uploaded file. The row is inserted first to obtain
+// an id, which then names the file on disk; every failure after that point rolls
+// the row back so no orphan metadata survives.
+//
+// The file is named by its id, never by the name the client sent. That keeps a
+// crafted filename such as ../../etc/passwd from escaping DataDir.
 func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -51,6 +60,8 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Cap the body before parsing it, otherwise a large upload would be buffered
+	// to temporary storage before anyone checks its size.
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes)
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -59,6 +70,8 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	// Keep the base name for display only. Any directory part is dropped here,
+	// and the stored file is named by its id anyway.
 	filename := filepath.Base(header.Filename)
 	if filename == "" || filename == "." || filename == "/" {
 		filename = "file"
@@ -96,7 +109,8 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "write failed")
 		return
 	}
-	// header.Size can be unreliable; persist the real byte count.
+	// header.Size comes from the client and can be wrong or absent; persist the
+	// number of bytes actually written instead.
 	s.Pool.Exec(r.Context(), `UPDATE attachments SET size=$2 WHERE id=$1`, attID, written)
 
 	writeJSON(w, http.StatusCreated, models.Attachment{
@@ -104,7 +118,12 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// DownloadAttachment streams a stored file back to the client.
+// DownloadAttachment streams a file back. Access is decided by the page, not by
+// the attachment, so revoking a share also cuts off its files.
+//
+// Content-Disposition is inline so images and PDFs preview in the browser. The
+// mime type is the one the uploader claimed, which is why a page should only be
+// shared with people who are trusted not to upload hostile content.
 func (s *Server) DownloadAttachment(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -131,7 +150,9 @@ func (s *Server) DownloadAttachment(w http.ResponseWriter, r *http.Request) {
 	io.Copy(w, f)
 }
 
-// DeleteAttachment removes an attachment (metadata + file on disk).
+// DeleteAttachment removes the row and then the file. In that order, because a
+// leftover file on disk is harmless while a row without a file shows up in the
+// UI as a download that always fails.
 func (s *Server) DeleteAttachment(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")

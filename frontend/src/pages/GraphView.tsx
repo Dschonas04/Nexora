@@ -1,3 +1,12 @@
+// The full-workspace knowledge graph: a live force simulation drawn as SVG,
+// pannable, zoomable and draggable.
+//
+// The simulation runs entirely outside React. Positions live in refs and are
+// integrated in a requestAnimationFrame loop; React is only nudged to repaint,
+// because putting hundreds of coordinates into state would re-render the whole
+// tree sixty times a second. Everything derived from the graph is memoised on
+// the set of page ids, so the layout is rebuilt when pages appear or disappear
+// but not when one of them is merely renamed.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Graph, GraphNode, api } from "../api/client";
@@ -295,12 +304,19 @@ export default function GraphView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey]);
 
+  // Screen coordinates to simulation coordinates, undoing the current pan and
+  // zoom. Needed by every pointer handler, since the physics knows nothing about
+  // the viewport.
   const toGraph = (clientX: number, clientY: number) => {
     const rect = svgRef.current!.getBoundingClientRect();
     const v = viewRef.current;
     return { x: (clientX - rect.left - v.x) / v.scale, y: (clientY - rect.top - v.y) / v.scale };
   };
 
+  // A press either grabs a node or starts a pan, decided by whether it landed on
+  // one. The pointer is captured so a fast drag that leaves the canvas keeps
+  // being tracked. The grab offset is remembered so the node does not jump to
+  // centre itself under the cursor.
   const onPointerDown = (e: React.PointerEvent) => {
     const hit = (e.target as Element).closest?.("[data-node]") as Element | null;
     svgRef.current?.setPointerCapture(e.pointerId);
@@ -335,6 +351,9 @@ export default function GraphView() {
     }
   };
 
+  // A dragged node is pinned to the cursor and the simulation is reheated, so
+  // its neighbours follow along instead of freezing in place. The moved flag
+  // separates a drag from a click; see onPointerUp.
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d.kind) return;
@@ -350,6 +369,8 @@ export default function GraphView() {
     }
   };
 
+  // Release. A press that never exceeded the threshold counts as a click and
+  // opens the page, so dragging a node does not navigate away by accident.
   const onPointerUp = (e: React.PointerEvent) => {
     const d = drag.current;
     svgRef.current?.releasePointerCapture(e.pointerId);
@@ -359,6 +380,10 @@ export default function GraphView() {
     drag.current.kind = null;
   };
 
+  // Zoom toward the pointer rather than the canvas centre: the point under the
+  // cursor has to stay put, which is what the coordinate correction does. The
+  // scale is clamped so the graph can neither vanish nor fill the screen with a
+  // single node.
   const onWheel = (e: React.WheelEvent) => {
     const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
     const rect = svgRef.current!.getBoundingClientRect();

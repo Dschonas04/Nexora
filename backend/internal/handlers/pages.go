@@ -1,3 +1,6 @@
+// Page CRUD plus the trash, favorites and public links. The tree lives in one
+// table with a self-referencing parent_id, so anything that touches a whole
+// subtree does it with a recursive CTE rather than a loop in Go.
 package handlers
 
 import (
@@ -10,7 +13,10 @@ import (
 	"nexora/internal/models"
 )
 
-// ListPages returns the pages the user owns (the sidebar tree).
+// ListPages returns the pages the user owns, flat. The frontend builds the tree
+// from parent_id, which keeps this a single query no matter how deep the
+// nesting goes. Pages shared with the user are not included; see
+// ListSharedPages.
 func (s *Server) ListPages(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	rows, err := s.Pool.Query(r.Context(),
@@ -22,6 +28,8 @@ func (s *Server) ListPages(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
+	// A row that fails to scan is skipped rather than failing the whole request,
+	// so one damaged page cannot make the sidebar unusable.
 	list := []models.PageMeta{}
 	for rows.Next() {
 		var p models.PageMeta
@@ -63,6 +71,8 @@ type createPageReq struct {
 	SpaceID  *string `json:"spaceId"`
 }
 
+// CreatePage adds an empty page. A decode error is tolerated because an empty
+// body is a valid request: it creates an untitled page at the root.
 func (s *Server) CreatePage(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var req createPageReq
@@ -96,6 +106,8 @@ func (s *Server) CreatePage(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, page)
 }
 
+// GetPage returns one page in full. No read access and a missing page both
+// answer 404, so the response does not reveal that a page exists.
 func (s *Server) GetPage(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -111,6 +123,9 @@ func (s *Server) GetPage(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, page)
 }
 
+// updatePageReq is a patch, not a full replacement: an omitted field keeps its
+// current value. ParentID and SpaceID are raw JSON because they have three
+// states, and *string could not tell "field absent" from "field set to null".
 type updatePageReq struct {
 	Title    *string         `json:"title"`
 	Content  json.RawMessage `json:"content"`
@@ -119,6 +134,8 @@ type updatePageReq struct {
 	SpaceID  json.RawMessage `json:"spaceId"`  // absent = unchanged, null = no space
 }
 
+// UpdatePage applies a patch to a page. The frontend autosaves, so this runs
+// every couple of seconds while someone types.
 func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -145,7 +162,9 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Snapshot the pre-edit state into the version history (coalesced).
+	// Snapshot the state before the edit, not after, so restoring a version puts
+	// back what was there previously. Coalescing keeps autosave from filling the
+	// history with one entry per keystroke; see snapshotVersion.
 	s.snapshotVersion(r.Context(), cur, uid)
 
 	title := cur.Title
@@ -160,7 +179,9 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 	if len(req.Content) > 0 {
 		content = req.Content
 	}
-	// Moving pages in the hierarchy / between spaces stays owner-only.
+	// Someone with edit access may change the content but not move the page:
+	// re-parenting is a structural change to the owner's workspace, and it could
+	// pull a page out of the tree the owner can see.
 	parent := cur.ParentID
 	space := cur.SpaceID
 	if isOwner {
@@ -195,7 +216,9 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, page)
 }
 
-// DeletePage soft-deletes a page and its whole subtree (moves it to the trash).
+// DeletePage moves a page and its whole subtree to the trash. Children have to
+// go with it, otherwise they would survive as orphans that no longer appear
+// anywhere in the tree. Nothing is removed yet; see PurgePage.
 func (s *Server) DeletePage(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -240,7 +263,10 @@ func (s *Server) ListTrash(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, list)
 }
 
-// RestorePage brings a page (and its deleted subtree) back from the trash.
+// RestorePage brings a page and its deleted subtree back. It restores whatever
+// is currently below the page, so a child deleted separately beforehand comes
+// back too. Ownership is checked inside the query, hence the RowsAffected test
+// instead of a separate lookup.
 func (s *Server) RestorePage(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -262,7 +288,10 @@ func (s *Server) RestorePage(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// PurgePage permanently removes a trashed page (and its subtree via cascade).
+// PurgePage deletes a page for good. The database cascades to its subpages,
+// versions, attachment rows, shares and links. Only a trashed page can be
+// purged, so a stray request cannot wipe a live page. Note that attachment
+// files on disk are not removed here.
 func (s *Server) PurgePage(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	tag, err := s.Pool.Exec(r.Context(),
@@ -279,6 +308,8 @@ func (s *Server) PurgePage(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
+// AddFavorite pins a page for this user. ON CONFLICT DO NOTHING makes a second
+// click harmless instead of an error.
 func (s *Server) AddFavorite(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -295,6 +326,9 @@ func (s *Server) AddFavorite(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
+// RemoveFavorite unpins a page. Deleting a row that is not there is not an
+// error, so no permission check is needed: the WHERE clause is scoped to the
+// caller anyway.
 func (s *Server) RemoveFavorite(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	_, err := s.Pool.Exec(r.Context(),
@@ -306,6 +340,10 @@ func (s *Server) RemoveFavorite(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
+// SharePage publishes a page read-only behind an unguessable token. COALESCE
+// keeps an existing token, so re-publishing a page does not break links that
+// have already been handed out. The token is 16 random bytes from the database,
+// which is far too large to enumerate.
 func (s *Server) SharePage(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var token string
@@ -321,6 +359,8 @@ func (s *Server) SharePage(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{"isPublic": true, "publicToken": token})
 }
 
+// UnsharePage withdraws the public link and drops the token, so a new
+// publication issues a fresh one and every old link stays dead.
 func (s *Server) UnsharePage(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	_, err := s.Pool.Exec(r.Context(),

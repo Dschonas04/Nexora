@@ -1,3 +1,5 @@
+// Per-user sharing and account administration. This is the sharing that names
+// people; the anonymous public link lives in pages.go.
 package handlers
 
 import (
@@ -10,7 +12,8 @@ import (
 	"nexora/internal/models"
 )
 
-// ListShares returns the users a page is shared with (owner/admin only).
+// ListShares returns who a page is shared with. Restricted to the owner and
+// admins: someone the page was shared with should not learn who else has it.
 func (s *Server) ListShares(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -43,7 +46,9 @@ type shareReq struct {
 	Permission string `json:"permission"` // "read" | "edit"
 }
 
-// AddShare grants another user (looked up by email) read/edit access.
+// AddShare grants another account access, looked up by email address. An
+// existing share is updated rather than rejected, so the dialog can change a
+// permission without removing and re-adding the entry.
 func (s *Server) AddShare(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -54,6 +59,8 @@ func (s *Server) AddShare(w http.ResponseWriter, r *http.Request) {
 	}
 	var req shareReq
 	_ = decode(r, &req)
+	// Only two permissions exist, and anything unrecognised falls back to the
+	// weaker one, so a typo cannot accidentally hand out write access.
 	perm := "read"
 	if req.Permission == "edit" {
 		perm = "edit"
@@ -72,6 +79,8 @@ func (s *Server) AddShare(w http.ResponseWriter, r *http.Request) {
 	}
 	var ownerID string
 	_ = s.Pool.QueryRow(r.Context(), `SELECT owner_id FROM pages WHERE id=$1`, id).Scan(&ownerID)
+	// Sharing with the owner would add a row that grants nothing but shows up in
+	// the dialog as if it mattered.
 	if targetID == ownerID {
 		writeErr(w, http.StatusBadRequest, "owner already has full access")
 		return
@@ -88,7 +97,8 @@ func (s *Server) AddShare(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"userId": targetID, "permission": perm})
 }
 
-// RemoveShare revokes a user's access to a page.
+// RemoveShare revokes access. It takes effect immediately because pagePerm
+// reads the table on every request rather than caching.
 func (s *Server) RemoveShare(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -106,7 +116,13 @@ func (s *Server) RemoveShare(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// ListUsers is the directory used by the share dialog and the admin view.
+// ListUsers is the directory behind the share dialog and the admin view.
+//
+// Deliberately open to every signed-in account, not just admins: without it
+// nobody could share a page with a colleague. The trade-off is that any account
+// can read the names and email addresses of all the others, which is acceptable
+// for a workspace among people who know each other and would not be for a
+// public instance.
 func (s *Server) ListUsers(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.Pool.Query(r.Context(),
 		`SELECT id, email, name, role, created_at FROM users ORDER BY name`)
@@ -130,7 +146,9 @@ type roleReq struct {
 	Role string `json:"role"`
 }
 
-// SetUserRole changes a user's role (admin only).
+// SetUserRole promotes or demotes an account. Anything other than "admin" is
+// read as "user", so an unknown value cannot grant privileges. An admin cannot
+// demote themselves, which stops the workspace from ending up with none.
 func (s *Server) SetUserRole(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {

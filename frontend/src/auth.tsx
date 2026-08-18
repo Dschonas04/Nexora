@@ -1,3 +1,5 @@
+// Session state for the whole app. The token itself is an httpOnly cookie and
+// therefore invisible here; "signed in" simply means /auth/me answered.
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { api, User } from "./api/client";
 
@@ -9,12 +11,16 @@ interface AuthCtx {
   logout: () => Promise<void>;
 }
 
+// No default value: every consumer sits under the provider, and the cast keeps
+// the context type honest instead of making every field optional.
 const Ctx = createContext<AuthCtx>(null as unknown as AuthCtx);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Ask the backend once on mount who we are. A failure is the normal case for
+  // a visitor without a session, hence the silent catch.
   useEffect(() => {
     api
       .me()
@@ -29,6 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, name: string, password: string) => {
     setUser(await api.register(email, name, password));
   };
+  // Clear the cookie first, then the local state, so a failing request leaves
+  // the user signed in rather than showing a logged-out UI with a live session.
   const logout = async () => {
     await api.logout();
     setUser(null);

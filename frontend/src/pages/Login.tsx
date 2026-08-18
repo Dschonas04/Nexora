@@ -1,3 +1,5 @@
+// Sign-in form. On success AuthProvider sets the user, and App swaps this
+// screen for the workspace; there is no explicit redirect here.
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth";
@@ -11,6 +13,7 @@ export default function Login() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // busy disables the button so a double click cannot fire two logins.
     setBusy(true);
     setError("");
     try {
