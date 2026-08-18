@@ -83,12 +83,12 @@ Two notes worth knowing before the first start:
 The backend itself reads four variables. Compose sets the other three for you, so
 they do not belong in `.env`:
 
-| Variable          | Purpose                          | Set by Compose to     |
-| ----------------- | -------------------------------- | --------------------- |
-| `DATABASE_URL`    | PostgreSQL connection string     | derived from the above |
-| `JWT_SECRET`      | Session token signing key        | from `.env`           |
-| `NEXORA_DATA_DIR` | Where attachments are stored     | `/data/attachments`   |
-| `PORT`            | Port the Go server listens on    | `8080` (container)    |
+| Variable          | Purpose                       | Set by Compose to      |
+| ----------------- | ----------------------------- | ---------------------- |
+| `DATABASE_URL`    | PostgreSQL connection string  | derived from the above |
+| `JWT_SECRET`      | Session token signing key     | from `.env`            |
+| `NEXORA_DATA_DIR` | Where attachments are stored  | `/data/attachments`    |
+| `PORT`            | Port the Go server listens on | `8080` (container)     |
 
 ## Data Model
 
