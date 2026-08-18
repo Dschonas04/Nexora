@@ -1,3 +1,9 @@
+// Typed client for the backend API, plus the wire types it returns. These
+// mirror the Go structs in backend/internal/models: changing a JSON tag there
+// means changing the matching field here.
+
+// User is the public view of an account; the password hash never leaves the
+// backend, so there is no field for it.
 export interface User {
   id: string;
   email: string;
@@ -19,6 +25,8 @@ export interface Space {
   createdAt: string;
 }
 
+// PageMeta is the light shape used for the sidebar, search results and lists.
+// It has no content, which is what keeps those requests small.
 export interface PageMeta {
   id: string;
   parentId: string | null;
@@ -29,6 +37,9 @@ export interface PageMeta {
   updatedAt: string;
 }
 
+// Page is one page in full. content is unknown because it is a BlockNote
+// document that only the editor interprets. canEdit, isOwner and isFavorite are
+// computed per viewer, so the same page arrives differently for different users.
 export interface Page {
   id: string;
   ownerId: string;
@@ -47,6 +58,8 @@ export interface Page {
   updatedAt: string;
 }
 
+// PublicPage is the reduced shape behind a public link: no ids, no owner,
+// nothing that would give away workspace structure.
 export interface PublicPage {
   title: string;
   content: unknown;
@@ -54,6 +67,8 @@ export interface PublicPage {
   updatedAt: string;
 }
 
+// PageVersion is one entry in a page's history. content is optional because the
+// list endpoint omits it and only a single fetched version carries it.
 export interface PageVersion {
   id: string;
   title: string;
@@ -86,6 +101,8 @@ export interface GraphNode {
   space: string;
 }
 
+// GraphEdge connects two nodes; kind is "parent" for nesting and "link" for an
+// explicit or typed link.
 export interface GraphEdge {
   source: string;
   target: string;
@@ -97,6 +114,13 @@ export interface Graph {
   edges: GraphEdge[];
 }
 
+// req is the single fetch wrapper every call goes through.
+//
+// credentials: "include" sends the session cookie, which is the only reason
+// requests are authenticated at all: the token is httpOnly and unreadable here.
+//
+// It unwraps the backend's {"error": "..."} shape into a thrown Error and hangs
+// the HTTP status on it, so callers can tell a 403 from a 404 when they care.
 async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(`/api${path}`, {
     credentials: "include",
@@ -104,6 +128,8 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
     ...opts,
   });
   if (!res.ok) {
+    // Fall back to the status text when the body is not the expected JSON,
+    // which happens for errors produced by the proxy rather than the backend.
     let msg = res.statusText;
     try {
       const j = await res.json();
@@ -115,10 +141,14 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
     err.status = res.status;
     throw err;
   }
+  // Some endpoints answer 200 with an empty body; JSON.parse would throw on it.
   const text = await res.text();
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+// PagePatch is a partial update: an omitted field stays as it is, while an
+// explicit null on parentId or spaceId clears it. That distinction is why the
+// autosave can send just the content without touching the page's position.
 export interface PagePatch {
   title?: string;
   content?: unknown;
@@ -127,6 +157,8 @@ export interface PagePatch {
   spaceId?: string | null;
 }
 
+// One entry per endpoint. Deliberately a plain object of thin functions rather
+// than a generated client, so the API surface stays readable at a glance.
 export const api = {
   me: () => req<User>("/auth/me"),
   login: (email: string, password: string) =>
@@ -175,6 +207,8 @@ export const api = {
 
   // Attachments
   listAttachments: (id: string) => req<Attachment[]>(`/pages/${id}/attachments`),
+  // Uploads bypass req because they send FormData: setting Content-Type by hand
+  // would omit the multipart boundary the browser has to generate.
   uploadAttachment: async (id: string, file: File) => {
     const body = new FormData();
     body.append("file", file);
@@ -186,6 +220,8 @@ export const api = {
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
     return (await res.json()) as Attachment;
   },
+  // Used directly as an img/iframe src, so the browser fetches it with the
+  // session cookie and the backend still checks access.
   attachmentUrl: (id: string, attId: string) => `/api/pages/${id}/attachments/${attId}`,
   deleteAttachment: (id: string, attId: string) =>
     req<void>(`/pages/${id}/attachments/${attId}`, { method: "DELETE" }),
@@ -229,6 +265,7 @@ export const api = {
   detachTag: (pageId: string, tagId: string) =>
     req<void>(`/pages/${pageId}/tags/${tagId}`, { method: "DELETE" }),
 
+  // encodeURIComponent matters here: a query may contain &, # or a slash.
   search: (q: string) => req<PageMeta[]>(`/search?q=${encodeURIComponent(q)}`),
   getPublicPage: (token: string) => req<PublicPage>(`/public/${token}`),
 };

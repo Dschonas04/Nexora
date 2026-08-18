@@ -1,3 +1,5 @@
+// Version history. Snapshots are written by the page update path, never by the
+// client, so history cannot be forged or skipped from the frontend.
 package handlers
 
 import (
@@ -13,7 +15,11 @@ import (
 
 // snapshotVersion records the current page state in the history, coalescing
 // rapid successive edits: a new snapshot is skipped if one was written for this
-// page within the last two minutes.
+// page within the last two minutes. Without that window autosave would write a
+// snapshot every few seconds and bury the useful revisions.
+//
+// Errors are ignored on purpose. A failed snapshot must not block the edit
+// itself, since losing a history entry is far less bad than losing the save.
 func (s *Server) snapshotVersion(ctx context.Context, cur *models.Page, authorID string) {
 	var recent bool
 	_ = s.Pool.QueryRow(ctx,
@@ -28,7 +34,10 @@ func (s *Server) snapshotVersion(ctx context.Context, cur *models.Page, authorID
 		cur.ID, cur.Title, string(cur.Content), cur.Icon, authorID)
 }
 
-// ListVersions returns the version history of a page (metadata only).
+// ListVersions returns the history of a page without the content, which keeps
+// the response small; the panel fetches a single version when one is opened.
+// Capped at 100 entries, so a page edited for years still loads.
+// The author is LEFT JOINed because a deleted account leaves author_id NULL.
 func (s *Server) ListVersions(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -56,7 +65,9 @@ func (s *Server) ListVersions(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, list)
 }
 
-// GetVersion returns a single version including its content (for preview).
+// GetVersion returns one version with its content, for the preview pane. The
+// version id is matched together with the page id so a version from a page the
+// caller may not read cannot be fetched through a page they can.
 func (s *Server) GetVersion(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -79,8 +90,9 @@ func (s *Server) GetVersion(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, v)
 }
 
-// RestoreVersion overwrites the current page with a historical version. The
-// pre-restore state is snapshotted first so the action itself is reversible.
+// RestoreVersion overwrites the page with an older revision. The current state
+// is snapshotted first, so restoring is itself undoable. Nothing is deleted from
+// the history: a restore only adds to it.
 func (s *Server) RestoreVersion(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")

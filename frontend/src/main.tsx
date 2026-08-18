@@ -1,3 +1,8 @@
+// Entry point. The provider order matters: AuthProvider calls the API through
+// the router's context, so it has to sit inside BrowserRouter.
+//
+// StrictMode double-invokes effects in development, which is why every effect in
+// this app has to tolerate running twice.
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";

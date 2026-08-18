@@ -1,3 +1,6 @@
+// The block editor, a thin wrapper around BlockNote. Everything specific to
+// Nexora sits around it: [[wiki-links]] as clickable text, and an "@" menu that
+// inserts one. BlockNote itself knows nothing about either.
 import { useEffect, useRef } from "react";
 import { DefaultReactSuggestionItem, SuggestionMenuController, useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
@@ -5,6 +8,8 @@ import "@blocknote/mantine/style.css";
 import { locales } from "@blocknote/core";
 import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
 
+// Shared pattern for [[Page title]]. It carries the g flag, so lastIndex has to
+// be reset before each use; see onClickCapture below.
 const WIKI_RE = /\[\[([^[\]]+)\]\]/g;
 
 // caretInfo returns the text node and character offset under a screen point,
@@ -52,6 +57,9 @@ export default function Editor({
       ? (initialContent as PartialBlock[])
       : undefined;
 
+  // The editor is created once. Its content is not reactive, which is why the
+  // page view remounts this component with a new key when it changes the
+  // document from the outside.
   const editor = useCreateBlockNote({ initialContent: content, dictionary: locales.de });
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -78,11 +86,19 @@ export default function Editor({
 
   // Navigate when a [[wiki-link]] token is clicked. Runs in the capture phase
   // and stops propagation so BlockNote doesn't just place the caret there.
+  // Turn a click on a [[wiki-link]] into navigation. There is no link element to
+  // hang a handler on, because the token is plain text, so the character under
+  // the pointer is resolved instead and matched against the pattern.
+  //
+  // A click that is not inside a token, or points at a title that does not
+  // exist, falls through and behaves like an ordinary click in the text.
   const onClickCapture = (e: React.MouseEvent) => {
     if (!linkResolver || !onOpenLink) return;
     const ci = caretInfo(e.clientX, e.clientY);
     if (!ci || ci.node.nodeType !== Node.TEXT_NODE) return;
     const text = ci.node.textContent || "";
+    // Reset because the pattern is global and shared: a leftover lastIndex from
+    // an earlier click would make the search start in the middle of the line.
     WIKI_RE.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = WIKI_RE.exec(text))) {

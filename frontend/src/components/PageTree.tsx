@@ -1,5 +1,12 @@
+// The sidebar tree. It renders itself recursively, one level per call, from the
+// flat page list the API returns: the backend never builds a nested structure,
+// the shape comes purely from parentId.
 import { PageMeta } from "../api/client";
 
+// Drag and drop state and callbacks, owned by the sidebar and threaded down.
+// Keeping it in one object avoids passing eight separate props through every
+// level of the recursion. Absent means the tree is not draggable, which is how
+// the read-only lists reuse this component.
 export interface TreeDnD {
   dragId: string | null;
   dropTarget: string | null;
@@ -36,6 +43,9 @@ export default function PageTree({
   dnd,
   depth = 0,
 }: Props) {
+  // Filtering the whole list at every level is O(n) per node. That is fine at
+  // the size a personal wiki reaches and keeps the component free of any
+  // precomputed index that could fall out of sync with the list.
   const children = pages.filter((p) => (p.parentId ?? null) === parentId);
   if (children.length === 0) return null;
 
@@ -66,8 +76,12 @@ export default function PageTree({
               }}
               onDragEnd={() => dnd?.onDragEndPage()}
               onDragOver={(e) => {
+                // canDropOnPage rejects a page's own subtree: dropping a parent
+                // into its child would detach that branch from the tree.
                 if (!dnd || !dnd.dragId || dnd.dragId === p.id) return;
                 if (!dnd.canDropOnPage(p.id)) return;
+                // Only preventDefault marks this element as a valid drop target;
+                // without it the browser refuses the drop.
                 e.preventDefault();
                 e.dataTransfer.dropEffect = "move";
                 dnd.onDragOverPage(p.id);
@@ -76,10 +90,14 @@ export default function PageTree({
               onDrop={(e) => {
                 if (!dnd) return;
                 e.preventDefault();
+                // Stop the event here, otherwise the enclosing rows would treat
+                // the same drop as their own and move the page twice.
                 e.stopPropagation();
                 dnd.onDropPage(p);
               }}
             >
+              {/* The caret only expands; stopping propagation keeps the click
+                  from also selecting the page. */}
               <span
                 className="tree-caret"
                 onClick={(e) => {
@@ -113,6 +131,9 @@ export default function PageTree({
                 </button>
               </span>
             </div>
+            {/* Recurse into the children, one level deeper. Collapsed branches
+                are not rendered at all, so a large tree costs nothing while it
+                is closed. */}
             {isOpen && (
               <PageTree
                 pages={pages}

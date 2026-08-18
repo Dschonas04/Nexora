@@ -1,3 +1,4 @@
+// Registration, login, logout and the /auth/me lookup.
 package handlers
 
 import (
@@ -18,18 +19,24 @@ type registerReq struct {
 	Password string `json:"password"`
 }
 
+// Register creates an account and logs it straight in. Registration is open to
+// anyone who can reach the API, so an instance exposed to the internet should
+// sit behind a reverse proxy that restricts this route.
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	var req registerReq
 	if err := decode(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "invalid body")
 		return
 	}
+	// Lowercase the address so Alice@example.com and alice@example.com cannot
+	// become two accounts; the UNIQUE index works on the stored value.
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 	req.Name = strings.TrimSpace(req.Name)
 	if req.Email == "" || !strings.Contains(req.Email, "@") {
 		writeErr(w, http.StatusBadRequest, "valid email required")
 		return
 	}
+	// Fall back to the local part of the address so no account is nameless.
 	if req.Name == "" {
 		req.Name = strings.Split(req.Email, "@")[0]
 	}
@@ -50,6 +57,8 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		req.Email, req.Name, hash,
 	).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt)
 	if err != nil {
+		// 23505 is unique_violation, which here can only be the email index.
+		// Catching it avoids a select-then-insert race between two signups.
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			writeErr(w, http.StatusConflict, "email already registered")
@@ -59,7 +68,8 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The very first account becomes the workspace admin.
+	// The very first account becomes the workspace admin. Counting after the
+	// insert means the very first registration wins even if two arrive at once.
 	var count int
 	if s.Pool.QueryRow(r.Context(), `SELECT count(*) FROM users`).Scan(&count) == nil && count == 1 {
 		if _, err := s.Pool.Exec(r.Context(), `UPDATE users SET role='admin' WHERE id=$1`, u.ID); err == nil {
@@ -76,6 +86,7 @@ type loginReq struct {
 	Password string `json:"password"`
 }
 
+// Login checks the credentials and issues a session cookie.
 func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginReq
 	if err := decode(r, &req); err != nil {
@@ -90,6 +101,8 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		`SELECT id, email, name, password_hash, role, created_at FROM users WHERE email = $1`,
 		req.Email,
 	).Scan(&u.ID, &u.Email, &u.Name, &hash, &u.Role, &u.CreatedAt)
+	// One message for an unknown address and for a wrong password, so the
+	// response cannot be used to find out which addresses are registered.
 	if err != nil || !auth.CheckPassword(hash, req.Password) {
 		writeErr(w, http.StatusUnauthorized, "invalid credentials")
 		return
@@ -99,11 +112,15 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
+// Logout clears the cookie. See clearAuthCookie: the token stays valid.
 func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
 	s.clearAuthCookie(w)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
+// Me returns the signed-in account. The frontend calls it on load to decide
+// between the app and the login screen, and it re-reads the row so a role
+// changed by an admin shows up without a new login.
 func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var u models.User
@@ -117,6 +134,9 @@ func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
+// issueSession signs a token and sets the cookie. A signing failure leaves the
+// caller without a session; the surrounding handler still reports success, and
+// the frontend then lands back on the login screen.
 func (s *Server) issueSession(w http.ResponseWriter, userID string) {
 	token, err := auth.GenerateToken(s.Secret, userID, tokenTTL)
 	if err == nil {

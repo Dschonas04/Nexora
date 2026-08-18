@@ -1,3 +1,6 @@
+// Explicit page-to-page links, created through the UI. They are stored in
+// page_links and are independent of the [[wiki-links]] a user types into the
+// text; both kinds feed the backlinks list and the knowledge graph.
 package handlers
 
 import (
@@ -10,8 +13,13 @@ import (
 	"nexora/internal/models"
 )
 
-// visiblePagesFilter appends a permission clause (and its args) so a query only
-// returns pages the user may read. Admins see everything.
+// linkTargets returns the pages a page links to, filtered to what the caller may
+// read. A link to a page they have no access to is silently left out rather than
+// shown as an unreachable entry.
+//
+// The admin branch is a separate query rather than a condition, because the
+// permission clause carries an extra parameter that the admin query does not
+// need.
 func (s *Server) linkTargets(r *http.Request, uid, sourceID string) ([]models.PageMeta, error) {
 	var rows pgx.Rows
 	var err error
@@ -44,7 +52,7 @@ func (s *Server) linkTargets(r *http.Request, uid, sourceID string) ([]models.Pa
 	return list, nil
 }
 
-// ListLinks returns the manual outgoing links of a page (pages it links to).
+// ListLinks returns a page's outgoing links.
 func (s *Server) ListLinks(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -64,8 +72,13 @@ type addLinkReq struct {
 	TargetID string `json:"targetId"`
 }
 
-// AddLink creates a manual link from the page to another page. Requires edit
-// rights on the source page; the target must exist and not be the page itself.
+// AddLink links the page to another one. Edit rights are required on the source
+// page only: a link is a property of the page it starts from, and needing rights
+// on the target as well would make it impossible to link to a page one may read
+// but not change.
+//
+// Self-links are rejected because they would add a loop to the graph that
+// carries no information.
 func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -96,14 +109,17 @@ func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if ct.RowsAffected() == 0 {
-		// Either the link already exists or the target is gone; not fatal.
+		// Either the link is already there or the target has since been deleted.
+		// Neither is worth an error: the desired state is reached in the first
+		// case, and in the second there is nothing the client could do about it.
+		// 200 instead of 201 tells the caller nothing new was created.
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]bool{"ok": true})
 }
 
-// RemoveLink deletes a manual link. Requires edit rights on the source page.
+// RemoveLink deletes a link. As with AddLink, rights on the source page decide.
 func (s *Server) RemoveLink(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")

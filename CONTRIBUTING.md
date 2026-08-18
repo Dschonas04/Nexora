@@ -40,7 +40,7 @@ npm run build     # type-check + production build
 
 ## Guidelines
 
-- Keep changes focused — one feature or fix per PR
+- Keep changes focused: one feature or fix per PR
 - Backend: idiomatic Go, `go vet` clean, handlers stay thin
 - Frontend: TypeScript, functional components, keep the UI minimal
 - Don't commit `.env`, `node_modules/`, `dist/` or build artifacts

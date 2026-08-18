@@ -1,3 +1,5 @@
+// Package auth holds the two credential primitives the API needs: bcrypt
+// password hashing and signed JWTs for the session cookie.
 package auth
 
 import (
@@ -8,20 +10,29 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// HashPassword hashes a plaintext password with bcrypt. Cost 12 is a deliberate
+// step above the library default: it costs a few hundred milliseconds per login,
+// which is unnoticeable for a person and expensive for an attacker.
 func HashPassword(pw string) (string, error) {
 	b, err := bcrypt.GenerateFromPassword([]byte(pw), 12)
 	return string(b), err
 }
 
+// CheckPassword reports whether pw matches the stored hash. The comparison is
+// constant time, so it leaks nothing about how far it got before failing.
 func CheckPassword(hash, pw string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(pw)) == nil
 }
 
+// Claims is the JWT payload. It carries the user id only, so any change to a
+// user's role or password takes effect on the next login rather than instantly
+// invalidating tokens already handed out.
 type Claims struct {
 	UserID string `json:"uid"`
 	jwt.RegisteredClaims
 }
 
+// GenerateToken signs a session token for userID that expires after ttl.
 func GenerateToken(secret []byte, userID string, ttl time.Duration) (string, error) {
 	claims := Claims{
 		UserID: userID,
@@ -33,9 +44,14 @@ func GenerateToken(secret []byte, userID string, ttl time.Duration) (string, err
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
 }
 
+// ParseToken verifies a token and returns the user id it was issued for.
+// Every failure returns the same opaque error so a caller cannot tell an expired
+// token from a forged one.
 func ParseToken(secret []byte, tokenStr string) (string, error) {
 	claims := &Claims{}
 	tok, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+		// Pin the algorithm. Without this check a token could claim "none" or
+		// swap in RS256 and have the public key treated as the HMAC secret.
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}

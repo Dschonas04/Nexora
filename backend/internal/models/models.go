@@ -1,3 +1,6 @@
+// Package models holds the shapes the API sends over the wire. They are not the
+// database rows: fields such as password_hash never leave the backend, and a few
+// fields (CanEdit, IsFavorite) are computed per request and per user.
 package models
 
 import (
@@ -5,6 +8,8 @@ import (
 	"time"
 )
 
+// User is the public view of an account. The password hash is deliberately
+// absent so it cannot leak through a handler that serialises this struct.
 type User struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email"`
@@ -21,13 +26,17 @@ type Space struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
+// Tag is a colored label. Tags belong to one user, so two people can both have
+// a tag named "Project" without seeing each other's.
 type Tag struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Color string `json:"color"`
 }
 
-// PageMeta is the lightweight shape used for the sidebar tree and lists.
+// PageMeta is the lightweight shape used for the sidebar tree and lists. It
+// leaves out Content, which keeps the tree request small even for a workspace
+// with hundreds of pages.
 type PageMeta struct {
 	ID        string    `json:"id"`
 	ParentID  *string   `json:"parentId"`
@@ -93,12 +102,15 @@ type GraphNode struct {
 	Space   string  `json:"space"` // space name, "" for pages not in a space
 }
 
+// GraphEdge connects two nodes. Kind separates the hierarchy from explicit
+// links so the view can draw them differently.
 type GraphEdge struct {
 	Source string `json:"source"`
 	Target string `json:"target"`
 	Kind   string `json:"kind"` // "parent" | "link"
 }
 
+// Graph is the whole workspace as the graph view consumes it.
 type Graph struct {
 	Nodes []GraphNode `json:"nodes"`
 	Edges []GraphEdge `json:"edges"`

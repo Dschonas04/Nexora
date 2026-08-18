@@ -1,3 +1,5 @@
+// Sign-up form. The first account created in a fresh instance becomes the
+// workspace admin, which the backend decides.
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth";

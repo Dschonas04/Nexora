@@ -15,7 +15,7 @@ Please include a description, steps to reproduce, and potential impact.
 
 | Version | Supported |
 | ------- | --------- |
-| latest  | ✅        |
+| latest  | yes       |
 
 ## Deployment Best Practices
 
@@ -29,7 +29,7 @@ Please include a description, steps to reproduce, and potential impact.
 > **A missing `.env` does not stop the stack.** `docker-compose.yml` declares
 > fallbacks (`${POSTGRES_PASSWORD:-nexora}`, `${JWT_SECRET:-change-me-in-production}`),
 > so an instance without the file starts happily with a known database password and a
-> publicly documented signing secret — and logs no warning about it. Anyone holding
+> publicly documented signing secret, and logs no warning about it. Anyone holding
 > that secret can mint a session token for any account. Verify after deploying:
 >
 > ```bash
@@ -42,7 +42,7 @@ Please include a description, steps to reproduce, and potential impact.
 - [ ] Bind the exposed port to localhost (`127.0.0.1:3000:80`) if not public
 - [ ] Regularly rebuild with fresh base images: `docker compose build --pull`
 - [ ] Back up **both** volumes: `nexora_db` (pages, users, versions) and
-      `nexora_files` (attachments). The database alone is not a complete backup —
+      `nexora_files` (attachments). The database alone is not a complete backup:
       uploaded files live outside it, and restoring only `nexora_db` leaves every
       attachment row pointing at a file that is gone
 

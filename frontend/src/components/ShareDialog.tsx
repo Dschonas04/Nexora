@@ -1,3 +1,5 @@
+// Sharing dialog. It covers the two independent mechanisms: naming individual
+// accounts, and a public link anyone can open. A page can use both at once.
 import { useEffect, useState } from "react";
 import { ShareEntry, api } from "../api/client";
 
@@ -37,6 +39,9 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
     refresh();
   };
 
+  // Publishing a page again reuses its existing token, so a link already handed
+  // out keeps working. Revoking drops the token for good: switching the toggle
+  // off and on issues a new link and kills every old one.
   const togglePublic = async () => {
     if (isPublic) {
       await api.unsharePage(pageId);
@@ -47,9 +52,13 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
     }
   };
 
+  // Built from the current origin, so the link works with whatever host the app
+  // is reached under without configuring a base URL.
   const publicUrl = publicToken ? `${window.location.origin}/share/${publicToken}` : "";
 
   return (
+    /* Clicking the backdrop closes the dialog; the inner click handler stops
+       the event so a click inside does not count as one outside. */
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
@@ -105,6 +114,8 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
           </label>
           {isPublic && publicUrl && (
             <div className="share-add">
+              {/* Selecting on focus makes the link copyable by keyboard, since
+                  navigator.clipboard is unavailable over plain HTTP. */}
               <input readOnly value={publicUrl} onFocus={(e) => e.currentTarget.select()} />
               <button className="btn" onClick={() => navigator.clipboard?.writeText(publicUrl)}>
                 Kopieren

@@ -1,6 +1,9 @@
+// The trash. Deleted pages live here until they are restored or purged.
 import { useEffect, useState } from "react";
 import { PageMeta, api } from "../api/client";
 
+// onChange tells the workspace to reload its page tree, since restoring and
+// purging both change what the sidebar should show.
 export default function TrashView({ onChange }: { onChange: () => void }) {
   const [items, setItems] = useState<PageMeta[]>([]);
 
@@ -14,6 +17,7 @@ export default function TrashView({ onChange }: { onChange: () => void }) {
     refresh();
     onChange();
   };
+  // Purging cascades to the subpages and cannot be undone, so it asks first.
   const purge = async (id: string) => {
     if (!confirm("Diese Seite und ihre Unterseiten endgültig löschen? Das kann nicht rückgängig gemacht werden.")) return;
     await api.purgePage(id);

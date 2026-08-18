@@ -1,3 +1,5 @@
+// Account administration, reachable only for admins. Every action here is
+// enforced again in the backend; hiding the view is convenience, not security.
 import { useEffect, useState } from "react";
 import { User, api } from "../api/client";
 import { useAuth } from "../auth";
@@ -39,6 +41,8 @@ export default function AdminView() {
     }
   };
 
+  // Deleting an account takes its pages with it through the database cascade,
+  // and there is no trash for that, hence the explicit warning.
   const removeUser = async (id: string, label: string) => {
     if (!confirm(`Nutzer ${label} löschen? Seine Seiten werden ebenfalls entfernt. Das kann nicht rückgängig gemacht werden.`)) return;
     await api.deleteUser(id);
@@ -82,6 +86,8 @@ export default function AdminView() {
               </span>
               <span className="row-actions">
                 <span className={"pill" + (u.role === "admin" ? " admin" : "")}>{u.role}</span>
+                {/* Your own row is locked: an admin may not demote or delete
+                    themselves, which also keeps the last admin in place. */}
                 <select
                   value={u.role}
                   disabled={u.id === user?.id}

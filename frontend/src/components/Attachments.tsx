@@ -1,3 +1,4 @@
+// The attachment list under a page, plus its preview overlay.
 import { useEffect, useRef, useState } from "react";
 import { Attachment, api } from "../api/client";
 
@@ -12,6 +13,8 @@ function humanSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+// Which types can be shown in place. Everything else is offered as a download
+// only: rendering an arbitrary upload inline would mean trusting its content.
 const isImage = (m: string) => m.startsWith("image/");
 const isPdf = (m: string) => m === "application/pdf";
 const isText = (m: string) => m.startsWith("text/") || m === "application/json";
@@ -29,6 +32,9 @@ export default function Attachments({ pageId, canEdit }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId]);
 
+  // Uploads run one after another, not in parallel: the size limit applies per
+  // file, and sequential requests keep a large selection from saturating the
+  // connection. The input value is cleared so the same file can be picked twice.
   const upload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setBusy(true);
@@ -46,6 +52,8 @@ export default function Attachments({ pageId, canEdit }: Props) {
     refresh();
   };
 
+  // Readers see nothing at all when a page has no files, rather than an empty
+  // heading for a section they could not use anyway.
   if (items.length === 0 && !canEdit) return null;
 
   return (
@@ -54,6 +62,8 @@ export default function Attachments({ pageId, canEdit }: Props) {
         <span className="section-label">Anhänge</span>
         {canEdit && (
           <>
+            {/* The real file input is hidden and triggered by the button, so
+                the control can be styled like the rest of the UI. */}
             <input
               ref={fileRef}
               type="file"
@@ -125,6 +135,8 @@ export default function Attachments({ pageId, canEdit }: Props) {
 function QuickView({ att, url, onClose }: { att: Attachment; url: string; onClose: () => void }) {
   const [text, setText] = useState<string | null>(null);
 
+  // Escape closes the overlay. The listener is removed on unmount, otherwise
+  // every opened preview would leave one behind.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -133,6 +145,9 @@ function QuickView({ att, url, onClose }: { att: Attachment; url: string; onClos
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  // Text is fetched and rendered as plain text rather than shown in a frame, so
+  // an uploaded HTML file cannot execute in the app's origin. The cut-off keeps
+  // a huge log file from freezing the browser.
   useEffect(() => {
     if (isText(att.mime)) {
       fetch(url, { credentials: "include" })

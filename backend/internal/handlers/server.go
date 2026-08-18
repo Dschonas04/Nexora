@@ -1,3 +1,6 @@
+// Package handlers implements the HTTP API. Every handler is a method on
+// Server, reads the caller from the request context and decides access itself;
+// see access.go for the two helpers all of them rely on.
 package handlers
 
 import (
@@ -13,21 +16,29 @@ import (
 
 const (
 	cookieName = "nexora_token"
-	tokenTTL   = 7 * 24 * time.Hour
+	// A week of validity. There is no refresh and no server-side session list,
+	// so a token stays usable until it expires, even after a password change.
+	tokenTTL = 7 * 24 * time.Hour
 )
 
+// Server carries everything the handlers need. It is created once in main and
+// shared by all requests, so it must stay read-only after startup.
 type Server struct {
 	Pool    *pgxpool.Pool
 	Secret  []byte
 	DataDir string // directory where uploaded attachments are stored on disk
 }
 
+// writeJSON sends v as JSON. An encoding error is ignored on purpose: the
+// status line is already on the wire at that point, so there is nothing left to
+// report to the client.
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
 }
 
+// writeErr sends {"error": msg}, the single error shape the frontend expects.
 func writeErr(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
 }
@@ -36,6 +47,11 @@ func decode(r *http.Request, v interface{}) error {
 	return json.NewDecoder(r.Body).Decode(v)
 }
 
+// setAuthCookie installs the session cookie. It is httpOnly so page script
+// cannot read it, and SameSite=Lax keeps it off cross-site requests while still
+// surviving a normal link into the app. Secure is not set here because the
+// reverse proxy terminates TLS; behind plain HTTP the cookie would otherwise
+// never be sent at all.
 func (s *Server) setAuthCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
@@ -48,6 +64,8 @@ func (s *Server) setAuthCookie(w http.ResponseWriter, token string) {
 	})
 }
 
+// clearAuthCookie expires the cookie. The token itself stays valid until it
+// runs out, so logout only clears the browser, not the server.
 func (s *Server) clearAuthCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
@@ -77,6 +95,8 @@ func (s *Server) loadPage(ctx context.Context, viewerID, pageID string) (*models
 	}
 	p.Content = json.RawMessage(content)
 
+	// Start from an empty slice, not nil, so the JSON carries [] instead of null
+	// and the frontend can iterate without a guard.
 	p.Tags = []models.Tag{}
 	rows, err := s.Pool.Query(ctx, `SELECT t.id, t.name, t.color FROM tags t
 		JOIN page_tags pt ON pt.tag_id = t.id WHERE pt.page_id = $1 ORDER BY t.name`, pageID)
@@ -90,6 +110,9 @@ func (s *Server) loadPage(ctx context.Context, viewerID, pageID string) (*models
 		rows.Close()
 	}
 
+	// Per-viewer fields. They are computed rather than stored because the same
+	// page looks different to its owner, to someone it is shared with, and to an
+	// anonymous visitor following a public link.
 	if viewerID != "" {
 		_, canEdit, isOwner, _ := s.pagePerm(ctx, viewerID, pageID)
 		p.CanEdit = canEdit

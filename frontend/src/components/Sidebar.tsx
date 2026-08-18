@@ -1,3 +1,7 @@
+// The sidebar: search, favorites, spaces, the page tree, shared pages, tags and
+// the workspace links. It owns no data of its own, everything arrives as props
+// from Workspace; what it does own is view state such as which branches are
+// open and what is currently being dragged.
 import { useEffect, useState } from "react";
 import { PageMeta, Space, Tag, api } from "../api/client";
 import { useAuth } from "../auth";
@@ -48,9 +52,15 @@ export default function Sidebar(props: Props) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<PageMeta[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
-  const [dropTarget, setDropTarget] = useState<string | null>(null); // page id | "space:<id>" | "root"
+  // One drop target for three kinds of destination, encoded as a string: a bare
+  // page id, "space:<id>" for a space header, or "root" for the ungrouped
+  // section. A single value guarantees only one target can be highlighted.
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
 
-  // Descendants of the dragged page — dropping onto one would create a cycle.
+  // Descendants of the dragged page. Dropping a page into its own subtree would
+  // detach that branch from the tree entirely, so those targets are refused.
+  // Recomputed per drag-over rather than cached, which is cheap at this size and
+  // cannot go stale.
   const descendantsOf = (rootId: string): Set<string> => {
     const out = new Set<string>();
     const walk = (pid: string) => {
@@ -67,9 +77,10 @@ export default function Sidebar(props: Props) {
   const canDropOnPage = (targetId: string) =>
     !!dragId && dragId !== targetId && !descendantsOf(dragId).has(targetId);
 
-  // Drop handlers. Moving onto a page nests under it (inheriting its space);
-  // onto a space header moves it there at top level; onto the ungrouped
-  // "Seiten" section moves it to the very top level with no space.
+  // The three drop destinations. Dropping onto a page nests beneath it and
+  // takes over that page's space, so a subtree cannot end up split across two
+  // spaces. Dropping onto a space header moves the page there at top level, and
+  // dropping onto the ungrouped section clears its space.
   const dropOnPage = (target: PageMeta) => {
     if (dragId && canDropOnPage(target.id)) onMovePage(dragId, target.id, target.spaceId ?? null);
     setDragId(null);
@@ -88,6 +99,10 @@ export default function Sidebar(props: Props) {
       return n;
     });
 
+  // Debounced search: 250 ms after the last keystroke. The cleanup cancels the
+  // pending timer, so typing quickly fires exactly one request. A null result
+  // means "not searching" and shows the normal tree again, which is different
+  // from an empty array meaning "no matches".
   useEffect(() => {
     if (!q.trim()) {
       setResults(null);
@@ -99,6 +114,8 @@ export default function Sidebar(props: Props) {
     return () => clearTimeout(t);
   }, [q]);
 
+  // Flat row without nesting or drag handles, used wherever hierarchy carries no
+  // meaning: search results, favorites and pages shared with the user.
   const flatRow = (p: PageMeta) => (
     <div
       key={p.id}
@@ -109,6 +126,8 @@ export default function Sidebar(props: Props) {
     </div>
   );
 
+  // Pages outside every space. They get their own section below the spaces, so
+  // no page can become invisible by not belonging anywhere.
   const ungrouped = pages.filter((p) => !p.spaceId);
 
   // Drag-and-drop bundle handed to the page tree.
@@ -157,6 +176,9 @@ export default function Sidebar(props: Props) {
               </div>
             )}
 
+            {/* One section per space, each with its own tree. Passing only that
+                space's pages means the tree component never has to know spaces
+                exist. */}
             {spaces.map((sp) => {
               const spacePages = pages.filter((p) => p.spaceId === sp.id);
               return (
@@ -186,6 +208,8 @@ export default function Sidebar(props: Props) {
                       </button>
                     </span>
                   </div>
+                  {/* An empty space still needs a drop area, otherwise there
+                      would be no way to drag the first page into it. */}
                   {spacePages.length === 0 ? (
                     <div
                       className={"tree-row muted" + (dropTarget === "space:" + sp.id ? " drop-target" : "")}
@@ -305,6 +329,8 @@ export default function Sidebar(props: Props) {
               >
                 <span className="tree-label">Papierkorb</span>
               </div>
+              {/* Admin view is hidden for everyone else. This only tidies the
+                  UI: the backend checks the role again on every call. */}
               {user?.role === "admin" && (
                 <div
                   className={"tree-row" + (currentPath === "/admin" ? " active" : "")}

@@ -1,3 +1,6 @@
+// A single open page: title, editor, tags, attachments, links and the panels
+// for version history and sharing. The largest view in the app, because a page
+// is where nearly every feature meets.
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Block, BlockNoteEditor } from "@blocknote/core";
@@ -16,6 +19,8 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
+// New tags get a random color from a fixed palette, so they are distinguishable
+// at a glance without asking the user to pick one.
 const PALETTE = ["#e0507a", "#e08a2b", "#3aa675", "#2383e2", "#8b5cf6", "#6b7280"];
 const randomColor = () => PALETTE[Math.floor(Math.random() * PALETTE.length)];
 
@@ -32,9 +37,18 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const [linkQuery, setLinkQuery] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
+  // Refs rather than state: changing either must not trigger a render. The timer
+  // drives the debounced autosave, the editor handle is needed for the markdown
+  // export.
   const saveTimer = useRef<number | undefined>(undefined);
   const editorRef = useRef<BlockNoteEditor | null>(null);
 
+  // Reload everything when the route changes to another page. The cleanup
+  // cancels a pending save, so a half-typed edit cannot land on the page that
+  // was just left.
+  //
+  // The full graph is fetched as well, which is what makes [[wiki-links]] in the
+  // text resolvable to page ids without a lookup per link.
   useEffect(() => {
     if (!id) return;
     setLoading(true);
@@ -60,6 +74,10 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   })();
   const resolveLink = (t: string) => titleToId[t.toLowerCase().trim()] ?? null;
 
+  // Autosave, debounced by half a second. Every change resets the timer, so
+  // continuous typing produces one request when the user pauses. A failed save
+  // is deliberately silent: the next keystroke retries anyway, and an error
+  // banner during typing would be more disruptive than useful.
   const scheduleSave = (patch: PagePatch) => {
     if (!id) return;
     window.clearTimeout(saveTimer.current);
@@ -78,6 +96,8 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
 
   const canEdit = page.canEdit;
 
+  // Update the local copy immediately and let the save follow, so typing stays
+  // responsive instead of waiting for a round trip.
   const setTitle = (title: string) => {
     setPage({ ...page, title });
     scheduleSave({ title });
@@ -93,6 +113,10 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     onFavChange();
   };
 
+  // Export through the editor rather than the stored JSON, since only BlockNote
+  // knows how to render its own document. Lossy by name and by nature: anything
+  // markdown cannot express is dropped. The blob URL is revoked right after the
+  // click so it does not stay attached to the document.
   const exportMarkdown = async () => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -106,6 +130,8 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     URL.revokeObjectURL(url);
   };
 
+  // Tags are matched by name, case-insensitively, and created only when none
+  // exists. Otherwise typing "Projekt" twice would produce two separate tags.
   const addTag = async () => {
     const name = prompt("Schlagwort:")?.trim();
     if (!name) return;
@@ -129,8 +155,9 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     onMetaChange();
   };
 
-  // Manual links: refresh links, backlinks and the graph together so the local
-  // mini-graph and "linked from" list stay in sync after an edit.
+  // Links, backlinks and the graph are refreshed together: adding one link
+  // changes all three views, and reloading them separately would briefly show a
+  // page linking to something the mini-graph does not know about yet.
   const refreshLinks = () => {
     if (!id) return;
     api.listLinks(id).then(setLinks).catch(() => {});
@@ -148,8 +175,11 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     refreshLinks();
   };
 
-  // Outgoing links embedded in the page text via [[Title]] (also what an
-  // @-mention inserts). Parsed from the content, deduped case-insensitively.
+  // Outgoing links written into the text as [[Title]], which is also what an
+  // @-mention inserts. Extracted by running the regex over the stringified
+  // document: the brackets only ever occur in visible text, never in the
+  // structural JSON, so this cannot pick up a false positive. Deduped
+  // case-insensitively while keeping the spelling of the first occurrence.
   const textLinkTitles = (() => {
     const seen = new Set<string>();
     const out: string[] = [];
@@ -167,14 +197,23 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     return out;
   })();
 
-  // Remove a [[Title]] link from the text: strip the brackets everywhere the
-  // title occurs (keeping the word), save, and remount the editor to reflect it.
+  // Removing a text link strips the brackets but keeps the word, so the sentence
+  // still reads. Every text field in the document is walked, because the title
+  // may appear in several blocks.
+  //
+  // The editor is remounted afterwards (editorKey) rather than updated in place:
+  // BlockNote takes its content once at mount and would otherwise keep showing
+  // the old text.
   const removeTextLink = async (title: string) => {
     if (!id) return;
+    // Escape the title before building the pattern: a page called "C++ (Notes)"
+    // would otherwise be an invalid regular expression.
     const esc = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const re = new RegExp(`\\[\\[\\s*${esc}\\s*\\]\\]`, "gi");
     const strip = (v: unknown): unknown => {
       if (Array.isArray(v)) return v.map(strip);
+      // Only the "text" fields carry visible content; everything else is walked
+      // but left alone, so styles and block ids survive untouched.
       if (v && typeof v === "object") {
         const o = { ...(v as Record<string, unknown>) };
         if (typeof o.text === "string") {
@@ -191,12 +230,17 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     setEditorKey((k) => k + 1);
     refreshLinks();
   };
+  // Candidates for a new link: every visible page except this one and the ones
+  // already linked. Capped at eight after filtering, so the list stays a
+  // suggestion rather than a full directory.
   const linkCandidates = graph.nodes
     .filter((n) => n.id !== page.id && !links.some((l) => l.id === n.id))
     .sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   const filteredCandidates = linkCandidates
     .filter((n) => (n.title || "").toLowerCase().includes(linkQuery.toLowerCase()))
     .slice(0, 8);
+  // Picking a suggestion adds the link and closes the box, so the next one
+  // starts from an empty query.
   const pickLink = (targetId: string) => {
     addLink(targetId);
     setLinkQuery("");
@@ -209,6 +253,8 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
         <div className="topbar">
           <span className="topbar-title">{page.title || "Ohne Titel"}</span>
           <div className="topbar-actions">
+            {/* Say plainly that this is a read-only share, instead of leaving
+                the user to wonder why nothing saves. */}
             {!canEdit && <span className="pill readonly">Nur Lesen</span>}
             <button className={"btn" + (page.isFavorite ? " active" : "")} onClick={toggleFav}>
               {page.isFavorite ? "Favorisiert" : "Favorit"}

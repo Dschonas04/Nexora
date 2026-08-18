@@ -1,3 +1,5 @@
+// Backlinks: which pages point at this one. Two sources are merged here, the
+// [[wiki-links]] written into page text and the explicit links from page_links.
 package handlers
 
 import (
@@ -11,9 +13,18 @@ import (
 	"nexora/internal/models"
 )
 
-// Backlinks returns the pages that reference the given page through an explicit
-// [[Page title]] wiki-link. It only considers pages the requester can see, so
-// the linking story stays inside each user's permission scope.
+// Backlinks returns the pages that reference this one, from both link kinds.
+//
+// Wiki-links are resolved by title, not by id, so renaming a page quietly breaks
+// every [[old title]] pointing at it. That is the price of a link one can type;
+// the explicit links handled below survive a rename because they store ids.
+//
+// Finding wiki-links means loading the content of every visible page and
+// scanning it in Go, since the titles live inside the JSON document and cannot
+// be indexed. Fine for a personal workspace, the wrong shape for a large one.
+//
+// Only pages the caller may read are considered, so backlinks never reveal that
+// an inaccessible page links here.
 func (s *Server) Backlinks(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -29,6 +40,8 @@ func (s *Server) Backlinks(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "page not found")
 		return
 	}
+	// Compare lowercased, so [[project notes]] finds a page titled "Project
+	// Notes". wikiLinks lowercases its results the same way.
 	target := strings.ToLower(strings.TrimSpace(title))
 	if target == "" {
 		writeJSON(w, http.StatusOK, []models.PageMeta{})
@@ -71,8 +84,11 @@ func (s *Server) Backlinks(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Manual links pointing at this page (edited via the UI), respecting the
-	// requester's visibility. Deduped against the wiki-link backlinks above.
+	// Explicit links pointing here. A page that both mentions this one in its
+	// text and links to it explicitly must appear once, hence the seen map.
+	//
+	// A query error is swallowed rather than failing the request: the wiki-link
+	// results above are already worth showing.
 	var mrows pgx.Rows
 	if s.isAdmin(r.Context(), uid) {
 		mrows, err = s.Pool.Query(r.Context(),

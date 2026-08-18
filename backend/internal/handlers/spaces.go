@@ -1,3 +1,6 @@
+// Spaces are flat, top-level containers, a second axis next to page nesting.
+// A page belongs to at most one, and a space belongs to exactly one user, so
+// there is no sharing to consider here.
 package handlers
 
 import (
@@ -9,6 +12,8 @@ import (
 	"nexora/internal/models"
 )
 
+// ListSpaces returns the caller's own spaces. Spaces are not shared, so this
+// needs no permission logic beyond the owner_id filter.
 func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	rows, err := s.Pool.Query(r.Context(),
@@ -33,6 +38,8 @@ type spaceReq struct {
 	Name string `json:"name"`
 }
 
+// CreateSpace adds a space. Names are not unique: two spaces may share a name,
+// which is deliberate because the id is what identifies them.
 func (s *Server) CreateSpace(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var req spaceReq
@@ -51,6 +58,8 @@ func (s *Server) CreateSpace(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, sp)
 }
 
+// RenameSpace changes the name. Ownership is part of the WHERE clause, so a
+// request for someone else's space simply affects no rows and reports 404.
 func (s *Server) RenameSpace(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var req spaceReq
@@ -72,7 +81,9 @@ func (s *Server) RenameSpace(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// DeleteSpace removes a space; its pages fall back to "no space" (FK SET NULL).
+// DeleteSpace removes a space. Its pages survive and fall back to "no space"
+// through the ON DELETE SET NULL on pages.space_id: deleting a container must
+// never delete the content in it.
 func (s *Server) DeleteSpace(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	tag, err := s.Pool.Exec(r.Context(),
