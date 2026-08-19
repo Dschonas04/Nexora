@@ -25,6 +25,8 @@ export interface Space {
   ownerId: string;
   name: string;
   createdAt: string;
+  /** True when the space belongs to someone else and is visible through a right. */
+  fremd: boolean;
 }
 
 // PageMeta is the light shape used for the sidebar, search results and lists.
@@ -250,6 +252,36 @@ export interface SystemZustand {
   warnungen: string[];
 }
 
+// Gruppe is a group of accounts. Groups belong to the installation, not to an
+// account: a department is not a private matter.
+export interface Gruppe {
+  id: string;
+  name: string;
+  beschreibung: string;
+  erstelltAm: string;
+  mitglieder: number;
+}
+
+export interface Mitglied {
+  id: string;
+  name: string;
+  email: string;
+  rolle: string;
+  /** Whether this account is currently in the group. */
+  drin: boolean;
+}
+
+// SpaceRecht grants a group or a single account access to a space.
+// recht is a ladder: lesen < schreiben < verwalten.
+export interface SpaceRecht {
+  gruppeId: string | null;
+  gruppeName: string;
+  userId: string | null;
+  userName: string;
+  recht: "lesen" | "schreiben" | "verwalten";
+  erteiltAm: string;
+}
+
 // SearchHit is one full text result. Unlike PageMeta it carries the snippet the
 // database produced, so the sidebar can show where the term actually sat.
 export interface SearchHit {
@@ -365,6 +397,28 @@ export const api = {
     }),
 
   vorlagen: () => req<PageMeta[]>("/vorlagen"),
+
+  gruppen: () => req<Gruppe[]>("/gruppen"),
+  gruppeAnlegen: (name: string, beschreibung: string) =>
+    req<Gruppe>("/gruppen", { method: "POST", body: JSON.stringify({ name, beschreibung }) }),
+  gruppeLoeschen: (id: string) => req<void>(`/gruppen/${id}`, { method: "DELETE" }),
+  gruppenMitglieder: (id: string) => req<Mitglied[]>(`/gruppen/${id}/mitglieder`),
+  mitgliedSetzen: (gruppeId: string, userId: string, drin: boolean) =>
+    req<{ drin: boolean }>(`/gruppen/${gruppeId}/mitglieder`, {
+      method: "PUT",
+      body: JSON.stringify({ userId, drin }),
+    }),
+
+  spaceRechte: (spaceId: string) => req<SpaceRecht[]>(`/spaces/${spaceId}/rechte`),
+  spaceRechtSetzen: (
+    spaceId: string,
+    ziel: { gruppeId?: string; userId?: string },
+    recht: string,
+  ) =>
+    req<{ recht: string }>(`/spaces/${spaceId}/rechte`, {
+      method: "PUT",
+      body: JSON.stringify({ gruppeId: ziel.gruppeId ?? "", userId: ziel.userId ?? "", recht }),
+    }),
   vorlageUmschalten: (id: string) =>
     req<{ istVorlage: boolean }>(`/pages/${id}/vorlage`, { method: "POST" }),
   getPage: (id: string) => req<Page>(`/pages/${id}`),

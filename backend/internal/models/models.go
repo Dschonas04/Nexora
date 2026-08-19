@@ -24,6 +24,9 @@ type Space struct {
 	OwnerID   string    `json:"ownerId"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"createdAt"`
+	// Fremd markiert einen Space, der jemand anderem gehört und über ein
+	// Gruppen- oder Kontorecht sichtbar ist.
+	Fremd bool `json:"fremd"`
 }
 
 // Tag is a colored label. Tags belong to one user, so two people can both have

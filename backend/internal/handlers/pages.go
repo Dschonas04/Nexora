@@ -21,9 +21,25 @@ import (
 // ListSharedPages.
 func (s *Server) ListPages(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
+	// Eigene Seiten plus die, die über ein Space-Recht erreichbar sind.
+	//
+	// Ohne den zweiten Teil könnte man eine Seite per Adresse öffnen, sie aber
+	// nirgends finden -- ein Recht, das man nur kennt, wenn einem jemand den
+	// Verweis schickt, ist praktisch keines.
 	rows, err := s.Pool.Query(r.Context(),
-		`SELECT id, parent_id, space_id, title, icon, updated_at FROM pages
-		 WHERE owner_id = $1 AND deleted_at IS NULL ORDER BY sort_order, created_at`, uid)
+		`SELECT p.id, p.parent_id, p.space_id, p.title, p.icon, p.updated_at,
+		        (p.owner_id <> $1) AS fremd
+		 FROM pages p
+		 WHERE p.deleted_at IS NULL
+		   AND (p.owner_id = $1
+		        OR ($2 AND p.space_id IS NOT NULL AND EXISTS (
+		              SELECT 1 FROM space_rechte sr
+		               WHERE sr.space_id = p.space_id
+		                 AND (sr.user_id = $1
+		                      OR sr.gruppe_id IN (SELECT gm.gruppe_id
+		                                            FROM gruppen_mitglieder gm
+		                                           WHERE gm.user_id = $1)))))
+		 ORDER BY p.sort_order, p.created_at`, uid, lizenz.Frei(lizenz.Gruppen))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "query failed")
 		return
@@ -35,7 +51,8 @@ func (s *Server) ListPages(w http.ResponseWriter, r *http.Request) {
 	list := []models.PageMeta{}
 	for rows.Next() {
 		var p models.PageMeta
-		if err := rows.Scan(&p.ID, &p.ParentID, &p.SpaceID, &p.Title, &p.Icon, &p.UpdatedAt); err == nil {
+		if err := rows.Scan(&p.ID, &p.ParentID, &p.SpaceID, &p.Title, &p.Icon,
+			&p.UpdatedAt, &p.Shared); err == nil {
 			list = append(list, p)
 		}
 	}

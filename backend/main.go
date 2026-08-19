@@ -206,6 +206,23 @@ func main() {
 				r.Post("/kommentare/{kommentarId}/erledigt", h.ToggleErledigt)
 			})
 
+			// Gruppen und Space-Rechte -- Zusatz.
+			//
+			// Der Zusatz sperrt das VERWALTEN. Ob bestehende Rechte noch
+			// gelten, entscheidet pagePerm selbst -- ohne Lizenz greifen sie
+			// nicht, gelöscht werden sie aber auch nicht. So kommt nach dem
+			// Wiederfreischalten alles unverändert zurück.
+			r.Group(func(r chi.Router) {
+				r.Use(handlers.VerlangeFunktion(lizenz.Gruppen))
+				r.Get("/gruppen", h.ListGruppen)
+				r.Post("/gruppen", h.CreateGruppe)
+				r.Delete("/gruppen/{id}", h.DeleteGruppe)
+				r.Get("/gruppen/{id}/mitglieder", h.ListMitglieder)
+				r.Put("/gruppen/{id}/mitglieder", h.SetzeMitglied)
+				r.Get("/spaces/{id}/rechte", h.ListSpaceRechte)
+				r.Put("/spaces/{id}/rechte", h.SetzeSpaceRecht)
+			})
+
 			// Space-Export -- Zusatz. Die Antwort ist ein ZIP-Strom, deshalb
 			// steht hier kein writeJSON dahinter.
 			r.With(handlers.VerlangeFunktion(lizenz.Export)).

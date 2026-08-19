@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"nexora/internal/lizenz"
 	"nexora/internal/middleware"
 	"nexora/internal/models"
 )
@@ -16,8 +17,21 @@ import (
 // needs no permission logic beyond the owner_id filter.
 func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
+	// Eigene Spaces plus die, an denen ein Recht hängt. Ohne den zweiten Teil
+	// erschienen die freigegebenen Seiten in der Leiste ohne den Space, zu dem
+	// sie gehören -- also lose, statt geordnet.
 	rows, err := s.Pool.Query(r.Context(),
-		`SELECT id, owner_id, name, created_at FROM spaces WHERE owner_id=$1 ORDER BY name`, uid)
+		`SELECT sp.id, sp.owner_id, sp.name, sp.created_at,
+		        (sp.owner_id <> $1) AS fremd
+		 FROM spaces sp
+		 WHERE sp.owner_id = $1
+		    OR ($2 AND EXISTS (
+		          SELECT 1 FROM space_rechte sr
+		           WHERE sr.space_id = sp.id
+		             AND (sr.user_id = $1
+		                  OR sr.gruppe_id IN (SELECT gm.gruppe_id FROM gruppen_mitglieder gm
+		                                      WHERE gm.user_id = $1))))
+		 ORDER BY sp.name`, uid, lizenz.Frei(lizenz.Gruppen))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "query failed")
 		return
@@ -27,7 +41,7 @@ func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 	list := []models.Space{}
 	for rows.Next() {
 		var sp models.Space
-		if err := rows.Scan(&sp.ID, &sp.OwnerID, &sp.Name, &sp.CreatedAt); err == nil {
+		if err := rows.Scan(&sp.ID, &sp.OwnerID, &sp.Name, &sp.CreatedAt, &sp.Fremd); err == nil {
 			list = append(list, sp)
 		}
 	}
