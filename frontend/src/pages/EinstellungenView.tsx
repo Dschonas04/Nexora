@@ -89,6 +89,23 @@ export default function EinstellungenView() {
   const [laeuft, setLaeuft] = useState<string | null>(null);
   const [laedt, setLaedt] = useState(true);
 
+  // Objektspeicher-Test. Die Zugangsdaten bleiben ausschließlich hier im
+  // Formular -- gespeichert wird nichts davon, siehe den Hinweis im Bereich.
+  const [ablage, setAblage] = useState<string>("");
+  const [s3, setS3] = useState({
+    endpunkt: "",
+    bucket: "nexora",
+    zugriff: "",
+    geheimnis: "",
+    region: "us-east-1",
+    tls: false,
+    pfadstil: true,
+  });
+  const [s3Ergebnis, setS3Ergebnis] = useState<{
+    ok: boolean;
+    text: string;
+  } | null>(null);
+
   const laden = useCallback(() => {
     setLaedt(true);
     Promise.all([api.einstellungen(), api.systemZustand()])
@@ -107,6 +124,27 @@ export default function EinstellungenView() {
   }, []);
 
   useEffect(laden, [laden]);
+
+  useEffect(() => {
+    api.ablageZustand().then((a) => setAblage(a.ablage)).catch(() => setAblage(""));
+  }, []);
+
+  const ablageTesten = async () => {
+    setLaeuft("ablage");
+    setS3Ergebnis(null);
+    try {
+      const r = await api.ablageTesten(s3);
+      setS3Ergebnis(
+        r.ok
+          ? { ok: true, text: `Verbindung steht: ${r.ablage}${r.anmerkung ? ` (${r.anmerkung})` : ""}` }
+          : { ok: false, text: `Fehlgeschlagen beim ${r.schritt}: ${r.grund}` },
+      );
+    } catch (err) {
+      setS3Ergebnis({ ok: false, text: (err as Error).message });
+    } finally {
+      setLaeuft(null);
+    }
+  };
 
   const holen = (schluessel: string) => liste.find((e) => e.schluessel === schluessel);
 
@@ -441,6 +479,84 @@ export default function EinstellungenView() {
                 Ein hier erhöhter Wert bringt nichts, solange <code>client_max_body_size</code>{" "}
                 im vorgeschalteten nginx kleiner ist — der bricht die Übertragung dann schon
                 ab, bevor Nexora sie überhaupt sieht.
+              </div>
+            </div>
+
+            <h3>Wo die Dateien liegen</h3>
+            <div className="kachelreihe">{kachel(ablage || "—", "Aktuelle Ablage")}</div>
+            <p className="muted small">
+              Vorgabe ist die lokale Platte. Ein Objektspeicher löst zwei Dinge: ein
+              Datenbank-Dump wird zur vollständigen Sicherung, und zwei Instanzen können
+              sich dieselben Dateien teilen — ein lokales Verzeichnis können sie nicht.
+            </p>
+
+            <h3>Objektspeicher prüfen</h3>
+            <p className="muted small">
+              Hier wird nichts gespeichert. Die Zugangsdaten bleiben in diesem Formular und
+              werden nur für den Test benutzt — ein geheimer Schlüssel gehört in{" "}
+              <code>config.conf</code> oder in die Umgebung, nicht in eine Datenbankzeile,
+              die jeder Dump mitnimmt.
+            </p>
+            <div className="einstellung">
+              <div className="s3-felder">
+                <label>
+                  <span>Endpunkt</span>
+                  <input
+                    placeholder="10.0.2.43:9010"
+                    value={s3.endpunkt}
+                    onChange={(e) => setS3({ ...s3, endpunkt: e.target.value })}
+                  />
+                </label>
+                <label>
+                  <span>Eimer</span>
+                  <input value={s3.bucket} onChange={(e) => setS3({ ...s3, bucket: e.target.value })} />
+                </label>
+                <label>
+                  <span>Zugriffsschlüssel</span>
+                  <input value={s3.zugriff} onChange={(e) => setS3({ ...s3, zugriff: e.target.value })} />
+                </label>
+                <label>
+                  <span>Geheimnis</span>
+                  <input
+                    type="password"
+                    value={s3.geheimnis}
+                    onChange={(e) => setS3({ ...s3, geheimnis: e.target.value })}
+                  />
+                </label>
+                <label>
+                  <span>Region</span>
+                  <input value={s3.region} onChange={(e) => setS3({ ...s3, region: e.target.value })} />
+                </label>
+                <label className="schalter">
+                  <input
+                    type="checkbox"
+                    checked={s3.tls}
+                    onChange={(e) => setS3({ ...s3, tls: e.target.checked })}
+                  />
+                  <span>HTTPS</span>
+                </label>
+                <label className="schalter">
+                  <input
+                    type="checkbox"
+                    checked={s3.pfadstil}
+                    onChange={(e) => setS3({ ...s3, pfadstil: e.target.checked })}
+                  />
+                  <span>Pfadstil (MinIO, Garage)</span>
+                </label>
+              </div>
+              <div className="einstellung-aktionen">
+                <button className="btn" disabled={laeuft === "ablage" || !s3.endpunkt} onClick={ablageTesten}>
+                  {laeuft === "ablage" ? "Prüft…" : "Verbindung prüfen"}
+                </button>
+              </div>
+              {s3Ergebnis && (
+                <div className={s3Ergebnis.ok ? "hinweis-ok" : "fehler"}>{s3Ergebnis.text}</div>
+              )}
+              <div className="einstellung-fuss muted small">
+                Geprüft wird verbinden, schreiben, lesen und löschen — nur zu verbinden würde
+                zu wenig verraten. Die häufigsten Fehler zeigen sich erst beim Schreiben.
+                Übernommen wird das Ergebnis nicht: dafür die Werte in{" "}
+                <code>config.conf</code> eintragen und den Dienst neu starten.
               </div>
             </div>
           </>

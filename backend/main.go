@@ -192,6 +192,8 @@ func main() {
 			r.Delete("/einstellungen", h.LoescheEinstellung)
 			r.Get("/system", h.SystemZustand)
 			r.Post("/system/suchindex", h.IndexNeuAufbauen)
+			r.Get("/system/ablage", h.AblageZustand)
+			r.Post("/system/ablage/test", h.S3Testen)
 
 			// Kommentare -- Zusatz. Wer die Seite lesen darf, darf auch
 			// mitreden; feiner wird es hier nicht, das prüfen die Handler.
@@ -228,6 +230,11 @@ func main() {
 			r.Delete("/spaces/{id}", h.DeleteSpace)
 
 			// Backlinks (pages linking here via [[wiki-link]] or manual links)
+			// Markdown-Ausgabe einer Seite. Serverseitig, damit sie auch ohne
+			// geladenen Editor funktioniert -- und weil die Umwandlung im Editor
+			// ausdrücklich verlustbehaftet ist.
+			r.Get("/pages/{id}/markdown", h.ExportMarkdown)
+
 			r.Get("/pages/{id}/backlinks", h.Backlinks)
 
 			// Manual page-to-page links (edited via the UI)
