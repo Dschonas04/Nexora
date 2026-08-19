@@ -6,34 +6,35 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 
+	"nexora/internal/config"
 	"nexora/internal/db"
 	"nexora/internal/handlers"
 	"nexora/internal/lizenz"
 	"nexora/internal/middleware"
 )
 
-// env reads an environment variable and falls back to def when it is unset or
-// empty. Every setting has a working default so the binary starts without any
-// configuration, which is convenient for local runs but means a missing .env in
-// production silently uses the weak defaults below.
-func env(key, def string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return def
-}
-
 func main() {
-	dbURL := env("DATABASE_URL", "postgres://nexora:nexora@localhost:5432/nexora?sslmode=disable")
-	secret := env("JWT_SECRET", "change-me-in-production")
-	port := env("PORT", "8080")
-	dataDir := env("NEXORA_DATA_DIR", "/data/attachments") // attachments live on disk, not in the database
+	// Einstellungen kommen aus config.conf, überschrieben von Umgebungsvariablen,
+	// überschrieben von nichts. Siehe internal/config und config.conf; jeder
+	// Wert hat eine Vorgabe, damit der Server auch ohne Konfiguration startet.
+	k := config.Laden("")
+
+	// Gefährliche Vorgaben werden benannt, aber nicht bestraft: eine
+	// Heimlabor-Installation mit dem Vorgabegeheimnis soll starten -- man soll
+	// es nur nicht übersehen können.
+	for _, w := range k.Warnungen() {
+		log.Printf("ACHTUNG: %s", w)
+	}
+
+	dbURL := k.DatenbankURL
+	secret := k.JWTGeheimnis
+	port := k.Port
+	dataDir := k.DatenVerzeich
 
 	// Startup budget for connecting and migrating. The pool itself outlives this
 	// context, only the setup below is bounded by it.
@@ -56,7 +57,7 @@ func main() {
 	// Der Lizenzschlüssel schaltet die kostenpflichtigen Zusätze frei. Fehlt er
 	// oder taugt er nicht, läuft der Server mit dem freien Umfang weiter -- ein
 	// ungültiger Schlüssel darf den Start nie verhindern.
-	lizenz.Laden(env("NEXORA_LIZENZ", ""))
+	lizenz.Laden(k.Lizenz)
 	if z := lizenz.Aktuell(); z.Gueltig {
 		log.Printf("Lizenz für %s gültig, freigeschaltet: %v", z.Inhaber, z.Funktionen)
 	} else {

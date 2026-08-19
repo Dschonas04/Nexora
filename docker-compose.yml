@@ -26,6 +26,10 @@ services:
       NEXORA_LIZENZ: ${NEXORA_LIZENZ:-}
     volumes:
       - nexora_files:/data/attachments
+      # Die Konfiguration wird nur gelesen, deshalb schreibgeschützt. Fehlt die
+      # Datei, startet Nexora trotzdem -- dann gelten Vorgaben und die
+      # Umgebungsvariablen unten.
+      - ./config.conf:/etc/nexora/config.conf:ro
     depends_on:
       db:
         condition: service_healthy
