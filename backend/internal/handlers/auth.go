@@ -78,6 +78,11 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.issueSession(w, u.ID)
+	s.spur(r.Context(), models.Spureintrag{
+		AkteurID: u.ID, AkteurName: u.Name, AkteurEmail: u.Email,
+		Aktion: AktKontoAngelegt, ObjektArt: "konto", ObjektID: u.ID,
+		ObjektTitel: u.Name, IP: absenderIP(r),
+	})
 	writeJSON(w, http.StatusCreated, u)
 }
 
@@ -104,16 +109,31 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	// One message for an unknown address and for a wrong password, so the
 	// response cannot be used to find out which addresses are registered.
 	if err != nil || !auth.CheckPassword(hash, req.Password) {
+		// Der Fehlversuch wird festgehalten -- ohne ihn hätte die Prüfspur
+		// genau die Vorgänge nicht, für die man sie am ehesten aufschlägt.
+		// Die eingegebene Adresse steht dabei im Klartext, das Passwort nie.
+		s.spur(r.Context(), models.Spureintrag{
+			Aktion:      AktAnmeldungFehl,
+			AkteurEmail: req.Email,
+			ObjektArt:   "konto",
+			IP:          absenderIP(r),
+		})
 		writeErr(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
 	s.issueSession(w, u.ID)
+	s.spur(r.Context(), models.Spureintrag{
+		AkteurID: u.ID, AkteurName: u.Name, AkteurEmail: u.Email,
+		Aktion: AktAnmeldung, ObjektArt: "konto", ObjektID: u.ID,
+		ObjektTitel: u.Name, IP: absenderIP(r),
+	})
 	writeJSON(w, http.StatusOK, u)
 }
 
 // Logout clears the cookie. See clearAuthCookie: the token stays valid.
 func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
+	s.spurAusRequest(r, AktAbmeldung, "konto", middleware.UserID(r), "", nil)
 	s.clearAuthCookie(w)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

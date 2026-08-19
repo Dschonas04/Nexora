@@ -176,6 +176,34 @@ ALTER TABLE pages ADD COLUMN IF NOT EXISTS such_tsv tsvector
 		setweight(to_tsvector('german', coalesce(content_text, '')), 'B')
 	) STORED;
 CREATE INDEX IF NOT EXISTS pages_such_idx ON pages USING GIN (such_tsv);
+
+-- Prüfspur: wer hat wann was getan.
+--
+-- Bewusst eine eigene Tabelle statt Spalten an den Objekten: ein Eintrag muss
+-- auch dann bestehen bleiben, wenn die Seite gelöscht wird -- gerade das
+-- Löschen ist der Vorgang, den eine Revision sehen will. Deshalb gibt es hier
+-- KEINEN Fremdschlüssel mit ON DELETE CASCADE; objekt_id ist eine lose
+-- Referenz, und objekt_titel hält fest, wie das Objekt damals hieß.
+--
+-- akteur_id verweist ebenfalls lose auf users: ein gelöschtes Konto darf seine
+-- Spur nicht mitnehmen. akteur_name friert den Namen zum Zeitpunkt ein.
+CREATE TABLE IF NOT EXISTS pruefspur (
+	id           bigserial PRIMARY KEY,
+	zeitpunkt    timestamptz NOT NULL DEFAULT now(),
+	akteur_id    uuid,
+	akteur_name  text NOT NULL DEFAULT '',
+	akteur_email text NOT NULL DEFAULT '',
+	aktion       text NOT NULL,
+	objekt_art   text NOT NULL DEFAULT '',
+	objekt_id    text NOT NULL DEFAULT '',
+	objekt_titel text NOT NULL DEFAULT '',
+	details      jsonb NOT NULL DEFAULT '{}'::jsonb,
+	ip           text NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS pruefspur_zeit_idx   ON pruefspur(zeitpunkt DESC);
+CREATE INDEX IF NOT EXISTS pruefspur_akteur_idx ON pruefspur(akteur_id, zeitpunkt DESC);
+CREATE INDEX IF NOT EXISTS pruefspur_objekt_idx ON pruefspur(objekt_art, objekt_id, zeitpunkt DESC);
+CREATE INDEX IF NOT EXISTS pruefspur_aktion_idx ON pruefspur(aktion, zeitpunkt DESC);
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

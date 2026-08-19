@@ -76,6 +76,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "could not create user")
 		return
 	}
+	s.spurAusRequest(r, AktKontoAngelegt, "konto", u.ID, u.Email, map[string]interface{}{"rolle": u.Role})
 	writeJSON(w, http.StatusCreated, u)
 }
 
@@ -96,6 +97,11 @@ func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "cannot delete yourself")
 		return
 	}
+	// Adresse vor dem Löschen lesen: danach ist die Zeile fort, und ein
+	// Prüfspureintrag ohne Namen wäre für eine Revision wertlos.
+	var mail string
+	_ = s.Pool.QueryRow(r.Context(), `SELECT email FROM users WHERE id=$1`, target).Scan(&mail)
+
 	tag, err := s.Pool.Exec(r.Context(), `DELETE FROM users WHERE id=$1`, target)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "delete failed")
@@ -105,5 +111,6 @@ func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "user not found")
 		return
 	}
+	s.spurAusRequest(r, AktKontoGeloescht, "konto", target, mail, nil)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

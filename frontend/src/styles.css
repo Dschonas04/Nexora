@@ -1169,3 +1169,54 @@ a {
   font-size: 10px;
   padding: 1px 5px;
 }
+
+/* Prüfspur */
+.page-pad {
+  padding: 24px 32px;
+  overflow: auto;
+}
+.pruefspur-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 10px;
+  flex-wrap: wrap;
+}
+.pruefspur-filter input {
+  flex: 1 1 260px;
+  min-width: 200px;
+}
+.tabelle {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.tabelle th {
+  text-align: left;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg, #fff);
+}
+.tabelle td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+/* Löschungen, Rollenwechsel und Fehlanmeldungen sind das, wonach jemand in
+   einer Prüfspur zuerst sucht -- die bekommen eine Kante. */
+.pruefspur-tabelle tr.auffaellig td:first-child {
+  box-shadow: inset 3px 0 0 #d9822b;
+}
+.einzeilig {
+  white-space: nowrap;
+}
+.fehler {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(217, 45, 32, 0.1);
+  color: #b42318;
+  margin: 10px 0;
+}

@@ -5,8 +5,21 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 
 import { api, Lizenz } from "./api/client";
 
-// The names must match the backend constants in internal/lizenz.
-export type Extra = "versionen" | "anhaenge" | "freigeben";
+// The names must match the backend constants in internal/lizenz. Keeping them
+// as a union rather than plain string is what turns a typo into a build error
+// instead of a feature that silently never unlocks.
+export type Extra =
+  | "versionen"
+  | "anhaenge"
+  | "freigeben"
+  | "pruefspur"
+  | "gruppen"
+  | "sso"
+  | "anhangsuche"
+  | "export"
+  | "vorlagen"
+  | "kommentare"
+  | "konflikte";
 
 interface Ctx {
   lizenz: Lizenz | null;

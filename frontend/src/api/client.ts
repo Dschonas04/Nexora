@@ -158,6 +158,23 @@ export interface Lizenz {
   freigeschaltet: string[];
 }
 
+// Spureintrag is one row of the audit trail. Names and titles are frozen copies
+// taken when the action happened, so an entry stays readable after the account
+// or page it refers to is gone.
+export interface Spureintrag {
+  id: number;
+  zeitpunkt: string;
+  akteurId: string;
+  akteurName: string;
+  akteurEmail: string;
+  aktion: string;
+  objektArt: string;
+  objektId: string;
+  objektTitel: string;
+  details: Record<string, unknown>;
+  ip: string;
+}
+
 // SearchHit is one full text result. Unlike PageMeta it carries the snippet the
 // database produced, so the sidebar can show where the term actually sat.
 export interface SearchHit {
@@ -201,6 +218,16 @@ export const api = {
   // reader, not a protection: the backend refuses the same calls with 402
   // regardless of what the interface shows.
   lizenz: () => req<Lizenz>("/lizenz"),
+
+  pruefspur: (p: { aktion?: string; akteur?: string; objekt?: string; limit?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (p.aktion) q.set("aktion", p.aktion);
+    if (p.akteur) q.set("akteur", p.akteur);
+    if (p.objekt) q.set("objekt", p.objekt);
+    if (p.limit) q.set("limit", String(p.limit));
+    return req<Spureintrag[]>(`/pruefspur?${q.toString()}`);
+  },
+  pruefspurAktionen: () => req<{ aktion: string; anzahl: number }[]>("/pruefspur/aktionen"),
 
   listPages: () => req<PageMeta[]>("/pages"),
   listShared: () => req<PageMeta[]>("/pages/shared"),

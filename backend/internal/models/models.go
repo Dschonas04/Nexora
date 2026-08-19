@@ -47,6 +47,25 @@ type PageMeta struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+// Spureintrag is one row of the audit trail.
+//
+// Names and titles are frozen copies, not joins: an entry has to stay readable
+// after the account or the page it refers to is gone. Deleting is precisely the
+// event an auditor comes looking for.
+type Spureintrag struct {
+	ID          int64           `json:"id"`
+	Zeitpunkt   time.Time       `json:"zeitpunkt"`
+	AkteurID    string          `json:"akteurId"`
+	AkteurName  string          `json:"akteurName"`
+	AkteurEmail string          `json:"akteurEmail"`
+	Aktion      string          `json:"aktion"`
+	ObjektArt   string          `json:"objektArt"`
+	ObjektID    string          `json:"objektId"`
+	ObjektTitel string          `json:"objektTitel"`
+	Details     json.RawMessage `json:"details"`
+	IP          string          `json:"ip"`
+}
+
 // SearchHit is one full text result. It carries the snippet the database
 // produced, so the interface does not have to guess where the match sat in a
 // page it never receives in full.
