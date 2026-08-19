@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"nexora/internal/ablage"
 	"nexora/internal/models"
 )
 
@@ -26,9 +27,11 @@ const (
 // Server carries everything the handlers need. It is created once in main and
 // shared by all requests, so it must stay read-only after startup.
 type Server struct {
-	Pool    *pgxpool.Pool
-	Secret  []byte
-	DataDir string // directory where uploaded attachments are stored on disk
+	Pool   *pgxpool.Pool
+	Secret []byte
+	// Ablage entscheidet, wo die Bytes eines Anhangs liegen: auf der Platte
+	// oder in einem S3-Eimer. Die Handler kennen den Unterschied nicht.
+	Ablage ablage.Ablage
 }
 
 // writeJSON sends v as JSON. An encoding error is ignored on purpose: the

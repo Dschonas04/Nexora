@@ -24,6 +24,18 @@ services:
       # Schaltet die kostenpflichtigen Zusätze frei. Leer lassen heißt: Nexora
       # läuft mit dem freien Umfang, gesperrte Aufrufe antworten mit 402.
       NEXORA_LIZENZ: ${NEXORA_LIZENZ:-}
+      # Objektspeicher. Leer lassen heißt: Anhänge bleiben auf der Platte.
+      # Der Endpunkt muss aus Sicht DIESES Containers erreichbar sein -- läuft
+      # MinIO in einem anderen Compose-Verbund, ist das die Adresse des Wirts
+      # mit dem veröffentlichten Port, nicht der Containername.
+      NEXORA_S3_AKTIV: ${NEXORA_S3_AKTIV:-}
+      NEXORA_S3_ENDPUNKT: ${NEXORA_S3_ENDPUNKT:-}
+      NEXORA_S3_BUCKET: ${NEXORA_S3_BUCKET:-}
+      NEXORA_S3_ZUGRIFFSSCHLUESSEL: ${NEXORA_S3_ZUGRIFFSSCHLUESSEL:-}
+      NEXORA_S3_GEHEIMNIS: ${NEXORA_S3_GEHEIMNIS:-}
+      NEXORA_S3_REGION: ${NEXORA_S3_REGION:-}
+      NEXORA_S3_TLS: ${NEXORA_S3_TLS:-}
+      NEXORA_S3_PFADSTIL: ${NEXORA_S3_PFADSTIL:-}
     volumes:
       - nexora_files:/data/attachments
       # Die Konfiguration wird nur gelesen, deshalb schreibgeschützt. Fehlt die

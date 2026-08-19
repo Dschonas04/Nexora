@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 
+	"nexora/internal/ablage"
 	"nexora/internal/config"
 	"nexora/internal/db"
 	"nexora/internal/handlers"
@@ -64,7 +65,33 @@ func main() {
 		log.Printf("keine gültige Lizenz (%s) -- Zusatzfunktionen bleiben gesperrt", z.Grund)
 	}
 
-	h := &handlers.Server{Pool: pool, Secret: []byte(secret), DataDir: dataDir}
+	// Ablage wählen. Der Objektspeicher ist die Ausnahme, die Platte die Regel:
+	// wer S3 nicht einrichtet, soll nichts davon merken.
+	//
+	// Ein nicht erreichbarer Objektspeicher fällt bewusst auf die Platte zurück,
+	// statt den Start zu verhindern. Eine Instanz, die läuft und deren neue
+	// Anhänge lokal liegen, ist besser als eine, die gar nicht hochkommt --
+	// gemeldet wird es deutlich.
+	var speicher ablage.Ablage = ablage.NeuePlatte(dataDir)
+	if k.S3Aktiv && k.S3Endpunkt != "" {
+		s3, err := ablage.NeuS3(ctx, ablage.Einstellungen{
+			Endpunkt:  k.S3Endpunkt,
+			Bucket:    k.S3Bucket,
+			Zugriff:   k.S3Zugriff,
+			Geheimnis: k.S3Geheimnis,
+			Region:    k.S3Region,
+			TLS:       k.S3TLS,
+			Pfadstil:  k.S3Pfadstil,
+		})
+		if err != nil {
+			log.Printf("ACHTUNG: Objektspeicher nicht erreichbar (%v) -- Anhänge liegen auf der Platte", err)
+		} else {
+			speicher = s3
+		}
+	}
+	log.Printf("Anhänge: %s", speicher.Name())
+
+	h := &handlers.Server{Pool: pool, Secret: []byte(secret), Ablage: speicher}
 
 	// Seiten aus der Zeit vor dem Suchindex bekommen ihren Fließtext nachgereicht.
 	// Ohne das lieferte die Volltextsuche für ältere Seiten stillschweigend nichts

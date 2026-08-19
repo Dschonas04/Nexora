@@ -1,4 +1,5 @@
-FROM golang:1.22-alpine AS build
+# Go 1.25, weil minio-go das mindestens verlangt -- siehe go.mod.
+FROM golang:1.25-alpine AS build
 WORKDIR /app
 RUN apk add --no-cache git
 COPY go.mod ./

@@ -31,7 +31,9 @@ license key. On 2030-08-19 the whole thing becomes Apache 2.0.
 - **Markdown export**: download the current page as `.md`
 - **Version history**: a snapshot is written before every content change; browse
   and restore any earlier revision
-- **Attachments**: upload files per page, with a quick viewer for images, PDFs
+- **Attachments**: stored on local disk or in any S3-compatible bucket (MinIO,
+  Garage, Ceph, AWS) — the handlers never learn which. Upload files per page,
+  with a quick viewer for images, PDFs
   and plain text — browse between files with `←` `→`, zoom with `+` `−`, rotate
   with `R`, `0` resets, `Esc` closes
 - **Comments**: threads under every page, one reply level deep, mark a thread as
@@ -120,6 +122,7 @@ typo must not cause an outage.
 | Registration | `registrierung_offen`, `erlaubte_domaenen` |
 | Search | `such_woerterbuch` |
 | Attachments | `max_anhang_mb` |
+| Object storage | `s3_aktiv` and seven more |
 | LDAP / AD | `ldap_aktiv` and ten more |
 | OIDC | `oidc_aktiv` and eight more |
 
