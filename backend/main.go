@@ -155,6 +155,11 @@ func main() {
 			// Einstellungen und Systemzustand. Ausschließlich für Admins, das
 			// prüfen die Handler selbst -- deshalb steht hier keine weitere
 			// Hürde, sondern nur die Route.
+			// Das Aussehen darf jeder lesen -- sonst sähe ein normaler Benutzer
+			// die eingestellten Farben nie, denn die Einstellungsseite selbst ist
+			// ihm verwehrt.
+			r.Get("/design", h.Design)
+
 			r.Get("/einstellungen", h.ListEinstellungen)
 			r.Put("/einstellungen", h.SetzeEinstellung)
 			r.Delete("/einstellungen", h.LoescheEinstellung)

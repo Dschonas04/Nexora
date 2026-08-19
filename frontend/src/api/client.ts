@@ -219,6 +219,21 @@ export interface SystemZustand {
     alle: number;
   };
   zahlen: Record<string, number>;
+  datenbank: {
+    groesse: string;
+    version: string;
+    tabellen: { name: string; zeilen: number; platz: string }[];
+  };
+  anhaengeBytes: number;
+  sicherheit: {
+    admins: { name: string; email: string }[];
+    letzteAnmeldung: string;
+    letzterFehlversuch: string;
+    fehlversuche24h: number;
+    registrierungOffen: boolean;
+    erlaubteDomaenen: string[] | null;
+    sitzungTage: number;
+  };
   nurInDerDatei: {
     port: string;
     datenVerzeichnis: string;
@@ -228,7 +243,6 @@ export interface SystemZustand {
     oidcAktiv: boolean;
     oidcAussteller: string;
   };
-  datenbankGroesse: string;
   warnungen: string[];
 }
 
@@ -291,6 +305,8 @@ export const api = {
     return req<Spureintrag[]>(`/pruefspur?${q.toString()}`);
   },
   pruefspurAktionen: () => req<{ aktion: string; anzahl: number }[]>("/pruefspur/aktionen"),
+
+  design: () => req<{ grundton: string; akzent: string }>("/design"),
 
   einstellungen: () => req<Einstellung[]>("/einstellungen"),
   einstellungSetzen: (schluessel: string, wert: string) =>
