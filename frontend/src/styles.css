@@ -1775,3 +1775,61 @@ a {
 .vorlageneintrag:hover {
   background: var(--hover);
 }
+
+/* Gruppen und Space-Rechte */
+.mitgliederliste {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  max-height: 320px;
+  overflow-y: auto;
+}
+.mitgliederliste > input {
+  width: 100%;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+  margin-bottom: 6px;
+}
+.mitglied {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.mitglied:hover {
+  background: var(--hover);
+}
+.mitglied-name {
+  font-size: 13px;
+}
+
+.rechte-box {
+  width: 640px;
+}
+.rechte-inhalt {
+  padding: 16px;
+  overflow-y: auto;
+}
+.rechte-neu {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0 4px;
+}
+.rechte-neu select {
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+}
+.rechte-neu select:first-child {
+  flex: 1 1 260px;
+}

@@ -7,6 +7,7 @@ import { PageMeta, SearchHit, Space, Tag, api } from "../api/client";
 import { useLizenz } from "../lizenz";
 import { useAuth } from "../auth";
 import PageTree from "./PageTree";
+import SpaceRechte from "./SpaceRechte";
 
 interface Props {
   pages: PageMeta[];
@@ -57,6 +58,7 @@ export default function Sidebar(props: Props) {
   // ist kurz und ändert sich selten, ein Abruf je Klick wäre Verschwendung.
   const [vorlagen, setVorlagen] = useState<PageMeta[]>([]);
   const [vorlagenOffen, setVorlagenOffen] = useState(false);
+  const [rechteFuer, setRechteFuer] = useState<{ id: string; name: string } | null>(null);
   useEffect(() => {
     if (!frei("vorlagen")) return;
     api.vorlagen().then(setVorlagen).catch(() => setVorlagen([]));
@@ -274,6 +276,15 @@ export default function Sidebar(props: Props) {
                           Content-Disposition-Kopf und lädt den Strom direkt
                           auf die Platte, statt ihn erst in den Speicher zu
                           holen. */}
+                      {frei("gruppen") && (
+                        <button
+                          className="icon-btn"
+                          title="Rechte an diesem Space"
+                          onClick={() => setRechteFuer({ id: sp.id, name: sp.name })}
+                        >
+                          ⚿
+                        </button>
+                      )}
                       {frei("export") && (
                         <button
                           className="icon-btn"
@@ -446,6 +457,14 @@ export default function Sidebar(props: Props) {
                   <span className="tree-label">Einstellungen</span>
                 </div>
               )}
+              {user?.role === "admin" && frei("gruppen") && (
+                <div
+                  className={"tree-row" + (currentPath === "/gruppen" ? " active" : "")}
+                  onClick={() => onNavigate("/gruppen")}
+                >
+                  <span className="tree-label">Gruppen</span>
+                </div>
+              )}
               {user?.role === "admin" && frei("pruefspur") && (
                 <div
                   className={"tree-row" + (currentPath === "/pruefspur" ? " active" : "")}
@@ -458,6 +477,14 @@ export default function Sidebar(props: Props) {
           </>
         )}
       </div>
+
+      {rechteFuer && (
+        <SpaceRechte
+          spaceId={rechteFuer.id}
+          spaceName={rechteFuer.name}
+          onClose={() => setRechteFuer(null)}
+        />
+      )}
 
       <div className="sidebar-footer">
         <span className="tree-label">{user?.name}</span>

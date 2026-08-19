@@ -251,6 +251,53 @@ CREATE INDEX IF NOT EXISTS kommentare_eltern_idx ON kommentare(eltern_id);
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS ist_vorlage boolean NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS pages_vorlage_idx ON pages(owner_id) WHERE ist_vorlage;
 
+-- Gruppen und Space-Rechte.
+--
+-- Warum überhaupt: Freigaben je Seite skalieren nicht. Wer vierzehn Kollegen
+-- an einen Bereich lassen will, klickt heute vierzehnmal pro Seite. Eine
+-- Gruppe ist die Antwort darauf, und der Space die Ebene, auf der man sie
+-- vergibt.
+--
+-- Gruppen sind bewusst NICHT je Konto, sondern für die ganze Instanz: eine
+-- Abteilung ist keine Privatsache, und zwei Leute, die dieselbe Gruppe meinen,
+-- sollen dieselbe meinen.
+CREATE TABLE IF NOT EXISTS gruppen (
+	id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	name         text UNIQUE NOT NULL,
+	beschreibung text NOT NULL DEFAULT '',
+	erstellt_am  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS gruppen_mitglieder (
+	gruppe_id uuid NOT NULL REFERENCES gruppen(id) ON DELETE CASCADE,
+	user_id   uuid NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
+	seit      timestamptz NOT NULL DEFAULT now(),
+	PRIMARY KEY (gruppe_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS gruppen_mitglieder_user_idx ON gruppen_mitglieder(user_id);
+
+-- Ein Recht gilt entweder einer Gruppe oder einem einzelnen Konto, nie beidem.
+-- Der CHECK erzwingt das im Schema statt es dem Handler zu überlassen: eine
+-- Zeile mit beidem oder mit nichts wäre nicht auszuwerten, und die Datenbank
+-- ist der einzige Ort, an dem sie garantiert nie entsteht.
+--
+-- recht ist eine Stufenleiter: lesen < schreiben < verwalten. Wer verwalten
+-- darf, vergibt Rechte für diesen Space -- das ist der Space-Verantwortliche,
+-- ohne dass es dafür eine globale Rolle braucht.
+CREATE TABLE IF NOT EXISTS space_rechte (
+	space_id  uuid NOT NULL REFERENCES spaces(id)  ON DELETE CASCADE,
+	gruppe_id uuid          REFERENCES gruppen(id) ON DELETE CASCADE,
+	user_id   uuid          REFERENCES users(id)   ON DELETE CASCADE,
+	recht     text NOT NULL DEFAULT 'lesen',
+	erteilt_am timestamptz NOT NULL DEFAULT now(),
+	CHECK ((gruppe_id IS NULL) <> (user_id IS NULL)),
+	CHECK (recht IN ('lesen', 'schreiben', 'verwalten'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS space_rechte_gruppe_idx
+	ON space_rechte(space_id, gruppe_id) WHERE gruppe_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS space_rechte_user_idx
+	ON space_rechte(space_id, user_id) WHERE user_id IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS einstellungen (
 	schluessel    text PRIMARY KEY,
 	wert          text NOT NULL,

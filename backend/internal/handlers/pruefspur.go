@@ -61,6 +61,12 @@ const (
 	AktVorlageAn          = "vorlage.gesetzt"
 	AktVorlageAus         = "vorlage.aufgehoben"
 	AktExport             = "space.exportiert"
+	AktGruppeAngelegt     = "gruppe.angelegt"
+	AktGruppeGeloescht    = "gruppe.geloescht"
+	AktGruppeBeitritt     = "gruppe.beigetreten"
+	AktGruppeAustritt     = "gruppe.ausgetreten"
+	AktSpaceRecht         = "spacerecht.erteilt"
+	AktSpaceRechtWeg      = "spacerecht.entzogen"
 )
 
 // spur writes one entry. Callers pass what they know; empty fields stay empty.
