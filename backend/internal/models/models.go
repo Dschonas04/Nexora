@@ -47,6 +47,23 @@ type PageMeta struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+// SearchHit is one full text result. It carries the snippet the database
+// produced, so the interface does not have to guess where the match sat in a
+// page it never receives in full.
+type SearchHit struct {
+	ID       string  `json:"id"`
+	ParentID *string `json:"parentId"`
+	Title    string  `json:"title"`
+	Icon     string  `json:"icon"`
+	// Ausschnitt carries <b> around the matched words. The rest is raw page
+	// text: ts_headline does not escape anything. The interface splits on the
+	// markers and renders the pieces as text nodes, which is what makes it
+	// safe -- see markiere() in the sidebar.
+	Ausschnitt string    `json:"ausschnitt"`
+	Eigen      bool      `json:"eigen"` // false means: reached through a share or as admin
+	UpdatedAt  time.Time `json:"updatedAt"`
+}
+
 // Page is the full page returned when a single page is opened.
 type Page struct {
 	ID          string          `json:"id"`

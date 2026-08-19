@@ -25,8 +25,9 @@ attachments, a trash can, backlinks and a knowledge graph. **Go** backend,
 - **Markdown export**: download the current page as `.md`
 - **Version history**: a snapshot is written before every content change; browse
   and restore any earlier revision
-- **Attachments**: upload files per page (25 MiB per file), with inline preview
-  for images, PDFs and plain text
+- **Attachments**: upload files per page (25 MiB per file), with a quick viewer
+  for images, PDFs and plain text — browse between files with the arrow keys,
+  zoom and rotate images, Esc closes
 
 ### Organising
 
@@ -34,7 +35,10 @@ attachments, a trash can, backlinks and a knowledge graph. **Go** backend,
 - **Tags**: colored, per-user, attach any number to a page
 - **Favorites**: quick access section in the sidebar
 - **Trash**: deleting moves a page to the trash; restore it or purge permanently
-- **Search**: full text over titles and content
+- **Search**: real full text search (PostgreSQL `tsvector`, GIN index) with
+  relevance ranking and snippets. Title matches outrank body matches. Results
+  are limited to pages the caller may read, using the same rule that governs
+  opening a single page: owner, admin, or an explicit share
 - **Backlinks and links**: link pages explicitly or with `@` mentions in the text,
   and see what points back at the current page
 - **Knowledge graph**: a global graph of all pages plus a local view around one page

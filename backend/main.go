@@ -65,6 +65,11 @@ func main() {
 
 	h := &handlers.Server{Pool: pool, Secret: []byte(secret), DataDir: dataDir}
 
+	// Seiten aus der Zeit vor dem Suchindex bekommen ihren Fließtext nachgereicht.
+	// Ohne das lieferte die Volltextsuche für ältere Seiten stillschweigend nichts
+	// -- das sieht wie ein leeres Ergebnis aus, nicht wie ein Fehler.
+	h.IndexNachziehen(ctx)
+
 	r := chi.NewRouter()
 	r.Use(chimw.RealIP) // trust X-Forwarded-For, the SPA is served through nginx
 	r.Use(chimw.Logger)
