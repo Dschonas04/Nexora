@@ -1,12 +1,12 @@
-// File attachments. Metadata lives in the database, the bytes live on disk in
-// DataDir, one file per attachment id. That split means a backup has to cover
-// both, otherwise rows point at files that are gone.
+// File attachments. Metadata lives in the database, the bytes live in the
+// configured Ablage -- local disk or an S3 bucket -- as one object per
+// attachment id. That split means a backup has to cover both, otherwise rows
+// point at objects that are gone.
 package handlers
 
 import (
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -54,7 +54,7 @@ func (s *Server) ListAttachments(w http.ResponseWriter, r *http.Request) {
 // the row back so no orphan metadata survives.
 //
 // The file is named by its id, never by the name the client sent. That keeps a
-// crafted filename such as ../../etc/passwd from escaping DataDir.
+// crafted filename such as ../../etc/passwd from escaping the storage directory.
 func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -93,23 +93,14 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := os.MkdirAll(s.DataDir, 0o755); err != nil {
-		s.Pool.Exec(r.Context(), `DELETE FROM attachments WHERE id=$1`, attID)
-		writeErr(w, http.StatusInternalServerError, "storage unavailable")
-		return
-	}
-	dst, err := os.Create(filepath.Join(s.DataDir, attID))
+	// Ab hier entscheidet die Ablage, wo die Bytes landen -- Platte oder
+	// Objektspeicher. Der Handler sieht keinen Unterschied.
+	written, err := s.Ablage.Schreiben(r.Context(), attID, file, header.Size, mime)
 	if err != nil {
+		// Die Zeile wieder wegnehmen: eine Anhangzeile ohne Datei wäre ein
+		// Eintrag, der sich anklicken lässt und dann ins Leere führt.
 		s.Pool.Exec(r.Context(), `DELETE FROM attachments WHERE id=$1`, attID)
-		writeErr(w, http.StatusInternalServerError, "storage unavailable")
-		return
-	}
-	written, err := io.Copy(dst, file)
-	dst.Close()
-	if err != nil {
-		os.Remove(filepath.Join(s.DataDir, attID))
-		s.Pool.Exec(r.Context(), `DELETE FROM attachments WHERE id=$1`, attID)
-		writeErr(w, http.StatusInternalServerError, "write failed")
+		writeErr(w, http.StatusInternalServerError, "Ablage nicht erreichbar")
 		return
 	}
 	// header.Size comes from the client and can be wrong or absent; persist the
@@ -141,7 +132,7 @@ func (s *Server) DownloadAttachment(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "attachment not found")
 		return
 	}
-	f, err := os.Open(filepath.Join(s.DataDir, attID))
+	f, err := s.Ablage.Lesen(r.Context(), attID)
 	if err != nil {
 		writeErr(w, http.StatusNotFound, "file missing")
 		return
@@ -174,6 +165,8 @@ func (s *Server) DeleteAttachment(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "attachment not found")
 		return
 	}
-	os.Remove(filepath.Join(s.DataDir, attID))
+	// Erst die Datei, dann die Zeile. Andersherum bliebe bei einem Fehler eine
+	// Datei liegen, von der niemand mehr weiß.
+	_ = s.Ablage.Loeschen(r.Context(), attID)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

@@ -52,6 +52,16 @@ type Konfig struct {
 	// --- Anhänge ---
 	MaxAnhangMB int
 
+	// --- Objektspeicher (S3) ---
+	S3Aktiv     bool
+	S3Endpunkt  string
+	S3Bucket    string
+	S3Zugriff   string
+	S3Geheimnis string
+	S3Region    string
+	S3TLS       bool
+	S3Pfadstil  bool
+
 	// --- LDAP / Active Directory ---
 	LDAPAktiv          bool
 	LDAPServer         string
@@ -94,6 +104,12 @@ func Standard() Konfig {
 
 		SuchWoerterbuch: "german",
 		MaxAnhangMB:     25,
+
+		S3Aktiv:    false,
+		S3Bucket:   "nexora",
+		S3Region:   "us-east-1",
+		S3TLS:      false,
+		S3Pfadstil: true,
 
 		LDAPAktiv:          false,
 		LDAPStartTLS:       true,
@@ -204,6 +220,15 @@ func Laden(pfad string) Konfig {
 	text(&k.SuchWoerterbuch, "such_woerterbuch", "NEXORA_SUCH_WOERTERBUCH")
 	zahl(&k.MaxAnhangMB, "max_anhang_mb", "NEXORA_MAX_ANHANG_MB")
 
+	jaNein(&k.S3Aktiv, "s3_aktiv", "NEXORA_S3_AKTIV")
+	text(&k.S3Endpunkt, "s3_endpunkt", "NEXORA_S3_ENDPUNKT")
+	text(&k.S3Bucket, "s3_bucket", "NEXORA_S3_BUCKET")
+	text(&k.S3Zugriff, "s3_zugriffsschluessel", "NEXORA_S3_ZUGRIFFSSCHLUESSEL")
+	text(&k.S3Geheimnis, "s3_geheimnis", "NEXORA_S3_GEHEIMNIS")
+	text(&k.S3Region, "s3_region", "NEXORA_S3_REGION")
+	jaNein(&k.S3TLS, "s3_tls", "NEXORA_S3_TLS")
+	jaNein(&k.S3Pfadstil, "s3_pfadstil", "NEXORA_S3_PFADSTIL")
+
 	jaNein(&k.LDAPAktiv, "ldap_aktiv", "NEXORA_LDAP_AKTIV")
 	text(&k.LDAPServer, "ldap_server", "NEXORA_LDAP_SERVER")
 	jaNein(&k.LDAPStartTLS, "ldap_starttls", "NEXORA_LDAP_STARTTLS")
@@ -294,6 +319,12 @@ func (k Konfig) Warnungen() []string {
 	}
 	if k.OIDCAktiv && k.OeffentlicheURL == "" {
 		w = append(w, "oidc_aktiv ohne oeffentliche_url -- die Rücksprungadresse lässt sich nicht bilden")
+	}
+	if k.S3Aktiv && k.S3Endpunkt == "" {
+		w = append(w, "s3_aktiv ohne s3_endpunkt -- Anhänge landen weiter auf der Platte")
+	}
+	if k.S3Aktiv && !k.S3TLS {
+		w = append(w, "S3 ohne TLS -- Zugangsschlüssel und Dateien gehen unverschlüsselt über das Netz")
 	}
 	if k.LDAPAktiv && k.LDAPServer == "" {
 		w = append(w, "ldap_aktiv ohne ldap_server -- die Anmeldung fällt auf Passwörter zurück")
