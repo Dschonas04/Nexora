@@ -9,6 +9,7 @@ import Editor from "../components/Editor";
 import VersionPanel from "../components/VersionPanel";
 import ShareDialog from "../components/ShareDialog";
 import Attachments from "../components/Attachments";
+import Kommentare from "../components/Kommentare";
 import { useLizenz } from "../lizenz";
 import LocalGraph from "../components/LocalGraph";
 
@@ -368,6 +369,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
               mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}
             />
             {frei("anhaenge") && <Attachments pageId={page.id} canEdit={canEdit} />}
+            {frei("kommentare") && <Kommentare pageId={page.id} />}
             {(links.length > 0 || textLinkTitles.length > 0 || canEdit) && (
               <div className="page-links">
                 <div className="page-links-title">Verknüpfungen</div>

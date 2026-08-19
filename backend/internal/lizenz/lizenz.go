@@ -24,6 +24,7 @@ const (
 	Pruefspur   Funktion = "pruefspur"   // audit trail of who did what
 	Gruppen     Funktion = "gruppen"     // groups, space permissions, space-manager role
 	SSO         Funktion = "sso"         // sign-in through an OIDC provider
+	LDAP        Funktion = "ldap"        // sign-in against LDAP or Active Directory
 	Anhangsuche Funktion = "anhangsuche" // full text search inside attachments
 	Export      Funktion = "export"      // exporting a whole space
 	Vorlagen    Funktion = "vorlagen"    // page templates
@@ -35,7 +36,7 @@ const (
 // generator, so that both sides always agree on what exists.
 var Alle = []Funktion{
 	Versionen, Anhaenge, Freigeben,
-	Pruefspur, Gruppen, SSO, Anhangsuche, Export, Vorlagen, Kommentare, Konflikte,
+	Pruefspur, Gruppen, SSO, LDAP, Anhangsuche, Export, Vorlagen, Kommentare, Konflikte,
 }
 
 // Pruefer verifies a key and answers what it unlocks. The premium package

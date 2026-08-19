@@ -146,6 +146,17 @@ func main() {
 				r.Delete("/pages/{id}/shares/{userId}", h.RemoveShare)
 			})
 
+			// Kommentare -- Zusatz. Wer die Seite lesen darf, darf auch
+			// mitreden; feiner wird es hier nicht, das prüfen die Handler.
+			r.Group(func(r chi.Router) {
+				r.Use(handlers.VerlangeFunktion(lizenz.Kommentare))
+				r.Get("/pages/{id}/kommentare", h.ListKommentare)
+				r.Post("/pages/{id}/kommentare", h.CreateKommentar)
+				r.Put("/kommentare/{kommentarId}", h.UpdateKommentar)
+				r.Delete("/kommentare/{kommentarId}", h.DeleteKommentar)
+				r.Post("/kommentare/{kommentarId}/erledigt", h.ToggleErledigt)
+			})
+
 			// Prüfspur -- Zusatz. GESCHRIEBEN wird sie immer, auch ohne
 			// Lizenz: eine Spur mit einem Loch genau über dem unlizenzierten
 			// Zeitraum wäre wertlos. Nur das Lesen ist kostenpflichtig.

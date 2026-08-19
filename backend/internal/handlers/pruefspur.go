@@ -48,6 +48,11 @@ const (
 	AktAnhangHoch     = "anhang.hochgeladen"
 	AktAnhangWeg      = "anhang.entfernt"
 	AktLizenzGeladen  = "lizenz.geladen"
+
+	AktKommentar          = "kommentar.angelegt"
+	AktKommentarGeaendert = "kommentar.geaendert"
+	AktKommentarGeloescht = "kommentar.geloescht"
+	AktKommentarErledigt  = "kommentar.erledigt"
 )
 
 // spur writes one entry. Callers pass what they know; empty fields stay empty.

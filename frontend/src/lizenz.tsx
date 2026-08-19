@@ -15,6 +15,7 @@ export type Extra =
   | "pruefspur"
   | "gruppen"
   | "sso"
+  | "ldap"
   | "anhangsuche"
   | "export"
   | "vorlagen"
