@@ -9,6 +9,7 @@ import Editor from "../components/Editor";
 import VersionPanel from "../components/VersionPanel";
 import ShareDialog from "../components/ShareDialog";
 import Attachments from "../components/Attachments";
+import { useLizenz } from "../lizenz";
 import LocalGraph from "../components/LocalGraph";
 
 interface Props {
@@ -32,6 +33,11 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const [links, setLinks] = useState<PageMeta[]>([]);
   const [graph, setGraph] = useState<Graph>({ nodes: [], edges: [] });
   const [loading, setLoading] = useState(true);
+  // Paid extras. Hidden rather than disabled: a greyed-out button that never
+  // becomes usable is noise. The backend refuses the same calls with 402
+  // anyway, so this is about the interface not lying, not about protection.
+  const { frei } = useLizenz();
+
   const [showVersions, setShowVersions] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [linkQuery, setLinkQuery] = useState("");
@@ -259,13 +265,15 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
             <button className={"btn" + (page.isFavorite ? " active" : "")} onClick={toggleFav}>
               {page.isFavorite ? "Favorisiert" : "Favorit"}
             </button>
-            <button className="btn" onClick={() => setShowVersions((v) => !v)}>
-              Verlauf
-            </button>
+            {frei("versionen") && (
+              <button className="btn" onClick={() => setShowVersions((v) => !v)}>
+                Verlauf
+              </button>
+            )}
             <button className="btn" onClick={exportMarkdown}>
               Export
             </button>
-            {page.isOwner && (
+            {page.isOwner && frei("freigeben") && (
               <button className={"btn" + (page.isPublic ? " active" : "")} onClick={() => setShowShare(true)}>
                 Teilen
               </button>
@@ -314,7 +322,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
               onOpenLink={(pid) => nav(`/page/${pid}`)}
               mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}
             />
-            <Attachments pageId={page.id} canEdit={canEdit} />
+            {frei("anhaenge") && <Attachments pageId={page.id} canEdit={canEdit} />}
             {(links.length > 0 || textLinkTitles.length > 0 || canEdit) && (
               <div className="page-links">
                 <div className="page-links-title">Verknüpfungen</div>
@@ -418,7 +426,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
         </div>
       </div>
 
-      {showVersions && (
+      {showVersions && frei("versionen") && (
         <VersionPanel
           pageId={page.id}
           canEdit={canEdit}
@@ -427,7 +435,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
         />
       )}
 
-      {showShare && (
+      {showShare && frei("freigeben") && (
         <ShareDialog
           pageId={page.id}
           isPublic={page.isPublic}

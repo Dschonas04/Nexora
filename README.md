@@ -237,6 +237,54 @@ cd backend && go run .
 cd frontend && npm install && npm run dev
 ```
 
-## License
+## Licensing
 
-Apache License 2.0, see [LICENSE](LICENSE). Copyright 2026 Jonas Groll.
+Nexora is **open core**. The two halves carry different licenses:
+
+| Part | License | What it covers |
+|---|---|---|
+| everything except `backend/premium` | Apache 2.0 | the whole application: editor, pages, spaces, tags, search, graph, trash, accounts |
+| `backend/premium` | BSL 1.1 | the license-key check for the paid extras |
+
+The free half is a complete wiki and stays that way. You may run it in
+production, commercially, without asking anyone. Fork it, sell it, host it —
+Apache 2.0 permits all of it.
+
+### Paid extras
+
+Three features ask for a license key:
+
+| Extra | Key name | Without a key |
+|---|---|---|
+| Version history | `versionen` | snapshots keep being written, browsing and restoring are locked |
+| Attachments | `anhaenge` | the upload area is not shown |
+| Sharing and public links | `freigeben` | pages stay private to their owner |
+
+Snapshots keep being written even while the extra is locked, on purpose:
+otherwise unlocking it later would reveal a gap in the history exactly where the
+unlicensed period was.
+
+The server refuses these endpoints with `402 Payment Required`, and the browser
+hides the corresponding controls. Hiding is a courtesy to the reader — the
+refusal is what enforces it.
+
+### Running without the paid half
+
+```bash
+rm -rf backend/premium
+cd backend && go build -tags nur_kern ./...
+```
+
+That yields a binary under Apache 2.0 alone. Nothing else changes.
+
+### Using a key
+
+```bash
+NEXORA_LIZENZ='<key>'
+```
+
+A missing or invalid key is not fatal: the server says why in the log and runs
+on the free feature set. See [backend/premium/README.md](backend/premium/README.md)
+for how keys are issued.
+
+Copyright 2026 Jonas Groll.
