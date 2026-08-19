@@ -16,7 +16,10 @@ import (
 	"nexora/internal/models"
 )
 
-const maxUploadBytes = 25 << 20 // 25 MiB, mirrors the nginx client_max_body_size
+// Vorgabe, falls die Einstellung fehlt. Die tatsächliche Grenze kommt aus
+// MaxAnhangBytes und lässt sich im Betrieb ändern -- der Wert muss aber zur
+// client_max_body_size im nginx davor passen, sonst bricht der schon vorher ab.
+const maxUploadBytes = 25 << 20
 
 // ListAttachments returns the metadata of the files on a page. Read access to
 // the page is enough, matching what a reader sees in the editor.
@@ -62,7 +65,7 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 
 	// Cap the body before parsing it, otherwise a large upload would be buffered
 	// to temporary storage before anyone checks its size.
-	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes)
+	r.Body = http.MaxBytesReader(w, r.Body, MaxAnhangBytes())
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, "missing file")

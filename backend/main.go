@@ -71,6 +71,11 @@ func main() {
 	// -- das sieht wie ein leeres Ergebnis aus, nicht wie ein Fehler.
 	h.IndexNachziehen(ctx)
 
+	// Laufzeiteinstellungen aus der Datenbank in den Zwischenspeicher. Sie
+	// überschreiben, was in config.conf steht -- gesetzt wurden sie später und
+	// mit Absicht.
+	h.EinstellungenLaden(ctx, k)
+
 	r := chi.NewRouter()
 	r.Use(chimw.RealIP) // trust X-Forwarded-For, the SPA is served through nginx
 	r.Use(chimw.Logger)
@@ -146,6 +151,15 @@ func main() {
 				r.Post("/pages/{id}/shares", h.AddShare)
 				r.Delete("/pages/{id}/shares/{userId}", h.RemoveShare)
 			})
+
+			// Einstellungen und Systemzustand. Ausschließlich für Admins, das
+			// prüfen die Handler selbst -- deshalb steht hier keine weitere
+			// Hürde, sondern nur die Route.
+			r.Get("/einstellungen", h.ListEinstellungen)
+			r.Put("/einstellungen", h.SetzeEinstellung)
+			r.Delete("/einstellungen", h.LoescheEinstellung)
+			r.Get("/system", h.SystemZustand)
+			r.Post("/system/suchindex", h.IndexNeuAufbauen)
 
 			// Kommentare -- Zusatz. Wer die Seite lesen darf, darf auch
 			// mitreden; feiner wird es hier nicht, das prüfen die Handler.

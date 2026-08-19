@@ -229,6 +229,24 @@ CREATE TABLE IF NOT EXISTS kommentare (
 );
 CREATE INDEX IF NOT EXISTS kommentare_page_idx   ON kommentare(page_id, erstellt_am);
 CREATE INDEX IF NOT EXISTS kommentare_eltern_idx ON kommentare(eltern_id);
+
+-- Einstellungen, die zur Laufzeit über die Oberfläche geändert werden.
+--
+-- Sie liegen NICHT in config.conf, weil eine Datei im Container niemand aus
+-- dem Browser ändern kann. Umgekehrt gehören Werte wie die Datenbankadresse
+-- nicht hierher: sie werden gebraucht, bevor die Datenbank offen ist.
+--
+-- Die Trennung ist also nicht willkürlich: hier steht, was sich im Betrieb
+-- ändern darf, in config.conf steht, was beim Start feststehen muss.
+--
+-- geaendert_von hält fest, wer zuletzt geschrieben hat -- dieselbe Angabe
+-- steht auch in der Prüfspur, hier nur griffbereit für die Anzeige.
+CREATE TABLE IF NOT EXISTS einstellungen (
+	schluessel    text PRIMARY KEY,
+	wert          text NOT NULL,
+	geaendert_am  timestamptz NOT NULL DEFAULT now(),
+	geaendert_von text NOT NULL DEFAULT ''
+);
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

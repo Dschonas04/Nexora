@@ -191,6 +191,47 @@ export interface Kommentar {
   darf: boolean;
 }
 
+// Einstellung is one runtime setting, with the description the backend supplies.
+// The page renders whatever it gets rather than keeping its own list, which
+// would drift from the server's.
+export interface Einstellung {
+  schluessel: string;
+  wert: string;
+  art: "janein" | "zahl" | "text" | "liste";
+  titel: string;
+  erklaerung: string;
+  warnung?: string;
+  vorgabe: string;
+  /** true while the value still comes from config.conf, untouched here. */
+  ausDatei: boolean;
+  geaendertVon?: string;
+  geaendertAm?: string;
+}
+
+// SystemZustand is the read-only half of the settings page.
+export interface SystemZustand {
+  lizenz: {
+    gueltig: boolean;
+    inhaber: string;
+    laeuftAb: string;
+    grund: string;
+    freigeschaltet: string[];
+    alle: number;
+  };
+  zahlen: Record<string, number>;
+  nurInDerDatei: {
+    port: string;
+    datenVerzeichnis: string;
+    oeffentlicheUrl: string;
+    ldapAktiv: boolean;
+    ldapServer: string;
+    oidcAktiv: boolean;
+    oidcAussteller: string;
+  };
+  datenbankGroesse: string;
+  warnungen: string[];
+}
+
 // SearchHit is one full text result. Unlike PageMeta it carries the snippet the
 // database produced, so the sidebar can show where the term actually sat.
 export interface SearchHit {
@@ -250,6 +291,19 @@ export const api = {
     return req<Spureintrag[]>(`/pruefspur?${q.toString()}`);
   },
   pruefspurAktionen: () => req<{ aktion: string; anzahl: number }[]>("/pruefspur/aktionen"),
+
+  einstellungen: () => req<Einstellung[]>("/einstellungen"),
+  einstellungSetzen: (schluessel: string, wert: string) =>
+    req<{ wert: string }>("/einstellungen", {
+      method: "PUT",
+      body: JSON.stringify({ schluessel, wert }),
+    }),
+  einstellungZuruecksetzen: (schluessel: string) =>
+    req<{ wert: string }>(`/einstellungen?schluessel=${encodeURIComponent(schluessel)}`, {
+      method: "DELETE",
+    }),
+  systemZustand: () => req<SystemZustand>("/system"),
+  suchindexNeu: () => req<{ ohneSuchtext: number }>("/system/suchindex", { method: "POST" }),
 
   kommentare: (pageId: string) => req<Kommentar[]>(`/pages/${pageId}/kommentare`),
   kommentarAnlegen: (pageId: string, text: string, elternId?: string) =>

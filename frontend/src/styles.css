@@ -1322,3 +1322,136 @@ a {
 .link-btn:hover {
   color: inherit;
 }
+
+/* Einstellungsseite */
+.einstellungen {
+  max-width: 900px;
+}
+.einstellungen section {
+  margin-top: 28px;
+}
+.einstellungen h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+.einstellung {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 10px;
+}
+.einstellung-kopf {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+.einstellung-titel {
+  font-weight: 600;
+  font-size: 14px;
+}
+.einstellung-erklaerung {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 3px;
+}
+/* Der Warnhinweis steht bewusst direkt unter der Erklärung und nicht als
+   Symbol daneben: was schiefgehen kann, gehört gelesen, nicht überflogen. */
+.einstellung-warnung {
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-top: 6px;
+  padding-left: 10px;
+  border-left: 3px solid rgba(217, 130, 43, 0.6);
+  color: var(--muted);
+}
+.einstellung-feld {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.einstellung-feld input[type="text"],
+.einstellung-feld input[type="number"] {
+  width: 220px;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg, #fff);
+  color: inherit;
+  font: inherit;
+}
+.einstellung-fuss {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+.schalter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+.schalter input {
+  width: 16px;
+  height: 16px;
+}
+
+.kachelreihe {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.kachel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 110px;
+}
+.kachel-wert {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.kachel-titel {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.zusatzliste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.pill.frei {
+  background: rgba(46, 160, 67, 0.14);
+  border-color: rgba(46, 160, 67, 0.45);
+}
+.pill.gesperrt {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.warnkasten {
+  border: 1px solid rgba(217, 130, 43, 0.5);
+  background: rgba(217, 130, 43, 0.08);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 14px 0;
+}
+.warnkasten ul {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+.hinweis-ok {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(46, 160, 67, 0.12);
+  color: #1a7f37;
+  margin: 10px 0;
+}

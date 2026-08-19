@@ -16,8 +16,10 @@ import (
 
 const (
 	cookieName = "nexora_token"
-	// A week of validity. There is no refresh and no server-side session list,
-	// so a token stays usable until it expires, even after a password change.
+	// Rückfall, wenn keine Einstellung greift. Die tatsächliche Dauer liefert
+	// SitzungDauer und lässt sich im Betrieb ändern. Es gibt keine Verlängerung
+	// und keine Liste offener Sitzungen: ein Token bleibt bis zu seinem Ablauf
+	// brauchbar, auch nach einer Passwortänderung.
 	tokenTTL = 7 * 24 * time.Hour
 )
 
@@ -59,8 +61,8 @@ func (s *Server) setAuthCookie(w http.ResponseWriter, token string) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(tokenTTL),
-		MaxAge:   int(tokenTTL.Seconds()),
+		Expires:  time.Now().Add(SitzungDauer()),
+		MaxAge:   int(SitzungDauer().Seconds()),
 	})
 }
 
