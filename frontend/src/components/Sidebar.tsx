@@ -3,7 +3,7 @@
 // from Workspace; what it does own is view state such as which branches are
 // open and what is currently being dragged.
 import { useEffect, useState } from "react";
-import { PageMeta, Space, Tag, api } from "../api/client";
+import { PageMeta, SearchHit, Space, Tag, api } from "../api/client";
 import { useAuth } from "../auth";
 import PageTree from "./PageTree";
 
@@ -50,7 +50,7 @@ export default function Sidebar(props: Props) {
   const { user, logout } = useAuth();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
-  const [results, setResults] = useState<PageMeta[] | null>(null);
+  const [results, setResults] = useState<SearchHit[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   // One drop target for three kinds of destination, encoded as a string: a bare
   // page id, "space:<id>" for a space header, or "root" for the ungrouped
@@ -126,6 +126,31 @@ export default function Sidebar(props: Props) {
     </div>
   );
 
+  // A search result row: title, and under it the snippet with the matched words
+  // marked. The snippet arrives with <b> markers around the hits.
+  //
+  // It is split on those markers and rendered as React nodes. That matters:
+  // ts_headline does NOT escape the surrounding text, so page content
+  // containing a < arrives verbatim. React escapes every text node, which is
+  // what keeps it inert -- dangerouslySetInnerHTML here would be a stored XSS.
+  const trefferRow = (h: SearchHit) => (
+    <div
+      key={h.id}
+      className={"tree-row treffer" + (activeId === h.id ? " active" : "")}
+      onClick={() => onSelect(h.id)}
+    >
+      <div className="treffer-titel">
+        <span className="tree-label">{h.title || "Ohne Titel"}</span>
+        {/* Says plainly that this page is not the user's own, instead of
+            leaving them to wonder why it is not in their tree. */}
+        {!h.eigen && <span className="pill klein">geteilt</span>}
+      </div>
+      {h.ausschnitt.trim() !== "" && (
+        <div className="treffer-ausschnitt">{markiere(h.ausschnitt)}</div>
+      )}
+    </div>
+  );
+
   // Pages outside every space. They get their own section below the spaces, so
   // no page can become invisible by not belonging anywhere.
   const ungrouped = pages.filter((p) => !p.spaceId);
@@ -165,7 +190,7 @@ export default function Sidebar(props: Props) {
           <div className="sidebar-section">
             <div className="sidebar-section-title">Ergebnisse</div>
             {results.length === 0 && <div className="tree-row muted">Keine Treffer</div>}
-            {results.map(flatRow)}
+            {results.map(trefferRow)}
           </div>
         ) : (
           <>
@@ -351,5 +376,25 @@ export default function Sidebar(props: Props) {
         </button>
       </div>
     </div>
+  );
+}
+
+// markiere turns the "<b>…</b>" markers ts_headline puts around matches into
+// real elements.
+//
+// Everything between the markers goes through React as a text node and is
+// therefore escaped, which is the whole reason this is safe -- the database
+// hands over raw page text, not escaped HTML.
+//
+// The one imperfection: a page that literally contains "<b>" gets that piece
+// marked as a hit. Cosmetic, and the alternative (a second escaping pass)
+// would break the markers themselves.
+function markiere(s: string) {
+  return s.split(/(<b>.*?<\/b>)/g).map((teil, i) =>
+    teil.startsWith("<b>") ? (
+      <mark key={i}>{teil.slice(3, -4)}</mark>
+    ) : (
+      <span key={i}>{teil}</span>
+    ),
   );
 }

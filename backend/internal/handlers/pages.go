@@ -199,10 +199,15 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// content_text wird hier mitgeschrieben, nicht in einem Trigger: der
+	// Fließtext lässt sich aus dem BlockNote-JSON nur in Go herausziehen. Wer
+	// den Inhalt schreibt, muss ihn deshalb mitschreiben -- sonst zeigt die
+	// Suche stillschweigend einen alten Stand.
 	_, err = s.Pool.Exec(r.Context(),
-		`UPDATE pages SET title=$2, content=$3::jsonb, icon=$4, parent_id=$5, space_id=$6, updated_at=now()
+		`UPDATE pages SET title=$2, content=$3::jsonb, icon=$4, parent_id=$5, space_id=$6,
+		        content_text=$7, updated_at=now()
 		 WHERE id=$1`,
-		id, title, string(content), icon, parent, space)
+		id, title, string(content), icon, parent, space, textAusInhalt(content))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "update failed")
 		return

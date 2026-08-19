@@ -148,38 +148,70 @@ func (s *Server) ListFavorites(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, list)
 }
 
-// Search does a case-insensitive substring match over titles and content.
+// Search runs a real full text search over the pages the caller may read.
 //
-// content::text ILIKE means the whole JSON document is searched as a string, so
-// a hit can come from markup rather than visible text. It also cannot use an
-// index and scans every page of the user. That is fine for a personal
-// workspace; a large instance would want a tsvector column instead.
+// Two things it gets right that the previous ILIKE version did not.
 //
-// Only the caller's own pages are searched, not pages shared with them.
+// First, access: the result set is built with the SAME rule pagePerm applies to
+// a single page -- owner, admin, or an explicit share. A search that reached
+// further than the page itself would be a leak, and one that reached less would
+// hide a page the user can open by link.
+//
+// Second, ranking: results come back by relevance, not by modification date. A
+// page whose title matches is weighted above one that merely mentions the term,
+// which is what setweight in the schema is for.
 func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	if q == "" {
-		writeJSON(w, http.StatusOK, []models.PageMeta{})
+		writeJSON(w, http.StatusOK, []models.SearchHit{})
 		return
 	}
-	// The pattern goes in as a parameter, so % and _ typed by the user widen
-	// their own search but cannot break out of the query.
-	pattern := "%" + q + "%"
-	rows, err := s.Pool.Query(r.Context(),
-		`SELECT id, parent_id, title, icon, updated_at FROM pages
-		 WHERE owner_id=$1 AND (title ILIKE $2 OR content::text ILIKE $2)
-		 ORDER BY updated_at DESC LIMIT 50`, uid, pattern)
+
+	// websearch_to_tsquery accepts what people actually type: bare words,
+	// "quoted phrases", OR, and a leading minus to exclude. Unlike
+	// to_tsquery it cannot be made to fail on stray punctuation, so a user
+	// typing a colon does not get an error page.
+	//
+	// ts_headline delivers the snippet with <b> around the hits. The template
+	// escapes it before rendering, so this is data, never markup.
+	const sql = `
+		SELECT p.id, p.parent_id, p.title, p.icon, p.updated_at,
+		       ts_headline('german', p.content_text, frage,
+		                   'StartSel=<b>, StopSel=</b>, MaxWords=28, MinWords=12, MaxFragments=1, FragmentDelimiter=" … "') AS ausschnitt,
+		       ts_rank_cd(p.such_tsv, frage) AS rang,
+		       (p.owner_id = $1) AS eigen
+		FROM pages p, websearch_to_tsquery('german', $2) AS frage
+		WHERE p.deleted_at IS NULL
+		  AND p.such_tsv @@ frage
+		  AND (
+		        p.owner_id = $1
+		        OR $3
+		        OR EXISTS (SELECT 1 FROM page_shares sh
+		                   WHERE sh.page_id = p.id AND sh.user_id = $1)
+		      )
+		ORDER BY rang DESC, p.updated_at DESC
+		LIMIT 50`
+
+	// Der Adminstatus wird einmal aufgelöst und als Parameter übergeben, statt
+	// die users-Tabelle in die Suchabfrage zu ziehen -- das hielte den
+	// Abfrageplan sonst unnötig davon ab, den GIN-Index zu benutzen.
+	admin := s.isAdmin(r.Context(), uid)
+
+	rows, err := s.Pool.Query(r.Context(), sql, uid, q, admin)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "search failed")
 		return
 	}
 	defer rows.Close()
-	list := []models.PageMeta{}
+
+	list := []models.SearchHit{}
 	for rows.Next() {
-		var p models.PageMeta
-		if err := rows.Scan(&p.ID, &p.ParentID, &p.Title, &p.Icon, &p.UpdatedAt); err == nil {
-			list = append(list, p)
+		var h models.SearchHit
+		var rang float32
+		if err := rows.Scan(&h.ID, &h.ParentID, &h.Title, &h.Icon, &h.UpdatedAt,
+			&h.Ausschnitt, &rang, &h.Eigen); err == nil {
+			list = append(list, h)
 		}
 	}
 	writeJSON(w, http.StatusOK, list)

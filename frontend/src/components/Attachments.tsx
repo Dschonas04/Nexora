@@ -1,6 +1,8 @@
-// The attachment list under a page, plus its preview overlay.
+// The attachment list under a page. The preview overlay itself lives in
+// QuickView, so anything else with a list of files can reuse it.
 import { useEffect, useRef, useState } from "react";
 import { Attachment, api } from "../api/client";
+import QuickView, { istBild, istPdf, zeigbar } from "./QuickView";
 
 interface Props {
   pageId: string;
@@ -13,17 +15,16 @@ function humanSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-// Which types can be shown in place. Everything else is offered as a download
-// only: rendering an arbitrary upload inline would mean trusting its content.
-const isImage = (m: string) => m.startsWith("image/");
-const isPdf = (m: string) => m === "application/pdf";
-const isText = (m: string) => m.startsWith("text/") || m === "application/json";
-const canPreview = (m: string) => isImage(m) || isPdf(m) || isText(m);
+// Which types can be shown in place is decided by the viewer, not here -- one
+// list, so the thumbnail and the overlay can never disagree about what is
+// previewable.
 
 export default function Attachments({ pageId, canEdit }: Props) {
   const [items, setItems] = useState<Attachment[]>([]);
   const [busy, setBusy] = useState(false);
-  const [preview, setPreview] = useState<Attachment | null>(null);
+  // Index statt Objekt: der Viewer blättert durch die ganze Liste, dafür muss
+  // er wissen, an welcher Stelle er steht -- nicht nur, welche Datei gemeint war.
+  const [offenBei, setOffenBei] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => api.listAttachments(pageId).then(setItems).catch(() => setItems([]));
@@ -81,23 +82,23 @@ export default function Attachments({ pageId, canEdit }: Props) {
         {items.length === 0 && <div className="muted small">Keine Dateien angehängt.</div>}
         {items.map((a) => {
           const url = api.attachmentUrl(pageId, a.id);
-          const previewable = canPreview(a.mime);
+          const previewable = zeigbar(a.mime);
           return (
             <div key={a.id} className="attachment-row">
-              {isImage(a.mime) ? (
+              {istBild(a.mime) ? (
                 <img
                   className="attachment-thumb"
                   src={url}
                   alt={a.filename}
-                  onClick={() => setPreview(a)}
+                  onClick={() => setOffenBei(items.indexOf(a))}
                 />
               ) : (
                 <span className="attachment-thumb attachment-thumb-file">
-                  {isPdf(a.mime) ? "PDF" : (a.filename.split(".").pop() || "·").slice(0, 4).toUpperCase()}
+                  {istPdf(a.mime) ? "PDF" : (a.filename.split(".").pop() || "·").slice(0, 4).toUpperCase()}
                 </span>
               )}
               {previewable ? (
-                <button className="attachment-name" onClick={() => setPreview(a)}>
+                <button className="attachment-name" onClick={() => setOffenBei(items.indexOf(a))}>
                   {a.filename}
                 </button>
               ) : (
@@ -119,69 +120,18 @@ export default function Attachments({ pageId, canEdit }: Props) {
         })}
       </div>
 
-      {preview && (
+      {offenBei !== null && (
         <QuickView
-          att={preview}
-          url={api.attachmentUrl(pageId, preview.id)}
-          onClose={() => setPreview(null)}
+          dateien={items.map((a) => ({
+            id: a.id,
+            filename: a.filename,
+            mime: a.mime,
+            url: api.attachmentUrl(pageId, a.id),
+          }))}
+          start={offenBei}
+          onClose={() => setOffenBei(null)}
         />
       )}
-    </div>
-  );
-}
-
-// QuickView renders an in-page preview (lightbox) for images, PDFs and text so
-// files can be inspected without leaving the page or downloading them.
-function QuickView({ att, url, onClose }: { att: Attachment; url: string; onClose: () => void }) {
-  const [text, setText] = useState<string | null>(null);
-
-  // Escape closes the overlay. The listener is removed on unmount, otherwise
-  // every opened preview would leave one behind.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  // Text is fetched and rendered as plain text rather than shown in a frame, so
-  // an uploaded HTML file cannot execute in the app's origin. The cut-off keeps
-  // a huge log file from freezing the browser.
-  useEffect(() => {
-    if (isText(att.mime)) {
-      fetch(url, { credentials: "include" })
-        .then((r) => r.text())
-        .then((t) => setText(t.slice(0, 20000)))
-        .catch(() => setText("(Vorschau konnte nicht geladen werden)"));
-    }
-  }, [att.mime, url]);
-
-  return (
-    <div className="qv-overlay" onClick={onClose}>
-      <div className="qv-box" onClick={(e) => e.stopPropagation()}>
-        <div className="qv-head">
-          <span className="qv-title">{att.filename}</span>
-          <div className="qv-actions">
-            <a className="btn" href={url} download={att.filename}>
-              Herunterladen
-            </a>
-            <button className="btn" onClick={onClose}>
-              Schließen
-            </button>
-          </div>
-        </div>
-        <div className="qv-body">
-          {isImage(att.mime) && <img className="qv-image" src={url} alt={att.filename} />}
-          {isPdf(att.mime) && <iframe className="qv-frame" src={url} title={att.filename} />}
-          {isText(att.mime) && <pre className="qv-text">{text ?? "Lädt…"}</pre>}
-          {!canPreview(att.mime) && (
-            <div className="qv-none">
-              Keine Vorschau für diesen Dateityp verfügbar.
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

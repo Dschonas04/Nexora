@@ -121,8 +121,11 @@ func (s *Server) RestoreVersion(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = s.Pool.Exec(r.Context(),
-		`UPDATE pages SET title=$2, content=$3::jsonb, icon=$4, updated_at=now() WHERE id=$1`,
-		id, title, string(content), icon)
+		// Auch hier muss content_text mit -- ein zurückgeholter Stand, den die
+		// Suche nicht findet, wäre schlimmer als gar keine Suche.
+		`UPDATE pages SET title=$2, content=$3::jsonb, icon=$4,
+		        content_text=$5, updated_at=now() WHERE id=$1`,
+		id, title, string(content), icon, textAusInhalt(content))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "restore failed")
 		return

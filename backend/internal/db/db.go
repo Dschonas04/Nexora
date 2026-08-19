@@ -152,6 +152,30 @@ CREATE TABLE IF NOT EXISTS page_links (
 	PRIMARY KEY (source_id, target_id)
 );
 CREATE INDEX IF NOT EXISTS page_links_target_idx ON page_links(target_id);
+
+-- Volltextsuche.
+--
+-- content ist BlockNote-JSON. Die frühere Suche lief mit ILIKE über dessen
+-- Rohtext und traf deshalb auch Schlüsselnamen und Block-Kennungen, konnte
+-- keinen Index benutzen (führendes %) und kannte keine Rangfolge. Deshalb
+-- wird der reine Fließtext beim Speichern in content_text abgelegt und daraus
+-- ein tsvector erzeugt.
+--
+-- Die Spalte ist GENERATED: sie kann gar nicht veralten, egal über welchen
+-- Weg eine Zeile geschrieben wird. Der Titel wiegt mit Gewicht A schwerer als
+-- der Fließtext mit B, damit eine Seite, die den Suchbegriff im Titel trägt,
+-- vor einer steht, die ihn nur erwähnt.
+--
+-- Wörterbuch ist 'german'. Das kostet bei englischen Inhalten etwas Trefferschärfe,
+-- ist aber für deutschsprachige Seiten deutlich besser als 'simple': gesucht
+-- wird dann auch über Wortformen hinweg.
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS content_text text NOT NULL DEFAULT '';
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS such_tsv tsvector
+	GENERATED ALWAYS AS (
+		setweight(to_tsvector('german', coalesce(title, '')), 'A') ||
+		setweight(to_tsvector('german', coalesce(content_text, '')), 'B')
+	) STORED;
+CREATE INDEX IF NOT EXISTS pages_such_idx ON pages USING GIN (such_tsv);
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

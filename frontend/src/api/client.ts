@@ -158,6 +158,24 @@ export interface Lizenz {
   freigeschaltet: string[];
 }
 
+// SearchHit is one full text result. Unlike PageMeta it carries the snippet the
+// database produced, so the sidebar can show where the term actually sat.
+export interface SearchHit {
+  id: string;
+  parentId: string | null;
+  title: string;
+  icon: string;
+  /**
+   * The snippet, with <b> around the matched words. Everything else is already
+   * escaped by the database, but it is still rendered as text and marked up by
+   * the component -- never fed to dangerouslySetInnerHTML.
+   */
+  ausschnitt: string;
+  /** false means the page was reached through a share or as an admin. */
+  eigen: boolean;
+  updatedAt: string;
+}
+
 // PagePatch is a partial update: an omitted field stays as it is, while an
 // explicit null on parentId or spaceId clears it. That distinction is why the
 // autosave can send just the content without touching the page's position.
@@ -283,6 +301,6 @@ export const api = {
     req<void>(`/pages/${pageId}/tags/${tagId}`, { method: "DELETE" }),
 
   // encodeURIComponent matters here: a query may contain &, # or a slash.
-  search: (q: string) => req<PageMeta[]>(`/search?q=${encodeURIComponent(q)}`),
+  search: (q: string) => req<SearchHit[]>(`/search?q=${encodeURIComponent(q)}`),
   getPublicPage: (token: string) => req<PublicPage>(`/public/${token}`),
 };
