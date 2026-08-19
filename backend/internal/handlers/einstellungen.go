@@ -77,7 +77,22 @@ var bekannt = map[string]struct {
 		Erklaerung: "german, english oder simple. simple stemmt gar nicht und trifft dafür in keiner Sprache daneben.",
 		Warnung:    "Eine Änderung wirkt erst nach einem Neuaufbau des Suchindex -- die Spalte wurde mit dem alten Wörterbuch erzeugt.",
 	},
+	"design_grundton": {
+		Art:        "auswahl",
+		Titel:      "Grundton",
+		Erklaerung: "Gilt für alle Konten dieser Instanz, nicht nur für das eigene.",
+	},
+	"design_akzent": {
+		Art:        "farbe",
+		Titel:      "Akzentfarbe",
+		Erklaerung: "Wird für Verknüpfungen, ausgewählte Einträge und Knöpfe benutzt.",
+	},
 }
+
+// grundtoene sind die erlaubten Werte für design_grundton. Eine feste Liste
+// statt freier Eingabe: die Farbwerte dazu stehen im Stylesheet, ein
+// unbekannter Name ergäbe eine Oberfläche ohne Farben.
+var grundtoene = map[string]bool{"weiss": true, "grau": true, "dunkel": true}
 
 // speicher hält die Werte im Arbeitsspeicher.
 var speicher struct {
@@ -136,6 +151,10 @@ func ausDatei(schluessel string, k config.Konfig) string {
 		return strconv.Itoa(k.SitzungTage)
 	case "such_woerterbuch":
 		return k.SuchWoerterbuch
+	case "design_grundton":
+		return "grau"
+	case "design_akzent":
+		return "#2383e2"
 	}
 	return ""
 }
@@ -181,6 +200,30 @@ func SitzungDauer() time.Duration {
 	return time.Duration(n) * 24 * time.Hour
 }
 
+// istHexFarbe prüft #rrggbb. Bewusst eng: der Wert wird im Browser in eine
+// CSS-Variable geschrieben, und was dort landet, muss harmlos sein.
+func istHexFarbe(s string) bool {
+	if len(s) != 7 || s[0] != '#' {
+		return false
+	}
+	for _, c := range s[1:] {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
+// Design liefert das Aussehen an jedes angemeldete Konto, nicht nur an Admins.
+// Ohne das könnte ein normaler Benutzer die eingestellten Farben nie sehen --
+// die Einstellungsseite selbst ist ihm ja verwehrt.
+func (s *Server) Design(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{
+		"grundton": wert("design_grundton"),
+		"akzent":   wert("design_akzent"),
+	})
+}
+
 // ListEinstellungen returns every changeable setting with its description.
 func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
@@ -222,6 +265,7 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 	reihenfolge := []string{
 		"registrierung_offen", "erlaubte_domaenen",
 		"max_anhang_mb", "sitzung_tage", "such_woerterbuch",
+		"design_grundton", "design_akzent",
 	}
 
 	liste := make([]Einstellung, 0, len(reihenfolge))
@@ -290,6 +334,18 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 		}
 		if req.Schluessel == "sitzung_tage" && n > 365 {
 			writeErr(w, http.StatusBadRequest, "höchstens 365 Tage")
+			return
+		}
+	case "auswahl":
+		if req.Schluessel == "design_grundton" && !grundtoene[wertNeu] {
+			writeErr(w, http.StatusBadRequest, "erwartet weiss, grau oder dunkel")
+			return
+		}
+	case "farbe":
+		// Nur #rrggbb. Alles andere landete ungeprüft in einer CSS-Variablen,
+		// und eine Zeichenkette mit Klammern wäre dort ein Einfallstor.
+		if !istHexFarbe(wertNeu) {
+			writeErr(w, http.StatusBadRequest, "erwartet eine Farbe wie #2383e2")
 			return
 		}
 	case "text":
@@ -382,8 +438,72 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 	k := speicher.basis
 	speicher.RUnlock()
 
-	var dbGroesse string
+	var dbGroesse, dbVersion string
 	_ = s.Pool.QueryRow(ctx, `SELECT pg_size_pretty(pg_database_size(current_database()))`).Scan(&dbGroesse)
+	_ = s.Pool.QueryRow(ctx, `SHOW server_version`).Scan(&dbVersion)
+
+	// Die größten Tabellen, damit sichtbar ist, wohin der Platz geht. Ohne das
+	// bleibt "8711 kB" eine Zahl ohne Aussage.
+	type tabelle struct {
+		Name   string `json:"name"`
+		Zeilen int64  `json:"zeilen"`
+		Platz  string `json:"platz"`
+	}
+	tabellen := []tabelle{}
+	if rows, err := s.Pool.Query(ctx, `
+		SELECT c.relname,
+		       coalesce(s.n_live_tup, 0),
+		       pg_size_pretty(pg_total_relation_size(c.oid))
+		FROM pg_class c
+		JOIN pg_namespace n ON n.oid = c.relnamespace
+		LEFT JOIN pg_stat_user_tables s ON s.relid = c.oid
+		WHERE c.relkind = 'r' AND n.nspname = 'public'
+		ORDER BY pg_total_relation_size(c.oid) DESC
+		LIMIT 12`); err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var tb tabelle
+			if rows.Scan(&tb.Name, &tb.Zeilen, &tb.Platz) == nil {
+				tabellen = append(tabellen, tb)
+			}
+		}
+	}
+
+	// Anhänge belegen Platz auf der Platte, nicht in der Datenbank -- die Summe
+	// gehört deshalb getrennt ausgewiesen.
+	var anhangBytes int64
+	_ = s.Pool.QueryRow(ctx, `SELECT coalesce(sum(size), 0) FROM attachments`).Scan(&anhangBytes)
+
+	// Wer zuletzt angemeldet war, und wie viele Fehlversuche es gab: die zwei
+	// Fragen, die man einer Sicherheitsübersicht als Erstes stellt.
+	var letzteAnmeldung, letzterFehlversuch string
+	_ = s.Pool.QueryRow(ctx,
+		`SELECT to_char(max(zeitpunkt), 'YYYY-MM-DD HH24:MI') FROM pruefspur WHERE aktion=$1`,
+		AktAnmeldung).Scan(&letzteAnmeldung)
+	_ = s.Pool.QueryRow(ctx,
+		`SELECT to_char(max(zeitpunkt), 'YYYY-MM-DD HH24:MI') FROM pruefspur WHERE aktion=$1`,
+		AktAnmeldungFehl).Scan(&letzterFehlversuch)
+
+	fehlversuche24 := zahl(`SELECT count(*) FROM pruefspur
+	                        WHERE aktion='` + AktAnmeldungFehl + `' AND zeitpunkt > now() - interval '24 hours'`)
+
+	// Admins namentlich: eine Zahl allein beantwortet nicht, wer eigentlich
+	// alles überall hineinsehen kann.
+	type konto struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+	admins := []konto{}
+	if rows, err := s.Pool.Query(ctx,
+		`SELECT name, email FROM users WHERE role='admin' ORDER BY created_at`); err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var a konto
+			if rows.Scan(&a.Name, &a.Email) == nil {
+				admins = append(admins, a)
+			}
+		}
+	}
 
 	z := lizenz.Aktuell()
 	frei := []string{}
@@ -422,8 +542,22 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 			"oidcAktiv":        k.OIDCAktiv,
 			"oidcAussteller":   k.OIDCAussteller,
 		},
-		"datenbankGroesse": dbGroesse,
-		"warnungen":        k.Warnungen(),
+		"datenbank": map[string]interface{}{
+			"groesse":  dbGroesse,
+			"version":  dbVersion,
+			"tabellen": tabellen,
+		},
+		"anhaengeBytes": anhangBytes,
+		"sicherheit": map[string]interface{}{
+			"admins":             admins,
+			"letzteAnmeldung":    letzteAnmeldung,
+			"letzterFehlversuch": letzterFehlversuch,
+			"fehlversuche24h":    fehlversuche24,
+			"registrierungOffen": RegistrierungOffen(),
+			"erlaubteDomaenen":   ErlaubteDomaenen(),
+			"sitzungTage":        int(SitzungDauer().Hours() / 24),
+		},
+		"warnungen": k.Warnungen(),
 	})
 }
 

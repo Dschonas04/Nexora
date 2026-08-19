@@ -1,13 +1,42 @@
-:root {
+/* Drei Grundtöne. Umgestellt wird über ein data-grundton am <html>, gesetzt
+   vom Design-Provider -- so wechselt die ganze Oberfläche in einem Zug, ohne
+   dass ein einzelnes Bauteil davon wissen muss.
+
+   Der Vorgabewert ist "grau": reines Weiß auf einem großen Bildschirm ist
+   anstrengender zu lesen, ein leicht gegrauter Grund nimmt die Härte heraus,
+   ohne dass es nach Dunkelmodus aussieht. */
+:root,
+:root[data-grundton="grau"] {
+  --bg: #f7f7f6;
+  --flaeche: #ffffff;
+  --sidebar-bg: #efefed;
+  --text: #37352f;
+  --muted: #86847f;
+  --border: #e2e2df;
+  --hover: #e7e7e4;
+  --accent: #2383e2;
+  --radius: 6px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+:root[data-grundton="weiss"] {
   --bg: #ffffff;
+  --flaeche: #ffffff;
   --sidebar-bg: #fbfbfa;
   --text: #37352f;
   --muted: #9b9a97;
   --border: #ededec;
   --hover: #efefee;
-  --accent: #2383e2;
-  --radius: 6px;
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+:root[data-grundton="dunkel"] {
+  --bg: #1f1f1e;
+  --flaeche: #2a2a28;
+  --sidebar-bg: #191918;
+  --text: #e6e5e2;
+  --muted: #9a9892;
+  --border: #3a3a37;
+  --hover: #333330;
 }
 
 * {
@@ -1324,15 +1353,77 @@ a {
 }
 
 /* Einstellungsseite */
-.einstellungen {
-  max-width: 900px;
+/* Einstellungsmanager: Kategorien links, ein Thema rechts. Bei einem Dutzend
+   Schaltern und dreimal so vielen Angaben zum System begräbt eine einzige
+   lange Seite alles, was nicht ganz oben steht. */
+.einstellungen-manager {
+  display: flex;
+  /* flex statt height: 100% -- .main ist eine Flex-Spalte, dort löst eine
+     Prozenthöhe nicht auf und die Seite bliebe ohne eigenes Scrollen.
+     min-height: 0 erlaubt den Kindern, kleiner als ihr Inhalt zu werden,
+     sonst wächst der Kasten über den Bildschirm hinaus. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
-.einstellungen section {
-  margin-top: 28px;
+.einstellungen-nav {
+  flex: 0 0 260px;
+  border-right: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  overflow-y: auto;
+  padding: 16px 10px;
 }
-.einstellungen h3 {
-  margin: 0 0 4px;
+.einstellungen-nav-titel {
+  font-size: 18px;
+  font-weight: 600;
+  padding: 4px 10px 12px;
+}
+.einstellungen-nav-eintrag {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 9px 10px;
+  border-radius: var(--radius);
+  margin-bottom: 2px;
+}
+.einstellungen-nav-eintrag:hover {
+  background: var(--hover);
+}
+/* Der aktive Eintrag bekommt einen Balken in der Akzentfarbe statt einer
+   Vollfläche -- so bleibt er auch bei einem hellen Akzent lesbar. */
+.einstellungen-nav-eintrag.aktiv {
+  background: var(--hover);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.nav-titel {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+}
+.nav-unter {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 1px;
+  line-height: 1.35;
+}
+.einstellungen-inhalt {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 24px 32px 64px;
+  max-width: 860px;
+}
+.einstellungen-inhalt h3 {
+  margin: 28px 0 6px;
   font-size: 15px;
+}
+.einstellungen-inhalt h3:first-child {
+  margin-top: 0;
 }
 .einstellung {
   border: 1px solid var(--border);
@@ -1458,4 +1549,98 @@ a {
   background: rgba(46, 160, 67, 0.12);
   color: #1a7f37;
   margin: 10px 0;
+}
+
+/* Flächen heben sich vom Grundton ab -- im gegrauten und im dunklen Ton macht
+   das den Unterschied zwischen "Kasten" und "irgendwo Text". */
+.einstellung,
+.kachel,
+.warnkasten,
+.tonkachel {
+  background: var(--flaeche);
+}
+
+/* Grundton-Auswahl */
+.tonauswahl {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.tonkachel {
+  flex: 1 1 200px;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+.tonkachel:hover {
+  border-color: var(--muted);
+}
+.tonkachel.gewaehlt {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.tonkachel-titel {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  margin-top: 8px;
+}
+.tonkachel-text {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+  margin-top: 2px;
+}
+/* Die Probe zeigt den Ton, statt ihn zu beschreiben: zwei Streifen für Grund
+   und Fläche, damit auch der Unterschied zwischen Weiß und Gegraut sichtbar
+   wird -- der ist in Worten kaum zu fassen. */
+.tonprobe {
+  display: block;
+  height: 34px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+}
+.tonprobe.ton-weiss {
+  background: linear-gradient(to right, #ffffff 60%, #fbfbfa 60%);
+}
+.tonprobe.ton-grau {
+  background: linear-gradient(to right, #f7f7f6 60%, #efefed 60%);
+}
+.tonprobe.ton-dunkel {
+  background: linear-gradient(to right, #1f1f1e 60%, #191918 60%);
+}
+
+/* Akzentfarbe */
+.farbauswahl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.farbknopf {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.farbknopf.gewaehlt {
+  border-color: var(--text);
+}
+.farbwaehler {
+  width: 40px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
 }
