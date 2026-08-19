@@ -4,6 +4,7 @@
 // open and what is currently being dragged.
 import { useEffect, useState } from "react";
 import { PageMeta, SearchHit, Space, Tag, api } from "../api/client";
+import { useLizenz } from "../lizenz";
 import { useAuth } from "../auth";
 import PageTree from "./PageTree";
 
@@ -50,6 +51,7 @@ export default function Sidebar(props: Props) {
   const { user, logout } = useAuth();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
+  const { frei } = useLizenz();
   const [results, setResults] = useState<SearchHit[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   // One drop target for three kinds of destination, encoded as a string: a bare
@@ -362,6 +364,17 @@ export default function Sidebar(props: Props) {
                   onClick={() => onNavigate("/admin")}
                 >
                   <span className="tree-label">Nutzer &amp; Rollen</span>
+                </div>
+              )}
+              {/* Die Prüfspur ist Admin UND Zusatzumfang. Beides wird auch im
+                  Backend geprüft; hier geht es nur darum, keinen Eintrag
+                  anzubieten, der ohnehin abgewiesen würde. */}
+              {user?.role === "admin" && frei("pruefspur") && (
+                <div
+                  className={"tree-row" + (currentPath === "/pruefspur" ? " active" : "")}
+                  onClick={() => onNavigate("/pruefspur")}
+                >
+                  <span className="tree-label">Prüfspur</span>
                 </div>
               )}
             </div>

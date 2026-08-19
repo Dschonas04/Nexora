@@ -94,6 +94,8 @@ func (s *Server) AddShare(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "share failed")
 		return
 	}
+	s.spurAusRequest(r, AktFreigabe, "seite", id, "",
+		map[string]interface{}{"an": targetID, "recht": perm})
 	writeJSON(w, http.StatusOK, map[string]string{"userId": targetID, "permission": perm})
 }
 
@@ -113,6 +115,8 @@ func (s *Server) RemoveShare(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "unshare failed")
 		return
 	}
+	s.spurAusRequest(r, AktFreigabeWeg, "seite", id, "",
+		map[string]interface{}{"von": chi.URLParam(r, "userId")})
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -175,5 +179,6 @@ func (s *Server) SetUserRole(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "user not found")
 		return
 	}
+	s.spurAusRequest(r, AktRolleGeaendert, "konto", target, "", map[string]interface{}{"neue_rolle": role})
 	writeJSON(w, http.StatusOK, map[string]string{"role": role})
 }

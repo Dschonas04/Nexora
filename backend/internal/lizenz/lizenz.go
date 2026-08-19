@@ -17,11 +17,26 @@ const (
 	Versionen Funktion = "versionen" // page history: snapshots, browsing, restoring
 	Anhaenge  Funktion = "anhaenge"  // per-page file uploads
 	Freigeben Funktion = "freigeben" // sharing with accounts and public read-only links
+
+	// Business extras. Kept as separate names rather than one "enterprise"
+	// switch so a key can grant exactly what was paid for -- an audit trail
+	// without groups is a perfectly sensible purchase.
+	Pruefspur   Funktion = "pruefspur"   // audit trail of who did what
+	Gruppen     Funktion = "gruppen"     // groups, space permissions, space-manager role
+	SSO         Funktion = "sso"         // sign-in through an OIDC provider
+	Anhangsuche Funktion = "anhangsuche" // full text search inside attachments
+	Export      Funktion = "export"      // exporting a whole space
+	Vorlagen    Funktion = "vorlagen"    // page templates
+	Kommentare  Funktion = "kommentare"  // comments on pages
+	Konflikte   Funktion = "konflikte"   // detecting concurrent edits
 )
 
 // Alle lists every paid extra. Used for the status endpoint and by the key
 // generator, so that both sides always agree on what exists.
-var Alle = []Funktion{Versionen, Anhaenge, Freigeben}
+var Alle = []Funktion{
+	Versionen, Anhaenge, Freigeben,
+	Pruefspur, Gruppen, SSO, Anhangsuche, Export, Vorlagen, Kommentare, Konflikte,
+}
 
 // Pruefer verifies a key and answers what it unlocks. The premium package
 // implements it; the core never sees the signature logic.

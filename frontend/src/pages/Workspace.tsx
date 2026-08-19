@@ -12,6 +12,7 @@ import PageView from "./PageView";
 import TrashView from "./TrashView";
 import GraphView from "./GraphView";
 import AdminView from "./AdminView";
+import PruefspurView from "./PruefspurView";
 
 export default function Workspace() {
   const nav = useNavigate();
@@ -149,6 +150,7 @@ export default function Workspace() {
           />
           <Route path="graph" element={<GraphView />} />
           <Route path="admin" element={<AdminView />} />
+          <Route path="pruefspur" element={<PruefspurView />} />
         </Routes>
       </div>
     </div>

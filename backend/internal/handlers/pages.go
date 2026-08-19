@@ -98,6 +98,7 @@ func (s *Server) CreatePage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "could not create page")
 		return
 	}
+	s.spurAusRequest(r, AktSeiteAngelegt, "seite", id, req.Title, nil)
 	page, err := s.loadPage(r.Context(), uid, id)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "load failed")
@@ -212,6 +213,7 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "update failed")
 		return
 	}
+	s.spurAusRequest(r, AktSeiteGeaendert, "seite", id, title, nil)
 
 	page, err := s.loadPage(r.Context(), uid, id)
 	if err != nil {
@@ -243,6 +245,7 @@ func (s *Server) DeletePage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "delete failed")
 		return
 	}
+	s.spurAusRequest(r, AktSeiteGeloescht, "seite", id, "", nil)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -290,6 +293,7 @@ func (s *Server) RestorePage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "page not found")
 		return
 	}
+	s.spurAusRequest(r, AktSeiteWieder, "seite", chi.URLParam(r, "id"), "", nil)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -299,9 +303,17 @@ func (s *Server) RestorePage(w http.ResponseWriter, r *http.Request) {
 // files on disk are not removed here.
 func (s *Server) PurgePage(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
+	id := chi.URLParam(r, "id")
+
+	// Der Titel wird VOR dem Löschen gelesen. Danach gibt es die Zeile nicht
+	// mehr, und ein Prüfspureintrag "Seite <uuid> endgültig gelöscht" ohne
+	// Namen ist für eine Revision wertlos.
+	var titel string
+	_ = s.Pool.QueryRow(r.Context(), `SELECT title FROM pages WHERE id=$1`, id).Scan(&titel)
+
 	tag, err := s.Pool.Exec(r.Context(),
 		`DELETE FROM pages WHERE id=$1 AND owner_id=$2 AND deleted_at IS NOT NULL`,
-		chi.URLParam(r, "id"), uid)
+		id, uid)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "purge failed")
 		return
@@ -310,6 +322,7 @@ func (s *Server) PurgePage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "page not found")
 		return
 	}
+	s.spurAusRequest(r, AktSeiteEntfernt, "seite", id, titel, nil)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -361,6 +374,7 @@ func (s *Server) SharePage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "page not found")
 		return
 	}
+	s.spurAusRequest(r, AktOeffentlichAn, "seite", chi.URLParam(r, "id"), "", nil)
 	writeJSON(w, http.StatusOK, map[string]interface{}{"isPublic": true, "publicToken": token})
 }
 
@@ -375,5 +389,6 @@ func (s *Server) UnsharePage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "unshare failed")
 		return
 	}
+	s.spurAusRequest(r, AktOeffentlichAus, "seite", chi.URLParam(r, "id"), "", nil)
 	writeJSON(w, http.StatusOK, map[string]bool{"isPublic": false})
 }

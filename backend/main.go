@@ -146,6 +146,15 @@ func main() {
 				r.Delete("/pages/{id}/shares/{userId}", h.RemoveShare)
 			})
 
+			// Prüfspur -- Zusatz. GESCHRIEBEN wird sie immer, auch ohne
+			// Lizenz: eine Spur mit einem Loch genau über dem unlizenzierten
+			// Zeitraum wäre wertlos. Nur das Lesen ist kostenpflichtig.
+			r.Group(func(r chi.Router) {
+				r.Use(handlers.VerlangeFunktion(lizenz.Pruefspur))
+				r.Get("/pruefspur", h.ListPruefspur)
+				r.Get("/pruefspur/aktionen", h.PruefspurAktionen)
+			})
+
 			// Kontenverwaltung bleibt frei -- ohne sie ließe sich eine
 			// Mehrbenutzer-Instanz gar nicht betreiben. Die /users-Routen sind
 			// Admins vorbehalten, das erzwingen die Handler selbst.
