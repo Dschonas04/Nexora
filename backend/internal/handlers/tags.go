@@ -5,11 +5,13 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 
+	"nexora/internal/lizenz"
 	"nexora/internal/middleware"
 	"nexora/internal/models"
 )
@@ -231,22 +233,58 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	//
 	// ts_headline delivers the snippet with <b> around the hits. The template
 	// escapes it before rendering, so this is data, never markup.
+	// Zwei Quellen, ein Ergebnis: die Seite selbst und ihre Anhänge.
+	//
+	// Ein Anhangtreffer erscheint als Treffer der Seite, an der er hängt --
+	// alles andere wäre für den Suchenden eine tote Zeile, denn eine Datei ohne
+	// ihre Seite ist kein Ort, an den man gehen kann. Woher der Treffer kam,
+	// steht daneben.
+	//
+	// Der Rang eines Anhangtreffers wird gedämpft: eine Seite, die den Begriff
+	// selbst enthält, ist fast immer die bessere Antwort als eine, in deren
+	// Anhang er irgendwo vorkommt.
 	const sql = `
-		SELECT p.id, p.parent_id, p.title, p.icon, p.updated_at,
-		       ts_headline('german', p.content_text, frage,
-		                   'StartSel=<b>, StopSel=</b>, MaxWords=28, MinWords=12, MaxFragments=1, FragmentDelimiter=" … "') AS ausschnitt,
-		       ts_rank_cd(p.such_tsv, frage) AS rang,
-		       (p.owner_id = $1) AS eigen
-		FROM pages p, websearch_to_tsquery('german', $2) AS frage
-		WHERE p.deleted_at IS NULL
-		  AND p.such_tsv @@ frage
-		  AND (
-		        p.owner_id = $1
-		        OR $3
-		        OR EXISTS (SELECT 1 FROM page_shares sh
-		                   WHERE sh.page_id = p.id AND sh.user_id = $1)
-		      )
-		ORDER BY rang DESC, p.updated_at DESC
+		WITH frage AS (SELECT websearch_to_tsquery('german', $2) AS q),
+		sichtbar AS (
+			SELECT p.* FROM pages p
+			WHERE p.deleted_at IS NULL
+			  AND (p.owner_id = $1 OR $3
+			       OR EXISTS (SELECT 1 FROM page_shares sh
+			                  WHERE sh.page_id = p.id AND sh.user_id = $1)
+			       OR ($4 AND p.space_id IS NOT NULL AND EXISTS (
+			             SELECT 1 FROM space_rechte sr
+			              WHERE sr.space_id = p.space_id
+			                AND (sr.user_id = $1
+			                     OR sr.gruppe_id IN (SELECT gm.gruppe_id
+			                                           FROM gruppen_mitglieder gm
+			                                          WHERE gm.user_id = $1)))))
+		),
+		treffer AS (
+			SELECT p.id, p.parent_id, p.title, p.icon, p.updated_at,
+			       ts_headline('german', p.content_text, frage.q,
+			         'StartSel=<b>, StopSel=</b>, MaxWords=28, MinWords=12, MaxFragments=1, FragmentDelimiter=" … "') AS ausschnitt,
+			       ts_rank_cd(p.such_tsv, frage.q) AS rang,
+			       (p.owner_id = $1) AS eigen,
+			       '' AS quelle
+			FROM sichtbar p, frage
+			WHERE p.such_tsv @@ frage.q
+
+			UNION ALL
+
+			SELECT p.id, p.parent_id, p.title, p.icon, p.updated_at,
+			       ts_headline('german', a.inhalt_text, frage.q,
+			         'StartSel=<b>, StopSel=</b>, MaxWords=28, MinWords=12, MaxFragments=1, FragmentDelimiter=" … "') AS ausschnitt,
+			       ts_rank_cd(a.such_tsv, frage.q) * 0.6 AS rang,
+			       (p.owner_id = $1) AS eigen,
+			       a.filename AS quelle
+			FROM attachments a
+			JOIN sichtbar p ON p.id = a.page_id, frage
+			WHERE $5 AND a.such_tsv @@ frage.q
+		)
+		SELECT DISTINCT ON (id) id, parent_id, title, icon, updated_at,
+		       ausschnitt, rang, eigen, quelle
+		FROM treffer
+		ORDER BY id, rang DESC
 		LIMIT 50`
 
 	// Der Adminstatus wird einmal aufgelöst und als Parameter übergeben, statt
@@ -254,7 +292,8 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	// Abfrageplan sonst unnötig davon ab, den GIN-Index zu benutzen.
 	admin := s.isAdmin(r.Context(), uid)
 
-	rows, err := s.Pool.Query(r.Context(), sql, uid, q, admin)
+	rows, err := s.Pool.Query(r.Context(), sql, uid, q, admin,
+		lizenz.Frei(lizenz.Gruppen), lizenz.Frei(lizenz.Anhangsuche))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "search failed")
 		return
@@ -266,10 +305,15 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 		var h models.SearchHit
 		var rang float32
 		if err := rows.Scan(&h.ID, &h.ParentID, &h.Title, &h.Icon, &h.UpdatedAt,
-			&h.Ausschnitt, &rang, &h.Eigen); err == nil {
+			&h.Ausschnitt, &rang, &h.Eigen, &h.Quelle); err == nil {
+			h.Rang = rang
 			list = append(list, h)
 		}
 	}
+	// DISTINCT ON zwingt zur Sortierung nach id; die Rangfolge stellen wir
+	// danach wieder her. Bei fünfzig Zeilen ist das billiger als eine weitere
+	// Abfrageebene.
+	sort.SliceStable(list, func(i, j int) bool { return list[i].Rang > list[j].Rang })
 	writeJSON(w, http.StatusOK, list)
 }
 

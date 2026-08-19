@@ -192,6 +192,7 @@ func main() {
 			r.Delete("/einstellungen", h.LoescheEinstellung)
 			r.Get("/system", h.SystemZustand)
 			r.Post("/system/suchindex", h.IndexNeuAufbauen)
+			r.Post("/system/anhangindex", h.AnhangIndexNachziehen)
 			r.Get("/system/ablage", h.AblageZustand)
 			r.Post("/system/ablage/test", h.S3Testen)
 

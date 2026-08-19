@@ -181,6 +181,27 @@ export default function EinstellungenView() {
     }
   };
 
+  const anhangindex = async () => {
+    setLaeuft("anhangindex");
+    setMeldung(null);
+    try {
+      const r = await api.anhangindexNachziehen();
+      setMeldung({
+        text:
+          r.betrachtet === 0
+            ? "Alle Anhänge haben bereits einen Suchtext."
+            : `${r.betrachtet} Anhänge betrachtet, ${r.gelesen} mit Text, ${r.ohneText} ohne — ` +
+              `das sind Bilder, Archive oder gescannte PDF ohne Textebene.`,
+        art: "ok",
+      });
+      laden();
+    } catch (err) {
+      setMeldung({ text: (err as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
+
   const indexNeu = async () => {
     setLaeuft("suchindex");
     setMeldung(null);
@@ -448,6 +469,33 @@ export default function EinstellungenView() {
                 <div className="einstellung-feld">
                   <button className="btn" disabled={laeuft === "suchindex"} onClick={indexNeu}>
                     {laeuft === "suchindex" ? "Läuft…" : "Neu aufbauen"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="einstellung">
+              <div className="einstellung-kopf">
+                <div>
+                  <div className="einstellung-titel">Volltext aus Anhängen nachziehen</div>
+                  <div className="einstellung-erklaerung">
+                    Liest Anhänge, die noch keinen Suchtext haben, und gewinnt ihn nach.
+                    Betrifft alles, was vor dieser Funktion hochgeladen wurde. Gelesen
+                    werden Textdateien und PDF mit Textebene.
+                  </div>
+                  <div className="einstellung-warnung">
+                    Holt jede Datei einmal aus der Ablage zurück — bei einem Objektspeicher
+                    also übers Netz. Deshalb ein bewusster Knopf und nichts, was beim Start
+                    von allein läuft. Je Durchlauf werden bis zu 500 Anhänge bearbeitet.
+                  </div>
+                </div>
+                <div className="einstellung-feld">
+                  <button
+                    className="btn"
+                    disabled={laeuft === "anhangindex"}
+                    onClick={anhangindex}
+                  >
+                    {laeuft === "anhangindex" ? "Läuft…" : "Nachziehen"}
                   </button>
                 </div>
               </div>

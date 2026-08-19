@@ -6,12 +6,14 @@ package handlers
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 
+	"nexora/internal/lizenz"
 	"nexora/internal/middleware"
 	"nexora/internal/models"
 )
@@ -95,7 +97,12 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 
 	// Ab hier entscheidet die Ablage, wo die Bytes landen -- Platte oder
 	// Objektspeicher. Der Handler sieht keinen Unterschied.
-	written, err := s.Ablage.Schreiben(r.Context(), attID, file, header.Size, mime)
+	//
+	// Der Mitschnitt hängt sich in den Strom: die Datei läuft ohnehin durch,
+	// und sie zum Auslesen ein zweites Mal zu holen wäre eine vermeidbare
+	// Runde -- beim Objektspeicher sogar übers Netz.
+	strom := &mitschnitt{quelle: file}
+	written, err := s.Ablage.Schreiben(r.Context(), attID, strom, header.Size, mime)
 	if err != nil {
 		// Die Zeile wieder wegnehmen: eine Anhangzeile ohne Datei wäre ein
 		// Eintrag, der sich anklicken lässt und dann ins Leere führt.
@@ -103,6 +110,20 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "Ablage nicht erreichbar")
 		return
 	}
+	// Volltext nachtragen. Erst jetzt, nach dem erfolgreichen Schreiben: ein
+	// Anhang ohne Suchtext ist brauchbar, ein Suchtext ohne Anhang nicht.
+	//
+	// Fehler werden geschluckt. Der Upload ist gelungen; dass die Datei nicht
+	// durchsuchbar wird, ist ein Verlust an Komfort, kein Grund zu scheitern.
+	if lizenz.Frei(lizenz.Anhangsuche) {
+		if txt := textAusAnhang(r.Context(), strom.Bytes(), mime, filename); txt != "" {
+			if _, err := s.Pool.Exec(r.Context(),
+				`UPDATE attachments SET inhalt_text=$2 WHERE id=$1`, attID, txt); err != nil {
+				log.Printf("Anhang-Volltext (%s): %v", attID, err)
+			}
+		}
+	}
+
 	// header.Size comes from the client and can be wrong or absent; persist the
 	// number of bytes actually written instead.
 	s.Pool.Exec(r.Context(), `UPDATE attachments SET size=$2 WHERE id=$1`, attID, written)

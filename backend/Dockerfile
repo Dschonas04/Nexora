@@ -7,7 +7,11 @@ COPY . .
 RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -trimpath -o /nexora ./
 
 FROM alpine:3.19
-RUN adduser -D -u 10001 nexora \
+# poppler-utils liefert pdftotext für den Volltext in PDF-Anhängen. Ein
+# reiner Go-Auslesecode käme ohne diese Abhängigkeit aus, scheitert aber an
+# vielen echten PDFs -- Schriftkodierungen, Spalten, eingebettete Bilder.
+RUN apk add --no-cache poppler-utils \
+ && adduser -D -u 10001 nexora \
  && mkdir -p /data/attachments \
  && chown -R nexora:nexora /data
 COPY --from=build /nexora /usr/local/bin/nexora

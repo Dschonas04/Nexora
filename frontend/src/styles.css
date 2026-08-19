@@ -1889,3 +1889,8 @@ a {
   pointer-events: none;
   z-index: 3;
 }
+
+.treffer-quelle {
+  margin-top: 2px;
+  font-style: italic;
+}

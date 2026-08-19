@@ -241,6 +241,23 @@ CREATE INDEX IF NOT EXISTS kommentare_eltern_idx ON kommentare(eltern_id);
 --
 -- geaendert_von hält fest, wer zuletzt geschrieben hat -- dieselbe Angabe
 -- steht auch in der Prüfspur, hier nur griffbereit für die Anzeige.
+-- Volltext in Anhängen.
+--
+-- Der Text wird beim Hochladen gewonnen und hier abgelegt, nicht bei jeder
+-- Suche neu aus der Datei geholt: das Auslesen eines PDF kostet Zehntelsekunden,
+-- und eine Suche über hundert Anhänge wäre damit unbrauchbar langsam.
+--
+-- Gleiches Verfahren wie bei den Seiten: eine GENERATED-Spalte, die nicht
+-- veralten kann, plus GIN-Index. Der Dateiname wiegt mit A schwerer als der
+-- Inhalt mit B -- wer "Angebot" sucht, meint meist die Datei, die so heißt.
+ALTER TABLE attachments ADD COLUMN IF NOT EXISTS inhalt_text text NOT NULL DEFAULT '';
+ALTER TABLE attachments ADD COLUMN IF NOT EXISTS such_tsv tsvector
+	GENERATED ALWAYS AS (
+		setweight(to_tsvector('german', coalesce(filename, '')), 'A') ||
+		setweight(to_tsvector('german', coalesce(inhalt_text, '')), 'B')
+	) STORED;
+CREATE INDEX IF NOT EXISTS attachments_such_idx ON attachments USING GIN (such_tsv);
+
 -- Vorlagen.
 --
 -- Bewusst ein Schalter an der Seite statt einer eigenen Tabelle: eine Vorlage
