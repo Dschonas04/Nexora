@@ -19,6 +19,16 @@
      für den Augenblick vor dem ersten Rendern. */
   --accent-text: #ffffff;
   --accent-lesbar: #1a6fbf;
+  /* Getönte Flächen. Sie waren vorher fest verdrahtet und wurden im
+     Dunkelmodus zu hellen Kästen mit heller Schrift. */
+  --fehler-bg: #fdecea;
+  --fehler-rand: #f0c4bf;
+  --fehler-text: #c0392b;
+  --hinweis-bg: #e7f0fb;
+  --lesen-bg: #fbf3d9;
+  --lesen-text: #7a5c00;
+  --erfolg-bg: rgba(46, 160, 67, 0.12);
+  --erfolg-text: #1a7f37;
   --radius: 6px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
@@ -41,6 +51,16 @@
   --muted: #9a9892;
   --border: #3a3a37;
   --hover: #333330;
+  /* Im Dunkeln sind die getönten Flächen dunkle Einfärbungen, nicht helle
+     Pastelltöne -- sonst leuchtet ein Fehlerkasten wie eine Lampe. */
+  --fehler-bg: rgba(207, 34, 46, 0.16);
+  --fehler-rand: rgba(207, 34, 46, 0.45);
+  --fehler-text: #f28b82;
+  --hinweis-bg: rgba(35, 131, 226, 0.18);
+  --lesen-bg: rgba(217, 164, 6, 0.16);
+  --lesen-text: #e3c04a;
+  --erfolg-bg: rgba(46, 160, 67, 0.18);
+  --erfolg-text: #6fcf83;
 }
 
 * {
@@ -144,7 +164,8 @@ a {
 .search-box input {
   width: 100%;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--flaeche);
+  color: inherit;
   border-radius: var(--radius);
   padding: 6px 10px;
   font-size: 13px;
@@ -268,7 +289,7 @@ a {
 
 .btn {
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--flaeche);
   border-radius: var(--radius);
   padding: 5px 12px;
   font-size: 13px;
@@ -288,7 +309,7 @@ a {
 }
 
 .btn-primary:hover {
-  background: #1a73d0;
+  filter: brightness(0.92);
 }
 
 .editor-scroll {
@@ -323,7 +344,7 @@ a {
 }
 
 .page-title::placeholder {
-  color: #cfcfcd;
+  color: var(--muted);
 }
 
 .page-tags {
@@ -334,11 +355,12 @@ a {
   align-items: center;
 }
 
+/* Die Schriftfarbe setzt das Bauteil, berechnet aus der Schlagwortfarbe.
+   Fest weiß war auf den helleren Tönen der Palette kaum zu lesen. */
 .tag {
   font-size: 12px;
   padding: 2px 8px;
   border-radius: 20px;
-  color: #fff;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -372,7 +394,7 @@ a {
 }
 
 .auth-card {
-  background: #fff;
+  background: var(--flaeche);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 32px;
@@ -430,8 +452,8 @@ a {
 }
 
 .error {
-  background: #fdecea;
-  color: #c0392b;
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
   border-radius: var(--radius);
   padding: 8px 11px;
   font-size: 13px;
@@ -487,11 +509,11 @@ a {
   color: var(--accent-lesbar);
 }
 .btn.danger {
-  color: #c0392b;
-  border-color: #f0c4bf;
+  color: var(--fehler-text);
+  border-color: var(--fehler-rand);
 }
 .btn.danger:hover {
-  background: #fdecea;
+  background: var(--fehler-bg);
 }
 .btn:disabled {
   opacity: 0.5;
@@ -506,12 +528,13 @@ a {
   color: var(--muted);
 }
 .pill.admin {
-  background: #e7f0fb;
+  background: var(--hinweis-bg);
   color: var(--accent);
 }
 .pill.readonly {
-  background: #fbf3d9;
-  color: #9a7b12;
+  background: var(--lesen-bg);
+  color: var(--lesen-text);
+  color: var(--lesen-text);
 }
 .small {
   font-size: 12px;
@@ -586,7 +609,8 @@ a {
   padding: 7px 10px;
   font-size: 13px;
   outline: none;
-  background: #fff;
+  background: var(--flaeche);
+  color: inherit;
 }
 .user-add-row input {
   flex: 1;
@@ -671,7 +695,7 @@ a {
   border: 1px solid var(--border);
   cursor: pointer;
   flex: 0 0 auto;
-  background: var(--bg-subtle, #f7f7f5);
+  background: var(--sidebar-bg);
 }
 .attachment-thumb-file {
   display: inline-flex;
@@ -687,7 +711,7 @@ a {
   border: none;
   padding: 0;
   font-size: 14px;
-  color: #2383e2;
+  color: var(--accent-lesbar);
   cursor: pointer;
   text-align: left;
   flex: 1 1 auto;
@@ -759,7 +783,10 @@ a {
   width: 100%;
   height: 82vh;
   border: none;
-  background: #fff;
+  /* Bleibt weiß, auch im Dunkelmodus: dahinter steckt der PDF-Betrachter des
+     Browsers, und ein PDF-Blatt ist nun einmal weiß. Ein dunkler Rahmen
+     darum sähe nach einem Ladefehler aus. */
+  background: #ffffff;
 }
 .qv-text {
   align-self: stretch;
@@ -788,7 +815,7 @@ a {
   z-index: 50;
 }
 .modal {
-  background: #fff;
+  background: var(--flaeche);
   border-radius: 10px;
   width: 440px;
   max-width: 92vw;
@@ -957,7 +984,7 @@ a {
 }
 .backlink {
   border: 1px solid var(--border);
-  background: var(--bg-subtle, #f7f7f5);
+  background: var(--sidebar-bg);
   color: var(--text, #37352f);
   border-radius: var(--radius);
   padding: 4px 10px;
@@ -965,8 +992,8 @@ a {
   cursor: pointer;
 }
 .backlink:hover {
-  border-color: #2383e2;
-  color: #2383e2;
+  border-color: var(--accent-lesbar);
+  color: var(--accent-lesbar);
 }
 .page-links {
   margin-top: 32px;
@@ -991,7 +1018,7 @@ a {
   align-items: center;
   gap: 4px;
   border: 1px solid var(--border);
-  background: var(--bg-subtle, #f7f7f5);
+  background: var(--sidebar-bg);
   border-radius: var(--radius);
   padding: 2px 4px 2px 10px;
   font-size: 13px;
@@ -1012,7 +1039,7 @@ a {
   cursor: default;
 }
 .page-link-chip:hover .page-link-open {
-  color: #2383e2;
+  color: var(--accent-lesbar);
 }
 .page-link-chip .x {
   cursor: pointer;
@@ -1022,7 +1049,7 @@ a {
   border-radius: 4px;
 }
 .page-link-chip .x:hover {
-  color: #e0507a;
+  color: var(--fehler-text);
   background: rgba(224, 80, 122, 0.1);
 }
 .page-link-add {
@@ -1035,8 +1062,8 @@ a {
   cursor: pointer;
 }
 .page-link-add:hover {
-  border-color: #2383e2;
-  color: #2383e2;
+  border-color: var(--accent-lesbar);
+  color: var(--accent-lesbar);
 }
 .page-link-picker {
   position: relative;
@@ -1054,7 +1081,7 @@ a {
 .page-link-search:focus {
   outline: none;
   border-style: solid;
-  border-color: #2383e2;
+  border-color: var(--accent-lesbar);
 }
 .page-link-dropdown {
   position: absolute;
@@ -1083,8 +1110,8 @@ a {
   cursor: pointer;
 }
 .page-link-option:hover {
-  background: var(--bg-subtle, #f2f5fb);
-  color: #2383e2;
+  background: var(--hover);
+  color: var(--accent-lesbar);
 }
 .page-links-hint {
   margin-top: 8px;
@@ -1253,8 +1280,8 @@ a {
 .fehler {
   padding: 10px 12px;
   border-radius: 6px;
-  background: rgba(217, 45, 32, 0.1);
-  color: #b42318;
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
   margin: 10px 0;
 }
 
@@ -1563,8 +1590,8 @@ a {
 .hinweis-ok {
   padding: 10px 12px;
   border-radius: 6px;
-  background: rgba(46, 160, 67, 0.12);
-  color: #1a7f37;
+  background: var(--erfolg-bg);
+  color: var(--erfolg-text);
   margin: 10px 0;
 }
 
@@ -1832,4 +1859,33 @@ a {
 }
 .rechte-neu select:first-child {
   flex: 1 1 260px;
+}
+
+/* Dateien per Ziehen und Ablegen */
+.attachments {
+  position: relative;
+  border-radius: 8px;
+  transition: outline-color 120ms ease-out;
+  outline: 2px dashed transparent;
+  outline-offset: 4px;
+}
+.attachments.abwurf {
+  outline-color: var(--accent);
+}
+/* Der Schleier liegt über der Liste, nicht darunter: solange er sichtbar ist,
+   soll klar sein, dass das Loslassen hier etwas bewirkt und nicht auf der
+   Seite darunter. */
+.abwurf-schleier {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--flaeche);
+  opacity: 0.92;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 3;
 }
