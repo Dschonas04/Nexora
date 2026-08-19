@@ -206,6 +206,11 @@ func main() {
 				r.Post("/kommentare/{kommentarId}/erledigt", h.ToggleErledigt)
 			})
 
+			// Space-Export -- Zusatz. Die Antwort ist ein ZIP-Strom, deshalb
+			// steht hier kein writeJSON dahinter.
+			r.With(handlers.VerlangeFunktion(lizenz.Export)).
+				Get("/spaces/{id}/export", h.ExportSpace)
+
 			// Vorlagen -- Zusatz. Eine Vorlage ist eine gewöhnliche Seite mit
 			// einem Schalter; gesperrt ist nur das Anlegen und Auflisten.
 			r.Group(func(r chi.Router) {

@@ -60,6 +60,7 @@ const (
 	AktS3Test             = "objektspeicher.getestet"
 	AktVorlageAn          = "vorlage.gesetzt"
 	AktVorlageAus         = "vorlage.aufgehoben"
+	AktExport             = "space.exportiert"
 )
 
 // spur writes one entry. Callers pass what they know; empty fields stay empty.

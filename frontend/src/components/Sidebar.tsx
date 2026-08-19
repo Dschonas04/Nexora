@@ -269,6 +269,22 @@ export default function Sidebar(props: Props) {
                       <button className="icon-btn" title="Neue Seite" onClick={() => onCreateInSpace(sp.id)}>
                         +
                       </button>
+                      {/* Ein normaler Verweis auf die Adresse, kein fetch: so
+                          setzt der Browser den Dateinamen aus dem
+                          Content-Disposition-Kopf und lädt den Strom direkt
+                          auf die Platte, statt ihn erst in den Speicher zu
+                          holen. */}
+                      {frei("export") && (
+                        <button
+                          className="icon-btn"
+                          title="Space als ZIP mit Markdown-Dateien"
+                          onClick={() => {
+                            window.location.href = `/api/spaces/${sp.id}/export`;
+                          }}
+                        >
+                          ↓
+                        </button>
+                      )}
                       <button className="icon-btn" title="Space löschen" onClick={() => onDeleteSpace(sp.id)}>
                         ✕
                       </button>
