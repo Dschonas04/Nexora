@@ -1529,9 +1529,16 @@ a {
   gap: 6px;
   margin-top: 12px;
 }
+/* Freigeschaltete Funktionen bekommen eine deutlich flachere Ecke als die
+   runden Marken sonst. Eine Pille sagt "Etikett", ein fast eckiges Feld sagt
+   "Zustand" -- und ein Zustand ist es hier: an oder aus. */
 .pill.frei {
   background: rgba(46, 160, 67, 0.14);
   border-color: rgba(46, 160, 67, 0.45);
+  border-radius: 4px;
+}
+.pill.gesperrt {
+  border-radius: 4px;
 }
 .pill.gesperrt {
   opacity: 0.5;
