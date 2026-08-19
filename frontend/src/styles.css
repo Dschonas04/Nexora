@@ -1394,11 +1394,13 @@ a {
 .einstellungen-nav-eintrag:hover {
   background: var(--hover);
 }
-/* Der aktive Eintrag bekommt einen Balken in der Akzentfarbe statt einer
-   Vollfläche -- so bleibt er auch bei einem hellen Akzent lesbar. */
+/* Der aktive Eintrag hebt sich nur durch die Fläche ab. Ein Balken in der
+   Akzentfarbe stand hier zuerst, wirkte aber wie ein Fremdkörper: auf einer
+   Seite, auf der man die Akzentfarbe gerade erst auswählt, ist sie das
+   Letzte, was noch zusätzlich blinken sollte. */
 .einstellungen-nav-eintrag.aktiv {
   background: var(--hover);
-  box-shadow: inset 3px 0 0 var(--accent);
+  font-weight: 500;
 }
 .nav-titel {
   display: block;
@@ -1580,9 +1582,11 @@ a {
 .tonkachel:hover {
   border-color: var(--muted);
 }
+/* Die getroffene Wahl wird durch einen kräftigeren Rahmen kenntlich, nicht
+   durch einen farbigen Ring -- die Kachel zeigt ja bereits einen Farbton, und
+   zwei Farben nebeneinander sagen weniger als eine. */
 .tonkachel.gewaehlt {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  border-color: var(--text);
 }
 .tonkachel-titel {
   display: block;
