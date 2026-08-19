@@ -15,6 +15,10 @@
   --border: #e2e2df;
   --hover: #e7e7e4;
   --accent: #2383e2;
+  /* Von design.tsx berechnet und hier überschrieben. Die Vorgaben gelten nur
+     für den Augenblick vor dem ersten Rendern. */
+  --accent-text: #ffffff;
+  --accent-lesbar: #1a6fbf;
   --radius: 6px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
@@ -65,7 +69,9 @@ button {
 }
 
 a {
-  color: var(--accent);
+  /* Nicht --accent, sondern die auf dem Grund lesbare Fassung. Ein dunkler
+     Akzent auf dunklem Grund wäre sonst nicht zu entziffern. */
+  color: var(--accent-lesbar);
   text-decoration: none;
 }
 
@@ -275,7 +281,9 @@ a {
 
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  /* Berechnet, nicht festgelegt: bei einem hellen Akzent muss die Schrift
+     dunkel werden, sonst steht Weiß auf Gelb. */
+  color: var(--accent-text);
   border-color: var(--accent);
 }
 
@@ -476,7 +484,7 @@ a {
 
 .btn.active {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-lesbar);
 }
 .btn.danger {
   color: #c0392b;
