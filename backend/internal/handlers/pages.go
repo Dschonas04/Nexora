@@ -71,6 +71,10 @@ type createPageReq struct {
 	Title    string  `json:"title"`
 	ParentID *string `json:"parentId"`
 	SpaceID  *string `json:"spaceId"`
+	// VorlageID kopiert den Inhalt einer Vorlage in die neue Seite. Kopiert,
+	// nicht verknüpft: eine später geänderte Vorlage lässt bestehende Seiten in
+	// Ruhe. Das erwartet man vom Wort "Vorlage" und nicht vom Wort "Verweis".
+	VorlageID string `json:"vorlageId"`
 }
 
 // CreatePage adds an empty page. A decode error is tolerated because an empty
@@ -91,10 +95,20 @@ func (s *Server) CreatePage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Inhalt aus der Vorlage, falls eine angegeben wurde. Ist sie nicht
+	// lesbar oder gar keine Vorlage, entsteht die Seite leer -- das ist
+	// harmloser, als den Aufruf scheitern zu lassen.
+	inhalt, icon := s.inhaltAusVorlage(r, uid, req.VorlageID)
+	if len(inhalt) == 0 {
+		inhalt = json.RawMessage("[]")
+	}
+
 	var id string
 	err := s.Pool.QueryRow(r.Context(),
-		`INSERT INTO pages (owner_id, parent_id, space_id, title) VALUES ($1, $2, $3, $4) RETURNING id`,
-		uid, req.ParentID, req.SpaceID, req.Title,
+		`INSERT INTO pages (owner_id, parent_id, space_id, title, content, icon, content_text)
+		 VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7) RETURNING id`,
+		uid, req.ParentID, req.SpaceID, req.Title, string(inhalt), icon,
+		textAusInhalt(inhalt),
 	).Scan(&id)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "could not create page")

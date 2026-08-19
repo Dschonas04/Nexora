@@ -206,6 +206,14 @@ func main() {
 				r.Post("/kommentare/{kommentarId}/erledigt", h.ToggleErledigt)
 			})
 
+			// Vorlagen -- Zusatz. Eine Vorlage ist eine gewöhnliche Seite mit
+			// einem Schalter; gesperrt ist nur das Anlegen und Auflisten.
+			r.Group(func(r chi.Router) {
+				r.Use(handlers.VerlangeFunktion(lizenz.Vorlagen))
+				r.Get("/vorlagen", h.ListVorlagen)
+				r.Post("/pages/{id}/vorlage", h.SetzeVorlage)
+			})
+
 			// Prüfspur -- Zusatz. GESCHRIEBEN wird sie immer, auch ohne
 			// Lizenz: eine Spur mit einem Loch genau über dem unlizenzierten
 			// Zeitraum wäre wertlos. Nur das Lesen ist kostenpflichtig.

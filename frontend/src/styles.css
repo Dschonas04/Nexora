@@ -1735,3 +1735,43 @@ a {
 .tagliste .tree-row {
   cursor: pointer;
 }
+
+/* Vorlagen-Menü im Kopf der Seitenleiste */
+.vorlagenmenue {
+  position: relative;
+}
+.vorlagenliste {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 20;
+  min-width: 200px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--flaeche);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  padding: 4px;
+}
+.vorlagenliste-titel {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 6px 8px 4px;
+}
+.vorlageneintrag {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.vorlageneintrag:hover {
+  background: var(--hover);
+}

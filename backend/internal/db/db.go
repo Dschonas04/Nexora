@@ -241,6 +241,16 @@ CREATE INDEX IF NOT EXISTS kommentare_eltern_idx ON kommentare(eltern_id);
 --
 -- geaendert_von hält fest, wer zuletzt geschrieben hat -- dieselbe Angabe
 -- steht auch in der Prüfspur, hier nur griffbereit für die Anzeige.
+-- Vorlagen.
+--
+-- Bewusst ein Schalter an der Seite statt einer eigenen Tabelle: eine Vorlage
+-- IST eine Seite. Sie wird im selben Editor geschrieben, liegt im selben Baum
+-- und lässt sich lesen wie jede andere. Eine getrennte Ablage hätte einen
+-- zweiten Bearbeitungsweg und einen zweiten Rechtebegriff nach sich gezogen,
+-- ohne dass jemand etwas davon hätte.
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS ist_vorlage boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS pages_vorlage_idx ON pages(owner_id) WHERE ist_vorlage;
+
 CREATE TABLE IF NOT EXISTS einstellungen (
 	schluessel    text PRIMARY KEY,
 	wert          text NOT NULL,
