@@ -202,6 +202,12 @@ export interface PagePatch {
   icon?: string;
   parentId?: string | null;
   spaceId?: string | null;
+  /**
+   * The updatedAt this editor last saw. The backend refuses with 409 when the
+   * page moved on since, instead of overwriting a colleague's edit in silence.
+   * Omit it to force the write through.
+   */
+  basis?: string;
 }
 
 // One entry per endpoint. Deliberately a plain object of thin functions rather
