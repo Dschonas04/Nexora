@@ -320,6 +320,20 @@ export const api = {
     }),
   systemZustand: () => req<SystemZustand>("/system"),
   suchindexNeu: () => req<{ ohneSuchtext: number }>("/system/suchindex", { method: "POST" }),
+  ablageZustand: () => req<{ ablage: string }>("/system/ablage"),
+  ablageTesten: (p: {
+    endpunkt: string;
+    bucket: string;
+    zugriff: string;
+    geheimnis: string;
+    region: string;
+    tls: boolean;
+    pfadstil: boolean;
+  }) =>
+    req<{ ok: boolean; ablage?: string; schritt?: string; grund?: string; anmerkung?: string }>(
+      "/system/ablage/test",
+      { method: "POST", body: JSON.stringify(p) },
+    ),
 
   kommentare: (pageId: string) => req<Kommentar[]>(`/pages/${pageId}/kommentare`),
   kommentarAnlegen: (pageId: string, text: string, elternId?: string) =>

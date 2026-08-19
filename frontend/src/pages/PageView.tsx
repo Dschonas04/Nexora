@@ -169,17 +169,17 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   // knows how to render its own document. Lossy by name and by nature: anything
   // markdown cannot express is dropped. The blob URL is revoked right after the
   // click so it does not stay attached to the document.
-  const exportMarkdown = async () => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const md = await editor.blocksToMarkdownLossy(editor.document);
-    const blob = new Blob([md], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${(page.title || "untitled").replace(/[^\w.-]+/g, "-")}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+  // Der Export kommt vom Server, nicht aus dem Editor.
+  //
+  // Dessen eigene Umwandlung heißt blocksToMarkdownLossy und macht ihrem Namen
+  // Ehre: verschachtelte Listen, Tabellen, Aufgabenhaken und Codeblöcke
+  // überleben sie nur teilweise. Serverseitig liegt das vollständige Dokument
+  // vor, und derselbe Weg trägt später auch den Export eines ganzen Space.
+  const exportMarkdown = () => {
+    if (!id) return;
+    // Ein normaler Verweis statt fetch: so setzt der Browser den Dateinamen
+    // aus dem Content-Disposition-Kopf, samt Umlauten.
+    window.location.href = `/api/pages/${id}/markdown`;
   };
 
   // Tags are matched by name, case-insensitively, and created only when none
