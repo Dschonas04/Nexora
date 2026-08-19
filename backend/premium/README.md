@@ -1,13 +1,12 @@
 # Nexora Premium
 
-Everything in this directory is licensed under the **Business Source License
-1.1**, not Apache 2.0. See [LICENSE](LICENSE). The rest of the repository stays
-Apache 2.0 — this directory is the only exception.
+This directory holds the license check. It is covered by the repository's
+[Business Source License 1.1](../../LICENSE) like everything else — there is no
+separate license here any more.
 
 What that means in practice: you may read, modify, build and test this code
-freely. What you may not do without a license key is run it to unlock the paid
-features in production. On 2030-08-19 the restriction lapses and this directory
-becomes Apache 2.0 as well.
+freely. What needs a license key is running the paid features in production. On
+2030-08-19 the restriction lapses and Apache 2.0 takes over.
 
 ## What lives here
 
@@ -16,9 +15,9 @@ becomes Apache 2.0 as well.
 | `lizenz/pruefer.go` | verifies a license key and reports what it unlocks |
 | `cmd/schluessel/` | issues keys — the only place the private key is used |
 
-The gate itself is **not** here. It sits in `backend/internal/lizenz` under
-Apache 2.0 and knows nothing about signatures; it only asks whoever registered
-as the verifier. That split is what lets the free core build and run on its own.
+The gate itself is **not** here. It sits in `backend/internal/lizenz` and knows
+nothing about signatures; it only asks whoever registered as the verifier. That
+split is what lets the core build and run without this directory at all.
 
 ## How the key works
 
@@ -83,5 +82,5 @@ rm -rf backend/premium
 cd backend && go build -tags nur_kern ./...
 ```
 
-The result is a pure Apache 2.0 binary. Every paid extra answers `402 Payment
-Required`, everything else works unchanged.
+The result is a binary without any license check at all. Every paid extra
+answers `402 Payment Required`, everything else works unchanged.

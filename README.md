@@ -7,9 +7,10 @@ history, attachments, comments, a trash can, backlinks, a knowledge graph and a
 real full text search. **Go** backend, **React** frontend, **PostgreSQL**
 storage.
 
-Nexora is [open core](LICENSING.md): the application itself is Apache 2.0 and
-free to run commercially. A handful of extras — audit trail, groups, SSO, LDAP
-and a few more — sit behind a license key.
+Licensed under the [Business Source License 1.1](LICENSING.md). The source is
+open and the core may be run in production, commercially, without paying
+anyone. Twelve extras — audit trail, groups, SSO, LDAP and more — need a
+license key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
 ## Stack
 
@@ -304,12 +305,12 @@ is paid. A trail with a hole over the unlicensed period would not be one.
 
 ```
 config.conf                    every setting, documented in place
-LICENSING.md                   what is Apache 2.0 and what is not
+LICENSING.md                   what is free and what needs a key
 
 backend/                       Go API
   main.go                      router, route table, server bootstrap
-  premium/                     ── BSL 1.1, everything else is Apache 2.0 ──
-    LICENSE, README.md         the license and how keys are issued
+  premium/                     the license check; see premium/README.md
+    README.md                  how keys are issued
     lizenz/pruefer.go          verifies a key against the built-in public key
     cmd/schluessel/            issues keys; the only place the private key is used
   internal/config              config.conf plus environment, with defaults
@@ -357,17 +358,20 @@ cd frontend && npm install && npm run dev
 
 ## Licensing
 
-Nexora is **open core**. Full details in **[LICENSING.md](LICENSING.md)**.
+**Business Source License 1.1** — see [LICENSE](LICENSE), explained in
+[LICENSING.md](LICENSING.md).
 
-| Part | License |
-|---|---|
-| everything except `backend/premium` | Apache 2.0 — run it, sell it, fork it |
-| `backend/premium` | BSL 1.1, becomes Apache 2.0 on 2030-08-19 |
+Not an OSI open-source license, but not a closed one either: the source is
+open, and the Additional Use Grant explicitly permits production and commercial
+use of the core. On **2030-08-19** the restriction lapses and Apache 2.0 takes
+over.
 
-The free half is a complete wiki and stays that way. Twelve extras ask for a
-license key: version history, attachments, sharing, audit trail, groups, SSO,
-LDAP, attachment search, space export, templates, comments and conflict
-detection.
+**Free to run:** editor, nested pages, spaces, tags, favourites, trash, full
+text search over pages, backlinks, knowledge graph, accounts and roles.
+
+**Needs a key:** version history, attachments, sharing and public links, audit
+trail, groups and space permissions, SSO via OIDC, LDAP/Active Directory,
+attachment search, space export, templates, comments, conflict detection.
 
 Locked endpoints answer `402 Payment Required` and the browser hides the
 corresponding controls. Hiding is a courtesy to the reader — the refusal is
