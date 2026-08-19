@@ -206,11 +206,14 @@ export default function EinstellungenView() {
         <div className={meldung.art === "ok" ? "hinweis-ok" : "fehler"}>{meldung.text}</div>
       )}
 
-      {z && z.warnungen.length > 0 && (
+      {/* Gegen null abgesichert, nicht nur gegen undefined: eine leere Go-Liste
+          kommt als null über die Leitung, und ein .length darauf hat diese Seite
+          schon einmal zum Verschwinden gebracht. */}
+      {z && (z.warnungen ?? []).length > 0 && (
         <div className="warnkasten">
           <strong>Beim Start bemängelt</strong>
           <ul>
-            {z.warnungen.map((w) => (
+            {(z.warnungen ?? []).map((w) => (
               <li key={w}>{w}</li>
             ))}
           </ul>
@@ -247,7 +250,7 @@ export default function EinstellungenView() {
                   </div>
                   <div className="kachel">
                     <div className="kachel-wert">
-                      {z.lizenz.freigeschaltet.length} von {z.lizenz.alle}
+                      {(z.lizenz.freigeschaltet ?? []).length} von {z.lizenz.alle}
                     </div>
                     <div className="kachel-titel">Zusätze frei</div>
                   </div>
@@ -257,7 +260,7 @@ export default function EinstellungenView() {
                     <span
                       key={k}
                       className={
-                        "pill " + (z.lizenz.freigeschaltet.includes(k) ? "frei" : "gesperrt")
+                        "pill " + ((z.lizenz.freigeschaltet ?? []).includes(k) ? "frei" : "gesperrt")
                       }
                     >
                       {titel}
@@ -276,7 +279,7 @@ export default function EinstellungenView() {
           <section>
             <h3>Zahlen</h3>
             <div className="kachelreihe">
-              {Object.entries(z.zahlen).map(([k, v]) => (
+              {Object.entries(z.zahlen ?? {}).map(([k, v]) => (
                 <div className="kachel" key={k}>
                   <div className="kachel-wert">{v}</div>
                   <div className="kachel-titel">{ZAHL_TITEL[k] ?? k}</div>

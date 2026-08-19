@@ -282,7 +282,10 @@ func datei(pfad string) (map[string]string, error) {
 // rather than fatal: a homelab install with the default secret should still
 // start, it should just be impossible to miss that it did.
 func (k Konfig) Warnungen() []string {
-	var w []string
+	// Leere Liste, nicht nil: eine nil-Liste wird zu JSON null, und ein Leser,
+	// der darauf .length aufruft, stürzt ab. Genau das ist der
+	// Einstellungsseite passiert, solange nichts zu bemängeln war.
+	w := []string{}
 	if k.JWTGeheimnis == "change-me-in-production" {
 		w = append(w, "jwt_geheimnis steht auf der Vorgabe -- jede Sitzung ist fälschbar")
 	}
