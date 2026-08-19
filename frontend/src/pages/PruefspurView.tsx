@@ -30,7 +30,31 @@ const BESCHRIFTUNG: Record<string, string> = {
   "oeffentlich.aus": "Öffentlich zurückgenommen",
   "anhang.hochgeladen": "Anhang hochgeladen",
   "anhang.entfernt": "Anhang entfernt",
+  "kommentar.angelegt": "Kommentar geschrieben",
+  "kommentar.geaendert": "Kommentar bearbeitet",
+  "kommentar.geloescht": "Kommentar gelöscht",
+  "kommentar.erledigt": "Faden erledigt oder geöffnet",
+  "einstellung.geaendert": "Einstellung geändert",
+  "einstellung.zurueckgesetzt": "Einstellung zurückgesetzt",
+  "suchindex.neu": "Suchindex neu aufgebaut",
+  "lizenz.geladen": "Lizenz geladen",
 };
+
+// beschriften liefert den lesbaren Namen. Fehlt einer, wird der Rohname
+// wenigstens entschärft: Punkte zu Pfeilen, Umschreibungen zurück zu Umlauten.
+// Ein neuer Vorgang im Backend soll in der Spur nicht als "seite.geaendert"
+// erscheinen, bloß weil hier eine Zeile vergessen wurde.
+function beschriften(aktion: string): string {
+  const bekannt = BESCHRIFTUNG[aktion];
+  if (bekannt) return bekannt;
+  return aktion
+    .replace(/ae/g, "ä")
+    .replace(/oe/g, "ö")
+    .replace(/ue/g, "ü")
+    .split(".")
+    .map((teil, i) => (i === 0 ? teil.charAt(0).toUpperCase() + teil.slice(1) : teil))
+    .join(" → ");
+}
 
 // Actions worth spotting at a glance. Deleting and failed sign-ins are what an
 // auditor scans for; the rest is noise until it is not.
@@ -119,7 +143,7 @@ export default function PruefspurView() {
           <option value="">Alle Vorgänge</option>
           {aktionen.map((a) => (
             <option key={a.aktion} value={a.aktion}>
-              {(BESCHRIFTUNG[a.aktion] ?? a.aktion) + ` (${a.anzahl})`}
+              {beschriften(a.aktion) + ` (${a.anzahl})`}
             </option>
           ))}
         </select>
@@ -159,7 +183,7 @@ export default function PruefspurView() {
                   {e.akteurName || <span className="muted">unbekannt</span>}
                   {e.akteurEmail && <div className="muted small">{e.akteurEmail}</div>}
                 </td>
-                <td>{BESCHRIFTUNG[e.aktion] ?? e.aktion}</td>
+                <td>{beschriften(e.aktion)}</td>
                 <td>
                   {e.objektTitel || <span className="muted">{e.objektArt || "—"}</span>}
                   {/* Details sind je Vorgang verschieden -- etwa an wen freigegeben
