@@ -155,7 +155,7 @@ a {
 }
 
 .tree-caret:hover {
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--hover);
 }
 
 .tree-icon {
@@ -1160,7 +1160,7 @@ a {
   -webkit-box-orient: vertical;
 }
 .treffer-ausschnitt mark {
-  background: rgba(255, 212, 0, 0.35);
+  background: var(--hover);
   color: inherit;
   border-radius: 2px;
   padding: 0 1px;
@@ -1208,7 +1208,7 @@ a {
 /* Löschungen, Rollenwechsel und Fehlanmeldungen sind das, wonach jemand in
    einer Prüfspur zuerst sucht -- die bekommen eine Kante. */
 .pruefspur-tabelle tr.auffaellig td:first-child {
-  box-shadow: inset 3px 0 0 #d9822b;
+  box-shadow: inset 3px 0 0 var(--muted);
 }
 .einzeilig {
   white-space: nowrap;
@@ -1235,15 +1235,15 @@ a {
   margin: 0 0 12px;
   padding: 12px 16px;
   border-radius: 8px;
-  background: rgba(217, 130, 43, 0.12);
-  border: 1px solid rgba(217, 130, 43, 0.45);
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border);
 }
 .konflikt-aktionen {
   display: flex;
   gap: 8px;
 }
 .btn.warnend {
-  border-color: rgba(217, 130, 43, 0.6);
+  border-color: var(--border);
 }
 
 /* Kommentare */
@@ -1363,7 +1363,7 @@ a {
   line-height: 1.5;
   margin-top: 6px;
   padding-left: 10px;
-  border-left: 3px solid rgba(217, 130, 43, 0.6);
+  border-left: 3px solid var(--border);
   color: var(--muted);
 }
 .einstellung-feld {
@@ -1437,9 +1437,13 @@ a {
   text-decoration: line-through;
 }
 
+/* Bewusst neutral gehalten statt gelb: der Kasten steht dauerhaft auf der
+   Seite, solange etwas zu bemängeln ist. Eine Signalfarbe, die nie weggeht,
+   wird nach zwei Tagen überlesen -- ein ruhiger Grund mit klarer Überschrift
+   nicht. */
 .warnkasten {
-  border: 1px solid rgba(217, 130, 43, 0.5);
-  background: rgba(217, 130, 43, 0.08);
+  border: 1px solid var(--border);
+  background: var(--sidebar-bg);
   border-radius: 8px;
   padding: 12px 16px;
   margin: 14px 0;
