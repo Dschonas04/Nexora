@@ -101,6 +101,7 @@ type Page struct {
 	IsFavorite  bool            `json:"isFavorite"`
 	CanEdit     bool            `json:"canEdit"` // false for read-only shares
 	IsOwner     bool            `json:"isOwner"`
+	IstVorlage  bool            `json:"istVorlage"`
 	CreatedAt   time.Time       `json:"createdAt"`
 	UpdatedAt   time.Time       `json:"updatedAt"`
 }

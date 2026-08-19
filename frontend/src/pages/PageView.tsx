@@ -319,6 +319,26 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
             <button className="btn" onClick={exportMarkdown}>
               Export
             </button>
+            {/* Nur der Eigentümer entscheidet. Eine fremde Seite zur Vorlage zu
+                erklären würde sie in jedem Neu-Menü der Kollegen auftauchen
+                lassen -- das wäre eine Änderung an fremdem Eigentum. */}
+            {page.isOwner && frei("vorlagen") && (
+              <button
+                className={"btn" + (page.istVorlage ? " active" : "")}
+                title={
+                  page.istVorlage
+                    ? "Diese Seite dient als Vorlage für neue Seiten"
+                    : "Diese Seite als Vorlage anbieten"
+                }
+                onClick={async () => {
+                  const r = await api.vorlageUmschalten(page.id);
+                  setPage({ ...page, istVorlage: r.istVorlage });
+                  onMetaChange();
+                }}
+              >
+                {page.istVorlage ? "Vorlage" : "Als Vorlage"}
+              </button>
+            )}
             {page.isOwner && frei("freigeben") && (
               <button className={"btn" + (page.isPublic ? " active" : "")} onClick={() => setShowShare(true)}>
                 Teilen

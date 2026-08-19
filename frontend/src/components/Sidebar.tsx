@@ -16,7 +16,7 @@ interface Props {
   spaces: Space[];
   activeId?: string;
   onSelect: (id: string) => void;
-  onCreateRoot: () => void;
+  onCreateRoot: (vorlageId?: string) => void;
   onCreateChild: (parentId: string) => void;
   onCreateInSpace: (spaceId: string) => void;
   onDelete: (id: string) => void;
@@ -52,6 +52,15 @@ export default function Sidebar(props: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [q, setQ] = useState("");
   const { frei } = useLizenz();
+
+  // Vorlagen werden einmal geholt, nicht bei jedem Öffnen des Menüs: die Liste
+  // ist kurz und ändert sich selten, ein Abruf je Klick wäre Verschwendung.
+  const [vorlagen, setVorlagen] = useState<PageMeta[]>([]);
+  const [vorlagenOffen, setVorlagenOffen] = useState(false);
+  useEffect(() => {
+    if (!frei("vorlagen")) return;
+    api.vorlagen().then(setVorlagen).catch(() => setVorlagen([]));
+  }, [frei, pages]);
   const [results, setResults] = useState<SearchHit[] | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   // One drop target for three kinds of destination, encoded as a string: a bare
@@ -178,9 +187,39 @@ export default function Sidebar(props: Props) {
     <div className="sidebar">
       <div className="sidebar-header">
         <span className="brand">Nexora</span>
-        <button className="icon-btn" title="Neue Seite" onClick={onCreateRoot}>
+        <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
           +
         </button>
+        {/* Der zweite Knopf erscheint nur, wenn es überhaupt Vorlagen gibt.
+            Ein leeres Menü anzubieten wäre ein Versprechen ohne Inhalt. */}
+        {frei("vorlagen") && vorlagen.length > 0 && (
+          <div className="vorlagenmenue">
+            <button
+              className="icon-btn"
+              title="Neue Seite aus Vorlage"
+              onClick={() => setVorlagenOffen((v) => !v)}
+            >
+              ▾
+            </button>
+            {vorlagenOffen && (
+              <div className="vorlagenliste">
+                <div className="vorlagenliste-titel">Aus Vorlage</div>
+                {vorlagen.map((v) => (
+                  <button
+                    key={v.id}
+                    className="vorlageneintrag"
+                    onClick={() => {
+                      setVorlagenOffen(false);
+                      onCreateRoot(v.id);
+                    }}
+                  >
+                    {v.title || "Ohne Titel"}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="search-box">
@@ -288,7 +327,10 @@ export default function Sidebar(props: Props) {
                   <button className="text-btn" title="Neuer Space" onClick={onCreateSpace}>
                     + Space
                   </button>
-                  <button className="icon-btn" title="Neue Seite" onClick={onCreateRoot}>
+                  {/* Ohne den Pfeil würde React das Klickereignis als erstes
+                      Argument durchreichen -- und das wäre dann die
+                      Vorlagen-Kennung. */}
+                  <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
                     +
                   </button>
                 </span>

@@ -58,6 +58,8 @@ const (
 	AktEinstellungZurueck = "einstellung.zurueckgesetzt"
 	AktIndexNeu           = "suchindex.neu"
 	AktS3Test             = "objektspeicher.getestet"
+	AktVorlageAn          = "vorlage.gesetzt"
+	AktVorlageAus         = "vorlage.aufgehoben"
 )
 
 // spur writes one entry. Callers pass what they know; empty fields stay empty.

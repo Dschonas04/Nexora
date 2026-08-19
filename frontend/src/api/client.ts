@@ -56,6 +56,8 @@ export interface Page {
   isFavorite: boolean;
   canEdit: boolean;
   isOwner: boolean;
+  /** Whether this page is offered as a template when creating new ones. */
+  istVorlage: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -352,11 +354,19 @@ export const api = {
   listPages: () => req<PageMeta[]>("/pages"),
   listShared: () => req<PageMeta[]>("/pages/shared"),
   listTrash: () => req<PageMeta[]>("/pages/trash"),
-  createPage: (parentId?: string | null, spaceId?: string | null) =>
+  createPage: (parentId?: string | null, spaceId?: string | null, vorlageId?: string) =>
     req<Page>("/pages", {
       method: "POST",
-      body: JSON.stringify({ parentId: parentId ?? null, spaceId: spaceId ?? null }),
+      body: JSON.stringify({
+        parentId: parentId ?? null,
+        spaceId: spaceId ?? null,
+        vorlageId: vorlageId ?? "",
+      }),
     }),
+
+  vorlagen: () => req<PageMeta[]>("/vorlagen"),
+  vorlageUmschalten: (id: string) =>
+    req<{ istVorlage: boolean }>(`/pages/${id}/vorlage`, { method: "POST" }),
   getPage: (id: string) => req<Page>(`/pages/${id}`),
   backlinks: (id: string) => req<PageMeta[]>(`/pages/${id}/backlinks`),
 
