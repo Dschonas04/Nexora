@@ -1,5 +1,6 @@
 // The attachment list under a page. The preview overlay itself lives in
 // QuickView, so anything else with a list of files can reuse it.
+import type { DragEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Attachment, api } from "../api/client";
 import QuickView, { istBild, istPdf, zeigbar } from "./QuickView";
@@ -48,6 +49,23 @@ export default function Attachments({ pageId, canEdit }: Props) {
     }
   };
 
+  // Ziehen und Ablegen von Dateien.
+  //
+  // Der Zähler statt eines einfachen Schalters ist nötig, weil dragleave auch
+  // dann feuert, wenn der Zeiger von einem Kind- auf ein anderes Kindelement
+  // wechselt. Mit einem bool flackerte die Hervorhebung bei jeder Bewegung.
+  const [ueber, setUeber] = useState(0);
+
+  const istDatei = (e: DragEvent) =>
+    Array.from(e.dataTransfer.types).includes("Files");
+
+  const abgelegt = async (e: DragEvent) => {
+    if (!canEdit || !istDatei(e)) return;
+    e.preventDefault();
+    setUeber(0);
+    await upload(e.dataTransfer.files);
+  };
+
   const remove = async (attId: string) => {
     await api.deleteAttachment(pageId, attId);
     refresh();
@@ -58,7 +76,24 @@ export default function Attachments({ pageId, canEdit }: Props) {
   if (items.length === 0 && !canEdit) return null;
 
   return (
-    <div className="attachments">
+    <div
+      className={"attachments" + (ueber > 0 ? " abwurf" : "")}
+      // Nur reagieren, wenn wirklich Dateien im Spiel sind. Sonst würde auch
+      // eine gezogene Seite aus dem Baum die Hervorhebung auslösen.
+      onDragEnter={(e) => {
+        if (canEdit && istDatei(e)) setUeber((n) => n + 1);
+      }}
+      onDragOver={(e) => {
+        if (canEdit && istDatei(e)) {
+          // Ohne preventDefault öffnet der Browser die Datei in einem neuen
+          // Tab, statt sie hier abzulegen.
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "copy";
+        }
+      }}
+      onDragLeave={() => setUeber((n) => Math.max(0, n - 1))}
+      onDrop={abgelegt}
+    >
       <div className="attachments-head">
         <span className="section-label">Anhänge</span>
         {canEdit && (
@@ -79,7 +114,11 @@ export default function Attachments({ pageId, canEdit }: Props) {
         )}
       </div>
       <div className="attachment-list">
-        {items.length === 0 && <div className="muted small">Keine Dateien angehängt.</div>}
+        {items.length === 0 && (
+          <div className="muted small">
+            {canEdit ? "Keine Dateien angehängt. Dateien lassen sich hierher ziehen." : "Keine Dateien angehängt."}
+          </div>
+        )}
         {items.map((a) => {
           const url = api.attachmentUrl(pageId, a.id);
           const previewable = zeigbar(a.mime);
@@ -119,6 +158,12 @@ export default function Attachments({ pageId, canEdit }: Props) {
           );
         })}
       </div>
+
+      {ueber > 0 && canEdit && (
+        <div className="abwurf-schleier">
+          {busy ? "Wird hochgeladen…" : "Loslassen zum Anhängen"}
+        </div>
+      )}
 
       {offenBei !== null && (
         <QuickView

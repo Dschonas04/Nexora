@@ -11,6 +11,7 @@ import ShareDialog from "../components/ShareDialog";
 import Attachments from "../components/Attachments";
 import Kommentare from "../components/Kommentare";
 import { useLizenz } from "../lizenz";
+import { schriftAuf } from "../farbe";
 import LocalGraph from "../components/LocalGraph";
 
 interface Props {
@@ -363,7 +364,13 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
             />
             <div className="page-tags">
               {page.tags.map((t) => (
-                <span key={t.id} className="tag" style={{ background: t.color }}>
+                <span
+                  key={t.id}
+                  className="tag"
+                  // Schriftfarbe aus der Schlagwortfarbe gerechnet: fest weiß war
+                  // auf den helleren Tönen der Palette kaum zu lesen.
+                  style={{ background: t.color, color: schriftAuf(t.color) }}
+                >
                   {t.name}
                   {canEdit && (
                     <span className="x" onClick={() => detachTag(t.id)}>
