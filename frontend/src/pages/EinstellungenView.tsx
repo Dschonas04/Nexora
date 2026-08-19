@@ -644,7 +644,7 @@ export default function EinstellungenView() {
                   {kachel(z.lizenz.laeuftAb || "unbefristet", "Gültig bis")}
                   {kachel(`${(z.lizenz.freigeschaltet ?? []).length} von ${z.lizenz.alle}`, "Zusätze frei")}
                 </div>
-                <h3>Umfang</h3>
+                <h3>Funktionen</h3>
                 <table className="tabelle">
                   <tbody>
                     {Object.entries(ZUSATZ).map(([k, titel]) => {
