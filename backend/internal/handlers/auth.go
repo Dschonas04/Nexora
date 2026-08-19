@@ -36,6 +36,35 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "valid email required")
 		return
 	}
+
+	// Selbstregistrierung kann abgeschaltet sein. Das allererste Konto kommt
+	// trotzdem durch: es wird zum Administrator, und ohne diese Ausnahme wäre
+	// eine frische Instanz mit geschlossener Registrierung unbenutzbar.
+	if !RegistrierungOffen() {
+		var vorhanden int
+		_ = s.Pool.QueryRow(r.Context(), `SELECT count(*) FROM users`).Scan(&vorhanden)
+		if vorhanden > 0 {
+			writeErr(w, http.StatusForbidden, "Selbstregistrierung ist abgeschaltet")
+			return
+		}
+	}
+
+	// Domänenfilter. Greift nur hier, nicht auf Konten, die ein Administrator
+	// anlegt -- der weiß, was er tut.
+	if erlaubt := ErlaubteDomaenen(); len(erlaubt) > 0 {
+		domaene := req.Email[strings.LastIndex(req.Email, "@")+1:]
+		passt := false
+		for _, d := range erlaubt {
+			if domaene == d {
+				passt = true
+				break
+			}
+		}
+		if !passt {
+			writeErr(w, http.StatusForbidden, "diese E-Mail-Domäne ist nicht zugelassen")
+			return
+		}
+	}
 	// Fall back to the local part of the address so no account is nameless.
 	if req.Name == "" {
 		req.Name = strings.Split(req.Email, "@")[0]
@@ -158,7 +187,7 @@ func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 // caller without a session; the surrounding handler still reports success, and
 // the frontend then lands back on the login screen.
 func (s *Server) issueSession(w http.ResponseWriter, userID string) {
-	token, err := auth.GenerateToken(s.Secret, userID, tokenTTL)
+	token, err := auth.GenerateToken(s.Secret, userID, SitzungDauer())
 	if err == nil {
 		s.setAuthCookie(w, token)
 	}

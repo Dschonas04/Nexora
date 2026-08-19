@@ -369,6 +369,14 @@ export default function Sidebar(props: Props) {
               {/* Die Prüfspur ist Admin UND Zusatzumfang. Beides wird auch im
                   Backend geprüft; hier geht es nur darum, keinen Eintrag
                   anzubieten, der ohnehin abgewiesen würde. */}
+              {user?.role === "admin" && (
+                <div
+                  className={"tree-row" + (currentPath === "/einstellungen" ? " active" : "")}
+                  onClick={() => onNavigate("/einstellungen")}
+                >
+                  <span className="tree-label">Einstellungen</span>
+                </div>
+              )}
               {user?.role === "admin" && frei("pruefspur") && (
                 <div
                   className={"tree-row" + (currentPath === "/pruefspur" ? " active" : "")}

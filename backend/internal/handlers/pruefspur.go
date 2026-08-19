@@ -53,6 +53,10 @@ const (
 	AktKommentarGeaendert = "kommentar.geaendert"
 	AktKommentarGeloescht = "kommentar.geloescht"
 	AktKommentarErledigt  = "kommentar.erledigt"
+
+	AktEinstellung        = "einstellung.geaendert"
+	AktEinstellungZurueck = "einstellung.zurueckgesetzt"
+	AktIndexNeu           = "suchindex.neu"
 )
 
 // spur writes one entry. Callers pass what they know; empty fields stay empty.
