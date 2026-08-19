@@ -248,6 +248,7 @@ func main() {
 			r.Get("/favorites", h.ListFavorites)
 			r.Get("/tags", h.ListTags)
 			r.Post("/tags", h.CreateTag)
+			r.Get("/tags/{id}/pages", h.SeitenZuTag)
 			r.Delete("/tags/{id}", h.DeleteTag)
 			r.Get("/search", h.Search)
 		})

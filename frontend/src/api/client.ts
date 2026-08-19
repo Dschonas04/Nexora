@@ -16,6 +16,8 @@ export interface Tag {
   id: string;
   name: string;
   color: string;
+  /** How many pages carry this tag. Zero means it is orphaned. */
+  anzahl: number;
 }
 
 export interface Space {
@@ -439,6 +441,7 @@ export const api = {
   listTags: () => req<Tag[]>("/tags"),
   createTag: (name: string, color: string) =>
     req<Tag>("/tags", { method: "POST", body: JSON.stringify({ name, color }) }),
+  seitenZuTag: (id: string) => req<PageMeta[]>(`/tags/${id}/pages`),
   deleteTag: (id: string) => req<void>(`/tags/${id}`, { method: "DELETE" }),
   attachTag: (pageId: string, tagId: string) =>
     req<void>(`/pages/${pageId}/tags`, { method: "POST", body: JSON.stringify({ tagId }) }),

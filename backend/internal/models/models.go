@@ -32,6 +32,9 @@ type Tag struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Color string `json:"color"`
+	// Anzahl der Seiten, die dieses Schlagwort tragen. Erst die Zahl macht aus
+	// einem Wort in der Seitenleiste eine Angabe.
+	Anzahl int `json:"anzahl"`
 }
 
 // PageMeta is the lightweight shape used for the sidebar tree and lists. It

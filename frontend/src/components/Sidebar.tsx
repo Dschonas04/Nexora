@@ -334,9 +334,20 @@ export default function Sidebar(props: Props) {
               <div className="sidebar-section">
                 <div className="sidebar-section-title">Schlagwörter</div>
                 {tags.map((t) => (
-                  <div key={t.id} className="tree-row">
+                  // Anklickbar, und die Zahl dahinter sagt, ob etwas
+                  // dranhängt. Ohne beides war das hier nur Zierde: eine
+                  // Beschriftung, der man nicht folgen kann, verspricht eine
+                  // Ordnung, die es gar nicht gibt.
+                  <div
+                    key={t.id}
+                    className={"tree-row" + (currentPath === `/tag/${t.id}` ? " active" : "")}
+                    onClick={() => onNavigate(`/tag/${t.id}`)}
+                  >
                     <span className="tag-dot" style={{ background: t.color }} />
                     <span className="tree-label">{t.name}</span>
+                    <span className={"tag-anzahl muted small" + (t.anzahl === 0 ? " leer" : "")}>
+                      {t.anzahl}
+                    </span>
                   </div>
                 ))}
               </div>

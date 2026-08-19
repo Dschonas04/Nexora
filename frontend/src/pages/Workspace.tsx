@@ -14,6 +14,7 @@ import GraphView from "./GraphView";
 import AdminView from "./AdminView";
 import PruefspurView from "./PruefspurView";
 import EinstellungenView from "./EinstellungenView";
+import TagView from "./TagView";
 
 export default function Workspace() {
   const nav = useNavigate();
@@ -153,6 +154,10 @@ export default function Workspace() {
           <Route path="admin" element={<AdminView />} />
           <Route path="pruefspur" element={<PruefspurView />} />
           <Route path="einstellungen" element={<EinstellungenView />} />
+          <Route
+            path="tag/:tagId"
+            element={<TagView allTags={tags} onTagsChange={refreshTags} />}
+          />
         </Routes>
       </div>
     </div>
