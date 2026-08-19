@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -104,12 +105,23 @@ func TestVeraenderterSchluesselWirdAbgelehnt(t *testing.T) {
 
 	// Ein einzelnes Zeichen im Datenteil kippen. Die Signatur darf dann nicht
 	// mehr passen -- das ist der Kern des ganzen Verfahrens.
+	//
+	// Gekippt wird an fester Stelle statt nach einem bestimmten Buchstaben zu
+	// suchen: welche Zeichen im Base64 vorkommen, hängt vom Inhalt ab, und ein
+	// nicht gefundener Buchstabe hätte den Schlüssel unverändert gelassen --
+	// der Test wäre dann grün gewesen, ohne je etwas zu prüfen.
+	punkt := strings.Index(s, ".")
+	if punkt < 2 {
+		t.Fatal("Schlüssel hat nicht die erwartete Form")
+	}
 	b := []byte(s)
-	for i := range b {
-		if b[i] == 'E' {
-			b[i] = 'F'
-			break
-		}
+	if b[1] == 'A' {
+		b[1] = 'B'
+	} else {
+		b[1] = 'A'
+	}
+	if string(b) == s {
+		t.Fatal("die Manipulation hat nichts verändert")
 	}
 	kern.Laden(string(b))
 	if kern.Aktuell().Gueltig {
