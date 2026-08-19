@@ -2,15 +2,20 @@
 
 A minimal, self-hosted knowledge base: think Notion or Outline, but small and yours.
 
-Nested pages in a block editor, spaces, per-user sharing with roles, version history,
-attachments, a trash can, backlinks and a knowledge graph. **Go** backend,
-**React** frontend, **PostgreSQL** storage.
+Nested pages in a block editor, spaces, per-user sharing with roles, version
+history, attachments, comments, a trash can, backlinks, a knowledge graph and a
+real full text search. **Go** backend, **React** frontend, **PostgreSQL**
+storage.
+
+Nexora is [open core](LICENSING.md): the application itself is Apache 2.0 and
+free to run commercially. A handful of extras — audit trail, groups, SSO, LDAP
+and a few more — sit behind a license key.
 
 ## Stack
 
 | Layer    | Tech                                                     |
 | -------- | -------------------------------------------------------- |
-| Backend  | Go 1.22, chi router, pgx, JWT (httpOnly cookie), bcrypt  |
+| Backend  | Go 1.22+, chi router, pgx, JWT (httpOnly cookie), bcrypt  |
 | Frontend | React 18, Vite, TypeScript, BlockNote editor             |
 | Database | PostgreSQL 16                                            |
 | Delivery | Docker Compose (nginx serves the SPA and proxies `/api`) |
@@ -25,9 +30,14 @@ attachments, a trash can, backlinks and a knowledge graph. **Go** backend,
 - **Markdown export**: download the current page as `.md`
 - **Version history**: a snapshot is written before every content change; browse
   and restore any earlier revision
-- **Attachments**: upload files per page (25 MiB per file), with a quick viewer
-  for images, PDFs and plain text — browse between files with the arrow keys,
-  zoom and rotate images, Esc closes
+- **Attachments**: upload files per page, with a quick viewer for images, PDFs
+  and plain text — browse between files with `←` `→`, zoom with `+` `−`, rotate
+  with `R`, `0` resets, `Esc` closes
+- **Comments**: threads under every page, one reply level deep, mark a thread as
+  settled. Deleting empties the text and keeps the shell, so replies hanging off
+  it do not lose their place
+- **Conflict detection**: the editor sends the state it started from. If the page
+  moved on in between, the save is refused instead of overwriting a colleague
 
 ### Organising
 
@@ -50,6 +60,10 @@ attachments, a trash can, backlinks and a knowledge graph. **Go** backend,
   `user`. Admins manage accounts under the admin view
 - **Per-user sharing**: share a page with named accounts, each as `read` or `write`
 - **Public links**: publish a single page read-only behind a random token
+- **Audit trail**: who did what, when — sign-ins including the failed ones,
+  accounts, pages, trash, permanent deletion, shares and public links. Entries
+  survive the deletion of the page or account they refer to, because deleting is
+  exactly what an auditor comes looking for
 
 ## Quick Start
 
@@ -64,35 +78,82 @@ account, which becomes the workspace admin.
 
 ## Configuration
 
-Docker Compose reads three variables from `.env`:
+Everything is read from **`config.conf`**, which documents itself: 245 lines,
+174 of them comment. Every setting says what it does, which environment
+variable overrides it, and what happens when it is set wrong.
 
-| Variable            | Purpose                            | Default         |
-| ------------------- | ---------------------------------- | --------------- |
-| `PORT`              | Host port for the web UI           | `3000`          |
-| `POSTGRES_PASSWORD` | Database password (db + backend)   | `nexora`        |
-| `JWT_SECRET`        | Secret used to sign session tokens | `change-me-...` |
+Precedence, highest first:
 
-Generate a strong secret with `openssl rand -hex 32`.
+```
+environment variable   →   config.conf   →   built-in default
+```
 
-Two notes worth knowing before the first start:
+The environment wins so a container can override a single value without a
+rebuilt image, and so a secret never has to touch disk. The file is looked for
+at `$NEXORA_CONFIG`, then `./config.conf`, then `/etc/nexora/config.conf`.
+
+**A missing file is not an error.** Every setting has a default that produces a
+working server, which is what lets the binary start with no configuration at
+all.
+
+The format is deliberately dull:
+
+```ini
+schluessel = wert          # one entry per line, # and ; start a comment
+[Abschnitt]                # sections are read and discarded, they only group
+"  wert mit Rand  "        # quotes preserve leading and trailing spaces
+```
+
+Broken lines do not bring anything down: an unreadable number keeps the
+default, a line without `=` is reported with its line number and skipped. A
+typo must not cause an outage.
+
+### The settings
+
+| Group | Keys |
+| --- | --- |
+| Server | `port`, `daten_verzeichnis`, `oeffentliche_url` |
+| Database | `datenbank_url` |
+| Sessions | `jwt_geheimnis`, `sitzung_tage` |
+| License | `lizenz` |
+| Registration | `registrierung_offen`, `erlaubte_domaenen` |
+| Search | `such_woerterbuch` |
+| Attachments | `max_anhang_mb` |
+| LDAP / AD | `ldap_aktiv` and ten more |
+| OIDC | `oidc_aktiv` and eight more |
+
+### Warnings on start
+
+Dangerous defaults are named on every boot without preventing it — a homelab
+install with the default secret should still run, it should just be impossible
+to miss that it did:
+
+```
+ACHTUNG: jwt_geheimnis steht auf der Vorgabe -- jede Sitzung ist fälschbar
+ACHTUNG: LDAP ohne TLS -- Zugangsdaten gehen im Klartext über das Netz
+```
+
+### Two things to know before the first start
 
 - **PostgreSQL fixes the password on first launch.** It is written into the data
-  directory at initialisation. Changing `POSTGRES_PASSWORD` afterwards locks the
-  backend out unless you also change it inside the running database
+  directory at initialisation. Changing it afterwards locks the backend out
+  unless you also change it inside the running database
   (`ALTER USER nexora WITH PASSWORD ...`) or discard the volume.
-- **A missing `.env` does not stop the stack.** Compose falls back to the defaults
-  above, so you get a running instance with the password `nexora` and a publicly
-  known signing secret, without any warning.
+- **The very first account created becomes the administrator.** Turning
+  `registrierung_offen` off before that account exists locks everyone out.
 
-The backend itself reads four variables. Compose sets the other three for you, so
-they do not belong in `.env`:
+### `.env`
 
-| Variable          | Purpose                       | Set by Compose to      |
-| ----------------- | ----------------------------- | ---------------------- |
-| `DATABASE_URL`    | PostgreSQL connection string  | derived from the above |
-| `JWT_SECRET`      | Session token signing key     | from `.env`            |
-| `NEXORA_DATA_DIR` | Where attachments are stored  | `/data/attachments`    |
-| `PORT`            | Port the Go server listens on | `8080` (container)     |
+Docker Compose still reads `.env` for the values it needs before the backend
+starts, and for anything you would rather not put in a file that lives in the
+repository:
+
+| Variable | Purpose |
+| --- | --- |
+| `PORT` | Host port for the web UI |
+| `POSTGRES_PASSWORD` | Database password, used by both db and backend |
+| `JWT_SECRET` | Session signing key — overrides `jwt_geheimnis` |
+| `NEXORA_LIZENZ` | License key — overrides `lizenz` |
 
 ## Data Model
 
@@ -100,15 +161,28 @@ they do not belong in `.env`:
 users        id, email, name, password_hash, role, created_at
 spaces       id, owner_id, name, created_at
 pages        id, owner_id, parent_id, space_id, title, content (jsonb),
-             icon, is_public, public_token, sort_order, deleted_at,
-             created_at, updated_at
+             content_text, such_tsv (generated), icon, is_public,
+             public_token, sort_order, deleted_at, created_at, updated_at
 page_versions  id, page_id, title, content, icon, author_id, created_at
 attachments    id, page_id, owner_id, filename, mime, size, created_at
 page_shares    page_id, user_id, permission ('read' | 'write'), created_at
 page_links     source_id, target_id, created_at
 tags           per-user tags; page_tags joins them to pages
 favorites      per-user favorites
+kommentare     id, page_id, eltern_id, autor_id, autor_name, text, erledigt,
+               erstellt_am, geaendert_am, geloescht_am
+pruefspur      id, zeitpunkt, akteur_id, akteur_name, akteur_email, aktion,
+               objekt_art, objekt_id, objekt_titel, details (jsonb), ip
 ```
+
+`content_text` holds the prose pulled out of the BlockNote JSON on every save;
+`such_tsv` is generated from it plus the title, with the title weighted higher,
+and carries a GIN index. That is what makes the search a search rather than a
+`LIKE '%word%'` over raw JSON.
+
+`pruefspur` deliberately has **no** foreign key with a cascade. Names and titles
+are frozen copies, so an entry stays readable after the page or account it
+refers to is gone — deleting is exactly the event an auditor looks for.
 
 Deleting a page sets `deleted_at` (trash). Purging removes the row, which cascades
 to its versions, attachments, shares, links and subpages.
@@ -119,13 +193,17 @@ Everything lives under `/api`. Authentication uses an httpOnly cookie set on log
 or register. `GET /api/public/{token}` and `/api/healthz` are the only unauthenticated
 endpoints.
 
-### Auth
+Paid endpoints answer `402 Payment Required` without a license key; they are
+marked below.
+
+### Auth and license
 
 ```
 POST   /auth/register                     create account (first one becomes admin)
 POST   /auth/login                        sign in
 POST   /auth/logout                       sign out
 GET    /auth/me                           current user
+GET    /lizenz                            which extras are unlocked
 ```
 
 ### Pages
@@ -136,7 +214,7 @@ GET    /pages/shared                      pages other users shared with you
 GET    /pages/trash                       deleted pages
 POST   /pages                             create (optional parentId, spaceId)
 GET    /pages/{id}                        full page incl. tags, favorite, permission
-PUT    /pages/{id}                        update title / content / icon / parent / space
+PUT    /pages/{id}                        update; send basis to detect conflicts (409)
 DELETE /pages/{id}                        move to trash
 POST   /pages/{id}/restore                restore from trash
 DELETE /pages/{id}/purge                  delete permanently
@@ -202,31 +280,67 @@ GET    /search?q=                         search titles and content
 GET    /healthz                           liveness probe
 ```
 
+### Comments  ·  paid: `kommentare`
+
+```
+GET    /pages/{id}/kommentare             the whole thread, oldest first
+POST   /pages/{id}/kommentare             comment, or reply via elternId
+PUT    /kommentare/{id}                   edit own comment
+DELETE /kommentare/{id}                   empty the text, keep the shell
+POST   /kommentare/{id}/erledigt          mark thread settled, or reopen it
+```
+
+### Audit trail  ·  paid: `pruefspur`  ·  admin only
+
+```
+GET    /pruefspur                         newest first; filter by aktion, akteur, objekt
+GET    /pruefspur/aktionen                which action names actually occur
+```
+
+Recording runs on every installation regardless of the license — only reading
+is paid. A trail with a hole over the unlicensed period would not be one.
+
 ## Project Structure
 
 ```
+config.conf                    every setting, documented in place
+LICENSING.md                   what is Apache 2.0 and what is not
+
 backend/                       Go API
   main.go                      router, route table, server bootstrap
+  premium/                     ── BSL 1.1, everything else is Apache 2.0 ──
+    LICENSE, README.md         the license and how keys are issued
+    lizenz/pruefer.go          verifies a key against the built-in public key
+    cmd/schluessel/            issues keys; the only place the private key is used
+  internal/config              config.conf plus environment, with defaults
   internal/db                  connection pool, schema creation and migration
   internal/auth                JWT issuing and password hashing
+  internal/lizenz              the gate: asks whoever registered as verifier
   internal/middleware          cookie auth
   internal/handlers
     auth.go                    register, login, logout, me
-    pages.go                   CRUD, tree, trash, restore, purge
+    pages.go                   CRUD, tree, trash, restore, purge, conflicts
     versions.go                snapshots and rollback
     attachments.go             upload, download, delete
+    kommentare.go              comment threads
+    pruefspur.go               audit trail: writing and reading
+    volltext.go                plain text extraction for the search index
+    lizenz.go                  the 402 gate and the license status endpoint
     sharing.go                 public links
     access.go                  per-user shares and permission checks
     links.go, backlinks.go     explicit page links
     graph.go                   graph nodes and edges
-    spaces.go, tags.go         organisation
+    spaces.go, tags.go         organisation and full text search
     users.go                   admin account management
 frontend/                      React SPA (Vite + TypeScript)
   src/api                      typed API client
+  src/lizenz.tsx               which extras are unlocked, asked once
   src/components               Sidebar, PageTree, Editor, Attachments,
-                               VersionPanel, ShareDialog, LocalGraph
+                               QuickView, Kommentare, VersionPanel,
+                               ShareDialog, LocalGraph
   src/pages                    Login, Register, Workspace, PageView,
-                               PublicPage, TrashView, GraphView, AdminView
+                               PublicPage, TrashView, GraphView, AdminView,
+                               PruefspurView
 docker-compose.yml             db + backend + frontend
 ```
 
@@ -243,52 +357,37 @@ cd frontend && npm install && npm run dev
 
 ## Licensing
 
-Nexora is **open core**. The two halves carry different licenses:
+Nexora is **open core**. Full details in **[LICENSING.md](LICENSING.md)**.
 
-| Part | License | What it covers |
-|---|---|---|
-| everything except `backend/premium` | Apache 2.0 | the whole application: editor, pages, spaces, tags, search, graph, trash, accounts |
-| `backend/premium` | BSL 1.1 | the license-key check for the paid extras |
+| Part | License |
+|---|---|
+| everything except `backend/premium` | Apache 2.0 — run it, sell it, fork it |
+| `backend/premium` | BSL 1.1, becomes Apache 2.0 on 2030-08-19 |
 
-The free half is a complete wiki and stays that way. You may run it in
-production, commercially, without asking anyone. Fork it, sell it, host it —
-Apache 2.0 permits all of it.
+The free half is a complete wiki and stays that way. Twelve extras ask for a
+license key: version history, attachments, sharing, audit trail, groups, SSO,
+LDAP, attachment search, space export, templates, comments and conflict
+detection.
 
-### Paid extras
+Locked endpoints answer `402 Payment Required` and the browser hides the
+corresponding controls. Hiding is a courtesy to the reader — the refusal is
+what enforces it.
 
-Three features ask for a license key:
-
-| Extra | Key name | Without a key |
-|---|---|---|
-| Version history | `versionen` | snapshots keep being written, browsing and restoring are locked |
-| Attachments | `anhaenge` | the upload area is not shown |
-| Sharing and public links | `freigeben` | pages stay private to their owner |
-
-Snapshots keep being written even while the extra is locked, on purpose:
-otherwise unlocking it later would reveal a gap in the history exactly where the
-unlicensed period was.
-
-The server refuses these endpoints with `402 Payment Required`, and the browser
-hides the corresponding controls. Hiding is a courtesy to the reader — the
-refusal is what enforces it.
-
-### Running without the paid half
+Build without the paid half:
 
 ```bash
 rm -rf backend/premium
 cd backend && go build -tags nur_kern ./...
 ```
 
-That yields a binary under Apache 2.0 alone. Nothing else changes.
+Apply a key:
 
-### Using a key
-
-```bash
-NEXORA_LIZENZ='<key>'
+```
+NEXORA_LIZENZ='<key>'      # or lizenz = <key> in config.conf
 ```
 
-A missing or invalid key is not fatal: the server says why in the log and runs
-on the free feature set. See [backend/premium/README.md](backend/premium/README.md)
-for how keys are issued.
+A missing or invalid key is never fatal: the server logs why and runs on the
+free feature set. Keys are issued with
+[`backend/premium/cmd/schluessel`](backend/premium/README.md).
 
 Copyright 2026 Jonas Groll.

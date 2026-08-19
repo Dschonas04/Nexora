@@ -25,6 +25,11 @@ Please include a description, steps to reproduce, and potential impact.
 - [ ] Set a strong `JWT_SECRET` (≥ 32 random characters): `openssl rand -hex 32`
 - [ ] Never commit `.env` to version control
 - [ ] Confirm `.env` is actually being read
+- [ ] Read the startup log: dangerous defaults are named there
+- [ ] Turn `registrierung_offen` off once the accounts that should exist do —
+      but not before the first one, which becomes the administrator
+- [ ] With LDAP: leave `ldap_starttls` and `ldap_tls_pruefen` on. Without them
+      directory credentials cross the network in the clear
 
 > **A missing `.env` does not stop the stack.** `docker-compose.yml` declares
 > fallbacks (`${POSTGRES_PASSWORD:-nexora}`, `${JWT_SECRET:-change-me-in-production}`),
@@ -34,6 +39,13 @@ Please include a description, steps to reproduce, and potential impact.
 >
 > ```bash
 > docker compose exec backend printenv JWT_SECRET
+> ```
+>
+> Since the configuration file landed, the server also says so itself on every
+> boot:
+>
+> ```
+> ACHTUNG: jwt_geheimnis steht auf der Vorgabe -- jede Sitzung ist fälschbar
 > ```
 
 ### Recommended
@@ -46,10 +58,24 @@ Please include a description, steps to reproduce, and potential impact.
       uploaded files live outside it, and restoring only `nexora_db` leaves every
       attachment row pointing at a file that is gone
 
+## The license signing key
+
+If you issue license keys for your own build, the private Ed25519 key is the
+single most sensitive secret in the project. It exists once, it never belongs in
+the repository, and because verification is offline, **a key signed with it can
+never be withdrawn**. Give issued keys an expiry date; that is the only lever
+there is.
+
+Replacing the public key in `backend/premium/lizenz/pruefer.go` invalidates every
+key ever issued — which is the emergency exit, and the reason it is a constant
+rather than a setting.
+
 ## Notes
 
 - Passwords are hashed with bcrypt (cost 12); sessions use signed JWTs in
   httpOnly cookies.
+- The audit trail records sign-ins including failed ones, with the address that
+  was tried. Passwords are never recorded, not even on a failed attempt.
 - All containers run as non-root users on Alpine base images.
 - When serving over HTTPS, the session cookie should be marked `Secure`
   (set via the reverse proxy / a future config flag).
