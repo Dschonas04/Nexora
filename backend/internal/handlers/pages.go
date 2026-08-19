@@ -6,9 +6,11 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
+	"nexora/internal/lizenz"
 	"nexora/internal/middleware"
 	"nexora/internal/models"
 )
@@ -133,6 +135,13 @@ type updatePageReq struct {
 	Icon     *string         `json:"icon"`
 	ParentID json.RawMessage `json:"parentId"` // absent = unchanged, null = move to root
 	SpaceID  json.RawMessage `json:"spaceId"`  // absent = unchanged, null = no space
+
+	// Basis is the updatedAt the editor last saw. It turns a blind write into a
+	// checked one: if the row moved on since, someone else saved in between.
+	//
+	// Absent means "do not check", which keeps older clients working and lets a
+	// caller deliberately overwrite after being told about the conflict.
+	Basis *time.Time `json:"basis"`
 }
 
 // UpdatePage applies a patch to a page. The frontend autosaves, so this runs
@@ -161,6 +170,36 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 	if err := decode(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "invalid body")
 		return
+	}
+
+	// Konflikterkennung. Ohne sie überschreibt der Autosave stillschweigend,
+	// was jemand anderes in der Zwischenzeit geschrieben hat -- der Verlust
+	// fällt erst auf, wenn der Text fehlt.
+	//
+	// Verglichen wird auf die Mikrosekunde. Das ist die Auflösung, die
+	// PostgreSQL für timestamptz führt, und dieselbe kommt über JSON wieder
+	// zurück -- der Wert ist also exakt derselbe, nicht nur ungefähr.
+	//
+	// Auf ganze Sekunden zu runden wäre bequemer, macht die Prüfung aber blind
+	// für zwei Speichervorgänge innerhalb derselben Sekunde. Genau so schnell
+	// speichert der Autosave.
+	if req.Basis != nil && lizenz.Frei(lizenz.Konflikte) {
+		if cur.UpdatedAt.Truncate(time.Microsecond).After(req.Basis.Truncate(time.Microsecond)) {
+			var wer string
+			_ = s.Pool.QueryRow(r.Context(),
+				`SELECT coalesce(u.name, '')
+				 FROM pruefspur p LEFT JOIN users u ON u.id = p.akteur_id
+				 WHERE p.objekt_id = $1 AND p.aktion = $2
+				 ORDER BY p.zeitpunkt DESC LIMIT 1`, id, AktSeiteGeaendert).Scan(&wer)
+
+			writeJSON(w, http.StatusConflict, map[string]interface{}{
+				"error":     "Die Seite wurde inzwischen geändert.",
+				"konflikt":  true,
+				"stand":     cur.UpdatedAt,
+				"geaendert": wer,
+			})
+			return
+		}
 	}
 
 	// Snapshot the state before the edit, not after, so restoring a version puts

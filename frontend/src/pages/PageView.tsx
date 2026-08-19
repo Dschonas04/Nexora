@@ -38,6 +38,11 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   // anyway, so this is about the interface not lying, not about protection.
   const { frei } = useLizenz();
 
+  // Der Stand, von dem dieser Editor ausgeht. Als ref, nicht als state: er
+  // wird beim Speichern gelesen, soll aber kein neues Rendern auslösen.
+  const basisRef = useRef<string | undefined>(undefined);
+  const [konflikt, setKonflikt] = useState(false);
+
   const [showVersions, setShowVersions] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [linkQuery, setLinkQuery] = useState("");
@@ -60,9 +65,15 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     setLoading(true);
     setShowVersions(false);
     setShowShare(false);
+    setKonflikt(false);
     api
       .getPage(id)
-      .then(setPage)
+      .then((p) => {
+        setPage(p);
+        // Der Ausgangsstand für die Konflikterkennung. Ab hier gilt: was
+        // dieser Editor speichert, baut auf genau diesem Stand auf.
+        basisRef.current = p.updatedAt;
+      })
       .catch(() => setPage(null))
       .finally(() => setLoading(false));
     api.backlinks(id).then(setBacklinks).catch(() => setBacklinks([]));
@@ -81,20 +92,54 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const resolveLink = (t: string) => titleToId[t.toLowerCase().trim()] ?? null;
 
   // Autosave, debounced by half a second. Every change resets the timer, so
-  // continuous typing produces one request when the user pauses. A failed save
-  // is deliberately silent: the next keystroke retries anyway, and an error
-  // banner during typing would be more disruptive than useful.
+  // continuous typing produces one request when the user pauses.
+  //
+  // A failed save stays silent -- the next keystroke retries anyway, and an
+  // error banner during typing would be more disruptive than useful. One
+  // failure is the exception: a 409 means somebody else saved in between, and
+  // swallowing that is exactly how their work disappears. It stops the autosave
+  // and asks.
   const scheduleSave = (patch: PagePatch) => {
     if (!id) return;
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(async () => {
       try {
-        await api.updatePage(id, patch);
+        // basis carries the state this editor started from. The backend
+        // compares and refuses if the page moved on.
+        const frisch = await api.updatePage(id, { ...patch, basis: basisRef.current });
+        // Die Basis wandert mit: sonst meldete der nächste Autosave einen
+        // Konflikt mit dem eigenen vorherigen Speichern.
+        basisRef.current = frisch.updatedAt;
         onMetaChange();
-      } catch {
+      } catch (e) {
+        const err = e as Error & { status?: number };
+        if (err.status === 409) {
+          setKonflikt(true);
+          return;
+        }
         /* ignore transient save errors */
       }
     }, 500);
+  };
+
+  // Reload and drop the local edit. The safe way out of a conflict: the other
+  // version wins and this editor starts again from it.
+  const neuLaden = () => {
+    setKonflikt(false);
+    window.location.reload();
+  };
+
+  // Force the local version through. basis is left out, so the backend does not
+  // check -- the user has been told and decided.
+  const trotzdemSpeichern = async () => {
+    if (!id || !page) return;
+    try {
+      await api.updatePage(id, { title: page.title, content: page.content, icon: page.icon });
+      setKonflikt(false);
+      onMetaChange();
+    } catch {
+      /* bleibt stehen, der Hinweis auch */
+    }
   };
 
   if (loading) return <div className="empty-state">Lädt…</div>;
@@ -425,6 +470,25 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
           </div>
         </div>
       </div>
+
+      {konflikt && (
+        <div className="konflikt-banner">
+          <div>
+            <strong>Die Seite wurde inzwischen an anderer Stelle geändert.</strong>
+            <div className="muted small">
+              Automatisches Speichern ist angehalten, damit nichts überschrieben wird.
+            </div>
+          </div>
+          <div className="konflikt-aktionen">
+            <button className="btn" onClick={neuLaden}>
+              Neu laden
+            </button>
+            <button className="btn warnend" onClick={trotzdemSpeichern}>
+              Meine Fassung behalten
+            </button>
+          </div>
+        </div>
+      )}
 
       {showVersions && frei("versionen") && (
         <VersionPanel
