@@ -1683,3 +1683,40 @@ a {
 .einstellung-aktionen {
   margin-top: 12px;
 }
+
+/* Schlagwörter */
+.tag-anzahl {
+  margin-left: auto;
+  padding-left: 8px;
+  font-variant-numeric: tabular-nums;
+}
+/* Ein Schlagwort ohne Seiten ist meist ein Überbleibsel. Es wird nicht
+   versteckt -- sonst könnte man es nie loswerden -- aber es tritt zurück. */
+.tag-anzahl.leer {
+  opacity: 0.45;
+}
+.tag-dot.gross {
+  width: 12px;
+  height: 12px;
+  margin-right: 8px;
+  display: inline-block;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+.tagkopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+.tagkopf h2 {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.tagliste {
+  margin-top: 8px;
+}
+.tagliste .tree-row {
+  cursor: pointer;
+}

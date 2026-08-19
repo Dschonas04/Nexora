@@ -18,8 +18,15 @@ import (
 // keep their own vocabulary without seeing the other's.
 func (s *Server) ListTags(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
+	// Die Anzahl kommt mit. Ohne sie ist ein Schlagwort in der Seitenleiste
+	// nur ein Wort mit einem Punkt davor -- erst die Zahl sagt, ob dahinter
+	// etwas steckt, und macht ein verwaistes Schlagwort sichtbar.
 	rows, err := s.Pool.Query(r.Context(),
-		`SELECT id, name, color FROM tags WHERE owner_id=$1 ORDER BY name`, uid)
+		`SELECT t.id, t.name, t.color,
+		        (SELECT count(*) FROM page_tags pt
+		         JOIN pages p ON p.id = pt.page_id
+		         WHERE pt.tag_id = t.id AND p.deleted_at IS NULL)
+		 FROM tags t WHERE t.owner_id=$1 ORDER BY t.name`, uid)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "query failed")
 		return
@@ -28,8 +35,57 @@ func (s *Server) ListTags(w http.ResponseWriter, r *http.Request) {
 	list := []models.Tag{}
 	for rows.Next() {
 		var t models.Tag
-		if err := rows.Scan(&t.ID, &t.Name, &t.Color); err == nil {
+		if err := rows.Scan(&t.ID, &t.Name, &t.Color, &t.Anzahl); err == nil {
 			list = append(list, t)
+		}
+	}
+	writeJSON(w, http.StatusOK, list)
+}
+
+// SeitenZuTag liefert die Seiten, die dieses Schlagwort tragen.
+//
+// Schlagworte gehören einem Konto, die Seiten dahinter nicht zwangsläufig: man
+// kann eine geteilte Seite mit einem eigenen Schlagwort versehen. Gefiltert
+// wird deshalb nach derselben Regel wie überall -- Eigentümer, Admin oder
+// ausdrückliche Freigabe.
+func (s *Server) SeitenZuTag(w http.ResponseWriter, r *http.Request) {
+	uid := middleware.UserID(r)
+	tagID := chi.URLParam(r, "id")
+
+	// Das Schlagwort selbst muss dem Aufrufer gehören. Sonst ließe sich über
+	// eine fremde Kennung erkunden, wie andere ihre Seiten ordnen.
+	var gehoert bool
+	if err := s.Pool.QueryRow(r.Context(),
+		`SELECT EXISTS(SELECT 1 FROM tags WHERE id=$1 AND owner_id=$2)`,
+		tagID, uid).Scan(&gehoert); err != nil || !gehoert {
+		writeErr(w, http.StatusNotFound, "Schlagwort nicht gefunden")
+		return
+	}
+
+	admin := s.isAdmin(r.Context(), uid)
+	rows, err := s.Pool.Query(r.Context(),
+		`SELECT p.id, p.parent_id, p.space_id, p.title, p.icon, p.updated_at,
+		        (p.owner_id <> $1) AS fremd
+		 FROM pages p
+		 JOIN page_tags pt ON pt.page_id = p.id
+		 WHERE pt.tag_id = $2
+		   AND p.deleted_at IS NULL
+		   AND (p.owner_id = $1 OR $3
+		        OR EXISTS (SELECT 1 FROM page_shares sh
+		                   WHERE sh.page_id = p.id AND sh.user_id = $1))
+		 ORDER BY p.updated_at DESC`, uid, tagID, admin)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "query failed")
+		return
+	}
+	defer rows.Close()
+
+	list := []models.PageMeta{}
+	for rows.Next() {
+		var p models.PageMeta
+		if err := rows.Scan(&p.ID, &p.ParentID, &p.SpaceID, &p.Title, &p.Icon,
+			&p.UpdatedAt, &p.Shared); err == nil {
+			list = append(list, p)
 		}
 	}
 	writeJSON(w, http.StatusOK, list)
