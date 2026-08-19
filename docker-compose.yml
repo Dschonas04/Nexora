@@ -21,6 +21,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       PORT: "8080"
       NEXORA_DATA_DIR: /data/attachments
+      # Schaltet die kostenpflichtigen Zusätze frei. Leer lassen heißt: Nexora
+      # läuft mit dem freien Umfang, gesperrte Aufrufe antworten mit 402.
+      NEXORA_LIZENZ: ${NEXORA_LIZENZ:-}
     volumes:
       - nexora_files:/data/attachments
     depends_on:
