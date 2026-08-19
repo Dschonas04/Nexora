@@ -204,6 +204,31 @@ CREATE INDEX IF NOT EXISTS pruefspur_zeit_idx   ON pruefspur(zeitpunkt DESC);
 CREATE INDEX IF NOT EXISTS pruefspur_akteur_idx ON pruefspur(akteur_id, zeitpunkt DESC);
 CREATE INDEX IF NOT EXISTS pruefspur_objekt_idx ON pruefspur(objekt_art, objekt_id, zeitpunkt DESC);
 CREATE INDEX IF NOT EXISTS pruefspur_aktion_idx ON pruefspur(aktion, zeitpunkt DESC);
+
+-- Kommentare an einer Seite.
+--
+-- Antworten hängen über eltern_id am Elternkommentar, aber nur eine Ebene tief:
+-- ein Faden mit beliebig tiefer Verschachtelung wird unlesbar, und die zweite
+-- Ebene deckt ab, was Leute tatsächlich tun -- auf einen Beitrag antworten.
+-- Die Beschränkung erzwingt der Handler, nicht das Schema.
+--
+-- geloescht_am statt DELETE: ein gelöschter Kommentar, an dem Antworten hängen,
+-- würde die sonst mitreißen. Der Text wird beim Löschen geleert, die Hülle
+-- bleibt stehen, damit der Faden zusammenhält.
+CREATE TABLE IF NOT EXISTS kommentare (
+	id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	page_id      uuid NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+	eltern_id    uuid REFERENCES kommentare(id) ON DELETE CASCADE,
+	autor_id     uuid REFERENCES users(id) ON DELETE SET NULL,
+	autor_name   text NOT NULL DEFAULT '',
+	text         text NOT NULL,
+	erledigt     boolean NOT NULL DEFAULT false,
+	erstellt_am  timestamptz NOT NULL DEFAULT now(),
+	geaendert_am timestamptz,
+	geloescht_am timestamptz
+);
+CREATE INDEX IF NOT EXISTS kommentare_page_idx   ON kommentare(page_id, erstellt_am);
+CREATE INDEX IF NOT EXISTS kommentare_eltern_idx ON kommentare(eltern_id);
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

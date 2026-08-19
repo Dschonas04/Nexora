@@ -175,6 +175,22 @@ export interface Spureintrag {
   ip: string;
 }
 
+// Kommentar is one entry on a page. A deleted one keeps its place in the thread
+// with an empty text, so replies hanging off it do not lose their context.
+export interface Kommentar {
+  id: string;
+  elternId: string | null;
+  autorId: string;
+  autorName: string;
+  text: string;
+  erledigt: boolean;
+  erstelltAm: string;
+  geaendertAm: string | null;
+  geloescht: boolean;
+  /** Whether the signed-in account may edit or delete this one. */
+  darf: boolean;
+}
+
 // SearchHit is one full text result. Unlike PageMeta it carries the snippet the
 // database produced, so the sidebar can show where the term actually sat.
 export interface SearchHit {
@@ -234,6 +250,18 @@ export const api = {
     return req<Spureintrag[]>(`/pruefspur?${q.toString()}`);
   },
   pruefspurAktionen: () => req<{ aktion: string; anzahl: number }[]>("/pruefspur/aktionen"),
+
+  kommentare: (pageId: string) => req<Kommentar[]>(`/pages/${pageId}/kommentare`),
+  kommentarAnlegen: (pageId: string, text: string, elternId?: string) =>
+    req<Kommentar>(`/pages/${pageId}/kommentare`, {
+      method: "POST",
+      body: JSON.stringify({ text, elternId: elternId ?? null }),
+    }),
+  kommentarAendern: (id: string, text: string) =>
+    req<void>(`/kommentare/${id}`, { method: "PUT", body: JSON.stringify({ text }) }),
+  kommentarLoeschen: (id: string) => req<void>(`/kommentare/${id}`, { method: "DELETE" }),
+  kommentarErledigt: (id: string) =>
+    req<{ erledigt: boolean }>(`/kommentare/${id}/erledigt`, { method: "POST" }),
 
   listPages: () => req<PageMeta[]>("/pages"),
   listShared: () => req<PageMeta[]>("/pages/shared"),
