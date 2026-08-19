@@ -14,6 +14,7 @@ import (
 
 	"nexora/internal/db"
 	"nexora/internal/handlers"
+	"nexora/internal/lizenz"
 	"nexora/internal/middleware"
 )
 
@@ -52,6 +53,16 @@ func main() {
 	}
 	log.Println("database ready")
 
+	// Der Lizenzschlüssel schaltet die kostenpflichtigen Zusätze frei. Fehlt er
+	// oder taugt er nicht, läuft der Server mit dem freien Umfang weiter -- ein
+	// ungültiger Schlüssel darf den Start nie verhindern.
+	lizenz.Laden(env("NEXORA_LIZENZ", ""))
+	if z := lizenz.Aktuell(); z.Gueltig {
+		log.Printf("Lizenz für %s gültig, freigeschaltet: %v", z.Inhaber, z.Funktionen)
+	} else {
+		log.Printf("keine gültige Lizenz (%s) -- Zusatzfunktionen bleiben gesperrt", z.Grund)
+	}
+
 	h := &handlers.Server{Pool: pool, Secret: []byte(secret), DataDir: dataDir}
 
 	r := chi.NewRouter()
@@ -66,7 +77,10 @@ func main() {
 		r.Post("/auth/register", h.Register)
 		r.Post("/auth/login", h.Login)
 		r.Post("/auth/logout", h.Logout)
-		r.Get("/public/{token}", h.GetPublicPage)
+		// Öffentliche Links gehören zum Zusatzumfang. Die Route bleibt bestehen,
+		// antwortet ohne Lizenz aber mit 402 statt die Seite auszuliefern.
+		r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
+			Get("/public/{token}", h.GetPublicPage)
 
 		// Everything below requires a valid session cookie. Ownership and sharing
 		// are checked per request inside the handlers, not here.
@@ -75,10 +89,15 @@ func main() {
 
 			r.Get("/auth/me", h.Me)
 
+			// Sagt der Oberfläche, was freigeschaltet ist, damit sie Gesperrtes gar
+			// nicht erst anbietet. Enthält kein Geheimnis.
+			r.Get("/lizenz", h.LizenzStatus)
+
 			// The static /pages/... routes must be registered before /pages/{id},
 			// otherwise chi would match "shared" and "trash" as page ids.
 			r.Get("/pages", h.ListPages)
-			r.Get("/pages/shared", h.ListSharedPages)
+			r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
+				Get("/pages/shared", h.ListSharedPages)
 			r.Get("/pages/trash", h.ListTrash)
 			r.Post("/pages", h.CreatePage)
 			r.Get("/pages/{id}", h.GetPage)
@@ -88,27 +107,43 @@ func main() {
 			r.Delete("/pages/{id}/purge", h.PurgePage) // deletes for good, cascades to subpages
 			r.Post("/pages/{id}/favorite", h.AddFavorite)
 			r.Delete("/pages/{id}/favorite", h.RemoveFavorite)
-			r.Post("/pages/{id}/share", h.SharePage)
-			r.Delete("/pages/{id}/share", h.UnsharePage)
+			r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
+				Post("/pages/{id}/share", h.SharePage)
+			r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
+				Delete("/pages/{id}/share", h.UnsharePage)
 			r.Post("/pages/{id}/tags", h.AttachTag)
 			r.Delete("/pages/{id}/tags/{tagId}", h.DetachTag)
 
-			// Version history
-			r.Get("/pages/{id}/versions", h.ListVersions)
-			r.Get("/pages/{id}/versions/{versionId}", h.GetVersion)
-			r.Post("/pages/{id}/versions/{versionId}/restore", h.RestoreVersion)
+			// Version history -- Zusatz. Die Schnappschüsse selbst schreibt der
+			// Kern weiter mit; gesperrt ist nur das Ansehen und Zurückholen. Sonst
+			// klaffte nach dem Freischalten eine Lücke in der Geschichte.
+			r.Group(func(r chi.Router) {
+				r.Use(handlers.VerlangeFunktion(lizenz.Versionen))
+				r.Get("/pages/{id}/versions", h.ListVersions)
+				r.Get("/pages/{id}/versions/{versionId}", h.GetVersion)
+				r.Post("/pages/{id}/versions/{versionId}/restore", h.RestoreVersion)
+			})
 
-			// Attachments
-			r.Get("/pages/{id}/attachments", h.ListAttachments)
-			r.Post("/pages/{id}/attachments", h.UploadAttachment)
-			r.Get("/pages/{id}/attachments/{attId}", h.DownloadAttachment)
-			r.Delete("/pages/{id}/attachments/{attId}", h.DeleteAttachment)
+			// Attachments -- Zusatz
+			r.Group(func(r chi.Router) {
+				r.Use(handlers.VerlangeFunktion(lizenz.Anhaenge))
+				r.Get("/pages/{id}/attachments", h.ListAttachments)
+				r.Post("/pages/{id}/attachments", h.UploadAttachment)
+				r.Get("/pages/{id}/attachments/{attId}", h.DownloadAttachment)
+				r.Delete("/pages/{id}/attachments/{attId}", h.DeleteAttachment)
+			})
 
-			// Per-user sharing plus account administration. The /users routes are
-			// admin-only, which the handlers enforce.
-			r.Get("/pages/{id}/shares", h.ListShares)
-			r.Post("/pages/{id}/shares", h.AddShare)
-			r.Delete("/pages/{id}/shares/{userId}", h.RemoveShare)
+			// Per-user sharing -- Zusatz
+			r.Group(func(r chi.Router) {
+				r.Use(handlers.VerlangeFunktion(lizenz.Freigeben))
+				r.Get("/pages/{id}/shares", h.ListShares)
+				r.Post("/pages/{id}/shares", h.AddShare)
+				r.Delete("/pages/{id}/shares/{userId}", h.RemoveShare)
+			})
+
+			// Kontenverwaltung bleibt frei -- ohne sie ließe sich eine
+			// Mehrbenutzer-Instanz gar nicht betreiben. Die /users-Routen sind
+			// Admins vorbehalten, das erzwingen die Handler selbst.
 			r.Get("/users", h.ListUsers)
 			r.Post("/users", h.CreateUser)
 			r.Delete("/users/{id}", h.DeleteUser)

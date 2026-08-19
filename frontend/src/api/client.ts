@@ -146,6 +146,18 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
+// Lizenz reports which paid extras this installation has unlocked. The names
+// match the constants in the backend's internal/lizenz package; the browser
+// deliberately keeps no list of its own, it renders whatever the server sends.
+export interface Lizenz {
+  gueltig: boolean;
+  inhaber: string;
+  laeuft_ab: string;
+  grund: string;
+  alle_extras: string[];
+  freigeschaltet: string[];
+}
+
 // PagePatch is a partial update: an omitted field stays as it is, while an
 // explicit null on parentId or spaceId clears it. That distinction is why the
 // autosave can send just the content without touching the page's position.
@@ -166,6 +178,11 @@ export const api = {
   register: (email: string, name: string, password: string) =>
     req<User>("/auth/register", { method: "POST", body: JSON.stringify({ email, name, password }) }),
   logout: () => req<void>("/auth/logout", { method: "POST" }),
+
+  // Read once after sign-in. Hiding locked features is a courtesy to the
+  // reader, not a protection: the backend refuses the same calls with 402
+  // regardless of what the interface shows.
+  lizenz: () => req<Lizenz>("/lizenz"),
 
   listPages: () => req<PageMeta[]>("/pages"),
   listShared: () => req<PageMeta[]>("/pages/shared"),

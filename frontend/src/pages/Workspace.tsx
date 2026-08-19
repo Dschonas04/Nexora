@@ -26,7 +26,11 @@ export default function Workspace() {
   // instead of on every render. A failed refresh is swallowed and simply leaves
   // the previous list in place, which beats emptying the sidebar on a hiccup.
   const refreshPages = useCallback(() => api.listPages().then(setPages).catch(() => {}), []);
-  const refreshShared = useCallback(() => api.listShared().then(setShared).catch(() => {}), []);
+  // Sharing is a paid extra: without a license the call answers 402. The empty
+  // list that follows is the wanted outcome -- the sidebar hides its "shared"
+  // section when there is nothing in it, so the interface stays coherent
+  // instead of showing an error for a feature this installation does not have.
+  const refreshShared = useCallback(() => api.listShared().then(setShared).catch(() => setShared([])), []);
   const refreshFav = useCallback(() => api.listFavorites().then(setFavorites).catch(() => {}), []);
   const refreshTags = useCallback(() => api.listTags().then(setTags).catch(() => {}), []);
   const refreshSpaces = useCallback(() => api.listSpaces().then(setSpaces).catch(() => {}), []);
