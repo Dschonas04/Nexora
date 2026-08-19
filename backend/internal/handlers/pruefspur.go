@@ -67,6 +67,7 @@ const (
 	AktGruppeAustritt     = "gruppe.ausgetreten"
 	AktSpaceRecht         = "spacerecht.erteilt"
 	AktSpaceRechtWeg      = "spacerecht.entzogen"
+	AktAnhangIndex        = "anhangindex.nachgezogen"
 )
 
 // spur writes one entry. Callers pass what they know; empty fields stay empty.

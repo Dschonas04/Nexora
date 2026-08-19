@@ -297,6 +297,12 @@ export interface SearchHit {
   ausschnitt: string;
   /** false means the page was reached through a share or as an admin. */
   eigen: boolean;
+  /**
+   * Name of the attachment the hit came from, empty when the page text itself
+   * matched. Without it a snippet from a PDF would read like page content that
+   * is nowhere to be seen on the page.
+   */
+  quelle: string;
   updatedAt: string;
 }
 
@@ -356,6 +362,10 @@ export const api = {
     }),
   systemZustand: () => req<SystemZustand>("/system"),
   suchindexNeu: () => req<{ ohneSuchtext: number }>("/system/suchindex", { method: "POST" }),
+  anhangindexNachziehen: () =>
+    req<{ betrachtet: number; gelesen: number; ohneText: number }>("/system/anhangindex", {
+      method: "POST",
+    }),
   ablageZustand: () => req<{ ablage: string }>("/system/ablage"),
   ablageTesten: (p: {
     endpunkt: string;

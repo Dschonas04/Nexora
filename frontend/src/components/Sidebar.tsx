@@ -158,6 +158,12 @@ export default function Sidebar(props: Props) {
             leaving them to wonder why it is not in their tree. */}
         {!h.eigen && <span className="pill klein">geteilt</span>}
       </div>
+      {h.quelle && (
+        // Woher der Treffer stammt. Ohne diese Zeile läse sich ein Ausschnitt
+        // aus einem PDF wie Seiteninhalt, den man auf der Seite dann vergeblich
+        // sucht.
+        <div className="treffer-quelle muted small">aus Anhang: {h.quelle}</div>
+      )}
       {h.ausschnitt.trim() !== "" && (
         <div className="treffer-ausschnitt">{markiere(h.ausschnitt)}</div>
       )}
