@@ -1,6 +1,7 @@
 // Spaces are flat, top-level containers, a second axis next to page nesting.
-// A page belongs to at most one, and a space belongs to exactly one user, so
-// there is no sharing to consider here.
+// A page belongs to at most one. A space has exactly one owner, but it can be
+// reached by others in two ways: through a right granted on it (Zusatzumfang),
+// or because it was opened to the whole instance.
 package handlers
 
 import (
@@ -13,8 +14,8 @@ import (
 	"nexora/internal/models"
 )
 
-// ListSpaces returns the caller's own spaces. Spaces are not shared, so this
-// needs no permission logic beyond the owner_id filter.
+// ListSpaces returns the spaces the caller can reach: their own, those they
+// hold a right on, and the public ones.
 func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	// Eigene Spaces, die mit einem Recht -- und die öffentlichen. Ohne den
