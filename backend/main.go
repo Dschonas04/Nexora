@@ -259,6 +259,8 @@ func main() {
 			r.Post("/spaces", h.CreateSpace)
 			r.Put("/spaces/{id}", h.RenameSpace)
 			r.Delete("/spaces/{id}", h.DeleteSpace)
+			// Ablage für alle angemeldeten Konten öffnen (nicht fürs Internet).
+			r.Put("/spaces/{id}/oeffentlich", h.SetSpaceOeffentlich)
 
 			// Backlinks (pages linking here via [[wiki-link]] or manual links)
 			// Markdown-Ausgabe einer Seite. Serverseitig, damit sie auch ohne

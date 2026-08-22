@@ -101,6 +101,19 @@ CREATE TABLE IF NOT EXISTS spaces (
 );
 CREATE INDEX IF NOT EXISTS spaces_owner_idx ON spaces(owner_id);
 
+-- Eine öffentliche Ablage ist für jedes angemeldete Konto der Instanz
+-- sichtbar, ohne dass ihr jemand einzeln ein Recht erteilen muss.
+--   'nein'      -- nur Eigentümer und ausdrücklich Berechtigte
+--   'lesen'     -- alle Angemeldeten dürfen lesen
+--   'schreiben' -- alle Angemeldeten dürfen lesen und bearbeiten
+-- Absichtlich nicht "öffentlich im Internet": anonymer Zugriff läuft
+-- weiterhin ausschließlich über den Freigabelink einer einzelnen Seite.
+-- Ohne CHECK, weil ALTER TABLE ... ADD CONSTRAINT kein IF NOT EXISTS kennt und
+-- dieses Skript bei jedem Start durchläuft. Erlaubte Werte setzt der Handler:
+-- was er nicht kennt, wird zu 'nein' -- ein Tippfehler kann also nichts öffnen.
+ALTER TABLE spaces ADD COLUMN IF NOT EXISTS oeffentlich text NOT NULL DEFAULT 'nein';
+CREATE INDEX IF NOT EXISTS spaces_oeffentlich_idx ON spaces(oeffentlich) WHERE oeffentlich <> 'nein';
+
 -- Deleting a space keeps its pages and only clears their space_id.
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS space_id   uuid REFERENCES spaces(id) ON DELETE SET NULL;
 -- deleted_at is the trash: NULL means live, a timestamp means deleted but

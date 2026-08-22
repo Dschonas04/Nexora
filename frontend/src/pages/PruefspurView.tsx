@@ -38,6 +38,17 @@ const BESCHRIFTUNG: Record<string, string> = {
   "einstellung.zurueckgesetzt": "Einstellung zurückgesetzt",
   "suchindex.neu": "Suchindex neu aufgebaut",
   "lizenz.geladen": "Lizenz geladen",
+  "vorlage.gesetzt": "Als Vorlage gesetzt",
+  "vorlage.aufgehoben": "Vorlage aufgehoben",
+  "space.exportiert": "Ablage exportiert",
+  "space.oeffentlich": "Ablage-Sichtbarkeit geändert",
+  "gruppe.angelegt": "Gruppe angelegt",
+  "gruppe.geloescht": "Gruppe gelöscht",
+  "gruppe.beigetreten": "Zur Gruppe hinzugefügt",
+  "gruppe.ausgetreten": "Aus Gruppe entfernt",
+  "spacerecht.erteilt": "Recht an Ablage erteilt",
+  "spacerecht.entzogen": "Recht an Ablage entzogen",
+  "anhangindex.nachgezogen": "Anhangindex nachgezogen",
 };
 
 // beschriften liefert den lesbaren Namen. Fehlt einer, wird der Rohname

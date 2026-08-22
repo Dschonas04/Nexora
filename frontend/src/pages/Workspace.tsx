@@ -92,6 +92,16 @@ export default function Workspace() {
     await refreshPages();
   };
 
+  // Sichtbarkeit einer Ablage umstellen. Danach wird auch die Seitenliste neu
+  // geholt: eine geöffnete Ablage bringt fremde Seiten mit, eine geschlossene
+  // nimmt sie wieder mit -- die Leiste wäre sonst so lange falsch, bis jemand
+  // die Seite neu lädt.
+  const setSpaceOeffentlich = async (id: string, wert: "nein" | "lesen" | "schreiben") => {
+    await api.spaceOeffentlich(id, wert);
+    await refreshSpaces();
+    await refreshPages();
+  };
+
   // Reparent or move a page after a sidebar drag. Both are one update, since a
   // page dropped into a different space usually changes its parent as well.
   // parentId null means top level, spaceId null means no space.
@@ -122,6 +132,7 @@ export default function Workspace() {
         onCreateSpace={createSpace}
         onRenameSpace={renameSpace}
         onDeleteSpace={deleteSpace}
+        onSpaceOeffentlich={setSpaceOeffentlich}
         onMovePage={movePage}
         onNavigate={(to) => nav(to)}
         currentPath={loc.pathname}

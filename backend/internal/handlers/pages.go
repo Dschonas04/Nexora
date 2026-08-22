@@ -21,7 +21,8 @@ import (
 // ListSharedPages.
 func (s *Server) ListPages(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
-	// Eigene Seiten plus die, die über ein Space-Recht erreichbar sind.
+	// Eigene Seiten plus die, die über ein Space-Recht oder eine öffentliche
+	// Ablage erreichbar sind.
 	//
 	// Ohne den zweiten Teil könnte man eine Seite per Adresse öffnen, sie aber
 	// nirgends finden -- ein Recht, das man nur kennt, wenn einem jemand den
@@ -31,14 +32,7 @@ func (s *Server) ListPages(w http.ResponseWriter, r *http.Request) {
 		        (p.owner_id <> $1) AS fremd
 		 FROM pages p
 		 WHERE p.deleted_at IS NULL
-		   AND (p.owner_id = $1
-		        OR ($2 AND p.space_id IS NOT NULL AND EXISTS (
-		              SELECT 1 FROM space_rechte sr
-		               WHERE sr.space_id = p.space_id
-		                 AND (sr.user_id = $1
-		                      OR sr.gruppe_id IN (SELECT gm.gruppe_id
-		                                            FROM gruppen_mitglieder gm
-		                                           WHERE gm.user_id = $1)))))
+		   AND (p.owner_id = $1 OR `+spaceZugriffSQL("p.space_id", "$1", "$2")+`)
 		 ORDER BY p.sort_order, p.created_at`, uid, lizenz.Frei(lizenz.Gruppen))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "query failed")
