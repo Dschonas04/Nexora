@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"nexora/internal/dok"
 	"nexora/internal/middleware"
 )
 
@@ -107,6 +108,37 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := dateiname(spaceName)
+
+	// Ein Space als EIN gesetztes Dokument statt als Archiv voller Einzelteile:
+	// zum Durchblättern, Drucken und Weiterreichen ist das die brauchbarere
+	// Form. Das Archiv aus Markdown-Dateien bleibt die Vorgabe -- es ist der
+	// Ausweg aus dem System, und der soll maschinenlesbar sein.
+	switch r.URL.Query().Get("format") {
+	case "pdf", "word", "docx":
+		sort.Slice(seiten, func(i, j int) bool { return seiten[i].Titel < seiten[j].Titel })
+		docs := make([]dok.Dokument, 0, len(seiten))
+		for _, p := range seiten {
+			docs = append(docs, dok.AusInhalt(p.Inhalt, p.Titel))
+		}
+		if r.URL.Query().Get("format") == "pdf" {
+			dateiKopf(w, "application/pdf", name, ".pdf")
+			w.Write(dok.PDFMehrere(docs, spaceName))
+		} else {
+			roh, err := dok.WordMehrere(docs)
+			if err != nil {
+				writeErr(w, http.StatusInternalServerError, "Dokument konnte nicht erzeugt werden")
+				return
+			}
+			dateiKopf(w,
+				"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+				name, ".docx")
+			w.Write(roh)
+		}
+		s.spurAusRequest(r, AktExport, "space", spaceID, spaceName,
+			map[string]interface{}{"seiten": len(seiten), "format": r.URL.Query().Get("format")})
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition",
 		`attachment; filename="`+nurASCII(name)+`.zip"; filename*=UTF-8''`+

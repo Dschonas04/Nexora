@@ -176,11 +176,12 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   // Ehre: verschachtelte Listen, Tabellen, Aufgabenhaken und Codeblöcke
   // überleben sie nur teilweise. Serverseitig liegt das vollständige Dokument
   // vor, und derselbe Weg trägt später auch den Export eines ganzen Space.
-  const exportMarkdown = () => {
+  const exportieren = (form: "markdown" | "pdf" | "word") => {
     if (!id) return;
+    setExportOffen(false);
     // Ein normaler Verweis statt fetch: so setzt der Browser den Dateinamen
     // aus dem Content-Disposition-Kopf, samt Umlauten.
-    window.location.href = `/api/pages/${id}/markdown`;
+    window.location.href = `/api/pages/${id}/${form}`;
   };
 
   // Tags are matched by name, case-insensitively, and created only when none
@@ -309,6 +310,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const dateiAbwurfMoeglich = canEdit && frei("anhaenge");
   const [ueberSeite, setUeberSeite] = useState(0);
   const [eingeworfen, setEingeworfen] = useState<FileList | null>(null);
+  const [exportOffen, setExportOffen] = useState(false);
   const sindDateien = (e: React.DragEvent) =>
     Array.from(e.dataTransfer.types).includes("Files");
 
@@ -357,9 +359,34 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                 Verlauf
               </button>
             )}
-            <button className="btn" onClick={exportMarkdown}>
-              Export
-            </button>
+            {/* Ein Menü statt dreier Knöpfe: die Kopfzeile ist schon voll,
+                und drei Formate nebeneinander sagen nicht mehr als eines mit
+                Auswahl. */}
+            <div className="exportmenue">
+              <button className="btn" onClick={() => setExportOffen((v) => !v)}>
+                Export ▾
+              </button>
+              {exportOffen && (
+                <div className="vorlagenliste" onMouseLeave={() => setExportOffen(false)}>
+                  <button className="vorlageneintrag" onClick={() => exportieren("markdown")}>
+                    Markdown (.md)
+                  </button>
+                  {/* PDF und Word gehören zum Zusatzumfang. Markdown nicht:
+                      an den eigenen Bestand zu kommen darf nie an einer
+                      Lizenz hängen. */}
+                  {frei("export") && (
+                    <>
+                      <button className="vorlageneintrag" onClick={() => exportieren("pdf")}>
+                        PDF (.pdf)
+                      </button>
+                      <button className="vorlageneintrag" onClick={() => exportieren("word")}>
+                        Word (.docx)
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
             {/* Nur der Eigentümer entscheidet. Eine fremde Seite zur Vorlage zu
                 erklären würde sie in jedem Neu-Menü der Kollegen auftauchen
                 lassen -- das wäre eine Änderung an fremdem Eigentum. */}

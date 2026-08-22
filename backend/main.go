@@ -268,6 +268,14 @@ func main() {
 			// ausdrücklich verlustbehaftet ist.
 			r.Get("/pages/{id}/markdown", h.ExportMarkdown)
 
+			// Gesetzte Dokumente -- Zusatz. Markdown bleibt frei: den eigenen
+			// Bestand aus dem System zu bekommen darf nie an einer Lizenz
+			// hängen. PDF und Word sind kein Ausweg, sondern Darstellung.
+			r.With(handlers.VerlangeFunktion(lizenz.Export)).Group(func(r chi.Router) {
+				r.Get("/pages/{id}/pdf", h.ExportPDF)
+				r.Get("/pages/{id}/word", h.ExportWord)
+			})
+
 			r.Get("/pages/{id}/backlinks", h.Backlinks)
 
 			// Manual page-to-page links (edited via the UI)
