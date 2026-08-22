@@ -38,10 +38,13 @@ services:
       NEXORA_S3_PFADSTIL: ${NEXORA_S3_PFADSTIL:-}
     volumes:
       - nexora_files:/data/attachments
-      # Die Konfiguration wird nur gelesen, deshalb schreibgeschützt. Fehlt die
-      # Datei, startet Nexora trotzdem -- dann gelten Vorgaben und die
-      # Umgebungsvariablen unten.
-      - ./config.conf:/etc/nexora/config.conf:ro
+      # Fehlt die Datei, startet Nexora trotzdem -- dann gelten Vorgaben und
+      # die Umgebungsvariablen unten.
+      #
+      # Beschreibbar eingehängt, damit die Wartungsseite die Datei ändern kann.
+      # Wer das nicht will, hängt ein :ro an: die Seite zeigt die Datei dann
+      # weiterhin an und sagt, dass sie nur lesbar ist.
+      - ./config.conf:/etc/nexora/config.conf
     depends_on:
       db:
         condition: service_healthy

@@ -196,6 +196,13 @@ func main() {
 			r.Get("/system/ablage", h.AblageZustand)
 			r.Post("/system/ablage/test", h.S3Testen)
 
+			// Wartung: Konfigurationsdatei, Neustart, Papierkorb der Instanz.
+			// Auch hier prüfen die Handler die Rolle selbst.
+			r.Get("/system/konfig", h.KonfigLesen)
+			r.Put("/system/konfig", h.KonfigSchreiben)
+			r.Post("/system/neustart", h.Neustart)
+			r.Post("/system/papierkorb", h.PapierkorbLeeren)
+
 			// Kommentare -- Zusatz. Wer die Seite lesen darf, darf auch
 			// mitreden; feiner wird es hier nicht, das prüfen die Handler.
 			r.Group(func(r chi.Router) {

@@ -49,6 +49,9 @@ const BESCHRIFTUNG: Record<string, string> = {
   "spacerecht.erteilt": "Recht an Ablage erteilt",
   "spacerecht.entzogen": "Recht an Ablage entzogen",
   "anhangindex.nachgezogen": "Anhangindex nachgezogen",
+  "konfiguration.geaendert": "Konfigurationsdatei geändert",
+  "dienst.neustart": "Dienst neu gestartet",
+  "papierkorb.geleert": "Papierkorb der Instanz geleert",
 };
 
 // beschriften liefert den lesbaren Namen. Fehlt einer, wird der Rohname

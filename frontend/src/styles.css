@@ -2039,3 +2039,50 @@ a {
   position: relative;
   display: inline-flex;
 }
+
+/* ---- Wartung: Konfigurationsdatei --------------------------------------- */
+
+/* Feste Schrift, weil eine Konfigurationsdatei spaltenweise gelesen wird:
+   ausgerichtete Gleichheitszeichen sind der halbe Überblick. */
+.konfig-feld {
+  width: 100%;
+  min-height: 380px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.55;
+  tab-size: 4;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--flaeche);
+  color: var(--text);
+}
+.knopfreihe {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0 4px;
+  flex-wrap: wrap;
+}
+.konfig-schluessel {
+  margin-top: 16px;
+}
+.konfig-schluessel summary {
+  cursor: pointer;
+  font-size: 13px;
+}
+.schluesselliste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.schluesselliste code {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--hover);
+}
