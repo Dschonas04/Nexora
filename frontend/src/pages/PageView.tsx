@@ -300,8 +300,48 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     setLinkOpen(false);
   };
 
+  // Dateien, die irgendwo auf der Seite abgelegt wurden. Sie werden an die
+  // Anhangliste weitergereicht, die sie hochlädt -- der Wurf muss nicht die
+  // schmale Liste ganz unten treffen.
+  //
+  // Der Zähler statt eines Schalters: dragleave feuert auch beim Wechsel von
+  // einem Kindelement zum nächsten, sonst flackerte die Hervorhebung.
+  const dateiAbwurfMoeglich = canEdit && frei("anhaenge");
+  const [ueberSeite, setUeberSeite] = useState(0);
+  const [eingeworfen, setEingeworfen] = useState<FileList | null>(null);
+  const sindDateien = (e: React.DragEvent) =>
+    Array.from(e.dataTransfer.types).includes("Files");
+
   return (
-    <div className="page-layout">
+    <div
+      className={"page-layout" + (ueberSeite > 0 ? " datei-abwurf" : "")}
+      onDragEnter={(e) => {
+        if (dateiAbwurfMoeglich && sindDateien(e)) setUeberSeite((n) => n + 1);
+      }}
+      onDragOver={(e) => {
+        if (!sindDateien(e)) return;
+        // Auch wenn hier nichts angenommen wird: ohne preventDefault verlässt
+        // der Browser die Anwendung und öffnet die Datei. Eine Datei
+        // danebenzulegen darf höchstens nichts tun, nicht die Arbeit
+        // wegwerfen.
+        e.preventDefault();
+        e.dataTransfer.dropEffect = dateiAbwurfMoeglich ? "copy" : "none";
+      }}
+      onDragLeave={() => setUeberSeite((n) => Math.max(0, n - 1))}
+      onDrop={(e) => {
+        if (!sindDateien(e)) return;
+        e.preventDefault();
+        setUeberSeite(0);
+        if (dateiAbwurfMoeglich) setEingeworfen(e.dataTransfer.files);
+      }}
+    >
+      {ueberSeite > 0 && (
+        <div className="seiten-abwurf-schleier">
+          {dateiAbwurfMoeglich
+            ? "Loslassen, um an diese Seite anzuhängen"
+            : "Anhänge sind hier nicht möglich"}
+        </div>
+      )}
       <div className="page-main">
         <div className="topbar">
           <span className="topbar-title">{page.title || "Ohne Titel"}</span>
@@ -395,7 +435,14 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
               onOpenLink={(pid) => nav(`/page/${pid}`)}
               mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}
             />
-            {frei("anhaenge") && <Attachments pageId={page.id} canEdit={canEdit} />}
+            {frei("anhaenge") && (
+              <Attachments
+                pageId={page.id}
+                canEdit={canEdit}
+                eingeworfen={eingeworfen}
+                onEingeworfenFertig={() => setEingeworfen(null)}
+              />
+            )}
             {frei("kommentare") && <Kommentare pageId={page.id} />}
             {(links.length > 0 || textLinkTitles.length > 0 || canEdit) && (
               <div className="page-links">

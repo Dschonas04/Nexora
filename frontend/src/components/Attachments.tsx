@@ -3,11 +3,19 @@
 import type { DragEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Attachment, api } from "../api/client";
-import QuickView, { istBild, istPdf, zeigbar } from "./QuickView";
+import QuickView, { echterTyp, istBild, istPdf, zeigbar } from "./QuickView";
 
 interface Props {
   pageId: string;
   canEdit: boolean;
+  /**
+   * Dateien, die woanders auf der Seite abgelegt wurden. Die Anhangliste ist
+   * ein schmaler Streifen ganz unten; wer eine Datei "auf die Seite" zieht,
+   * trifft ihn meistens nicht. Deshalb nimmt die Seite den Wurf entgegen und
+   * reicht ihn hierher weiter -- hochgeladen wird nur an einer Stelle.
+   */
+  eingeworfen?: FileList | null;
+  onEingeworfenFertig?: () => void;
 }
 
 function humanSize(bytes: number): string {
@@ -20,9 +28,12 @@ function humanSize(bytes: number): string {
 // list, so the thumbnail and the overlay can never disagree about what is
 // previewable.
 
-export default function Attachments({ pageId, canEdit }: Props) {
+export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfenFertig }: Props) {
   const [items, setItems] = useState<Attachment[]>([]);
   const [busy, setBusy] = useState(false);
+  // Was beim letzten Hochladen schiefging. Ohne diese Zeile war ein
+  // fehlgeschlagener Upload nicht von einem aus, der nie stattfand.
+  const [fehler, setFehler] = useState<string | null>(null);
   // Index statt Objekt: der Viewer blättert durch die ganze Liste, dafür muss
   // er wissen, an welcher Stelle er steht -- nicht nur, welche Datei gemeint war.
   const [offenBei, setOffenBei] = useState<number | null>(null);
@@ -37,17 +48,42 @@ export default function Attachments({ pageId, canEdit }: Props) {
   // Uploads run one after another, not in parallel: the size limit applies per
   // file, and sequential requests keep a large selection from saturating the
   // connection. The input value is cleared so the same file can be picked twice.
-  const upload = async (files: FileList | null) => {
+  const upload = async (files: FileList | File[] | null) => {
     if (!files || files.length === 0) return;
     setBusy(true);
+    setFehler(null);
+    // Jede Datei einzeln, damit eine, die zu groß ist oder abgewiesen wird,
+    // die anderen nicht mitreißt. Am Ende steht, was nicht ankam -- vorher
+    // scheiterte ein Upload lautlos und die Datei war einfach nicht da.
+    const gescheitert: string[] = [];
     try {
-      for (const f of Array.from(files)) await api.uploadAttachment(pageId, f);
-      refresh();
+      for (const f of Array.from(files)) {
+        try {
+          await api.uploadAttachment(pageId, f);
+        } catch (e) {
+          gescheitert.push(`${f.name} (${e instanceof Error ? e.message : "Fehler"})`);
+        }
+      }
+      await refresh();
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
+      if (gescheitert.length > 0) {
+        setFehler(
+          gescheitert.length === 1
+            ? `Nicht hochgeladen: ${gescheitert[0]}`
+            : `${gescheitert.length} Dateien nicht hochgeladen: ${gescheitert.join(", ")}`,
+        );
+      }
     }
   };
+
+  // Dateien, die auf der Seite statt auf der Liste abgelegt wurden.
+  useEffect(() => {
+    if (!eingeworfen || eingeworfen.length === 0 || !canEdit) return;
+    upload(eingeworfen).finally(() => onEingeworfenFertig?.());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eingeworfen]);
 
   // Ziehen und Ablegen von Dateien.
   //
@@ -121,10 +157,13 @@ export default function Attachments({ pageId, canEdit }: Props) {
         )}
         {items.map((a) => {
           const url = api.attachmentUrl(pageId, a.id);
-          const previewable = zeigbar(a.mime);
+          // Derselbe Schluss wie im Betrachter: sonst zeigt die Liste ein
+          // Vorschausymbol, das dann nichts vorzuweisen hat -- oder umgekehrt.
+          const typ = echterTyp(a.mime, a.filename);
+          const previewable = zeigbar(typ);
           return (
             <div key={a.id} className="attachment-row">
-              {istBild(a.mime) ? (
+              {istBild(typ) ? (
                 <img
                   className="attachment-thumb"
                   src={url}
@@ -133,7 +172,7 @@ export default function Attachments({ pageId, canEdit }: Props) {
                 />
               ) : (
                 <span className="attachment-thumb attachment-thumb-file">
-                  {istPdf(a.mime) ? "PDF" : (a.filename.split(".").pop() || "·").slice(0, 4).toUpperCase()}
+                  {istPdf(typ) ? "PDF" : (a.filename.split(".").pop() || "·").slice(0, 4).toUpperCase()}
                 </span>
               )}
               {previewable ? (
@@ -158,6 +197,15 @@ export default function Attachments({ pageId, canEdit }: Props) {
           );
         })}
       </div>
+
+      {fehler && (
+        <div className="anhang-fehler" role="alert">
+          {fehler}
+          <button className="icon-btn" title="Ausblenden" onClick={() => setFehler(null)}>
+            ✕
+          </button>
+        </div>
+      )}
 
       {ueber > 0 && canEdit && (
         <div className="abwurf-schleier">

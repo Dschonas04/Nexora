@@ -15,6 +15,37 @@ export interface Datei {
   url: string;
 }
 
+// Der Dateityp, den der Browser beim Hochladen angibt, ist eine Behauptung und
+// manchmal gar keine: bei unbekannter Endung schickt er nichts oder
+// "application/octet-stream". Dann entscheidet die Endung des Dateinamens.
+// Ohne das steht eine PDF-Datei in der Liste und meldet "keine Vorschau" --
+// obwohl sie eine hätte.
+const NACH_ENDUNG: Record<string, string> = {
+  pdf: "application/pdf",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+  bmp: "image/bmp",
+  txt: "text/plain",
+  md: "text/markdown",
+  csv: "text/csv",
+  log: "text/plain",
+  json: "application/json",
+  xml: "text/xml",
+  yml: "text/plain",
+  yaml: "text/plain",
+};
+
+export function echterTyp(mime: string, dateiname = ""): string {
+  const brauchbar = mime && mime !== "application/octet-stream" && mime !== "binary/octet-stream";
+  if (brauchbar) return mime;
+  const endung = dateiname.includes(".") ? dateiname.split(".").pop()!.toLowerCase() : "";
+  return NACH_ENDUNG[endung] ?? mime ?? "";
+}
+
 export const istBild = (m: string) => m.startsWith("image/");
 export const istPdf = (m: string) => m === "application/pdf";
 export const istText = (m: string) => m.startsWith("text/") || m === "application/json";
@@ -45,6 +76,9 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   const vorher = useRef<HTMLElement | null>(null);
 
   const datei = dateien[i];
+  // Einmal an einer Stelle bestimmt, danach nur noch diese Größe benutzt:
+  // sonst käme die Kopfzeile zu einem anderen Schluss als der Inhalt.
+  const typ = datei ? echterTyp(datei.mime, datei.filename) : "";
 
   const weiter = useCallback(
     (schritt: number) => {
@@ -119,7 +153,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   // uploaded HTML file cannot execute in the app's origin. The cut-off keeps a
   // huge log file from freezing the browser.
   useEffect(() => {
-    if (!datei || !istText(datei.mime)) return;
+    if (!datei || !istText(typ)) return;
     let abgebrochen = false;
     fetch(datei.url, { credentials: "include" })
       .then((r) => {
@@ -136,7 +170,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
     return () => {
       abgebrochen = true;
     };
-  }, [datei?.id, datei?.mime, datei?.url]);
+  }, [datei?.id, typ, datei?.url]);
 
   if (!datei) return null;
 
@@ -169,7 +203,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             </span>
           )}
           <div className="qv-actions">
-            {istBild(datei.mime) && (
+            {istBild(typ) && (
               <>
                 <button
                   className="btn"
@@ -209,21 +243,33 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             </button>
           )}
 
-          {istBild(datei.mime) && (
+          {istBild(typ) && (
             <img className="qv-image" style={bildStil} src={datei.url} alt={datei.filename} />
           )}
-          {istPdf(datei.mime) && (
-            // The browser's own PDF viewer already brings paging, zoom and
-            // search. Rebuilding that on top of a rendering library would be a
-            // lot of code for a worse result.
-            <iframe className="qv-frame" src={datei.url} title={datei.filename} />
+          {istPdf(typ) && (
+            // Der eingebaute PDF-Betrachter des Browsers bringt Blättern,
+            // Zoom und Suche schon mit. Das auf einer Rendering-Bibliothek
+            // nachzubauen wäre viel Code für ein schlechteres Ergebnis.
+            //
+            // <object> statt <iframe>: Browser, die PDF nicht selbst anzeigen
+            // können -- und mobile Browser können es meist nicht --, zeigen
+            // dann den Inhalt zwischen den Marken statt einer leeren weißen
+            // Fläche, vor der man ratlos sitzt.
+            <object className="qv-frame" data={datei.url} type="application/pdf" aria-label={datei.filename}>
+              <div className="qv-none">
+                Dieser Browser zeigt PDF-Dateien nicht selbst an.
+                <a className="btn" href={datei.url} target="_blank" rel="noreferrer">
+                  In neuem Tab öffnen
+                </a>
+              </div>
+            </object>
           )}
-          {istText(datei.mime) && (
+          {istText(typ) && (
             <pre className="qv-text">
               {textFehler ? "(Vorschau konnte nicht geladen werden)" : (text ?? "Lädt…")}
             </pre>
           )}
-          {!zeigbar(datei.mime) && (
+          {!zeigbar(typ) && (
             <div className="qv-none">
               Keine Vorschau für diesen Dateityp. Über „Herunterladen“ lässt er sich öffnen.
             </div>
@@ -238,7 +284,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
 
         <div className="qv-fuss muted small">
           Esc schließt{mehrere && ", ← → blättert"}
-          {istBild(datei.mime) && ", + − zoomt, R dreht, 0 setzt zurück"}
+          {istBild(typ) && ", + − zoomt, R dreht, 0 setzt zurück"}
         </div>
       </div>
     </div>

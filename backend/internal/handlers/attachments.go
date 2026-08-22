@@ -7,6 +7,7 @@ package handlers
 import (
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -81,10 +82,7 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	if filename == "" || filename == "." || filename == "/" {
 		filename = "file"
 	}
-	mime := header.Header.Get("Content-Type")
-	if mime == "" {
-		mime = "application/octet-stream"
-	}
+	mime := typAusAngabeUndName(header.Header.Get("Content-Type"), filename)
 
 	var attID string
 	if err := s.Pool.QueryRow(r.Context(),
@@ -131,6 +129,49 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, models.Attachment{
 		ID: attID, PageID: id, Filename: filename, Mime: mime, Size: written,
 	})
+}
+
+// typAusAngabeUndName bestimmt den Dateityp.
+//
+// Was der Browser beim Hochladen mitschickt, ist eine Behauptung -- und bei
+// einer ihm unbekannten Endung schickt er gar nichts oder
+// "application/octet-stream". Der Typ entscheidet aber darüber, ob eine Datei
+// später eine Vorschau bekommt und ob ihr Text in die Suche wandert. Eine
+// PDF-Datei, die als octet-stream ankommt, ist danach eine Datei ohne
+// Eigenschaften.
+//
+// Deshalb wird bei nichtssagender Angabe die Endung befragt. Die Angabe des
+// Browsers hat Vorrang, solange sie etwas aussagt: sie kennt Fälle, die eine
+// Endung nicht unterscheidet.
+func typAusAngabeUndName(angabe, dateiname string) string {
+	angabe = strings.TrimSpace(strings.ToLower(angabe))
+	// Ein Parameter wie "; charset=utf-8" gehört nicht in die Spalte.
+	if i := strings.IndexByte(angabe, ';'); i >= 0 {
+		angabe = strings.TrimSpace(angabe[:i])
+	}
+	if angabe != "" && angabe != "application/octet-stream" && angabe != "binary/octet-stream" {
+		return angabe
+	}
+	endung := strings.ToLower(filepath.Ext(dateiname))
+	if endung != "" {
+		// mime.TypeByExtension kennt die geläufigen Endungen und liest
+		// zusätzlich die Typtabellen des Systems.
+		if t := mime.TypeByExtension(endung); t != "" {
+			if i := strings.IndexByte(t, ';'); i >= 0 {
+				t = strings.TrimSpace(t[:i])
+			}
+			return t
+		}
+		// Was die Tabelle des Systems nicht führt, aber hier zählt.
+		switch endung {
+		case ".md", ".log", ".yml", ".yaml", ".conf", ".ini":
+			return "text/plain"
+		}
+	}
+	if angabe != "" {
+		return angabe
+	}
+	return "application/octet-stream"
 }
 
 // DownloadAttachment streams a file back. Access is decided by the page, not by
