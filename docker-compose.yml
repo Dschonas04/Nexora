@@ -42,8 +42,13 @@ services:
       # die Umgebungsvariablen unten.
       #
       # Beschreibbar eingehängt, damit die Wartungsseite die Datei ändern kann.
-      # Wer das nicht will, hängt ein :ro an: die Seite zeigt die Datei dann
-      # weiterhin an und sagt, dass sie nur lesbar ist.
+      # Damit das wirkt, muss die Datei auch dem Dienst gehören -- er läuft im
+      # Container als uid/gid 10001:
+      #
+      #     sudo chgrp 10001 config.conf && sudo chmod 660 config.conf
+      #
+      # Ohne diesen Schritt zeigt die Wartungsseite die Datei an und sagt, dass
+      # sie nur lesbar ist. Wer das so will, hängt zusätzlich ein :ro an.
       - ./config.conf:/etc/nexora/config.conf
     depends_on:
       db:
