@@ -170,3 +170,107 @@ func TestTitelWirdNichtVerdoppelt(t *testing.T) {
 		t.Fatal("leeres Dokument darf keine Überschrift melden")
 	}
 }
+
+func nichtEnthaelt(t *testing.T, got, darfNicht string) {
+	t.Helper()
+	if strings.Contains(got, darfNicht) {
+		t.Fatalf("unerwartet %q in:\n%s", darfNicht, got)
+	}
+}
+
+// Ein Absatz direkt hinter einem Listeneintrag, ohne Leerzeile dazwischen, ist
+// für jeden Markdown-Leser die Fortsetzung dieses Eintrags -- der Absatz
+// verschwindet dann in der Liste.
+func TestAbsatzNachListeBekommtLeerzeile(t *testing.T) {
+	md := um(t, `[
+	 {"type":"bulletListItem","content":[{"type":"text","text":"Punkt"}]},
+	 {"type":"paragraph","content":[{"type":"text","text":"Danach"}]}]`)
+	enthaelt(t, md, "- Punkt\n\nDanach")
+}
+
+// Unter "1. " beginnt der Inhalt in Spalte 3. Zwei Leerzeichen Einrückung
+// reichen dort nicht: der Untereintrag wäre eine zweite Liste daneben.
+func TestUntereintragUnterNummerRuecktWeitGenugEin(t *testing.T) {
+	md := um(t, `[{"type":"numberedListItem","content":[{"type":"text","text":"Eins"}],
+	  "children":[{"type":"bulletListItem","content":[{"type":"text","text":"Unter"}]}]}]`)
+	enthaelt(t, md, "1. Eins\n   - Unter")
+}
+
+// Neuere Editorstände liefern Tabellenzellen als Objekt mit content-Feld statt
+// als blanke Liste. Wird das nicht erkannt, steht die Tabelle da und ist leer.
+func TestTabellenzelleAlsObjekt(t *testing.T) {
+	md := um(t, `[{"type":"table","content":{"rows":[
+	 {"cells":[{"type":"tableCell","content":[{"type":"text","text":"A"}]},
+	           {"type":"tableCell","content":[{"type":"text","text":"B"}]}]}]}}]`)
+	enthaelt(t, md, "| A | B |")
+}
+
+func TestSenkrechterStrichZerreisstTabelleNicht(t *testing.T) {
+	md := um(t, `[{"type":"table","content":{"rows":[
+	 {"cells":[[{"type":"text","text":"a|b"}]]}]}}]`)
+	enthaelt(t, md, `| a\|b |`)
+}
+
+// Kurze Zeilen bekommen dieselbe Spaltenzahl wie die längste. Sonst zerlegt
+// eine Zeile mit weniger Zellen die Tabelle beim Lesen.
+func TestTabelleWirdRechteckig(t *testing.T) {
+	md := um(t, `[{"type":"table","content":{"rows":[
+	 {"cells":[[{"type":"text","text":"A"}],[{"type":"text","text":"B"}]]},
+	 {"cells":[[{"type":"text","text":"1"}]]}]}}]`)
+	enthaelt(t, md, "| 1 |  |")
+}
+
+func TestSonderzeichenBleibenText(t *testing.T) {
+	md := um(t, `[{"type":"paragraph","content":[{"type":"text","text":"2 * 3 und [Klammer]"}]}]`)
+	enthaelt(t, md, `2 \* 3 und \[Klammer\]`)
+}
+
+func TestZeilenanfangWirdEntschaerft(t *testing.T) {
+	md := um(t, `[{"type":"paragraph","content":[{"type":"text","text":"1998. Ein Jahr"}]}]`)
+	enthaelt(t, md, `1998\. Ein Jahr`)
+	nichtEnthaelt(t, md, "\n1998. ")
+}
+
+// [[Titel]] ist in Nexora ein Verweis, auch als reiner Text. Maskiert man die
+// Klammern, kommt aus dem Export ein Text zurück, der keiner mehr ist.
+func TestWikiVerweisBleibtStehen(t *testing.T) {
+	md := um(t, `[{"type":"paragraph","content":[{"type":"text","text":"siehe [[Notiz]] dort"}]}]`)
+	enthaelt(t, md, "siehe [[Notiz]] dort")
+}
+
+func TestUnterstrichImWortBleibt(t *testing.T) {
+	md := um(t, `[{"type":"paragraph","content":[{"type":"text","text":"datei_name_lang"}]}]`)
+	enthaelt(t, md, "datei_name_lang")
+}
+
+func TestBacktickPasstInCodeSpanne(t *testing.T) {
+	// Der Backtick wird eingesetzt statt geschrieben: eine rohe Zeichenkette in
+	// Go kann keinen enthalten.
+	roh := strings.ReplaceAll(`[{"type":"paragraph","content":[
+	 {"type":"text","text":"a @ b","styles":{"code":true}}]}]`, "@", "`")
+	md := um(t, roh)
+	enthaelt(t, md, "``a ` b``")
+}
+
+// Zwei Leerzeilen in einem Codeblock sind Inhalt. Sie zu einer zu machen
+// verändert den exportierten Code.
+func TestLeerzeilenImCodeBleiben(t *testing.T) {
+	md := um(t, `[{"type":"codeBlock","props":{"language":"go"},
+	  "content":[{"type":"text","text":"a\n\n\nb"}]}]`)
+	enthaelt(t, md, "a\n\n\nb")
+}
+
+func TestHarterUmbruchUeberlebt(t *testing.T) {
+	md := um(t, `[{"type":"paragraph","content":[{"type":"text","text":"oben\nunten"}]}]`)
+	enthaelt(t, md, "oben  \nunten")
+}
+
+func TestAdresseMitLeerzeichenWirdEingeklammert(t *testing.T) {
+	md := um(t, `[{"type":"image","props":{"url":"/api/mein bild.png","name":"Bild"}}]`)
+	enthaelt(t, md, "![Bild](</api/mein%20bild.png>)")
+}
+
+func TestKlapplisteWirdAufzaehlung(t *testing.T) {
+	md := um(t, `[{"type":"toggleListItem","content":[{"type":"text","text":"Klappt"}]}]`)
+	enthaelt(t, md, "- Klappt")
+}
