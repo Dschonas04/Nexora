@@ -1989,3 +1989,46 @@ a {
 .tree-row.mehr-zeile:hover {
   color: var(--text);
 }
+
+/* ---- Dateien auf die Seite ziehen ---------------------------------------- */
+
+.page-layout {
+  position: relative;
+}
+/* Der Schleier liegt über der ganzen Seite, nimmt aber keine Zeigerereignisse
+   an: sonst würde er selbst das Ziel des Wurfs und dragleave feuerte in dem
+   Moment, in dem er erscheint -- die Hervorhebung ginge sofort wieder aus. */
+.seiten-abwurf-schleier {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--accent-lesbar);
+  background: var(--hinweis-bg);
+  opacity: 0.92;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius);
+}
+
+/* Fehler beim Hochladen. Ruhig gesetzt, aber nicht zu übersehen -- vorher
+   scheiterte ein Upload lautlos und die Datei fehlte einfach. */
+.anhang-fehler {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--fehler-bg);
+  color: var(--fehler-text);
+  border: 1px solid var(--fehler-rand);
+}
+.anhang-fehler .icon-btn {
+  margin-left: auto;
+  color: inherit;
+}
