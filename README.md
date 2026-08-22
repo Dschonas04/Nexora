@@ -28,7 +28,11 @@ license key. On 2030-08-19 the whole thing becomes Apache 2.0.
 - **Nested pages**: infinite hierarchy in a collapsible sidebar, drag to reorder
 - **Block editor**: slash menu and markdown shortcuts via BlockNote
 - **Autosave**: title and content persist as you type
-- **Markdown export**: download the current page as `.md`
+- **Markdown export**: download the current page as `.md` — always free, because
+  getting your own content out must never sit behind a licence
+- **PDF and Word export**: a typeset document for a page, or a whole space as one
+  file. Written without a third-party library; the PDF uses the base fonts and
+  WinAnsi encoding, so umlauts survive
 - **Version history**: a snapshot is written before every content change; browse
   and restore any earlier revision
 - **Attachments**: stored on local disk or in any S3-compatible bucket (MinIO,
@@ -44,7 +48,13 @@ license key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
 ### Organising
 
-- **Spaces**: group pages into separate areas; a page may belong to one space
+- **Spaces**: group pages into separate areas; a page may belong to one space. A
+  space can be opened to every signed-in account of the instance, for reading or
+  for writing — that means the instance, not the internet; anonymous access
+  still runs solely through a page's share link
+- **Collapsible sidebar sections**: every section folds away and stays folded
+  across reloads; spaces and tags show the first four and reveal the rest on
+  demand
 - **Tags**: colored, per-user, attach any number to a page
 - **Favorites**: quick access section in the sidebar
 - **Trash**: deleting moves a page to the trash; restore it or purge permanently
@@ -98,6 +108,13 @@ at `$NEXORA_CONFIG`, then `./config.conf`, then `/etc/nexora/config.conf`.
 **A missing file is not an error.** Every setting has a default that produces a
 working server, which is what lets the binary start with no configuration at
 all.
+
+The file can also be edited from **Settings → Wartung**, which checks the draft
+before writing it and keeps a timestamped backup of the previous version.
+Credentials are masked on the way to the browser and restored on the way back,
+so saving never overwrites them with asterisks. Because the file is only read at
+startup, that page also carries a restart button — the process ends and whatever
+runs it brings it back.
 
 The format is deliberately dull:
 
@@ -269,10 +286,21 @@ GET    /spaces                            list spaces
 POST   /spaces                            create
 PUT    /spaces/{id}                       rename
 DELETE /spaces/{id}                       delete (pages keep existing, space_id nulled)
+PUT    /spaces/{id}/oeffentlich           open to the whole instance: nein|lesen|schreiben
+GET    /spaces/{id}/export[?format=]      ZIP of Markdown, or format=pdf|word as one document
 
 GET    /tags                              list tags
 POST   /tags                              create
 DELETE /tags/{id}                         delete
+
+GET    /pages/{id}/markdown               the page as Markdown
+GET    /pages/{id}/pdf                    the page as PDF (extra)
+GET    /pages/{id}/word                   the page as .docx (extra)
+
+GET    /system/konfig                     config.conf, credentials masked (admin only)
+PUT    /system/konfig                     check or write it (admin only)
+POST   /system/neustart                   end the process so its supervisor restarts it
+POST   /system/papierkorb                 purge the whole instance's trash (admin only)
 
 GET    /users                             list accounts (admin only)
 POST   /users                             create an account (admin only)
