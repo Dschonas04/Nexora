@@ -199,11 +199,11 @@ func (s *Server) KonfigSchreiben(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Sicherung neben die Datei, mit Zeitstempel im Namen. Ein Fehler dabei
-	// hält das Speichern auf: ohne Sicherung zu überschreiben nimmt genau den
-	// Ausweg weg, für den sie da ist.
-	sicherung := fmt.Sprintf("%s.%s.bak", pfad, time.Now().Format("2006-01-02-1504"))
-	if err := os.WriteFile(sicherung, alt, 0o600); err != nil {
+	// Sicherung mit Zeitstempel. Ein Fehler dabei hält das Speichern auf: ohne
+	// Sicherung zu überschreiben nimmt genau den Ausweg weg, für den sie da
+	// ist.
+	sicherung, err := sichern(pfad, alt)
+	if err != nil {
 		writeErr(w, http.StatusInternalServerError,
 			"Sicherung konnte nicht angelegt werden: "+err.Error())
 		return
@@ -227,6 +227,39 @@ func (s *Server) KonfigSchreiben(w http.ResponseWriter, r *http.Request) {
 		// offenen Vorgang unter der Hand umzuhängen.
 		"neustartNoetig": true,
 	})
+}
+
+// sichern legt eine Kopie der bisherigen Fassung an und liefert ihren Pfad.
+//
+// Zuerst ins Datenverzeichnis, nicht neben die Datei. Das ist kein
+// Ordnungsgeschmack: die Konfiguration liegt im Container üblicherweise unter
+// /etc/nexora, und dieses Verzeichnis gehört root, während der Dienst als
+// eigener Benutzer läuft -- daneben schreiben kann er dort gar nicht. Das
+// Datenverzeichnis ist der eine Ort, an dem er sicher schreiben darf.
+//
+// Der Rückfall neben die Datei ist für den Betrieb ohne Container gedacht, wo
+// beides zusammenliegt und die Sicherung dort erwartet wird.
+func sichern(pfad string, inhalt []byte) (string, error) {
+	name := fmt.Sprintf("%s.%s.bak", filepath.Base(pfad), time.Now().Format("2006-01-02-1504"))
+
+	speicher.RLock()
+	daten := speicher.basis.DatenVerzeich
+	speicher.RUnlock()
+
+	if daten != "" {
+		ordner := filepath.Join(daten, "konfig-sicherungen")
+		if err := os.MkdirAll(ordner, 0o700); err == nil {
+			ziel := filepath.Join(ordner, name)
+			if err := os.WriteFile(ziel, inhalt, 0o600); err == nil {
+				return ziel, nil
+			}
+		}
+	}
+	ziel := filepath.Join(filepath.Dir(pfad), name)
+	if err := os.WriteFile(ziel, inhalt, 0o600); err != nil {
+		return "", err
+	}
+	return ziel, nil
 }
 
 // ersetzen schreibt den neuen Inhalt an die Stelle der alten Datei.
