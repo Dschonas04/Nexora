@@ -109,6 +109,8 @@ export default function Sidebar(props: Props) {
   // Kennung der Ablage, deren Sichtbarkeitsmenü offen steht -- höchstens eine
   // zur Zeit, deshalb ein einzelner Wert und keine Menge.
   const [sichtbarkeitFuer, setSichtbarkeitFuer] = useState<string | null>(null);
+  // Dasselbe für das Export-Menü einer Ablage.
+  const [exportFuer, setExportFuer] = useState<string | null>(null);
   // Lange Listen werden auf vier Einträge gekürzt. Eine Leiste, die von
   // fünfzehn Ablagen und dreißig Schlagwörtern gefüllt wird, ist keine
   // Übersicht mehr -- man scrollt an allem vorbei, was man sucht. Der Rest ist
@@ -421,15 +423,39 @@ export default function Sidebar(props: Props) {
                           auf die Platte, statt ihn erst in den Speicher zu
                           holen. */}
                       {frei("export") && (
-                        <button
-                          className="icon-btn"
-                          title="Space als ZIP mit Markdown-Dateien"
-                          onClick={() => {
-                            window.location.href = `/api/spaces/${sp.id}/export`;
-                          }}
-                        >
-                          ↓
-                        </button>
+                        <div className="exportmenue">
+                          <button
+                            className="icon-btn"
+                            title="Ablage exportieren"
+                            onClick={() => setExportFuer((v) => (v === sp.id ? null : sp.id))}
+                          >
+                            ↓
+                          </button>
+                          {exportFuer === sp.id && (
+                            <div className="vorlagenliste" onMouseLeave={() => setExportFuer(null)}>
+                              <div className="vorlagenliste-titel">Ablage exportieren</div>
+                              {(
+                                [
+                                  ["", "Markdown-Dateien (.zip)"],
+                                  ["pdf", "Ein PDF mit allen Seiten"],
+                                  ["word", "Ein Word-Dokument"],
+                                ] as const
+                              ).map(([form, titel]) => (
+                                <button
+                                  key={titel}
+                                  className="vorlageneintrag"
+                                  onClick={() => {
+                                    setExportFuer(null);
+                                    window.location.href =
+                                      `/api/spaces/${sp.id}/export` + (form ? `?format=${form}` : "");
+                                  }}
+                                >
+                                  {titel}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
                       {sp.darfVerwalten && (
                         <button className="icon-btn" title="Space löschen" onClick={() => onDeleteSpace(sp.id)}>

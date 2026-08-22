@@ -2032,3 +2032,10 @@ a {
   margin-left: auto;
   color: inherit;
 }
+
+/* Menü hinter einem Knopf (Export). Wie das Vorlagen-Menü, nur an anderer
+   Stelle -- die Liste selbst teilt sich die Gestaltung mit jenem. */
+.exportmenue {
+  position: relative;
+  display: inline-flex;
+}
