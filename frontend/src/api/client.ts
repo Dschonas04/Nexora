@@ -27,6 +27,15 @@ export interface Space {
   createdAt: string;
   /** True when the space belongs to someone else and is visible through a right. */
   fremd: boolean;
+  /**
+   * Sichtbarkeit der Ablage für die übrigen angemeldeten Konten der Instanz.
+   * "nein" heißt: nur Eigentümer und ausdrücklich Berechtigte. Mit dem
+   * Freigabelink einer einzelnen Seite hat das nichts zu tun -- öffentlich
+   * meint hier die Instanz, nicht das Internet.
+   */
+  oeffentlich: "nein" | "lesen" | "schreiben";
+  /** Ob dieses Konto die Ablage verwalten darf (Sichtbarkeit, Rechte). */
+  darfVerwalten: boolean;
 }
 
 // PageMeta is the light shape used for the sidebar, search results and lists.
@@ -508,6 +517,11 @@ export const api = {
   renameSpace: (id: string, name: string) =>
     req<void>(`/spaces/${id}`, { method: "PUT", body: JSON.stringify({ name }) }),
   deleteSpace: (id: string) => req<void>(`/spaces/${id}`, { method: "DELETE" }),
+  spaceOeffentlich: (id: string, oeffentlich: "nein" | "lesen" | "schreiben") =>
+    req<{ oeffentlich: string }>(`/spaces/${id}/oeffentlich`, {
+      method: "PUT",
+      body: JSON.stringify({ oeffentlich }),
+    }),
 
   // Knowledge graph
   graph: () => req<Graph>("/graph"),

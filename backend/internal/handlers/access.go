@@ -21,8 +21,10 @@ func (s *Server) isAdmin(ctx context.Context, uid string) bool {
 
 // pagePerm resolves a user's access to a non-deleted page.
 //
-//	canRead — owner, admin, page share, or a right on the space it sits in
-//	canEdit — owner, admin, share with 'edit', or 'schreiben'/'verwalten' on the space
+//	canRead — owner, admin, page share, a right on the space it sits in, or a
+//	          space that is open to the whole instance
+//	canEdit — owner, admin, share with 'edit', 'schreiben'/'verwalten' on the
+//	          space, or a space that is open for writing
 //	isOwner — the user owns the page
 //	ok      — the page exists, is not in the trash, and the user may read it
 //
@@ -49,16 +51,27 @@ func (s *Server) pagePerm(ctx context.Context, uid, pageID string) (canRead, can
 			(SELECT role = 'admin' FROM users WHERE id = $2),
 			(SELECT sh.permission FROM page_shares sh
 			  WHERE sh.page_id = p.id AND sh.user_id = $2),
-			-- Bestes Recht am Space: direkt vergeben oder über eine Gruppe.
-			-- Die Reihenfolge im ORDER BY ist die Stufenleiter, nicht das
-			-- Alphabet -- 'lesen' käme sonst vor 'schreiben'.
-			(SELECT sr.recht FROM space_rechte sr
-			  WHERE $3
-			    AND sr.space_id = p.space_id
-			    AND (sr.user_id = $2
-			         OR sr.gruppe_id IN (SELECT gm.gruppe_id FROM gruppen_mitglieder gm
-			                             WHERE gm.user_id = $2))
-			  ORDER BY CASE sr.recht
+			-- Bestes Recht am Space: einzeln vergeben, über eine Gruppe --
+			-- oder daher, dass die Ablage öffentlich ist. Alle drei Wege
+			-- landen im selben UNION und werden danach nach Stufe sortiert,
+			-- damit der stärkste gewinnt. Die Reihenfolge im ORDER BY ist die
+			-- Stufenleiter, nicht das Alphabet -- 'lesen' käme sonst vor
+			-- 'schreiben'.
+			(SELECT x.recht FROM (
+			   SELECT sr.recht FROM space_rechte sr
+			    WHERE $3
+			      AND sr.space_id = p.space_id
+			      AND (sr.user_id = $2
+			           OR sr.gruppe_id IN (SELECT gm.gruppe_id FROM gruppen_mitglieder gm
+			                               WHERE gm.user_id = $2))
+			   UNION ALL
+			   -- Eine öffentliche Ablage gilt für jedes angemeldete Konto und
+			   -- hängt an keinem Zusatzumfang: sie ist Grundausstattung.
+			   SELECT CASE so.oeffentlich WHEN 'schreiben' THEN 'schreiben' ELSE 'lesen' END
+			     FROM spaces so
+			    WHERE so.id = p.space_id AND so.oeffentlich <> 'nein'
+			 ) x
+			  ORDER BY CASE x.recht
 			             WHEN 'verwalten' THEN 3
 			             WHEN 'schreiben' THEN 2
 			             ELSE 1 END DESC
@@ -102,4 +115,31 @@ func (s *Server) darfSpaceVerwalten(ctx context.Context, uid, spaceID string) bo
 		                                      WHERE gm.user_id = $2))))`,
 		spaceID, uid, lizenz.Frei(lizenz.Gruppen)).Scan(&erlaubt)
 	return err == nil && erlaubt
+}
+
+// spaceZugriffSQL liefert die SQL-Bedingung, unter der ein Konto Zugriff auf
+// den Space einer Seite hat. Zwei Wege führen hinein:
+//
+//	ein vergebenes Recht  -- einzeln oder über eine Gruppe, nur mit Zusatzumfang
+//	eine öffentliche Ablage -- für jedes angemeldete Konto der Instanz
+//
+// Das steht hier als eine Zeichenkette und nicht viermal ausgeschrieben in den
+// Abfragen, die sie brauchen. Genau das ist der Punkt: Sichtbarkeit an vier
+// Stellen getrennt zu formulieren heißt, dass eines Tages drei davon dasselbe
+// sagen und die vierte etwas anderes -- und eine abweichende Rechteprüfung ist
+// der Weg, auf dem Seiten bei den Falschen landen.
+//
+// Die Platzhalter werden übergeben, weil sie je Abfrage andere Nummern haben:
+// spaceID die Spalte mit der Space-Kennung, nutzer den Platzhalter des Kontos,
+// gruppenAn den des Lizenzschalters.
+func spaceZugriffSQL(spaceID, nutzer, gruppenAn string) string {
+	return `(` + spaceID + ` IS NOT NULL AND (
+	        EXISTS (SELECT 1 FROM spaces so
+	                 WHERE so.id = ` + spaceID + ` AND so.oeffentlich <> 'nein')
+	     OR (` + gruppenAn + ` AND EXISTS (
+	           SELECT 1 FROM space_rechte sr
+	            WHERE sr.space_id = ` + spaceID + `
+	              AND (sr.user_id = ` + nutzer + `
+	                   OR sr.gruppe_id IN (SELECT gm.gruppe_id FROM gruppen_mitglieder gm
+	                                        WHERE gm.user_id = ` + nutzer + `))))))`
 }

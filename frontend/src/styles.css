@@ -1894,3 +1894,98 @@ a {
   margin-top: 2px;
   font-style: italic;
 }
+
+/* ---- Einklappen der Leistenabschnitte ------------------------------------ */
+
+/* Der Pfeil trägt keine eigene Fläche und keinen Rahmen: er soll Teil der
+   Überschrift sein, nicht ein Knopf davor. Die Breite ist fest, damit die
+   Beschriftungen aller Abschnitte auf derselben Kante beginnen -- ein Pfeil,
+   der zwischen ▸ und ▾ die Zeile verschiebt, lässt die ganze Leiste zappeln. */
+.klapp-btn {
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  width: 14px;
+  flex: 0 0 14px;
+  padding: 0;
+  text-align: left;
+}
+.klapp-btn:hover {
+  color: var(--text);
+}
+
+/* Der Name klappt mit. mr: auto schiebt alles Weitere -- Zahl, Knöpfe -- nach
+   rechts, wie es die Überschrift mit space-between ohnehin vorsieht. */
+.klapp-name {
+  cursor: pointer;
+  margin-right: auto;
+  user-select: none;
+}
+
+/* Eine offene Ablage wird ruhig gekennzeichnet, nicht angestrahlt: sie ist ein
+   Normalzustand, keine Warnung. */
+.pill.klein.offen {
+  background: var(--hinweis-bg);
+  color: var(--accent-lesbar);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Sichtbarkeitsmenü einer Ablage. Sitzt im Fluss unter der Überschrift und
+   nicht schwebend darüber: die Leiste ist schmal, ein überlagerndes Menü würde
+   genau die Ablage verdecken, um die es geht. */
+.sichtbarkeit-menue {
+  margin: 2px 8px 6px;
+  padding: 4px;
+  background: var(--flaeche);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.sichtbarkeit-eintrag {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.sichtbarkeit-eintrag:hover {
+  background: var(--hover);
+}
+/* Die gewählte Stufe wird durch den Balken links kenntlich gemacht, nicht durch
+   eine Einfärbung der ganzen Zeile: welcher der drei Einträge gilt, soll man
+   sehen, ohne die Beschriftung schlechter lesen zu können. */
+.sichtbarkeit-eintrag.gewaehlt {
+  background: var(--hover);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.sichtbarkeit-titel {
+  font-weight: 500;
+}
+.sichtbarkeit-hinweis {
+  padding: 6px 8px 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* "n weitere …" unter einer gekürzten Liste. Bewusst schwächer gesetzt als ein
+   Eintrag: die Zeile ist ein Hinweis auf mehr, kein Ziel für sich. */
+.tree-row.mehr-zeile {
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.tree-row.mehr-zeile:hover {
+  color: var(--text);
+}

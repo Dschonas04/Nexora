@@ -27,6 +27,12 @@ type Space struct {
 	// Fremd markiert einen Space, der jemand anderem gehört und über ein
 	// Gruppen- oder Kontorecht sichtbar ist.
 	Fremd bool `json:"fremd"`
+	// Oeffentlich: 'nein', 'lesen' oder 'schreiben'. Eine öffentliche Ablage
+	// steht jedem angemeldeten Konto der Instanz offen, ohne Einzelrechte.
+	Oeffentlich string `json:"oeffentlich"`
+	// DarfVerwalten sagt der Oberfläche, ob sie überhaupt Knöpfe zum Ändern
+	// zeigen soll. Die Entscheidung selbst fällt nochmals im Backend.
+	DarfVerwalten bool `json:"darfVerwalten"`
 }
 
 // Tag is a colored label. Tags belong to one user, so two people can both have

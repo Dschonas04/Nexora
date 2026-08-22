@@ -9,6 +9,22 @@ import { useAuth } from "../auth";
 import PageTree from "./PageTree";
 import SpaceRechte from "./SpaceRechte";
 
+// Schlüssel im Speicher des Browsers. Eingeklappt wird gemerkt, nicht offen:
+// so ist eine neu angelegte Ablage von selbst aufgeklappt, ohne dass sie
+// irgendwo eingetragen werden müsste.
+const ZU_SCHLUESSEL = "nexora.leiste.eingeklappt";
+
+function gemerkteZu(): Set<string> {
+  try {
+    const roh = localStorage.getItem(ZU_SCHLUESSEL);
+    return new Set<string>(roh ? (JSON.parse(roh) as string[]) : []);
+  } catch {
+    // Ein privates Fenster ohne Speicher oder ein kaputter Eintrag darf die
+    // Leiste nicht lahmlegen -- dann eben alles aufgeklappt.
+    return new Set<string>();
+  }
+}
+
 interface Props {
   pages: PageMeta[];
   shared: PageMeta[];
@@ -24,6 +40,7 @@ interface Props {
   onCreateSpace: () => void;
   onRenameSpace: (id: string, current: string) => void;
   onDeleteSpace: (id: string) => void;
+  onSpaceOeffentlich: (id: string, wert: "nein" | "lesen" | "schreiben") => void;
   onMovePage: (id: string, parentId: string | null, spaceId: string | null) => void;
   onNavigate: (to: string) => void;
   currentPath: string;
@@ -45,12 +62,42 @@ export default function Sidebar(props: Props) {
     onCreateSpace,
     onRenameSpace,
     onDeleteSpace,
+    onSpaceOeffentlich,
     onMovePage,
     onNavigate,
     currentPath,
   } = props;
   const { user, logout } = useAuth();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  // Eingeklappte Abschnitte der Leiste. Getrennt von `expanded`, das die
+  // Verzweigungen INNERHALB eines Baums steuert -- hier geht es um den
+  // Abschnitt als Ganzes.
+  const [zu, setZu] = useState<Set<string>>(gemerkteZu);
+  const klappen = (key: string) =>
+    setZu((prev) => {
+      const n = new Set(prev);
+      n.has(key) ? n.delete(key) : n.add(key);
+      try {
+        localStorage.setItem(ZU_SCHLUESSEL, JSON.stringify([...n]));
+      } catch {
+        // Nicht speichern zu können ist kein Grund, nicht einzuklappen.
+      }
+      return n;
+    });
+  // Beim Ziehen klappt ein Abschnitt von selbst auf, sobald der Zeiger über
+  // seiner Überschrift verweilt. Ohne das müsste man die Seite ablegen,
+  // aufklappen, wieder aufnehmen -- oder das Ziel bliebe unsichtbar.
+  const aufklappen = (key: string) => setZu((prev) => {
+    if (!prev.has(key)) return prev;
+    const n = new Set(prev);
+    n.delete(key);
+    try {
+      localStorage.setItem(ZU_SCHLUESSEL, JSON.stringify([...n]));
+    } catch {
+      /* siehe oben */
+    }
+    return n;
+  });
   const [q, setQ] = useState("");
   const { frei } = useLizenz();
 
@@ -59,6 +106,15 @@ export default function Sidebar(props: Props) {
   const [vorlagen, setVorlagen] = useState<PageMeta[]>([]);
   const [vorlagenOffen, setVorlagenOffen] = useState(false);
   const [rechteFuer, setRechteFuer] = useState<{ id: string; name: string } | null>(null);
+  // Kennung der Ablage, deren Sichtbarkeitsmenü offen steht -- höchstens eine
+  // zur Zeit, deshalb ein einzelner Wert und keine Menge.
+  const [sichtbarkeitFuer, setSichtbarkeitFuer] = useState<string | null>(null);
+  // Lange Listen werden auf vier Einträge gekürzt. Eine Leiste, die von
+  // fünfzehn Ablagen und dreißig Schlagwörtern gefüllt wird, ist keine
+  // Übersicht mehr -- man scrollt an allem vorbei, was man sucht. Der Rest ist
+  // einen Klick entfernt und die Zahl daneben sagt, wie viel dort wartet.
+  const [alleSpaces, setAlleSpaces] = useState(false);
+  const [alleTags, setAlleTags] = useState(false);
   useEffect(() => {
     if (!frei("vorlagen")) return;
     api.vorlagen().then(setVorlagen).catch(() => setVorlagen([]));
@@ -174,6 +230,16 @@ export default function Sidebar(props: Props) {
   // no page can become invisible by not belonging anywhere.
   const ungrouped = pages.filter((p) => !p.spaceId);
 
+  // Wie viele Einträge eine gekürzte Liste zeigt.
+  const KURZ = 4;
+  // Die geöffnete Ablage wird immer gezeigt, auch wenn sie hinter der Grenze
+  // liegt: die Leiste soll nicht verschweigen, wo man gerade steht.
+  const aktiveSpaceId = pages.find((p) => p.id === activeId)?.spaceId ?? null;
+  const sichtbareSpaces = alleSpaces
+    ? spaces
+    : spaces.filter((sp, idx) => idx < KURZ || sp.id === aktiveSpaceId);
+  const sichtbareTags = alleTags ? tags : tags.slice(0, KURZ);
+
   // Drag-and-drop bundle handed to the page tree.
   const dnd = {
     dragId,
@@ -245,44 +311,102 @@ export default function Sidebar(props: Props) {
           <>
             {favorites.length > 0 && (
               <div className="sidebar-section">
-                <div className="sidebar-section-title">Favoriten</div>
-                {favorites.map(flatRow)}
+                <Klapptitel marke="favoriten" zu={zu} klappen={klappen} anzahl={favorites.length}>
+                  Favoriten
+                </Klapptitel>
+                {!zu.has("favoriten") && favorites.map(flatRow)}
               </div>
             )}
 
             {/* One section per space, each with its own tree. Passing only that
                 space's pages means the tree component never has to know spaces
                 exist. */}
-            {spaces.map((sp) => {
+            {sichtbareSpaces.map((sp) => {
               const spacePages = pages.filter((p) => p.spaceId === sp.id);
+              const marke = "space:" + sp.id;
+              const eingeklappt = zu.has(marke);
               return (
                 <div className="sidebar-section" key={sp.id}>
                   <div
-                    className={"sidebar-section-title" + (dropTarget === "space:" + sp.id ? " drop-target" : "")}
+                    className={"sidebar-section-title" + (dropTarget === marke ? " drop-target" : "")}
                     onDragOver={(e) => {
                       if (!dragId) return;
                       e.preventDefault();
-                      setDropTarget("space:" + sp.id);
+                      setDropTarget(marke);
+                      // Eine eingeklappte Ablage öffnet sich, sobald man mit
+                      // einer Seite darüber steht: sonst zieht man auf ein
+                      // Ziel, dessen Inhalt man nicht sieht.
+                      aufklappen(marke);
                     }}
-                    onDragLeave={() => setDropTarget((t) => (t === "space:" + sp.id ? null : t))}
+                    onDragLeave={() => setDropTarget((t) => (t === marke ? null : t))}
                     onDrop={(e) => {
                       e.preventDefault();
                       dropOnSpace(sp.id);
                     }}
                   >
-                    <span onClick={() => onRenameSpace(sp.id, sp.name)} style={{ cursor: "pointer" }}>
+                    {/* Der ganze linke Teil klappt -- Pfeil und Name. Das
+                        Umbenennen hat jetzt einen eigenen Knopf: eine
+                        Beschriftung, die beim Anklicken ein Eingabefeld
+                        aufmacht, ist nicht das, was man von einer Überschrift
+                        in einer Leiste erwartet. */}
+                    <button
+                      className="klapp-btn"
+                      aria-expanded={!eingeklappt}
+                      title={eingeklappt ? "Aufklappen" : "Einklappen"}
+                      onClick={() => klappen(marke)}
+                    >
+                      {eingeklappt ? "▸" : "▾"}
+                    </button>
+                    <span className="klapp-name" onClick={() => klappen(marke)}>
                       {sp.name}
                     </span>
+                    {/* Sagt ohne Umweg, dass hier alle mitlesen. Der Zusatz
+                        steht im title, weil "offen" allein nicht verrät, ob
+                        auch geschrieben werden darf. */}
+                    {sp.oeffentlich !== "nein" && (
+                      <span
+                        className="pill klein offen"
+                        title={
+                          sp.oeffentlich === "schreiben"
+                            ? "Öffentliche Ablage: alle angemeldeten Konten dürfen lesen und bearbeiten"
+                            : "Öffentliche Ablage: alle angemeldeten Konten dürfen lesen"
+                        }
+                      >
+                        {sp.oeffentlich === "schreiben" ? "offen" : "öffentlich"}
+                      </span>
+                    )}
+                    {/* Die Zahl erscheint nur eingeklappt: aufgeklappt sieht
+                        man die Seiten ja. */}
+                    {eingeklappt && spacePages.length > 0 && (
+                      <span className="tag-anzahl muted small">{spacePages.length}</span>
+                    )}
                     <span className="tree-actions" style={{ display: "flex" }}>
                       <button className="icon-btn" title="Neue Seite" onClick={() => onCreateInSpace(sp.id)}>
                         +
                       </button>
-                      {/* Ein normaler Verweis auf die Adresse, kein fetch: so
-                          setzt der Browser den Dateinamen aus dem
-                          Content-Disposition-Kopf und lädt den Strom direkt
-                          auf die Platte, statt ihn erst in den Speicher zu
-                          holen. */}
-                      {frei("gruppen") && (
+                      {/* Verwalten-Knöpfe nur für die, die es dürfen. Das
+                          Backend prüft es ohnehin noch einmal; hier geht es
+                          darum, niemandem einen Knopf hinzustellen, der bei
+                          jedem Druck abgewiesen wird. */}
+                      {sp.darfVerwalten && (
+                        <button
+                          className="icon-btn"
+                          title="Ablage umbenennen"
+                          onClick={() => onRenameSpace(sp.id, sp.name)}
+                        >
+                          ✎
+                        </button>
+                      )}
+                      {sp.darfVerwalten && (
+                        <button
+                          className="icon-btn"
+                          title="Sichtbarkeit dieser Ablage"
+                          onClick={() => setSichtbarkeitFuer((v) => (v === sp.id ? null : sp.id))}
+                        >
+                          ◎
+                        </button>
+                      )}
+                      {frei("gruppen") && sp.darfVerwalten && (
                         <button
                           className="icon-btn"
                           title="Rechte an diesem Space"
@@ -291,6 +415,11 @@ export default function Sidebar(props: Props) {
                           ⚿
                         </button>
                       )}
+                      {/* Ein normaler Verweis auf die Adresse, kein fetch: so
+                          setzt der Browser den Dateinamen aus dem
+                          Content-Disposition-Kopf und lädt den Strom direkt
+                          auf die Platte, statt ihn erst in den Speicher zu
+                          holen. */}
                       {frei("export") && (
                         <button
                           className="icon-btn"
@@ -302,20 +431,59 @@ export default function Sidebar(props: Props) {
                           ↓
                         </button>
                       )}
-                      <button className="icon-btn" title="Space löschen" onClick={() => onDeleteSpace(sp.id)}>
-                        ✕
-                      </button>
+                      {sp.darfVerwalten && (
+                        <button className="icon-btn" title="Space löschen" onClick={() => onDeleteSpace(sp.id)}>
+                          ✕
+                        </button>
+                      )}
                     </span>
                   </div>
-                  {/* An empty space still needs a drop area, otherwise there
-                      would be no way to drag the first page into it. */}
-                  {spacePages.length === 0 ? (
+
+                  {/* Kleines Menü statt eines Dreifach-Umschalters: welche der
+                      drei Stufen gerade gilt, soll man sehen und nicht durch
+                      Weiterklicken herausfinden müssen. */}
+                  {sichtbarkeitFuer === sp.id && (
+                    <div className="sichtbarkeit-menue">
+                      <div className="vorlagenliste-titel">Wer sieht diese Ablage?</div>
+                      {(
+                        [
+                          ["nein", "Nur Berechtigte", "Eigentümer und wer ausdrücklich ein Recht hat"],
+                          ["lesen", "Alle dürfen lesen", "Jedes angemeldete Konto dieser Instanz"],
+                          ["schreiben", "Alle dürfen bearbeiten", "Jedes angemeldete Konto darf auch ändern"],
+                        ] as const
+                      ).map(([wert, titel, erklaerung]) => (
+                        <button
+                          key={wert}
+                          className={"sichtbarkeit-eintrag" + (sp.oeffentlich === wert ? " gewaehlt" : "")}
+                          onClick={() => {
+                            setSichtbarkeitFuer(null);
+                            if (sp.oeffentlich !== wert) onSpaceOeffentlich(sp.id, wert);
+                          }}
+                        >
+                          <span className="sichtbarkeit-titel">{titel}</span>
+                          <span className="muted small">{erklaerung}</span>
+                        </button>
+                      ))}
+                      {/* Der Satz steht bewusst da: "öffentlich" heißt in
+                          Nexora nicht "im Internet". Wer eine Seite anonym
+                          erreichbar machen will, nimmt den Freigabelink der
+                          Seite. */}
+                      <div className="sichtbarkeit-hinweis muted small">
+                        Betrifft nur angemeldete Konten dieser Instanz. Ohne Anmeldung bleibt die
+                        Ablage unerreichbar.
+                      </div>
+                    </div>
+                  )}
+
+                  {eingeklappt ? null : spacePages.length === 0 ? (
+                    /* An empty space still needs a drop area, otherwise there
+                       would be no way to drag the first page into it. */
                     <div
-                      className={"tree-row muted" + (dropTarget === "space:" + sp.id ? " drop-target" : "")}
+                      className={"tree-row muted" + (dropTarget === marke ? " drop-target" : "")}
                       onDragOver={(e) => {
                         if (!dragId) return;
                         e.preventDefault();
-                        setDropTarget("space:" + sp.id);
+                        setDropTarget(marke);
                       }}
                       onDrop={(e) => {
                         e.preventDefault();
@@ -341,6 +509,21 @@ export default function Sidebar(props: Props) {
               );
             })}
 
+            {/* Der Rest der Ablagen, hinter einem Klick. Die Zahl steht dabei,
+                damit man weiß, ob sich das Aufklappen lohnt. */}
+            {spaces.length > sichtbareSpaces.length && (
+              <div className="tree-row mehr-zeile" onClick={() => setAlleSpaces(true)}>
+                <span className="tree-label">
+                  {spaces.length - sichtbareSpaces.length} weitere Ablagen
+                </span>
+              </div>
+            )}
+            {alleSpaces && spaces.length > KURZ && (
+              <div className="tree-row mehr-zeile" onClick={() => setAlleSpaces(false)}>
+                <span className="tree-label">Weniger anzeigen</span>
+              </div>
+            )}
+
             <div className="sidebar-section">
               <div
                 className={"sidebar-section-title" + (dropTarget === "root" ? " drop-target" : "")}
@@ -348,6 +531,7 @@ export default function Sidebar(props: Props) {
                   if (!dragId) return;
                   e.preventDefault();
                   setDropTarget("root");
+                  aufklappen("root");
                 }}
                 onDragLeave={() => setDropTarget((t) => (t === "root" ? null : t))}
                 onDrop={(e) => {
@@ -355,7 +539,20 @@ export default function Sidebar(props: Props) {
                   dropOnSpace(null);
                 }}
               >
-                Seiten
+                <button
+                  className="klapp-btn"
+                  aria-expanded={!zu.has("root")}
+                  title={zu.has("root") ? "Aufklappen" : "Einklappen"}
+                  onClick={() => klappen("root")}
+                >
+                  {zu.has("root") ? "▸" : "▾"}
+                </button>
+                <span className="klapp-name" onClick={() => klappen("root")}>
+                  Seiten
+                </span>
+                {zu.has("root") && ungrouped.length > 0 && (
+                  <span className="tag-anzahl muted small">{ungrouped.length}</span>
+                )}
                 <span className="tree-actions" style={{ display: "flex", gap: 8 }}>
                   <button className="text-btn" title="Neuer Space" onClick={onCreateSpace}>
                     + Space
@@ -368,7 +565,7 @@ export default function Sidebar(props: Props) {
                   </button>
                 </span>
               </div>
-              {ungrouped.length === 0 ? (
+              {zu.has("root") ? null : ungrouped.length === 0 ? (
                 <div
                   className={"tree-row muted" + (dropTarget === "root" ? " drop-target" : "")}
                   onDragOver={(e) => {
@@ -400,36 +597,55 @@ export default function Sidebar(props: Props) {
 
             {shared.length > 0 && (
               <div className="sidebar-section">
-                <div className="sidebar-section-title">Mit mir geteilt</div>
-                {shared.map(flatRow)}
+                <Klapptitel marke="geteilt" zu={zu} klappen={klappen} anzahl={shared.length}>
+                  Mit mir geteilt
+                </Klapptitel>
+                {!zu.has("geteilt") && shared.map(flatRow)}
               </div>
             )}
 
             {tags.length > 0 && (
               <div className="sidebar-section">
-                <div className="sidebar-section-title">Schlagwörter</div>
-                {tags.map((t) => (
-                  // Anklickbar, und die Zahl dahinter sagt, ob etwas
-                  // dranhängt. Ohne beides war das hier nur Zierde: eine
-                  // Beschriftung, der man nicht folgen kann, verspricht eine
-                  // Ordnung, die es gar nicht gibt.
-                  <div
-                    key={t.id}
-                    className={"tree-row" + (currentPath === `/tag/${t.id}` ? " active" : "")}
-                    onClick={() => onNavigate(`/tag/${t.id}`)}
-                  >
-                    <span className="tag-dot" style={{ background: t.color }} />
-                    <span className="tree-label">{t.name}</span>
-                    <span className={"tag-anzahl muted small" + (t.anzahl === 0 ? " leer" : "")}>
-                      {t.anzahl}
+                <Klapptitel marke="schlagwoerter" zu={zu} klappen={klappen} anzahl={tags.length}>
+                  Schlagwörter
+                </Klapptitel>
+                {!zu.has("schlagwoerter") &&
+                  sichtbareTags.map((t) => (
+                    // Anklickbar, und die Zahl dahinter sagt, ob etwas
+                    // dranhängt. Ohne beides war das hier nur Zierde: eine
+                    // Beschriftung, der man nicht folgen kann, verspricht eine
+                    // Ordnung, die es gar nicht gibt.
+                    <div
+                      key={t.id}
+                      className={"tree-row" + (currentPath === `/tag/${t.id}` ? " active" : "")}
+                      onClick={() => onNavigate(`/tag/${t.id}`)}
+                    >
+                      <span className="tag-dot" style={{ background: t.color }} />
+                      <span className="tree-label">{t.name}</span>
+                      <span className={"tag-anzahl muted small" + (t.anzahl === 0 ? " leer" : "")}>
+                        {t.anzahl}
+                      </span>
+                    </div>
+                  ))}
+                {!zu.has("schlagwoerter") && tags.length > sichtbareTags.length && (
+                  <div className="tree-row mehr-zeile" onClick={() => setAlleTags(true)}>
+                    <span className="tree-label">
+                      {tags.length - sichtbareTags.length} weitere Schlagwörter
                     </span>
                   </div>
-                ))}
+                )}
+                {!zu.has("schlagwoerter") && alleTags && tags.length > KURZ && (
+                  <div className="tree-row mehr-zeile" onClick={() => setAlleTags(false)}>
+                    <span className="tree-label">Weniger anzeigen</span>
+                  </div>
+                )}
               </div>
             )}
 
             <div className="sidebar-section">
-              <div className="sidebar-section-title">Workspace</div>
+              <Klapptitel marke="workspace" zu={zu} klappen={klappen}>
+                Workspace
+              </Klapptitel>
               <div
                 className={"tree-row" + (currentPath === "/graph" ? " active" : "")}
                 onClick={() => onNavigate("/graph")}
@@ -498,6 +714,45 @@ export default function Sidebar(props: Props) {
           Abmelden
         </button>
       </div>
+    </div>
+  );
+}
+
+// Klapptitel ist die Überschrift eines Leistenabschnitts, der nur auf- und
+// zuklappt und sonst nichts kann. Die Ablagen und der Abschnitt "Seiten" haben
+// ihre eigene, ausgeschriebene Überschrift: dort hängen Ziehziele und
+// Verwaltungsknöpfe dran, die hier nur im Weg wären.
+function Klapptitel({
+  marke,
+  zu,
+  klappen,
+  anzahl,
+  children,
+}: {
+  marke: string;
+  zu: Set<string>;
+  klappen: (marke: string) => void;
+  anzahl?: number;
+  children: React.ReactNode;
+}) {
+  const eingeklappt = zu.has(marke);
+  return (
+    <div className="sidebar-section-title">
+      <button
+        className="klapp-btn"
+        aria-expanded={!eingeklappt}
+        title={eingeklappt ? "Aufklappen" : "Einklappen"}
+        onClick={() => klappen(marke)}
+      >
+        {eingeklappt ? "▸" : "▾"}
+      </button>
+      <span className="klapp-name" onClick={() => klappen(marke)}>
+        {children}
+      </span>
+      {/* Die Zahl nur im eingeklappten Zustand: aufgeklappt zählt man selbst. */}
+      {eingeklappt && anzahl !== undefined && anzahl > 0 && (
+        <span className="tag-anzahl muted small">{anzahl}</span>
+      )}
     </div>
   );
 }

@@ -243,7 +243,7 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	// Der Rang eines Anhangtreffers wird gedämpft: eine Seite, die den Begriff
 	// selbst enthält, ist fast immer die bessere Antwort als eine, in deren
 	// Anhang er irgendwo vorkommt.
-	const sql = `
+	sql := `
 		WITH frage AS (SELECT websearch_to_tsquery('german', $2) AS q),
 		sichtbar AS (
 			SELECT p.* FROM pages p
@@ -251,13 +251,7 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 			  AND (p.owner_id = $1 OR $3
 			       OR EXISTS (SELECT 1 FROM page_shares sh
 			                  WHERE sh.page_id = p.id AND sh.user_id = $1)
-			       OR ($4 AND p.space_id IS NOT NULL AND EXISTS (
-			             SELECT 1 FROM space_rechte sr
-			              WHERE sr.space_id = p.space_id
-			                AND (sr.user_id = $1
-			                     OR sr.gruppe_id IN (SELECT gm.gruppe_id
-			                                           FROM gruppen_mitglieder gm
-			                                          WHERE gm.user_id = $1)))))
+			       OR ` + spaceZugriffSQL("p.space_id", "$1", "$4") + `)
 		),
 		treffer AS (
 			SELECT p.id, p.parent_id, p.title, p.icon, p.updated_at,
