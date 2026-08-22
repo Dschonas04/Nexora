@@ -18,15 +18,23 @@ package config
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // Konfig holds every setting. The comments in config.conf carry the same
 // explanations, so the file documents itself without needing this source.
 type Konfig struct {
+	// Pfad ist die Datei, aus der gelesen wurde -- leer, wenn keine gefunden
+	// wurde. Die Einstellungsseite zeigt und bearbeitet genau diese Datei;
+	// ohne den Pfad müsste sie raten, und raten hiesse: die falsche ändern.
+	Pfad string
+
 	// --- Server ---
 	Port            string
 	DatenVerzeich   string
@@ -148,6 +156,7 @@ func Laden(pfad string) Konfig {
 			break
 		}
 	}
+	k.Pfad = gelesen
 	if gelesen != "" {
 		log.Printf("Konfiguration gelesen aus %s (%d Einträge)", gelesen, len(werte))
 	} else {
@@ -155,6 +164,7 @@ func Laden(pfad string) Konfig {
 	}
 
 	hol := func(schluessel, umgebung string) (string, bool) {
+		merkeSchluessel(schluessel)
 		// Umgebung schlägt Datei. Damit lässt sich ein einzelner Wert im
 		// Container überschreiben, ohne die Datei anzufassen -- und ein
 		// Geheimnis muss nie auf die Platte.
@@ -264,9 +274,22 @@ func datei(pfad string) (map[string]string, error) {
 		return nil, err
 	}
 	defer f.Close()
+	werte, _, err := lesen(f, pfad)
+	return werte, err
+}
 
+// lesen ist der eigentliche Parser. Getrennt von datei, weil die
+// Einstellungsseite einen Entwurf prüfen können muss, BEVOR er auf der Platte
+// landet -- eine Konfiguration erst zu schreiben und dann festzustellen, dass
+// sie kaputt ist, hiesse: beim nächsten Start startet nichts mehr.
+//
+// Die zweite Rückgabe sind Beanstandungen: Zeilen ohne '=' und doppelte
+// Schlüssel. Sie sind keine Fehler -- die Datei bleibt lesbar --, aber fast
+// immer ein Versehen.
+func lesen(r io.Reader, name string) (map[string]string, []string, error) {
 	werte := map[string]string{}
-	s := bufio.NewScanner(f)
+	beanstandet := []string{}
+	s := bufio.NewScanner(r)
 	// Ein LDAP-Filter oder eine lange URL sprengt die Vorgabe von 64 KiB nicht,
 	// ein versehentlich hier abgelegtes Zertifikat schon.
 	s.Buffer(make([]byte, 0, 64*1024), 1024*1024)
@@ -283,7 +306,9 @@ func datei(pfad string) (map[string]string, error) {
 		}
 		i := strings.Index(zeile, "=")
 		if i < 0 {
-			log.Printf("Konfiguration %s Zeile %d: kein '=', übersprungen", pfad, zeilennr)
+			log.Printf("Konfiguration %s Zeile %d: kein '=', übersprungen", name, zeilennr)
+			beanstandet = append(beanstandet,
+				fmt.Sprintf("Zeile %d: kein '=' -- wird übersprungen", zeilennr))
 			continue
 		}
 		schluessel := strings.ToLower(strings.TrimSpace(zeile[:i]))
@@ -294,13 +319,88 @@ func datei(pfad string) (map[string]string, error) {
 			wert = wert[1 : len(wert)-1]
 		}
 		if schluessel != "" {
+			if _, doppelt := werte[schluessel]; doppelt {
+				beanstandet = append(beanstandet,
+					fmt.Sprintf("Zeile %d: %s steht schon weiter oben -- der letzte Wert gilt",
+						zeilennr, schluessel))
+			}
 			werte[schluessel] = wert
 		}
 	}
 	if err := s.Err(); err != nil {
-		return nil, fmt.Errorf("%s: %w", pfad, err)
+		return nil, beanstandet, fmt.Errorf("%s: %w", name, err)
 	}
-	return werte, nil
+	return werte, beanstandet, nil
+}
+
+// merkeSchluessel sammelt, welche Schlüssel Laden überhaupt auswertet.
+//
+// Die Liste wird nicht von Hand gepflegt, sondern beim Laden nebenbei
+// aufgeschrieben. Eine Liste, die man von Hand nachträgt, wäre spätestens beim
+// dritten neuen Schlüssel unvollständig -- und dann meldete die
+// Einstellungsseite einen richtig geschriebenen Eintrag als Tippfehler.
+var schluesselWacht struct {
+	sync.Mutex
+	gesehen map[string]bool
+	folge   []string
+}
+
+func merkeSchluessel(k string) {
+	schluesselWacht.Lock()
+	defer schluesselWacht.Unlock()
+	if schluesselWacht.gesehen == nil {
+		schluesselWacht.gesehen = map[string]bool{}
+	}
+	if !schluesselWacht.gesehen[k] {
+		schluesselWacht.gesehen[k] = true
+		schluesselWacht.folge = append(schluesselWacht.folge, k)
+	}
+}
+
+// BekannteSchluessel liefert alle Schlüssel, die Laden auswertet. Gefüllt ist
+// die Liste, sobald Laden einmal gelaufen ist -- und das ist beim Start immer
+// der Fall.
+func BekannteSchluessel() []string {
+	schluesselWacht.Lock()
+	defer schluesselWacht.Unlock()
+	out := make([]string, len(schluesselWacht.folge))
+	copy(out, schluesselWacht.folge)
+	sort.Strings(out)
+	return out
+}
+
+// Pruefen liest einen Entwurf und sagt, was daran auffällt: kaputte Zeilen,
+// doppelte Schlüssel und Namen, die das Programm nicht kennt.
+//
+// Ein unbekannter Schlüssel ist kein Fehler -- die Datei darf mehr enthalten,
+// als diese Fassung auswertet. Er ist aber fast immer ein Tippfehler, und ein
+// Tippfehler in einer Konfiguration wirkt genau wie eine Einstellung, die man
+// nie vorgenommen hat: er tut nichts und sagt nichts.
+func Pruefen(inhalt string) []string {
+	werte, beanstandet, err := lesen(strings.NewReader(inhalt), "Entwurf")
+	if err != nil {
+		return append(beanstandet, "nicht lesbar: "+err.Error())
+	}
+	bekannt := map[string]bool{}
+	for _, k := range BekannteSchluessel() {
+		bekannt[k] = true
+	}
+	// Nur prüfen, wenn die Liste überhaupt gefüllt ist. Sonst wäre nach einem
+	// Start ohne Laden jeder Schlüssel unbekannt.
+	if len(bekannt) > 0 {
+		var unbekannt []string
+		for k := range werte {
+			if !bekannt[k] {
+				unbekannt = append(unbekannt, k)
+			}
+		}
+		sort.Strings(unbekannt)
+		for _, k := range unbekannt {
+			beanstandet = append(beanstandet,
+				fmt.Sprintf("%s kennt diese Fassung nicht -- Tippfehler?", k))
+		}
+	}
+	return beanstandet
 }
 
 // Warnungen reports settings that are dangerous in production. They are logged

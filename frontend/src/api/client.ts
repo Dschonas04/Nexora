@@ -20,6 +20,20 @@ export interface Tag {
   anzahl: number;
 }
 
+/** Die Konfigurationsdatei, wie die Wartungsseite sie sieht. */
+export interface KonfigDatei {
+  pfad: string;
+  /** Inhalt mit unkenntlich gemachten Zugangsdaten. */
+  inhalt: string;
+  gefunden: boolean;
+  schreibbar: boolean;
+  hinweise: string[];
+  /** Alle Schlüssel, die diese Fassung auswertet. */
+  schluessel: string[];
+  /** Schlüssel, deren Werte versteckt werden. */
+  geheimnisse: string[];
+}
+
 export interface Space {
   id: string;
   ownerId: string;
@@ -509,6 +523,26 @@ export const api = {
   deleteUser: (id: string) => req<void>(`/users/${id}`, { method: "DELETE" }),
   setUserRole: (id: string, role: string) =>
     req<{ role: string }>(`/users/${id}/role`, { method: "PUT", body: JSON.stringify({ role }) }),
+
+  // Wartung: Konfigurationsdatei, Neustart, Papierkorb der Instanz
+  konfigLesen: () => req<KonfigDatei>("/system/konfig"),
+  konfigPruefen: (inhalt: string) =>
+    req<{ hinweise: string[] }>("/system/konfig", {
+      method: "PUT",
+      body: JSON.stringify({ inhalt, nurPruefen: true }),
+    }),
+  konfigSchreiben: (inhalt: string) =>
+    req<{ hinweise: string[]; sicherung: string; neustartNoetig: boolean }>("/system/konfig", {
+      method: "PUT",
+      body: JSON.stringify({ inhalt }),
+    }),
+  neustarten: () =>
+    req<{ ok: boolean }>("/system/neustart", {
+      method: "POST",
+      body: JSON.stringify({ bestaetigung: "neustart" }),
+    }),
+  papierkorbLeeren: () =>
+    req<{ geloescht: number }>("/system/papierkorb", { method: "POST" }),
 
   // Spaces
   listSpaces: () => req<Space[]>("/spaces"),

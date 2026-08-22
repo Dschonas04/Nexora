@@ -11,11 +11,20 @@
 // fixed ones are always marked as belonging to config.conf.
 import { useCallback, useEffect, useState } from "react";
 
-import { Einstellung, SystemZustand, api } from "../api/client";
+import { Einstellung, KonfigDatei, SystemZustand, api } from "../api/client";
 import { useAuth } from "../auth";
 import { anwenden, useDesign } from "../design";
 
-type Bereich = "uebersicht" | "sicherheit" | "datenbank" | "suche" | "anhaenge" | "aussehen" | "lizenz" | "system";
+type Bereich =
+  | "uebersicht"
+  | "sicherheit"
+  | "datenbank"
+  | "suche"
+  | "anhaenge"
+  | "aussehen"
+  | "lizenz"
+  | "system"
+  | "wartung";
 
 const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
   { id: "uebersicht", titel: "Übersicht", unter: "Zahlen und Zustand auf einen Blick" },
@@ -26,6 +35,7 @@ const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
   { id: "aussehen", titel: "Aussehen", unter: "Grundton und Akzentfarbe" },
   { id: "lizenz", titel: "Lizenz", unter: "Umfang und Laufzeit" },
   { id: "system", titel: "System", unter: "Was nur beim Start gilt" },
+  { id: "wartung", titel: "Wartung", unter: "Konfigurationsdatei, Neustart, Aufräumen" },
 ];
 
 const ZUSATZ: Record<string, string> = {
@@ -128,6 +138,98 @@ export default function EinstellungenView() {
   useEffect(() => {
     api.ablageZustand().then((a) => setAblage(a.ablage)).catch(() => setAblage(""));
   }, []);
+
+  // Wartung. Die Datei wird erst beim Öffnen des Bereichs geholt: sie enthält
+  // Zugangsdaten -- wenn auch unkenntlich gemacht -- und geht niemanden etwas
+  // an, der nur die Farben ändern wollte.
+  const [konfig, setKonfig] = useState<KonfigDatei | null>(null);
+  const [konfigEntwurf, setKonfigEntwurf] = useState("");
+  const [konfigHinweise, setKonfigHinweise] = useState<string[]>([]);
+  const [neustartWort, setNeustartWort] = useState("");
+
+  useEffect(() => {
+    if (bereich !== "wartung" || konfig) return;
+    api
+      .konfigLesen()
+      .then((k) => {
+        setKonfig(k);
+        setKonfigEntwurf(k.inhalt);
+        setKonfigHinweise(k.hinweise);
+      })
+      .catch((err: Error) => setMeldung({ text: err.message, art: "fehler" }));
+  }, [bereich, konfig]);
+
+  const konfigPruefen = async () => {
+    setLaeuft("konfig-pruefen");
+    try {
+      const r = await api.konfigPruefen(konfigEntwurf);
+      setKonfigHinweise(r.hinweise);
+      setMeldung(
+        r.hinweise.length === 0
+          ? { text: "Der Entwurf ist in Ordnung.", art: "ok" }
+          : { text: `${r.hinweise.length} Auffälligkeit(en) -- siehe unten.`, art: "fehler" },
+      );
+    } catch (e) {
+      setMeldung({ text: (e as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
+
+  const konfigSpeichern = async () => {
+    setLaeuft("konfig-speichern");
+    try {
+      const r = await api.konfigSchreiben(konfigEntwurf);
+      setKonfigHinweise(r.hinweise);
+      setMeldung({
+        text: `Gespeichert. Sicherung: ${r.sicherung}. Wirksam wird die Änderung erst nach einem Neustart.`,
+        art: "ok",
+      });
+      // Neu holen: die Antwort enthält den geschriebenen Stand nicht, und der
+      // Entwurf im Feld zeigt sonst weiter die Sterne, die inzwischen wieder
+      // echte Werte sind.
+      setKonfig(null);
+    } catch (e) {
+      setMeldung({ text: (e as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
+
+  const neustarten = async () => {
+    setLaeuft("neustart");
+    try {
+      await api.neustarten();
+      setMeldung({
+        text: "Der Dienst wird beendet. Kommt er nicht von selbst wieder, startet ihn nichts neu -- dann hilft nur der Container-Verwalter.",
+        art: "ok",
+      });
+      setNeustartWort("");
+    } catch (e) {
+      setMeldung({ text: (e as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
+
+  const papierkorbLeeren = async () => {
+    if (
+      !confirm(
+        "Alle Seiten im Papierkorb dieser Instanz endgültig löschen? Auch die anderer Konten. Das lässt sich nicht rückgängig machen.",
+      )
+    ) {
+      return;
+    }
+    setLaeuft("papierkorb");
+    try {
+      const r = await api.papierkorbLeeren();
+      setMeldung({ text: `${r.geloescht} Seite(n) endgültig gelöscht.`, art: "ok" });
+    } catch (e) {
+      setMeldung({ text: (e as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
 
   const ablageTesten = async () => {
     setLaeuft("ablage");
@@ -796,6 +898,126 @@ export default function EinstellungenView() {
                 </tr>
               </tbody>
             </table>
+          </>
+        );
+
+      case "wartung":
+        return (
+          <>
+            <h3>Konfigurationsdatei</h3>
+            {konfig === null ? (
+              <p className="muted">Wird geladen…</p>
+            ) : !konfig.gefunden ? (
+              <p className="muted">
+                Diese Instanz läuft ohne <code>config.conf</code> — aus Umgebungsvariablen und
+                Vorgaben. Es gibt hier nichts zu bearbeiten.
+              </p>
+            ) : (
+              <>
+                <p className="muted small">
+                  <code>{konfig.pfad}</code>
+                  {!konfig.schreibbar && " — für den Dienst nur lesbar"}
+                </p>
+                {/* Der Satz steht hier und nicht im Kleingedruckten: wer
+                    Zugangsdaten sucht und Sterne findet, hält sie sonst für
+                    verloren und schreibt sie neu -- ausgerechnet die, die
+                    stimmen. */}
+                <p className="muted small">
+                  Zugangsdaten sind unkenntlich gemacht. Zeilen mit{" "}
+                  <code>********</code> bleiben beim Speichern unverändert; wer einen Wert ändern
+                  will, schreibt den neuen an diese Stelle.
+                </p>
+                <textarea
+                  className="konfig-feld"
+                  spellCheck={false}
+                  value={konfigEntwurf}
+                  disabled={!konfig.schreibbar}
+                  onChange={(e) => setKonfigEntwurf(e.target.value)}
+                />
+                <div className="knopfreihe">
+                  <button className="btn" disabled={laeuft !== null} onClick={konfigPruefen}>
+                    {laeuft === "konfig-pruefen" ? "Prüft…" : "Prüfen"}
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    disabled={laeuft !== null || !konfig.schreibbar || konfigEntwurf === konfig.inhalt}
+                    onClick={konfigSpeichern}
+                  >
+                    {laeuft === "konfig-speichern" ? "Speichert…" : "Speichern"}
+                  </button>
+                  <button
+                    className="btn"
+                    disabled={konfigEntwurf === konfig.inhalt}
+                    onClick={() => {
+                      setKonfigEntwurf(konfig.inhalt);
+                      setKonfigHinweise(konfig.hinweise);
+                    }}
+                  >
+                    Änderungen verwerfen
+                  </button>
+                </div>
+                {konfigHinweise.length > 0 && (
+                  <div className="warnkasten">
+                    <strong>Auffälligkeiten</strong>
+                    <ul>
+                      {konfigHinweise.map((h) => (
+                        <li key={h}>{h}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <details className="konfig-schluessel">
+                  <summary>
+                    Bekannte Schlüssel ({konfig.schluessel.length})
+                  </summary>
+                  <p className="muted small">
+                    Alles, was diese Fassung auswertet. Was hier nicht steht, wird beim Start
+                    stillschweigend übergangen.
+                  </p>
+                  <div className="schluesselliste">
+                    {konfig.schluessel.map((k) => (
+                      <code key={k}>{k}</code>
+                    ))}
+                  </div>
+                </details>
+              </>
+            )}
+
+            <h3>Dienst neu starten</h3>
+            <p className="muted small">
+              Nötig, damit Änderungen an der Konfigurationsdatei greifen: gelesen wird sie nur beim
+              Start. Der Dienst beendet sich; hochgefahren wird er von dem, was ihn betreibt —
+              Docker mit <code>restart: unless-stopped</code>, systemd, Kubernetes.{" "}
+              <strong>Gibt es nichts davon, bleibt er aus.</strong>
+            </p>
+            <div className="knopfreihe">
+              <input
+                placeholder="neustart"
+                value={neustartWort}
+                onChange={(e) => setNeustartWort(e.target.value)}
+                aria-label="Zur Bestätigung das Wort neustart eingeben"
+              />
+              <button
+                className="btn"
+                disabled={neustartWort.trim() !== "neustart" || laeuft !== null}
+                onClick={neustarten}
+              >
+                {laeuft === "neustart" ? "Beendet…" : "Neu starten"}
+              </button>
+            </div>
+            <p className="muted small">
+              Zur Bestätigung <code>neustart</code> eintippen. Ein Knopf, der beim
+              Danebenklicken den Dienst abschaltet, wäre an dieser Stelle falsch.
+            </p>
+
+            <h3>Papierkorb der Instanz</h3>
+            <p className="muted small">
+              Löscht alle Seiten im Papierkorb endgültig — auch die anderer Konten. Der Papierkorb
+              eines Kontos bleibt davon unberührt nur, solange niemand ihn benutzt hat.
+            </p>
+            <button className="btn" disabled={laeuft !== null} onClick={papierkorbLeeren}>
+              {laeuft === "papierkorb" ? "Löscht…" : "Papierkorb endgültig leeren"}
+            </button>
           </>
         );
     }

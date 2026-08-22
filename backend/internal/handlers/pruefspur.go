@@ -69,6 +69,9 @@ const (
 	AktSpaceRechtWeg      = "spacerecht.entzogen"
 	AktAnhangIndex        = "anhangindex.nachgezogen"
 	AktSpaceOeffentlich   = "space.oeffentlich"
+	AktKonfigGeaendert    = "konfiguration.geaendert"
+	AktNeustart           = "dienst.neustart"
+	AktPapierkorbLeer     = "papierkorb.geleert"
 )
 
 // spur writes one entry. Callers pass what they know; empty fields stay empty.
