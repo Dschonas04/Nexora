@@ -87,6 +87,18 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const [linkQuery, setLinkQuery] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
+  // Zustand des Dateiabwurfs und der Ausfuhr. Sie gehören der Sache nach weiter
+  // unten hin, stehen aber hier oben, weil React die Zustände einer Ansicht in
+  // jedem Durchgang in derselben Zahl und Reihenfolge sehen muss. Weiter unten
+  // standen sie hinter den frühen Rückgaben für "wird geladen" und "nicht
+  // gefunden" -- der erste Durchgang zählte drei Zustände weniger als der
+  // zweite, und React brach die Ansicht mit Fehler 310 ab: die Seite blieb leer.
+  //
+  // Der Zähler statt eines Schalters: dragleave feuert auch beim Wechsel von
+  // einem Kindelement zum nächsten, sonst flackerte die Hervorhebung.
+  const [ueberSeite, setUeberSeite] = useState(0);
+  const [eingeworfen, setEingeworfen] = useState<FileList | null>(null);
+  const [exportOffen, setExportOffen] = useState(false);
   // Refs rather than state: changing either must not trigger a render. The timer
   // drives the debounced autosave, the editor handle is needed for the markdown
   // export.
@@ -341,13 +353,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   // Dateien, die irgendwo auf der Seite abgelegt wurden. Sie werden an die
   // Anhangliste weitergereicht, die sie hochlädt -- der Wurf muss nicht die
   // schmale Liste ganz unten treffen.
-  //
-  // Der Zähler statt eines Schalters: dragleave feuert auch beim Wechsel von
-  // einem Kindelement zum nächsten, sonst flackerte die Hervorhebung.
   const dateiAbwurfMoeglich = canEdit && frei("anhaenge");
-  const [ueberSeite, setUeberSeite] = useState(0);
-  const [eingeworfen, setEingeworfen] = useState<FileList | null>(null);
-  const [exportOffen, setExportOffen] = useState(false);
   const sindDateien = (e: React.DragEvent) =>
     Array.from(e.dataTransfer.types).includes("Files");
 
