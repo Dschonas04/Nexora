@@ -4,19 +4,27 @@
 // than in the sidebar, because the views on the right change them and the
 // sidebar has to follow. The refresh callbacks passed down are how a view says
 // "something you display has changed".
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { PageMeta, Space, Tag, api } from "../api/client";
 import Sidebar from "../components/Sidebar";
 import PageView from "./PageView";
-import TrashView from "./TrashView";
-import GraphView from "./GraphView";
-import AdminView from "./AdminView";
-import PruefspurView from "./PruefspurView";
-import EinstellungenView from "./EinstellungenView";
 import TagView from "./TagView";
-import GruppenView from "./GruppenView";
-import PostfachView from "./PostfachView";
+
+// Nachgeladen statt mitgeliefert: diese Ansichten ruft man selten auf, ihr Code
+// steckte aber im selben Bündel wie die Seitenansicht und musste bei jedem
+// Aufruf der Anwendung mit übertragen und ausgewertet werden. Der Graph bringt
+// dabei seine eigene Rechnerei mit, die Einstellungen ihre langen Formulare.
+//
+// Wer sie öffnet, wartet einmal kurz auf das Nachladen -- dafür startet die
+// Anwendung für alle anderen schneller.
+const TrashView = lazy(() => import("./TrashView"));
+const GraphView = lazy(() => import("./GraphView"));
+const AdminView = lazy(() => import("./AdminView"));
+const PruefspurView = lazy(() => import("./PruefspurView"));
+const EinstellungenView = lazy(() => import("./EinstellungenView"));
+const GruppenView = lazy(() => import("./GruppenView"));
+const PostfachView = lazy(() => import("./PostfachView"));
 
 export default function Workspace() {
   const nav = useNavigate();
@@ -33,17 +41,56 @@ export default function Workspace() {
   // useCallback keeps these stable, so the effect below runs once on mount
   // instead of on every render. A failed refresh is swallowed and simply leaves
   // the previous list in place, which beats emptying the sidebar on a hiccup.
-  const refreshPages = useCallback(() => api.listPages().then(setPages).catch(() => {}), []);
+  const refreshPages = useCallback(
+    () =>
+      api
+        .listPages()
+        .then(setPages)
+        .catch(() => {}),
+    [],
+  );
   // Sharing is a paid extra: without a license the call answers 402. The empty
   // list that follows is the wanted outcome -- the sidebar hides its "shared"
   // section when there is nothing in it, so the interface stays coherent
   // instead of showing an error for a feature this installation does not have.
-  const refreshShared = useCallback(() => api.listShared().then(setShared).catch(() => setShared([])), []);
-  const refreshFav = useCallback(() => api.listFavorites().then(setFavorites).catch(() => {}), []);
-  const refreshTags = useCallback(() => api.listTags().then(setTags).catch(() => {}), []);
-  const refreshSpaces = useCallback(() => api.listSpaces().then(setSpaces).catch(() => {}), []);
+  const refreshShared = useCallback(
+    () =>
+      api
+        .listShared()
+        .then(setShared)
+        .catch(() => setShared([])),
+    [],
+  );
+  const refreshFav = useCallback(
+    () =>
+      api
+        .listFavorites()
+        .then(setFavorites)
+        .catch(() => {}),
+    [],
+  );
+  const refreshTags = useCallback(
+    () =>
+      api
+        .listTags()
+        .then(setTags)
+        .catch(() => {}),
+    [],
+  );
+  const refreshSpaces = useCallback(
+    () =>
+      api
+        .listSpaces()
+        .then(setSpaces)
+        .catch(() => {}),
+    [],
+  );
   const refreshPostfach = useCallback(
-    () => api.postfachAnzahl().then((a) => setUngelesen(a.ungelesen)).catch(() => {}),
+    () =>
+      api
+        .postfachAnzahl()
+        .then((a) => setUngelesen(a.ungelesen))
+        .catch(() => {}),
     [],
   );
 
@@ -80,7 +127,12 @@ export default function Workspace() {
   // Deleting moves the page to the trash rather than removing it. Favorites are
   // refreshed too, since the page may have been pinned.
   const deletePage = async (id: string) => {
-    if (!confirm("Diese Seite und ihre Unterseiten in den Papierkorb verschieben?")) return;
+    if (
+      !confirm(
+        "Diese Seite und ihre Unterseiten in den Papierkorb verschieben?",
+      )
+    )
+      return;
     await api.deletePage(id);
     await refreshPages();
     await refreshFav();
@@ -104,7 +156,12 @@ export default function Workspace() {
   // The pages survive and become ungrouped, which the confirmation spells out
   // so nobody expects a space to take its content with it.
   const deleteSpace = async (id: string) => {
-    if (!confirm("Diesen Space löschen? Seine Seiten bleiben erhalten und werden gruppenlos.")) return;
+    if (
+      !confirm(
+        "Diesen Space löschen? Seine Seiten bleiben erhalten und werden gruppenlos.",
+      )
+    )
+      return;
     await api.deleteSpace(id);
     await refreshSpaces();
     await refreshPages();
@@ -114,7 +171,10 @@ export default function Workspace() {
   // geholt: eine geöffnete Ablage bringt fremde Seiten mit, eine geschlossene
   // nimmt sie wieder mit -- die Leiste wäre sonst so lange falsch, bis jemand
   // die Seite neu lädt.
-  const setSpaceOeffentlich = async (id: string, wert: "nein" | "lesen" | "schreiben") => {
+  const setSpaceOeffentlich = async (
+    id: string,
+    wert: "nein" | "lesen" | "schreiben",
+  ) => {
     await api.spaceOeffentlich(id, wert);
     await refreshSpaces();
     await refreshPages();
@@ -123,7 +183,11 @@ export default function Workspace() {
   // Reparent or move a page after a sidebar drag. Both are one update, since a
   // page dropped into a different space usually changes its parent as well.
   // parentId null means top level, spaceId null means no space.
-  const movePage = async (id: string, parentId: string | null, spaceId: string | null) => {
+  const movePage = async (
+    id: string,
+    parentId: string | null,
+    spaceId: string | null,
+  ) => {
     await api.updatePage(id, { parentId, spaceId });
     await refreshPages();
   };
@@ -162,45 +226,53 @@ export default function Workspace() {
         }}
       />
       <div className="main">
-        <Routes>
-          <Route index element={<EmptyState onCreate={() => createPage(null)} />} />
-          <Route
-            path="page/:id"
-            element={
-              <PageView
-                allTags={tags}
-                onMetaChange={() => {
-                  refreshPages();
-                  refreshShared();
-                }}
-                onFavChange={refreshFav}
-                onTagsChange={refreshTags}
-                onDelete={deletePage}
-              />
-            }
-          />
-          <Route path="postfach" element={<PostfachView onGelesen={refreshPostfach} />} />
-          <Route
-            path="trash"
-            element={
-              <TrashView
-                onChange={() => {
-                  refreshPages();
-                  refreshFav();
-                }}
-              />
-            }
-          />
-          <Route path="graph" element={<GraphView />} />
-          <Route path="admin" element={<AdminView />} />
-          <Route path="pruefspur" element={<PruefspurView />} />
-          <Route path="einstellungen" element={<EinstellungenView />} />
-          <Route path="gruppen" element={<GruppenView />} />
-          <Route
-            path="tag/:tagId"
-            element={<TagView allTags={tags} onTagsChange={refreshTags} />}
-          />
-        </Routes>
+        <Suspense fallback={<div className="empty-state spaet">Lädt…</div>}>
+          <Routes>
+            <Route
+              index
+              element={<EmptyState onCreate={() => createPage(null)} />}
+            />
+            <Route
+              path="page/:id"
+              element={
+                <PageView
+                  allTags={tags}
+                  onMetaChange={() => {
+                    refreshPages();
+                    refreshShared();
+                  }}
+                  onFavChange={refreshFav}
+                  onTagsChange={refreshTags}
+                  onDelete={deletePage}
+                />
+              }
+            />
+            <Route
+              path="postfach"
+              element={<PostfachView onGelesen={refreshPostfach} />}
+            />
+            <Route
+              path="trash"
+              element={
+                <TrashView
+                  onChange={() => {
+                    refreshPages();
+                    refreshFav();
+                  }}
+                />
+              }
+            />
+            <Route path="graph" element={<GraphView />} />
+            <Route path="admin" element={<AdminView />} />
+            <Route path="pruefspur" element={<PruefspurView />} />
+            <Route path="einstellungen" element={<EinstellungenView />} />
+            <Route path="gruppen" element={<GruppenView />} />
+            <Route
+              path="tag/:tagId"
+              element={<TagView allTags={tags} onTagsChange={refreshTags} />}
+            />
+          </Routes>
+        </Suspense>
       </div>
     </div>
   );
