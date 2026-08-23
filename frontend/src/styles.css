@@ -2432,3 +2432,32 @@ a {
   opacity: 0;
   animation: geruest-ein 0.25s ease 0.15s forwards;
 }
+
+/* [[Verweise]] im Text. Der Text bleibt, wie er ist -- ausgezeichnet wird nur,
+   was man sieht: der Titel als Verweis, die Klammern zurückgenommen.
+
+   Ein Titel, den es nicht gibt, wird nicht versteckt, sondern blass und
+   gestrichelt gezeigt. Ein Verweis, der ins Leere geht, ist eine Information,
+   kein Fehler -- oft ist es eine Seite, die noch geschrieben werden will. */
+.has-wikilinks .verweis {
+  color: var(--accent-lesbar);
+  cursor: pointer;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent-lesbar) 35%, transparent);
+}
+
+.has-wikilinks .verweis:hover {
+  border-bottom-color: var(--accent-lesbar);
+  background: color-mix(in srgb, var(--accent-lesbar) 8%, transparent);
+}
+
+.has-wikilinks .verweis.tot {
+  color: var(--muted);
+  cursor: text;
+  border-bottom: 1px dashed var(--border);
+  background: none;
+}
+
+.has-wikilinks .verweis-klammer {
+  color: var(--muted);
+  opacity: 0.45;
+}
