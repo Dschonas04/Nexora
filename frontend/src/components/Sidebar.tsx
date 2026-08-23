@@ -804,7 +804,14 @@ export default function Sidebar(props: Props) {
                 angeboten. */}
             {user?.role === "admin" && (
               <div className="sidebar-section">
-                <Klapptitel marke="verwaltung" zu={zu} klappen={klappen} symbol={<Zahnrad />}>
+                <Klapptitel
+                  marke="verwaltung"
+                  zu={zu}
+                  klappen={klappen}
+                  symbol={<Zahnrad />}
+                  symbolTitel="Einstellungen öffnen"
+                  symbolAktion={() => onNavigate("/einstellungen")}
+                >
                   Verwaltung
                 </Klapptitel>
                 <div
@@ -904,6 +911,8 @@ function Klapptitel({
   klappen,
   anzahl,
   symbol,
+  symbolTitel,
+  symbolAktion,
   children,
 }: {
   marke: string;
@@ -913,6 +922,10 @@ function Klapptitel({
   // Sinnbild vor dem Namen. Nur dort gesetzt, wo es etwas unterscheidet --
   // ein Symbol neben jeder Überschrift wäre Zierrat und keine Hilfe.
   symbol?: React.ReactNode;
+  symbolTitel?: string;
+  // Ist eine Aktion hinterlegt, wird aus dem Sinnbild eine Schaltfläche. Ohne
+  // sie bleibt es reine Beschriftung.
+  symbolAktion?: () => void;
   children: React.ReactNode;
 }) {
   const eingeklappt = zu.has(marke);
@@ -926,8 +939,25 @@ function Klapptitel({
       >
         {eingeklappt ? "▸" : "▾"}
       </button>
+      {symbol &&
+        (symbolAktion ? (
+          <button
+            className="klapp-symbol klapp-symbol-btn"
+            title={symbolTitel}
+            aria-label={symbolTitel}
+            // Sonst klappt die Überschrift zusätzlich zu, weil der Klick
+            // weiterläuft und dort das Auf und Zu auslöst.
+            onClick={(e) => {
+              e.stopPropagation();
+              symbolAktion();
+            }}
+          >
+            {symbol}
+          </button>
+        ) : (
+          <span className="klapp-symbol">{symbol}</span>
+        ))}
       <span className="klapp-name" onClick={() => klappen(marke)}>
-        {symbol && <span className="klapp-symbol">{symbol}</span>}
         {children}
       </span>
       {/* Die Zahl nur im eingeklappten Zustand: aufgeklappt zählt man selbst. */}
