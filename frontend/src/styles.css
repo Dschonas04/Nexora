@@ -2479,6 +2479,25 @@ a {
   vertical-align: -2px;
 }
 
+/* Als Schaltfläche: dieselbe Größe wie zuvor, nur mit einer Fläche, die auf
+   Zeigen anspringt -- sonst sieht man dem Zahnrad nicht an, dass es mehr ist
+   als Beschriftung. */
+.klapp-symbol-btn {
+  border: 0;
+  padding: 2px;
+  margin-left: -2px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  line-height: 0;
+}
+
+.klapp-symbol-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
 .klapp-symbol svg {
   width: 13px;
   height: 13px;
