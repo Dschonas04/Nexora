@@ -804,7 +804,7 @@ export default function Sidebar(props: Props) {
                 angeboten. */}
             {user?.role === "admin" && (
               <div className="sidebar-section">
-                <Klapptitel marke="verwaltung" zu={zu} klappen={klappen}>
+                <Klapptitel marke="verwaltung" zu={zu} klappen={klappen} symbol={<Zahnrad />}>
                   Verwaltung
                 </Klapptitel>
                 <div
@@ -872,17 +872,47 @@ export default function Sidebar(props: Props) {
 // zuklappt und sonst nichts kann. Die Ablagen und der Abschnitt "Seiten" haben
 // ihre eigene, ausgeschriebene Überschrift: dort hängen Ziehziele und
 // Verwaltungsknöpfe dran, die hier nur im Weg wären.
+// Ein kleines Zahnrad für die Verwaltung. Von Hand gezeichnet statt aus einer
+// Bibliothek geholt: die Leiste braucht genau dieses eine Sinnbild, und ein
+// ganzes Symbolpaket dafür mitzuschleppen wäre unverhältnismäßig.
+//
+// Nabe und Kranz als Kreise, die Zähne als acht kurze Striche nach außen. Bei
+// dreizehn Pixeln Kantenlänge liest sich das deutlicher als ein fein
+// ausgearbeiteter Umriss, der auf dieser Größe nur verschmiert.
+function Zahnrad() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="2.2" />
+      <circle cx="8" cy="8" r="4.3" />
+      <g>
+        <line x1="12.30" y1="8.00" x2="14.20" y2="8.00" />
+        <line x1="11.04" y1="11.04" x2="12.38" y2="12.38" />
+        <line x1="8.00" y1="12.30" x2="8.00" y2="14.20" />
+        <line x1="4.96" y1="11.04" x2="3.62" y2="12.38" />
+        <line x1="3.70" y1="8.00" x2="1.80" y2="8.00" />
+        <line x1="4.96" y1="4.96" x2="3.62" y2="3.62" />
+        <line x1="8.00" y1="3.70" x2="8.00" y2="1.80" />
+        <line x1="11.04" y1="4.96" x2="12.38" y2="3.62" />
+      </g>
+    </svg>
+  );
+}
+
 function Klapptitel({
   marke,
   zu,
   klappen,
   anzahl,
+  symbol,
   children,
 }: {
   marke: string;
   zu: Set<string>;
   klappen: (marke: string) => void;
   anzahl?: number;
+  // Sinnbild vor dem Namen. Nur dort gesetzt, wo es etwas unterscheidet --
+  // ein Symbol neben jeder Überschrift wäre Zierrat und keine Hilfe.
+  symbol?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const eingeklappt = zu.has(marke);
@@ -897,6 +927,7 @@ function Klapptitel({
         {eingeklappt ? "▸" : "▾"}
       </button>
       <span className="klapp-name" onClick={() => klappen(marke)}>
+        {symbol && <span className="klapp-symbol">{symbol}</span>}
         {children}
       </span>
       {/* Die Zahl nur im eingeklappten Zustand: aufgeklappt zählt man selbst. */}
