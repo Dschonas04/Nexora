@@ -383,6 +383,25 @@ export default function Sidebar(props: Props) {
         </div>
       )}
 
+      {/* Die beiden Aktionen hingen bisher an der Überschrift "Seiten". Damit
+          waren sie an einen Abschnitt gebunden, den es nicht immer gibt --
+          und der neben benannten Ablagen ohnehin fehl am Platz wirkte. Sie
+          stehen jetzt für sich, oberhalb aller Abschnitte. */}
+      {results === null && (
+        <div className="sidebar-werkzeuge">
+          <button className="text-btn" onClick={onCreateSpace}>
+            + Space
+          </button>
+          <button
+            className="icon-btn"
+            title="Markdown oder HTML einführen"
+            onClick={() => setEinfuhrZiel({ ziel: {}, name: "Seiten" })}
+          >
+            ↑
+          </button>
+        </div>
+      )}
+
       <div className="sidebar-scroll">
         {results !== null ? (
           <div className="sidebar-section">
@@ -640,6 +659,13 @@ export default function Sidebar(props: Props) {
               </div>
             )}
 
+            {/* Der Auffangabschnitt für Seiten, die in keiner Ablage liegen.
+                Er erscheint nur, wenn er etwas enthält -- oder wenn gerade eine
+                Seite gezogen wird, denn dann ist er das Ziel, mit dem man eine
+                Seite wieder aus ihrer Ablage herausholt. Eine leere Überschrift
+                "Seiten" zwischen benannten Ablagen sagte nichts und stand nur
+                im Weg. */}
+            {(ungrouped.length > 0 || dragId) && (
             <div className="sidebar-section">
               <div
                 className={"sidebar-section-title" + (dropTarget === "root" ? " drop-target" : "")}
@@ -664,25 +690,15 @@ export default function Sidebar(props: Props) {
                   {zu.has("root") ? "▸" : "▾"}
                 </button>
                 <span className="klapp-name" onClick={() => klappen("root")}>
-                  Seiten
+                  Ohne Ablage
                 </span>
                 {zu.has("root") && ungrouped.length > 0 && (
                   <span className="tag-anzahl muted small">{ungrouped.length}</span>
                 )}
-                <span className="tree-actions" style={{ display: "flex", gap: 8 }}>
-                  <button className="text-btn" title="Neuer Space" onClick={onCreateSpace}>
-                    + Space
-                  </button>
+                <span className="tree-actions">
                   {/* Ohne den Pfeil würde React das Klickereignis als erstes
                       Argument durchreichen -- und das wäre dann die
                       Vorlagen-Kennung. */}
-                  <button
-                    className="icon-btn"
-                    title="Markdown einführen"
-                    onClick={() => setEinfuhrZiel({ ziel: {}, name: "Seiten" })}
-                  >
-                    ↑
-                  </button>
                   <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
                     +
                   </button>
@@ -701,7 +717,7 @@ export default function Sidebar(props: Props) {
                     dropOnSpace(null);
                   }}
                 >
-                  Noch keine Seiten
+                  Hierher ziehen, um aus der Ablage zu nehmen
                 </div>
               ) : (
                 <PageTree
@@ -717,6 +733,25 @@ export default function Sidebar(props: Props) {
                 />
               )}
             </div>
+            )}
+
+            {/* Ein frischer Arbeitsbereich: keine Ablage, keine Seite, nichts
+                geteilt. Statt drei leerer Überschriften steht hier, was als
+                Nächstes zu tun ist. */}
+            {spaces.length === 0 && pages.length === 0 && shared.length === 0 && (
+              <div className="sidebar-section leerer-anfang">
+                <p className="muted">
+                  Noch nichts angelegt. Eine Ablage ordnet Seiten zu einem Thema &mdash; oder
+                  fang einfach mit einer Seite an.
+                </p>
+                <button className="btn" onClick={onCreateSpace}>
+                  Erste Ablage anlegen
+                </button>
+                <button className="btn" onClick={() => onCreateRoot()}>
+                  Erste Seite anlegen
+                </button>
+              </div>
+            )}
 
             {shared.length > 0 && (
               <div className="sidebar-section">

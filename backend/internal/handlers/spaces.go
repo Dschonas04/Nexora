@@ -85,6 +85,9 @@ func (s *Server) CreateSpace(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "could not create space")
 		return
 	}
+	// Das Gegenstück zum Löschen: erst beide Einträge zusammen ergeben eine
+	// Spur, an der sich der Bestand an Ablagen nachvollziehen lässt.
+	s.spurAusRequest(r, AktSpaceAngelegt, "space", sp.ID, sp.Name, nil)
 	writeJSON(w, http.StatusCreated, sp)
 }
 
@@ -116,8 +119,16 @@ func (s *Server) RenameSpace(w http.ResponseWriter, r *http.Request) {
 // never delete the content in it.
 func (s *Server) DeleteSpace(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
+	id := chi.URLParam(r, "id")
+
+	// Den Namen vorher holen: nach dem Löschen ist er weg, und ein Eintrag in
+	// der Prüfspur, der nur eine Kennung nennt, beantwortet die Frage "welche
+	// Ablage war das?" nicht mehr.
+	var name string
+	_ = s.Pool.QueryRow(r.Context(), `SELECT name FROM spaces WHERE id=$1`, id).Scan(&name)
+
 	tag, err := s.Pool.Exec(r.Context(),
-		`DELETE FROM spaces WHERE id=$1 AND owner_id=$2`, chi.URLParam(r, "id"), uid)
+		`DELETE FROM spaces WHERE id=$1 AND owner_id=$2`, id, uid)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "delete failed")
 		return
@@ -126,6 +137,13 @@ func (s *Server) DeleteSpace(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "space not found")
 		return
 	}
+
+	// Eine Ablage zu löschen ist folgenreich: die Seiten darin verlieren ihre
+	// Zuordnung und die erteilten Rechte verschwinden mit. Bisher hinterließ
+	// das keine Spur -- hinterher war nicht mehr festzustellen, dass es die
+	// Ablage überhaupt gab.
+	s.spurAusRequest(r, AktSpaceGeloescht, "space", id, name, nil)
+
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
