@@ -1,0 +1,111 @@
+# Prüfen und, wenn alles grün ist, ausrollen.
+#
+# Läuft auf dem selbst gehosteten Runner im Heimnetz -- der einzige, der an den
+# Docker-Host herankommt, auf dem diese Instanz läuft. GitHubs eigene Runner
+# haben dorthin keinen Weg.
+#
+# ACHTUNG, das ist der Grund für einiges hier: Dieses Repository ist
+# ÖFFENTLICH. Ein selbst gehosteter Runner führt aus, was im Arbeitsablauf
+# steht, und ein Beitrag von außen könnte den Arbeitsablauf mitbringen.
+# Deshalb:
+#
+#   * KEIN pull_request-Auslöser. Gebaut wird nur, was schon im Repository
+#     liegt, und Zweige anlegen darf nur, wer schreiben darf.
+#   * Der Runner hat KEINEN Docker-Socket des Wirts (anders als die Runner der
+#     privaten Repositories). Gebaut und geprüft wird im Runner selbst.
+#   * Der Schlüssel fürs Ausrollen ist am Ziel auf genau einen Befehl
+#     festgenagelt -- er kann den Stand von origin/main ausrollen und sonst
+#     nichts.
+name: Prüfen und ausrollen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # Zwei Läufe auf derselben Instanz wären ein Wettlauf um denselben
+  # Docker-Verbund. Der neuere gewinnt.
+  group: nexora
+  cancel-in-progress: true
+
+jobs:
+
+  backend:
+    name: Backend
+    runs-on: [self-hosted, homelab, nexora]
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Quellen holen
+        uses: actions/checkout@v4
+
+      - name: Fassungen nennen
+        run: go version
+
+      - name: Satz prüfen
+        run: |
+          # gofmt meldet Abweichungen nur, indem es Dateinamen ausgibt --
+          # ein leerer Ausgabestrom ist das Bestandene. metriken.go ist
+          # erzeugt und war nie formatiert; sie bleibt draußen.
+          abweichend=$(gofmt -l . | grep -v 'internal/dok/metriken.go' || true)
+          if [ -n "$abweichend" ]; then
+            echo "Nicht mit gofmt gesetzt:"
+            echo "$abweichend"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: Prüfungen
+        run: go test ./...
+
+      - name: Übersetzen
+        run: go build ./...
+
+      - name: Rauchtest gegen eine echte Datenbank
+        run: |
+          # Die Prüfungen oben fassen keine Datenbank an. Genau dort sitzen die
+          # Fehler, die man erst im Betrieb sieht.
+          ./test/rauchtest.sh
+
+  frontend:
+    name: Frontend
+    runs-on: [self-hosted, homelab, nexora]
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Quellen holen
+        uses: actions/checkout@v4
+
+      - name: Fassungen nennen
+        run: node --version && npm --version
+
+      - name: Abhängigkeiten holen
+        # npm ci und nicht npm install: es soll genau das gebaut werden, was in
+        # package-lock.json steht, und nicht das, was heute gerade neu ist.
+        run: npm ci
+
+      - name: Typen prüfen
+        run: npx tsc --noEmit -p .
+
+      - name: Bauen
+        run: npm run build
+
+  ausrollen:
+    name: Ausrollen
+    needs: [backend, frontend]
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, homelab, nexora]
+    timeout-minutes: 15
+    steps:
+      - name: Auf den Docker-Host ausrollen
+        run: |
+          # Der Schlüssel ist am Ziel auf /opt/ci/nexora-ausrollen.sh
+          # festgenagelt; was hier stünde, wäre ohnehin gleichgültig.
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes debian@10.0.2.43 true
