@@ -1843,22 +1843,134 @@ a {
   padding: 16px;
   overflow-y: auto;
 }
-.rechte-neu {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 10px 0 4px;
+.rechte-ueberschrift {
+  margin: 18px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
-.rechte-neu select {
-  padding: 6px 9px;
+.rechte-inhalt > .rechte-ueberschrift:first-child {
+  margin-top: 0;
+}
+.rechte-liste {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.rechte-zeile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.rechte-zeile:last-child {
+  border-bottom: none;
+}
+/* Die Zeile für Eigentümer und Administratoren lässt sich nicht ändern; sie
+   trägt deshalb keine Bedienelemente und einen ruhigeren Grund. */
+.rechte-zeile-fest {
+  background: var(--flaeche);
+}
+.rechte-wer {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.rechte-name {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rechte-zeile select {
+  padding: 5px 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
   color: inherit;
   font: inherit;
+  font-size: 13px;
 }
-.rechte-neu select:first-child {
-  flex: 1 1 260px;
+.rechte-suche {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+/* Die Auswahl bekommt eine feste Höhe: bei drei Konten soll der Kasten nicht
+   in sich zusammenfallen, bei dreihundert nicht den Knopf aus dem Bild
+   schieben. */
+.rechte-auswahl {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-height: 190px;
+  overflow-y: auto;
+}
+.rechte-leer {
+  padding: 12px;
+}
+.rechte-kandidat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  text-align: left;
+  padding: 7px 12px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.rechte-kandidat:last-child {
+  border-bottom: none;
+}
+.rechte-kandidat:hover {
+  background: var(--hover);
+}
+.rechte-kandidat.gewaehlt {
+  background: var(--hover);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.rechte-stufen {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.rechte-stufe {
+  flex: 1 1 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.rechte-stufe:hover {
+  background: var(--hover);
+}
+.rechte-stufe.gewaehlt {
+  border-color: var(--accent);
+  background: var(--hover);
+}
+.rechte-abschluss {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
 }
 
 /* Dateien per Ziehen und Ablegen */
