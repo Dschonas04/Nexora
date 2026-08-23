@@ -272,7 +272,7 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	// Ein Zeitraum in Tagen statt zweier Datumsfelder: gesucht wird "was war
 	// letzte Woche", nicht "was war zwischen dem 3. und dem 9.".
 	if tage, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("tage"))); err == nil && tage > 0 {
-		setz("AND p.updated_at > now() - ($? || ' days')::interval", tage)
+		setz("AND p.updated_at > now() - make_interval(days => $?)", tage)
 	}
 	if strings.TrimSpace(r.URL.Query().Get("wer")) == "ich" {
 		filter += "AND p.owner_id = $1\n"
