@@ -69,6 +69,8 @@ const (
 	AktSpaceRechtWeg      = "spacerecht.entzogen"
 	AktAnhangIndex        = "anhangindex.nachgezogen"
 	AktSpaceOeffentlich   = "space.oeffentlich"
+	AktSpaceAngelegt      = "space.angelegt"
+	AktSpaceGeloescht     = "space.geloescht"
 	AktKonfigGeaendert    = "konfiguration.geaendert"
 	AktNeustart           = "dienst.neustart"
 	AktPapierkorbLeer     = "papierkorb.geleert"

@@ -2508,3 +2508,27 @@ a {
   stroke-linecap: round;
   fill: none;
 }
+
+/* Werkzeugzeile über den Abschnitten. Sie gehört zu keiner Ablage, deshalb
+   steht sie auch in keiner Überschrift. */
+.sidebar-werkzeuge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 12px 6px;
+}
+
+/* Erster Start: kein Baum, keine leeren Überschriften, nur der nächste
+   Schritt. */
+.leerer-anfang {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.leerer-anfang p {
+  margin: 0 0 4px;
+  font-size: 13px;
+  line-height: 1.5;
+}
