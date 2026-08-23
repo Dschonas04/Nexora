@@ -261,3 +261,24 @@ func TestPlanNimmtIndexHTMLAlsDeckblatt(t *testing.T) {
 		t.Fatalf("Ordner nicht darunter: %+v", baum[0].Kinder)
 	}
 }
+
+func TestPlanNimmtNotionOrdnernotizDaneben(t *testing.T) {
+	// Notion legt die Notiz zum Ordner NEBEN den Ordner, nicht hinein. Ohne
+	// diesen Fall entstünde sie zweimal: als leere Ordnerseite und als Datei
+	// daneben.
+	plan := planen([]einfuhrDatei{
+		{pfad: "Wochenplan 8f3a1b2c4d5e6f708192a3b4c5d6e7f8.md", inhalt: []byte("# Wochenplan\n")},
+		{pfad: "Wochenplan 8f3a1b2c4d5e6f708192a3b4c5d6e7f8/Unterpunkt 1234567890abcdef1234567890abcdef.md",
+			inhalt: []byte("# Unterpunkt\n")},
+	})
+	if len(plan) != 2 {
+		t.Fatalf("erwartet zwei Seiten, bekam %d: %+v", len(plan), plan)
+	}
+	baum := baumAusPlan(plan)
+	if len(baum) != 1 || baum[0].Titel != "Wochenplan" {
+		t.Fatalf("Ordnernotiz nicht als Ordnerseite: %+v", baum)
+	}
+	if len(baum[0].Kinder) != 1 || baum[0].Kinder[0].Titel != "Unterpunkt" {
+		t.Fatalf("Unterseite fehlt: %+v", baum[0])
+	}
+}

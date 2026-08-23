@@ -415,16 +415,28 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 	for _, d := range dateien {
 		vorhanden[strings.ToLower(d.pfad)] = true
 	}
+	// Welche Pfade dadurch verbraucht sind. Ohne diese Menge entstünde die
+	// Ordnernotiz zweimal: einmal als Inhalt des Ordners und einmal als
+	// gewöhnliche Datei ihres eigenen Verzeichnisses.
+	istIndex := map[string]bool{}
 	for _, v := range sortiert {
-		kandidaten := append([]string{}, indexNamen...)
-		// Obsidian legt die Notiz zum Ordner als gleichnamige Datei daneben.
+		var kandidaten []string
+		for _, n := range indexNamen {
+			kandidaten = append(kandidaten, path.Join(v, n))
+		}
 		if v != "" {
-			kandidaten = append(kandidaten, path.Base(v)+".md", path.Base(v)+".html")
+			// Obsidian legt die Notiz zum Ordner IN den Ordner, gleichnamig.
+			kandidaten = append(kandidaten, path.Join(v, path.Base(v)+".md"), path.Join(v, path.Base(v)+".html"))
+			// Notion legt sie DANEBEN -- gleicher Name wie der Ordner, eine
+			// Ebene höher. Beide Sitten sind verbreitet, und beide meinen
+			// dasselbe: dieser Text gehört zu diesem Ordner.
+			kandidaten = append(kandidaten, v+".md", v+".html")
 		}
 		for _, k := range kandidaten {
-			p := strings.ToLower(strings.TrimPrefix(path.Join(v, k), "/"))
-			if vorhanden[p] {
+			p := strings.ToLower(strings.TrimPrefix(k, "/"))
+			if vorhanden[p] && !istIndex[p] {
 				indexVon[v] = p
+				istIndex[p] = true
 				break
 			}
 		}
@@ -468,8 +480,8 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 		if v == "." {
 			v = ""
 		}
-		if indexVon[v] == strings.ToLower(d.pfad) {
-			continue // steckt schon in der Verzeichnisseite
+		if istIndex[strings.ToLower(d.pfad)] {
+			continue // steckt schon in einer Verzeichnisseite
 		}
 		titel, kopf, bloecke := dateiLesen(d)
 		if titel == "" {
