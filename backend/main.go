@@ -283,6 +283,12 @@ func main() {
 				r.Get("/pages/{id}/word", h.ExportWord)
 			})
 
+			// Einfuhr: einzelne Markdown-Dateien oder ein ganzes Archiv.
+			// Frei wie die Markdown-Ausgabe und aus demselben Grund -- der Weg
+			// in das System hinein darf so wenig an einer Lizenz hängen wie der
+			// Weg heraus.
+			r.Post("/import", h.Import)
+
 			r.Get("/pages/{id}/backlinks", h.Backlinks)
 
 			// Manual page-to-page links (edited via the UI)

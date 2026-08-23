@@ -189,6 +189,16 @@ func MaxAnhangBytes() int64 {
 	return int64(n) << 20
 }
 
+// EinfuhrGrenze ist die Obergrenze für eine Einfuhr im Ganzen.
+//
+// Abgeleitet aus der Anhangsgrenze und nicht als eigene Einstellung: ein Archiv
+// enthält viele Dateien, und für jede einzelne darin gilt die Anhangsgrenze
+// unverändert weiter. Ein zweiter Schalter, der dasselbe in Groß regelt, wäre
+// eine Stellschraube mehr, die irgendwann zur ersten im Widerspruch steht.
+func EinfuhrGrenze() int64 {
+	return MaxAnhangBytes() * 8
+}
+
 // SitzungDauer is how long a newly issued token stays valid. Only new sign-ins
 // are affected: a token already handed out carries its own expiry and cannot be
 // shortened afterwards.

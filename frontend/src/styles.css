@@ -2198,3 +2198,67 @@ a {
   border-radius: 4px;
   background: var(--hover);
 }
+
+/* ---- Einfuhr ------------------------------------------------------------- */
+
+.einfuhr-box {
+  width: 620px;
+}
+.einfuhr-inhalt {
+  padding: 16px;
+  overflow-y: auto;
+}
+/* Das Feld ist groß, weil es ein Ziel zum Zielen ist: eine schmale Zeile trifft
+   man mit einer gezogenen Datei nicht zuverlässig. */
+.einfuhr-feld {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 150px;
+  padding: 20px;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+}
+.einfuhr-feld:hover {
+  background: var(--hover);
+}
+.einfuhr-feld.ueber {
+  border-color: var(--accent);
+  background: var(--hover);
+}
+.einfuhr-gross {
+  font-size: 15px;
+  font-weight: 500;
+}
+.einfuhr-hinweis {
+  margin-top: 14px;
+  line-height: 1.5;
+}
+.einfuhr-hinweis p {
+  margin: 0 0 8px;
+}
+.einfuhr-hinweis code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--flaeche);
+  font-size: 12px;
+}
+.einfuhr-bericht {
+  padding: 4px 0;
+}
+/* Die Warnungen bekommen eine eigene Fläche und eine Höhe: bei fünfzig
+   übergangenen Dateien soll der Kasten nicht über den Bildschirm hinauswachsen. */
+.einfuhr-warnungen {
+  margin: 0;
+  padding: 8px 8px 8px 26px;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}

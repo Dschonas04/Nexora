@@ -8,6 +8,7 @@ import { useLizenz } from "../lizenz";
 import { useAuth } from "../auth";
 import PageTree from "./PageTree";
 import SpaceRechte from "./SpaceRechte";
+import Einfuhr from "./Einfuhr";
 
 // Schlüssel im Speicher des Browsers. Eingeklappt wird gemerkt, nicht offen:
 // so ist eine neu angelegte Ablage von selbst aufgeklappt, ohne dass sie
@@ -44,6 +45,9 @@ interface Props {
   onMovePage: (id: string, parentId: string | null, spaceId: string | null) => void;
   onNavigate: (to: string) => void;
   currentPath: string;
+  // Nach einer Einfuhr sind Seiten, Ablagen und Schlagworte veraltet -- die
+  // Leiste kann sie nicht selbst nachladen, sie besitzt keine davon.
+  onEingefuehrt: () => void;
 }
 
 export default function Sidebar(props: Props) {
@@ -66,6 +70,7 @@ export default function Sidebar(props: Props) {
     onMovePage,
     onNavigate,
     currentPath,
+    onEingefuehrt,
   } = props;
   const { user, logout } = useAuth();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -111,6 +116,10 @@ export default function Sidebar(props: Props) {
   const [sichtbarkeitFuer, setSichtbarkeitFuer] = useState<string | null>(null);
   // Dasselbe für das Export-Menü einer Ablage.
   const [exportFuer, setExportFuer] = useState<string | null>(null);
+  // Ziel der Einfuhr, solange ihr Kasten offen steht.
+  const [einfuhrZiel, setEinfuhrZiel] = useState<
+    { ziel: { parentId?: string; spaceId?: string }; name: string } | null
+  >(null);
   // Lange Listen werden auf vier Einträge gekürzt. Eine Leiste, die von
   // fünfzehn Ablagen und dreißig Schlagwörtern gefüllt wird, ist keine
   // Übersicht mehr -- man scrollt an allem vorbei, was man sucht. Der Rest ist
@@ -417,6 +426,13 @@ export default function Sidebar(props: Props) {
                           ⚿
                         </button>
                       )}
+                      <button
+                        className="icon-btn"
+                        title="Markdown in diese Ablage einführen"
+                        onClick={() => setEinfuhrZiel({ ziel: { spaceId: sp.id }, name: sp.name })}
+                      >
+                        ↑
+                      </button>
                       {/* Ein normaler Verweis auf die Adresse, kein fetch: so
                           setzt der Browser den Dateinamen aus dem
                           Content-Disposition-Kopf und lädt den Strom direkt
@@ -586,6 +602,13 @@ export default function Sidebar(props: Props) {
                   {/* Ohne den Pfeil würde React das Klickereignis als erstes
                       Argument durchreichen -- und das wäre dann die
                       Vorlagen-Kennung. */}
+                  <button
+                    className="icon-btn"
+                    title="Markdown einführen"
+                    onClick={() => setEinfuhrZiel({ ziel: {}, name: "Seiten" })}
+                  >
+                    ↑
+                  </button>
                   <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
                     +
                   </button>
@@ -731,6 +754,15 @@ export default function Sidebar(props: Props) {
           spaceId={rechteFuer.id}
           spaceName={rechteFuer.name}
           onClose={() => setRechteFuer(null)}
+        />
+      )}
+
+      {einfuhrZiel && (
+        <Einfuhr
+          ziel={einfuhrZiel.ziel}
+          zielName={einfuhrZiel.name}
+          onFertig={onEingefuehrt}
+          onClose={() => setEinfuhrZiel(null)}
         />
       )}
 

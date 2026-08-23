@@ -72,6 +72,7 @@ const (
 	AktKonfigGeaendert    = "konfiguration.geaendert"
 	AktNeustart           = "dienst.neustart"
 	AktPapierkorbLeer     = "papierkorb.geleert"
+	AktEinfuhr            = "seiten.eingefuehrt"
 )
 
 // spur writes one entry. Callers pass what they know; empty fields stay empty.
