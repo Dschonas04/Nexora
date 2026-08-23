@@ -307,6 +307,16 @@ export interface SpaceRecht {
 
 // SearchHit is one full text result. Unlike PageMeta it carries the snippet the
 // database produced, so the sidebar can show where the term actually sat.
+// EinfuhrBericht sagt, was aus einer Einfuhr geworden ist. Die Warnungen sind
+// der wichtigste Teil: was übergangen wurde, muss sichtbar sein, sonst hält man
+// eine halbe Einfuhr für eine ganze.
+export interface EinfuhrBericht {
+  seiten: number;
+  anhaenge: number;
+  wurzeln: string[];
+  warnungen: string[];
+}
+
 export interface SearchHit {
   id: string;
   parentId: string | null;
@@ -504,6 +514,19 @@ export const api = {
   attachmentUrl: (id: string, attId: string) => `/api/pages/${id}/attachments/${attId}`,
   deleteAttachment: (id: string, attId: string) =>
     req<void>(`/pages/${id}/attachments/${attId}`, { method: "DELETE" }),
+
+  // Einfuhr: eine oder mehrere Markdown-Dateien, oder ein ZIP mit Struktur.
+  // Wie beim Anhang an req vorbei, aus demselben Grund -- FormData setzt der
+  // Browser samt Grenzmarke selbst.
+  importieren: async (dateien: File[], ziel: { parentId?: string; spaceId?: string }) => {
+    const body = new FormData();
+    for (const d of dateien) body.append("file", d);
+    if (ziel.parentId) body.append("parentId", ziel.parentId);
+    if (ziel.spaceId) body.append("spaceId", ziel.spaceId);
+    const res = await fetch(`/api/import`, { method: "POST", credentials: "include", body });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+    return (await res.json()) as EinfuhrBericht;
+  },
 
   // Per-user sharing + roles
   listShares: (id: string) => req<ShareEntry[]>(`/pages/${id}/shares`),

@@ -136,6 +136,11 @@ export default function Workspace() {
         onMovePage={movePage}
         onNavigate={(to) => nav(to)}
         currentPath={loc.pathname}
+        onEingefuehrt={() => {
+          refreshPages();
+          refreshSpaces();
+          refreshTags();
+        }}
       />
       <div className="main">
         <Routes>

@@ -30,6 +30,16 @@ license key. On 2030-08-19 the whole thing becomes Apache 2.0.
 - **Autosave**: title and content persist as you type
 - **Markdown export**: download the current page as `.md` — always free, because
   getting your own content out must never sit behind a licence
+- **Markdown import**: drop in single `.md` files or a whole `.zip` — an Obsidian
+  vault, a Notion export, a git wiki, a folder of notes. The archive keeps its
+  shape: a folder becomes a page, the files inside become its subpages, and an
+  `index.md`, `README.md` or `INHALT.md` becomes the folder's own content. Links
+  between imported files are rewritten to `[[Page title]]`, so they still lead
+  somewhere and feed backlinks and the graph; images and other files become
+  attachments of the page that uses them, and anything nothing referenced is
+  attached to its folder's page rather than dropped. Front matter supplies title,
+  tags and icon. Free, like the export — the way in must not sit behind a licence
+  either
 - **PDF and Word export**: a typeset document for a page, or a whole space as one
   file. Written without a third-party library; the PDF uses the base fonts and
   WinAnsi encoding, so umlauts survive
@@ -293,6 +303,8 @@ GET    /tags                              list tags
 POST   /tags                              create
 DELETE /tags/{id}                         delete
 
+POST   /import                           Markdown files or a ZIP, multipart; parentId/spaceId optional
+
 GET    /pages/{id}/markdown               the page as Markdown
 GET    /pages/{id}/pdf                    the page as PDF (extra)
 GET    /pages/{id}/word                   the page as .docx (extra)
@@ -349,11 +361,13 @@ backend/                       Go API
   internal/auth                JWT issuing and password hashing
   internal/lizenz              the gate: asks whoever registered as verifier
   internal/middleware          cookie auth
+  internal/einlesen            Markdown to editor blocks: the import side
   internal/handlers
     auth.go                    register, login, logout, me
     pages.go                   CRUD, tree, trash, restore, purge, conflicts
     versions.go                snapshots and rollback
     attachments.go             upload, download, delete
+    einfuhr.go                 import: archive, page tree, link rewriting
     kommentare.go              comment threads
     pruefspur.go               audit trail: writing and reading
     volltext.go                plain text extraction for the search index
@@ -369,7 +383,7 @@ frontend/                      React SPA (Vite + TypeScript)
   src/lizenz.tsx               which extras are unlocked, asked once
   src/components               Sidebar, PageTree, Editor, Attachments,
                                QuickView, Kommentare, VersionPanel,
-                               ShareDialog, LocalGraph
+                               ShareDialog, LocalGraph, SpaceRechte, Einfuhr
   src/pages                    Login, Register, Workspace, PageView,
                                PublicPage, TrashView, GraphView, AdminView,
                                PruefspurView
