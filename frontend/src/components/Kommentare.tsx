@@ -176,7 +176,7 @@ export default function Kommentare({ pageId }: { pageId: string }) {
       <div className="kommentar-eingabe">
         <textarea
           rows={3}
-          placeholder={user ? "Kommentar schreiben…" : "Anmelden, um zu kommentieren"}
+          placeholder={user ? "Kommentar schreiben… (@Name benachrichtigt jemanden)" : "Anmelden, um zu kommentieren"}
           value={neu}
           onChange={(e) => setNeu(e.target.value)}
         />

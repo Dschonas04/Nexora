@@ -5,7 +5,9 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -218,12 +220,62 @@ func (s *Server) ListFavorites(w http.ResponseWriter, r *http.Request) {
 // Second, ranking: results come back by relevance, not by modification date. A
 // page whose title matches is weighted above one that merely mentions the term,
 // which is what setweight in the schema is for.
+// kennungMuster ist die Gestalt einer UUID, wie Postgres sie ausgibt.
+var kennungMuster = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
+func istKennung(s string) bool { return kennungMuster.MatchString(s) }
+
 func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	if q == "" {
 		writeJSON(w, http.StatusOK, []models.SearchHit{})
 		return
+	}
+
+	// Die Filter kommen als Parameter und nicht als Suchsprache im Feld. Wer
+	// "space:technik" tippen muss, tippt es falsch; wer eine Liste aufklappt,
+	// sieht auch gleich, was es überhaupt gibt.
+	//
+	// Jeder Filter ist eine eigene Bedingung mit einem eigenen Platzhalter.
+	// Sie in die Zeichenkette zu schreiben wäre kürzer und wäre die Stelle,
+	// an der eines Tages eine Eingabe in der Abfrage landet.
+	filter := ""
+	args := []any{uid, q, false, false, false}
+	setz := func(bedingung string, wert any) {
+		args = append(args, wert)
+		filter += strings.ReplaceAll(bedingung, "$?", "$"+strconv.Itoa(len(args))) + "\n"
+	}
+
+	switch space := strings.TrimSpace(r.URL.Query().Get("space")); space {
+	case "":
+		// keine Einschränkung
+	case "ohne":
+		filter += "AND p.space_id IS NULL\n"
+	default:
+		// Die Gestalt wird hier geprüft und nicht der Datenbank überlassen:
+		// eine Kennung, die keine ist, bricht sonst die ganze Abfrage ab, und
+		// die Suche antwortet mit 500 statt mit "so nicht".
+		if !istKennung(space) {
+			writeErr(w, http.StatusBadRequest, "ungültige Ablage im Filter")
+			return
+		}
+		setz("AND p.space_id = $?::uuid", space)
+	}
+	if tag := strings.TrimSpace(r.URL.Query().Get("tag")); tag != "" {
+		if !istKennung(tag) {
+			writeErr(w, http.StatusBadRequest, "ungültiges Schlagwort im Filter")
+			return
+		}
+		setz("AND EXISTS (SELECT 1 FROM page_tags pt WHERE pt.page_id = p.id AND pt.tag_id = $?::uuid)", tag)
+	}
+	// Ein Zeitraum in Tagen statt zweier Datumsfelder: gesucht wird "was war
+	// letzte Woche", nicht "was war zwischen dem 3. und dem 9.".
+	if tage, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("tage"))); err == nil && tage > 0 {
+		setz("AND p.updated_at > now() - ($? || ' days')::interval", tage)
+	}
+	if strings.TrimSpace(r.URL.Query().Get("wer")) == "ich" {
+		filter += "AND p.owner_id = $1\n"
 	}
 
 	// websearch_to_tsquery accepts what people actually type: bare words,
@@ -252,6 +304,7 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 			       OR EXISTS (SELECT 1 FROM page_shares sh
 			                  WHERE sh.page_id = p.id AND sh.user_id = $1)
 			       OR ` + spaceZugriffSQL("p.space_id", "$1", "$4") + `)
+			  ` + filter + `
 		),
 		treffer AS (
 			SELECT p.id, p.parent_id, p.title, p.icon, p.updated_at,
@@ -284,10 +337,11 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	// Der Adminstatus wird einmal aufgelöst und als Parameter übergeben, statt
 	// die users-Tabelle in die Suchabfrage zu ziehen -- das hielte den
 	// Abfrageplan sonst unnötig davon ab, den GIN-Index zu benutzen.
-	admin := s.isAdmin(r.Context(), uid)
+	args[2] = s.isAdmin(r.Context(), uid)
+	args[3] = lizenz.Frei(lizenz.Gruppen)
+	args[4] = lizenz.Frei(lizenz.Anhangsuche)
 
-	rows, err := s.Pool.Query(r.Context(), sql, uid, q, admin,
-		lizenz.Frei(lizenz.Gruppen), lizenz.Frei(lizenz.Anhangsuche))
+	rows, err := s.Pool.Query(r.Context(), sql, args...)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "search failed")
 		return

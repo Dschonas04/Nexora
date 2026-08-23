@@ -30,9 +30,11 @@ license key. On 2030-08-19 the whole thing becomes Apache 2.0.
 - **Autosave**: title and content persist as you type
 - **Markdown export**: download the current page as `.md` — always free, because
   getting your own content out must never sit behind a licence
-- **Markdown import**: drop in single `.md` files or a whole `.zip` — an Obsidian
-  vault, a Notion export, a git wiki, a folder of notes. The archive keeps its
-  shape: a folder becomes a page, the files inside become its subpages, and an
+- **Markdown and HTML import**: drop in single `.md`/`.html` files or a whole
+  `.zip` — an Obsidian vault, a Notion export (the id in every filename is
+  stripped), a Confluence HTML export, a git wiki, a folder of notes. A preview
+  shows the page tree that would result before anything is created. The archive
+  keeps its shape: a folder becomes a page, the files inside become its subpages, and an
   `index.md`, `README.md` or `INHALT.md` becomes the folder's own content. Links
   between imported files are rewritten to `[[Page title]]`, so they still lead
   somewhere and feed backlinks and the graph; images and other files become
@@ -67,9 +69,14 @@ license key. On 2030-08-19 the whole thing becomes Apache 2.0.
   demand
 - **Tags**: colored, per-user, attach any number to a page
 - **Favorites**: quick access section in the sidebar
-- **Trash**: deleting moves a page to the trash; restore it or purge permanently
+- **Trash**: deleting moves a page to the trash; restore it or purge permanently.
+  It empties itself after `papierkorb_tage` (30 by default, 0 disables it), and
+  every row says how long it has left. The hourly sweep removes the attachment
+  bytes too, so an object store does not silently fill up with files no page
+  points at any more
 - **Search**: real full text search (PostgreSQL `tsvector`, GIN index) with
-  relevance ranking and snippets. Title matches outrank body matches. Results
+  relevance ranking and snippets. Narrowed by space, tag, age and authorship
+  from dropdowns rather than a query syntax nobody remembers. Title matches outrank body matches. Results
   are limited to pages the caller may read, using the same rule that governs
   opening a single page: owner, admin, or an explicit share
 - **Backlinks and links**: link pages explicitly or with `@` mentions in the text,
@@ -83,6 +90,9 @@ license key. On 2030-08-19 the whole thing becomes Apache 2.0.
   `user`. Admins manage accounts under the admin view
 - **Per-user sharing**: share a page with named accounts, each as `read` or `write`
 - **Public links**: publish a single page read-only behind a random token
+- **Inbox**: comments on your pages, replies to your comments, `@Name` mentions
+  and pages somebody shared with you. Three kinds and no more — an inbox that
+  carries noise is one people stop opening
 - **Audit trail**: who did what, when — sign-ins including the failed ones,
   accounts, pages, trash, permanent deletion, shares and public links. Entries
   survive the deletion of the page or account they refer to, because deleting is
@@ -149,6 +159,7 @@ typo must not cause an outage.
 | Registration | `registrierung_offen`, `erlaubte_domaenen` |
 | Search | `such_woerterbuch` |
 | Attachments | `max_anhang_mb` |
+| Trash | `papierkorb_tage` |
 | Object storage | `s3_aktiv` and seven more |
 | LDAP / AD | `ldap_aktiv` and ten more |
 | OIDC | `oidc_aktiv` and eight more |
@@ -204,6 +215,8 @@ kommentare     id, page_id, eltern_id, autor_id, autor_name, text, erledigt,
                erstellt_am, geaendert_am, geloescht_am
 pruefspur      id, zeitpunkt, akteur_id, akteur_name, akteur_email, aktion,
                objekt_art, objekt_id, objekt_titel, details (jsonb), ip
+postfach       id, empfaenger_id, art, page_id, kommentar_id, ausloeser_id,
+               ausloeser_name, seiten_titel, text, gelesen_am, erstellt_am
 ```
 
 `content_text` holds the prose pulled out of the BlockNote JSON on every save;
@@ -299,11 +312,20 @@ DELETE /spaces/{id}                       delete (pages keep existing, space_id 
 PUT    /spaces/{id}/oeffentlich           open to the whole instance: nein|lesen|schreiben
 GET    /spaces/{id}/export[?format=]      ZIP of Markdown, or format=pdf|word as one document
 
+GET    /search?q=&space=&tag=&tage=&wer=  full text search, optionally narrowed
+
 GET    /tags                              list tags
 POST   /tags                              create
 DELETE /tags/{id}                         delete
 
-POST   /import                           Markdown files or a ZIP, multipart; parentId/spaceId optional
+POST   /import                           Markdown/HTML files or a ZIP, multipart; parentId/spaceId optional
+POST   /import  (vorschau=1)              the same, but only reports the tree it would create
+
+GET    /postfach[?ungelesen=1]            inbox entries, newest first
+GET    /postfach/anzahl                   unread count, for the sidebar badge
+POST   /postfach/gelesen                  mark all read
+POST   /postfach/{id}/gelesen             mark one read
+DELETE /postfach                          drop the read ones
 
 GET    /pages/{id}/markdown               the page as Markdown
 GET    /pages/{id}/pdf                    the page as PDF (extra)
@@ -361,13 +383,15 @@ backend/                       Go API
   internal/auth                JWT issuing and password hashing
   internal/lizenz              the gate: asks whoever registered as verifier
   internal/middleware          cookie auth
-  internal/einlesen            Markdown to editor blocks: the import side
+  internal/einlesen            Markdown and HTML to editor blocks: the import side
   internal/handlers
     auth.go                    register, login, logout, me
     pages.go                   CRUD, tree, trash, restore, purge, conflicts
     versions.go                snapshots and rollback
     attachments.go             upload, download, delete
     einfuhr.go                 import: archive, page tree, link rewriting
+    postfach.go                the inbox and what fills it
+    papierkorb.go              the trash and its expiry sweep
     kommentare.go              comment threads
     pruefspur.go               audit trail: writing and reading
     volltext.go                plain text extraction for the search index
@@ -384,7 +408,7 @@ frontend/                      React SPA (Vite + TypeScript)
   src/components               Sidebar, PageTree, Editor, Attachments,
                                QuickView, Kommentare, VersionPanel,
                                ShareDialog, LocalGraph, SpaceRechte, Einfuhr
-  src/pages                    Login, Register, Workspace, PageView,
+  src/pages                    Login, Register, Workspace, PageView, PostfachView,
                                PublicPage, TrashView, GraphView, AdminView,
                                PruefspurView
 docker-compose.yml             db + backend + frontend

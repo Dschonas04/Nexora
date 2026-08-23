@@ -7,7 +7,7 @@
 // missing.
 import { useEffect, useRef, useState } from "react";
 
-import { EinfuhrBericht, api } from "../api/client";
+import { EinfuhrAst, EinfuhrBericht, EinfuhrVorschau, api } from "../api/client";
 
 export default function Einfuhr({
   ziel,
@@ -22,6 +22,10 @@ export default function Einfuhr({
   onClose: () => void;
 }) {
   const [laeuft, setLaeuft] = useState(false);
+  const [vorschau, setVorschau] = useState<EinfuhrVorschau | null>(null);
+  // Die gewählten Dateien werden festgehalten, bis die Vorschau bestätigt ist
+  // -- sonst müsste man sie zum Einführen ein zweites Mal auswählen.
+  const [dateien, setDateien] = useState<File[]>([]);
   const [bericht, setBericht] = useState<EinfuhrBericht | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [ueber, setUeber] = useState(false);
@@ -36,8 +40,25 @@ export default function Einfuhr({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, laeuft]);
 
-  const schicken = async (dateien: File[]) => {
-    if (dateien.length === 0) return;
+  // Erst rechnen lassen, dann fragen. Zweihundert Seiten rückgängig zu machen
+  // hieße, sie einzeln in den Papierkorb zu schieben -- die Vorschau kostet
+  // einen Klick und erspart genau das.
+  const pruefen = async (gewaehlt: File[]) => {
+    if (gewaehlt.length === 0) return;
+    setLaeuft(true);
+    setFehler(null);
+    try {
+      const v = await api.importieren(gewaehlt, ziel, true);
+      setDateien(gewaehlt);
+      setVorschau(v);
+    } catch (e) {
+      setFehler((e as Error).message);
+    } finally {
+      setLaeuft(false);
+    }
+  };
+
+  const einfuehren = async () => {
     setLaeuft(true);
     setFehler(null);
     try {
@@ -66,7 +87,7 @@ export default function Einfuhr({
         <div className="einfuhr-inhalt">
           {fehler && <div className="fehler">{fehler}</div>}
 
-          {!bericht && (
+          {!bericht && !vorschau && (
             <>
               <div
                 className={"einfuhr-feld" + (ueber ? " ueber" : "")}
@@ -84,7 +105,7 @@ export default function Einfuhr({
                   e.preventDefault();
                   tiefe.current = 0;
                   setUeber(false);
-                  schicken(Array.from(e.dataTransfer.files));
+                  pruefen(Array.from(e.dataTransfer.files));
                 }}
                 onClick={() => !laeuft && wahl.current?.click()}
               >
@@ -101,21 +122,26 @@ export default function Einfuhr({
                 ref={wahl}
                 type="file"
                 multiple
-                accept=".md,.markdown,.mdown,.mdx,.txt,.zip"
+                accept=".md,.markdown,.mdown,.mdx,.txt,.html,.htm,.zip"
                 style={{ display: "none" }}
                 onChange={(e) => {
-                  schicken(Array.from(e.target.files ?? []));
+                  pruefen(Array.from(e.target.files ?? []));
                   e.target.value = "";
                 }}
               />
 
               <div className="muted small einfuhr-hinweis">
                 <p>
-                  <strong>Einzelne .md-Dateien</strong> werden je zu einer Seite. Ein{" "}
+                  <strong>Einzelne .md- oder .html-Dateien</strong> werden je zu einer Seite. Ein{" "}
                   <strong>.zip</strong> behält seinen Aufbau: aus jedem Ordner wird eine Seite,
                   aus den Dateien darin ihre Unterseiten. Liegt im Ordner eine{" "}
                   <code>index.md</code>, <code>README.md</code> oder <code>INHALT.md</code>, ist
                   sie der Inhalt der Ordnerseite.
+                </p>
+                <p>
+                  Damit lassen sich ein <strong>Obsidian</strong>-Tresor, eine{" "}
+                  <strong>Notion</strong>-Ausfuhr (die Kennung im Dateinamen fällt weg) und ein{" "}
+                  <strong>Confluence</strong>-Export aus HTML-Dateien einlesen.
                 </p>
                 <p>
                   Verweise zwischen eingeführten Dateien werden zu{" "}
@@ -129,6 +155,45 @@ export default function Einfuhr({
                 </p>
               </div>
             </>
+          )}
+
+          {vorschau && !bericht && (
+            <div className="einfuhr-bericht">
+              <p className="einfuhr-gross">
+                {vorschau.seiten} {vorschau.seiten === 1 ? "Seite" : "Seiten"} würden entstehen
+                {vorschau.beilagen > 0 &&
+                  `, ${vorschau.beilagen} ${vorschau.beilagen === 1 ? "Datei" : "Dateien"} werden Anhänge`}
+                .
+              </p>
+              <div className="einfuhr-baum">
+                <Aeste knoten={vorschau.baum} />
+              </div>
+              {vorschau.warnungen.length > 0 && (
+                <>
+                  <h4 className="rechte-ueberschrift">Übergangen</h4>
+                  <ul className="einfuhr-warnungen">
+                    {vorschau.warnungen.map((w, i) => (
+                      <li key={i}>{w}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              <div className="rechte-abschluss">
+                <button
+                  className="btn"
+                  disabled={laeuft}
+                  onClick={() => {
+                    setVorschau(null);
+                    setDateien([]);
+                  }}
+                >
+                  Andere Dateien
+                </button>
+                <button className="btn btn-primary" disabled={laeuft} onClick={einfuehren}>
+                  {laeuft ? "Wird angelegt …" : "Einführen"}
+                </button>
+              </div>
+            </div>
           )}
 
           {bericht && (
@@ -154,5 +219,22 @@ export default function Einfuhr({
         </div>
       </div>
     </div>
+  );
+}
+
+// Aeste zeigt den geplanten Baum. Die Quelldatei steht klein daneben: ein Titel
+// allein verrät nicht, woher er kommt -- und genau das will man wissen, wenn
+// eine Seite an unerwarteter Stelle steht.
+function Aeste({ knoten }: { knoten: EinfuhrAst[] }) {
+  return (
+    <ul className="einfuhr-aeste">
+      {knoten.map((k, i) => (
+        <li key={i}>
+          <span>{k.titel}</span>
+          {k.quelle && <span className="muted small"> · {k.quelle}</span>}
+          {k.kinder && k.kinder.length > 0 && <Aeste knoten={k.kinder} />}
+        </li>
+      ))}
+    </ul>
   );
 }

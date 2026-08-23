@@ -8,6 +8,7 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"time"
@@ -149,7 +150,45 @@ func (s *Server) CreateKommentar(w http.ResponseWriter, r *http.Request) {
 	k.Darf = true
 
 	s.spurAusRequest(r, AktKommentar, "seite", id, "", nil)
+	s.postfachAusKommentar(r.Context(), uid, name, id, k.ID, req.ElternID, req.Text)
 	writeJSON(w, http.StatusCreated, k)
+}
+
+// postfachAusKommentar stellt zu, was dieser Kommentar auslöst.
+//
+// Die Reihenfolge ist eine Rangfolge: wer erwähnt wurde, bekommt die Erwähnung
+// und nicht zusätzlich die allgemeine Nachricht. Zwei Zeilen für denselben
+// Kommentar wären keine doppelte Aufmerksamkeit, sondern doppelte Arbeit beim
+// Wegräumen.
+func (s *Server) postfachAusKommentar(ctx context.Context, uid, name, pageID, kommentarID string, elternID *string, text string) {
+	titel := s.seitenTitel(ctx, pageID)
+	bedient := map[string]bool{uid: true}
+
+	for id := range s.erwaehnte(ctx, text, pageID) {
+		if bedient[id] {
+			continue
+		}
+		bedient[id] = true
+		s.zustellen(ctx, id, PostErwaehnt, pageID, kommentarID, uid, name, titel, text)
+	}
+
+	// Antwort: der Verfasser des Bezugskommentars.
+	if elternID != nil {
+		var autor *string
+		if err := s.Pool.QueryRow(ctx,
+			`SELECT autor_id::text FROM kommentare WHERE id=$1`, *elternID).Scan(&autor); err == nil &&
+			autor != nil && !bedient[*autor] {
+			bedient[*autor] = true
+			s.zustellen(ctx, *autor, PostAntwort, pageID, kommentarID, uid, name, titel, text)
+		}
+	}
+
+	// Und der Eigentümer der Seite -- er ist der, den eine Rückfrage angeht.
+	var eigner string
+	if err := s.Pool.QueryRow(ctx,
+		`SELECT owner_id::text FROM pages WHERE id=$1`, pageID).Scan(&eigner); err == nil && !bedient[eigner] {
+		s.zustellen(ctx, eigner, PostKommentar, pageID, kommentarID, uid, name, titel, text)
+	}
 }
 
 // darfAendern resolves whether the caller may touch one comment: its author,

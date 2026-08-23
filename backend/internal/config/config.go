@@ -60,6 +60,11 @@ type Konfig struct {
 	// --- Anhänge ---
 	MaxAnhangMB int
 
+	// --- Papierkorb ---
+	// Nach wie vielen Tagen im Papierkorb eine Seite endgültig verschwindet.
+	// 0 heißt: nie von selbst -- dann bleibt sie liegen, bis jemand sie löscht.
+	PapierkorbTage int
+
 	// --- Objektspeicher (S3) ---
 	S3Aktiv     bool
 	S3Endpunkt  string
@@ -112,6 +117,7 @@ func Standard() Konfig {
 
 		SuchWoerterbuch: "german",
 		MaxAnhangMB:     25,
+		PapierkorbTage:  30,
 
 		S3Aktiv:    false,
 		S3Bucket:   "nexora",
@@ -229,6 +235,7 @@ func Laden(pfad string) Konfig {
 
 	text(&k.SuchWoerterbuch, "such_woerterbuch", "NEXORA_SUCH_WOERTERBUCH")
 	zahl(&k.MaxAnhangMB, "max_anhang_mb", "NEXORA_MAX_ANHANG_MB")
+	zahl(&k.PapierkorbTage, "papierkorb_tage", "NEXORA_PAPIERKORB_TAGE")
 
 	jaNein(&k.S3Aktiv, "s3_aktiv", "NEXORA_S3_AKTIV")
 	text(&k.S3Endpunkt, "s3_endpunkt", "NEXORA_S3_ENDPUNKT")

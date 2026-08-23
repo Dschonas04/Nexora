@@ -71,6 +71,12 @@ var bekannt = map[string]struct {
 		Erklaerung: "Es gibt keine Verlängerung und keine Liste offener Sitzungen: ein Token bleibt bis zum Ablauf brauchbar, auch nach einer Passwortänderung.",
 		Warnung:    "Wirkt erst auf NEUE Anmeldungen. Bereits ausgegebene Token behalten ihre alte Laufzeit.",
 	},
+	"papierkorb_tage": {
+		Art:        "zahl",
+		Titel:      "Papierkorb leert sich nach (Tagen)",
+		Erklaerung: "0 heißt: nie von selbst. Gilt für die ganze Instanz und läuft stündlich; gelöschte Seiten verschwinden dann endgültig, samt ihrer Anhänge.",
+		Warnung:    "Endgültig heißt endgültig -- danach hilft nur noch eine Sicherung der Datenbank.",
+	},
 	"such_woerterbuch": {
 		Art:        "text",
 		Titel:      "Wörterbuch der Volltextsuche",
@@ -147,6 +153,8 @@ func ausDatei(schluessel string, k config.Konfig) string {
 		return strings.Join(k.ErlaubteDomaenen, ", ")
 	case "max_anhang_mb":
 		return strconv.Itoa(k.MaxAnhangMB)
+	case "papierkorb_tage":
+		return strconv.Itoa(k.PapierkorbTage)
 	case "sitzung_tage":
 		return strconv.Itoa(k.SitzungTage)
 	case "such_woerterbuch":
@@ -187,6 +195,17 @@ func MaxAnhangBytes() int64 {
 		return maxUploadBytes
 	}
 	return int64(n) << 20
+}
+
+// PapierkorbTage ist die Frist, nach der eine gelöschte Seite von selbst
+// verschwindet. 0 heißt: nie -- dann bleibt der Papierkorb, bis jemand ihn
+// leert.
+func PapierkorbTage() int {
+	n, err := strconv.Atoi(wert("papierkorb_tage"))
+	if err != nil || n < 0 {
+		return 30
+	}
+	return n
 }
 
 // EinfuhrGrenze ist die Obergrenze für eine Einfuhr im Ganzen.
@@ -274,7 +293,7 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 	// Felder bei jedem Laden die Plätze tauschen, ist unbenutzbar.
 	reihenfolge := []string{
 		"registrierung_offen", "erlaubte_domaenen",
-		"max_anhang_mb", "sitzung_tage", "such_woerterbuch",
+		"max_anhang_mb", "sitzung_tage", "papierkorb_tage", "such_woerterbuch",
 		"design_grundton", "design_akzent",
 	}
 
@@ -334,8 +353,15 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 		}
 	case "zahl":
 		n, err := strconv.Atoi(wertNeu)
-		if err != nil || n <= 0 {
+		// Die Null ist nur beim Papierkorb ein Wert und heißt dort "nie von
+		// selbst". Bei einer Anhangsgrenze oder einer Sitzungsdauer wäre sie
+		// eine Instanz, die nichts mehr annimmt oder niemanden mehr anmeldet.
+		if err != nil || n < 0 || (n == 0 && req.Schluessel != "papierkorb_tage") {
 			writeErr(w, http.StatusBadRequest, "erwartet eine Zahl größer null")
+			return
+		}
+		if req.Schluessel == "papierkorb_tage" && n > 3650 {
+			writeErr(w, http.StatusBadRequest, "höchstens 3650 Tage")
 			return
 		}
 		if req.Schluessel == "max_anhang_mb" && n > 2048 {

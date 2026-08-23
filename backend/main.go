@@ -185,6 +185,15 @@ func main() {
 			// Das Aussehen darf jeder lesen -- sonst sähe ein normaler Benutzer
 			// die eingestellten Farben nie, denn die Einstellungsseite selbst ist
 			// ihm verwehrt.
+			// Postfach. Frei wie die Leiste selbst -- es zeigt nur, was
+			// anderswo ohnehin passiert ist, und ohne Kommentare und
+			// Freigaben bleibt es eben leer.
+			r.Get("/postfach", h.ListPostfach)
+			r.Get("/postfach/anzahl", h.PostfachAnzahl)
+			r.Post("/postfach/gelesen", h.PostfachGelesen)
+			r.Post("/postfach/{id}/gelesen", h.PostfachGelesen)
+			r.Delete("/postfach", h.PostfachLeeren)
+
 			r.Get("/design", h.Design)
 
 			r.Get("/einstellungen", h.ListEinstellungen)
@@ -317,6 +326,11 @@ func main() {
 		}
 		w.Write([]byte("ok"))
 	})
+
+	// Der Papierkorb räumt sich selbst. Eigener Zusammenhang, nicht der des
+	// Starts: der läuft nach dreißig Sekunden ab, die Uhr soll laufen, solange
+	// der Dienst läuft.
+	go h.PapierkorbUhr(context.Background())
 
 	srv := &http.Server{
 		Addr:              ":" + port,
