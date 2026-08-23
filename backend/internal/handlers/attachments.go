@@ -154,18 +154,24 @@ func typAusAngabeUndName(angabe, dateiname string) string {
 	}
 	endung := strings.ToLower(filepath.Ext(dateiname))
 	if endung != "" {
-		// mime.TypeByExtension kennt die geläufigen Endungen und liest
-		// zusätzlich die Typtabellen des Systems.
+		// Die eigene Liste zuerst. mime.TypeByExtension liest die
+		// Typtabellen des Systems mit, und die fallen von Rechner zu
+		// Rechner verschieden aus -- dieselbe Datei bekäme auf dem
+		// Arbeitsplatz und im Container zwei verschiedene Typen. Für die
+		// Endungen, an denen hier etwas hängt, wird der Typ deshalb fest
+		// vergeben.
+		switch endung {
+		case ".md", ".markdown":
+			return "text/markdown"
+		case ".log", ".conf", ".ini", ".yml", ".yaml", ".toml", ".env":
+			return "text/plain"
+		}
+		// Alles Übrige darf die Tabelle entscheiden.
 		if t := mime.TypeByExtension(endung); t != "" {
 			if i := strings.IndexByte(t, ';'); i >= 0 {
 				t = strings.TrimSpace(t[:i])
 			}
 			return t
-		}
-		// Was die Tabelle des Systems nicht führt, aber hier zählt.
-		switch endung {
-		case ".md", ".log", ".yml", ".yaml", ".conf", ".ini":
-			return "text/plain"
 		}
 	}
 	if angabe != "" {
