@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -47,6 +48,51 @@ type einfuhrSeite struct {
 	verz    string // Verzeichnis, in dem die Quelle lag
 	kopf    einlesen.Kopf
 	bloecke []einlesen.Block
+	eltern  *einfuhrSeite // nil heißt: hängt am Ziel der Einfuhr
+}
+
+// einfuhrVorschau ist derselbe Plan, nur ohne Folgen.
+type einfuhrVorschau struct {
+	Seiten    int          `json:"seiten"`
+	Beilagen  int          `json:"beilagen"`
+	Baum      []einfuhrAst `json:"baum"`
+	Warnungen []string     `json:"warnungen"`
+}
+
+// einfuhrAst ist ein Knoten der Vorschau. Quelle steht daneben, weil ein Titel
+// allein nicht verrät, aus welcher Datei er stammt -- und genau das ist die
+// Frage, wenn eine Seite an einer unerwarteten Stelle auftaucht.
+type einfuhrAst struct {
+	Titel  string       `json:"titel"`
+	Quelle string       `json:"quelle"`
+	Kinder []einfuhrAst `json:"kinder,omitempty"`
+}
+
+// baumAusPlan formt die flache Planliste in die Gestalt, die die Vorschau
+// anzeigt.
+func baumAusPlan(plan []*einfuhrSeite) []einfuhrAst {
+	kinder := map[*einfuhrSeite][]*einfuhrSeite{}
+	var oben []*einfuhrSeite
+	for _, sp := range plan {
+		if sp.eltern == nil {
+			oben = append(oben, sp)
+		} else {
+			kinder[sp.eltern] = append(kinder[sp.eltern], sp)
+		}
+	}
+	var bauen func([]*einfuhrSeite) []einfuhrAst
+	bauen = func(liste []*einfuhrSeite) []einfuhrAst {
+		out := make([]einfuhrAst, 0, len(liste))
+		for _, sp := range liste {
+			out = append(out, einfuhrAst{
+				Titel:  sp.titel,
+				Quelle: sp.pfad,
+				Kinder: bauen(kinder[sp]),
+			})
+		}
+		return out
+	}
+	return bauen(oben)
 }
 
 type einfuhrBericht struct {
@@ -132,26 +178,43 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 			warnungen = append(warnungen, name+": nicht lesbar")
 			continue
 		}
-		if istMarkdown(name) {
+		if istMarkdown(name) || istHTML(name) {
 			mdDateien = append(mdDateien, einfuhrDatei{pfad: name, inhalt: inhalt})
 		} else {
 			// Eine einzeln hochgeladene Datei, die kein Markdown ist, hat
 			// keine Seite, an die sie gehört. Sie hier stillschweigend zu
 			// verwerfen wäre der unangenehmere Ausgang.
-			warnungen = append(warnungen, name+": kein Markdown, übergangen")
+			warnungen = append(warnungen, name+": weder Markdown noch HTML, übergangen")
 		}
 	}
 
 	if len(mdDateien) == 0 {
-		writeErr(w, http.StatusBadRequest, "keine Markdown-Datei in der Einfuhr")
+		writeErr(w, http.StatusBadRequest, "keine Markdown- oder HTML-Datei in der Einfuhr")
 		return
 	}
 
-	seiten, wurzeln, err := s.seitenAnlegen(r.Context(), uid, elternID, spaceID, mdDateien)
+	plan := planen(mdDateien)
+
+	// Vorschau: derselbe Plan, aber nichts wird angelegt. Wer zweihundert
+	// Dateien einführt, will vorher sehen, was daraus wird -- rückgängig
+	// machen hieße sonst, zweihundert Seiten einzeln in den Papierkorb zu
+	// schieben.
+	if r.FormValue("vorschau") != "" {
+		writeJSON(w, http.StatusOK, einfuhrVorschau{
+			Seiten:    len(plan),
+			Beilagen:  len(beilagen),
+			Baum:      baumAusPlan(plan),
+			Warnungen: warnungen,
+		})
+		return
+	}
+
+	wurzeln, err := s.anlegen(r.Context(), uid, elternID, spaceID, plan)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "Seiten konnten nicht angelegt werden")
 		return
 	}
+	seiten := plan
 
 	// Zweiter Durchgang: Verweise auflösen, Beilagen anhängen, Inhalt
 	// schreiben.
@@ -245,7 +308,7 @@ func archivLesen(datei io.ReaderAt, groesse int64) ([]einfuhrDatei, map[string]e
 			continue
 		}
 
-		if istMarkdown(pfad) {
+		if istMarkdown(pfad) || istHTML(pfad) {
 			md = append(md, einfuhrDatei{pfad: pfad, inhalt: inhalt})
 		} else {
 			beilagen[pfad] = einfuhrDatei{pfad: pfad, inhalt: inhalt}
@@ -258,6 +321,32 @@ func archivLesen(datei io.ReaderAt, groesse int64) ([]einfuhrDatei, map[string]e
 	return md, beilagen, warnungen
 }
 
+// notionMuster erkennt die Kennung, die Notion an jeden Datei- und Ordnernamen
+// hängt: 32 Stellen hexadezimal, mit einem Leerzeichen davor.
+var notionMuster = regexp.MustCompile(`^(.*[^ -])[ -]+([0-9a-f]{32})$`)
+
+// sauberterTitel macht aus einem Datei- oder Ordnernamen einen Titel.
+//
+// Notion-Ausfuhren tragen ihre innere Kennung im Namen -- "Wochenplan
+// 8f3a...c1" --, und wer das nicht abschneidet, bekommt hundert Seiten mit
+// Kauderwelsch im Titel. Am Pfad ändert das nichts: Verweise werden über den
+// Pfad aufgelöst, nicht über den Titel.
+func sauberterTitel(name string) string {
+	name = strings.TrimSpace(name)
+	if m := notionMuster.FindStringSubmatch(name); m != nil {
+		return strings.TrimSpace(m[1])
+	}
+	return name
+}
+
+func istHTML(name string) bool {
+	switch strings.ToLower(path.Ext(name)) {
+	case ".html", ".htm", ".xhtml":
+		return true
+	}
+	return false
+}
+
 func istMarkdown(name string) bool {
 	switch strings.ToLower(path.Ext(name)) {
 	case ".md", ".markdown", ".mdown", ".mdx", ".txt":
@@ -266,16 +355,20 @@ func istMarkdown(name string) bool {
 	return false
 }
 
-// seitenAnlegen baut den Seitenbaum aus den Pfaden im Archiv.
+// planen baut den Seitenbaum aus den Pfaden im Archiv -- ohne etwas anzulegen.
 //
 // Ein Verzeichnis wird zu einer Seite. Enthält es index.md (oder README.md,
 // oder INHALT.md, wie der eigene Export sie schreibt), ist dieses Dokument der
 // Inhalt dieser Seite; sonst entsteht eine leere Seite, die nur die Unterseiten
 // zusammenhält. Beides ist besser als der flache Haufen, zu dem ein Import
 // sonst führt.
-func (s *Server) seitenAnlegen(ctx context.Context, uid, elternID, spaceID string, dateien []einfuhrDatei) ([]*einfuhrSeite, []string, error) {
-	var seiten []*einfuhrSeite
-	var wurzeln []string
+//
+// Getrennt vom Anlegen, damit dieselbe Rechnung zweimal gebraucht werden kann:
+// einmal für die Vorschau, die nichts anfasst, und einmal für die Einfuhr. Wer
+// die Vorschau aus einem zweiten Stück Code baut, zeigt eines Tages etwas
+// anderes an, als er anlegt.
+func planen(dateien []einfuhrDatei) []*einfuhrSeite {
+	var plan []*einfuhrSeite
 
 	// Alle vorkommenden Verzeichnisse einsammeln, samt der Zwischenstufen: ein
 	// Archiv, das nur "a/b/c.md" enthält, hat trotzdem die Ebenen a und a/b.
@@ -331,37 +424,8 @@ func (s *Server) seitenAnlegen(ctx context.Context, uid, elternID, spaceID strin
 		}
 	}
 
-	// verzSeite hält für jedes Verzeichnis die Seite, unter der sein Inhalt
-	// hängt. Für die Wurzel ist das die vom Aufrufer gewählte Zielseite --
-	// oder gar keine, dann entstehen die Seiten ganz oben.
-	verzSeite := map[string]string{"": elternID}
-
-	nummer := 0
-	anlegen := func(titel, quelle, verz string, kopf einlesen.Kopf, bloecke []einlesen.Block, eltern string) (*einfuhrSeite, error) {
-		nummer++
-		var elternWert any
-		if eltern != "" {
-			elternWert = eltern
-		}
-		var spaceWert any
-		if spaceID != "" {
-			spaceWert = spaceID
-		}
-		var id string
-		err := s.Pool.QueryRow(ctx,
-			`INSERT INTO pages (owner_id, parent_id, space_id, title, content, icon, content_text, sort_order)
-			 VALUES ($1, $2, $3, $4, '[]'::jsonb, $5, '', $6) RETURNING id`,
-			uid, elternWert, spaceWert, titel, kopf.Icon, nummer).Scan(&id)
-		if err != nil {
-			return nil, err
-		}
-		sp := &einfuhrSeite{id: id, titel: titel, pfad: quelle, verz: verz, kopf: kopf, bloecke: bloecke}
-		seiten = append(seiten, sp)
-		if eltern == elternID {
-			wurzeln = append(wurzeln, id)
-		}
-		return sp, nil
-	}
+	// Für jedes Verzeichnis die Seite, unter der sein Inhalt hängt.
+	verzSeite := map[string]*einfuhrSeite{}
 
 	// Erst die Verzeichnisseiten, von oben nach unten.
 	for _, v := range sortiert {
@@ -373,32 +437,22 @@ func (s *Server) seitenAnlegen(ctx context.Context, uid, elternID, spaceID strin
 			continue
 		}
 
-		eltern := verzSeite[elternVerzeichnis(v)]
-		titel := path.Base(v)
-		var kopf einlesen.Kopf
-		var bloecke []einlesen.Block
-		quelle := ""
-
+		sp := &einfuhrSeite{verz: v, titel: sauberterTitel(path.Base(v)), eltern: verzSeite[elternVerzeichnis(v)]}
 		if hatIndex {
-			d := findeDatei(dateien, idx)
-			if d != nil {
-				quelle = d.pfad
-				t, k, b := einlesen.Lies(string(d.inhalt))
-				kopf, bloecke = k, b
+			if d := findeDatei(dateien, idx); d != nil {
+				sp.pfad = d.pfad
+				t, k, b := dateiLesen(*d)
+				sp.kopf, sp.bloecke = k, b
 				if t != "" {
-					titel = t
+					sp.titel = t
 				}
 			}
 		}
-		if titel == "" || titel == "." {
-			titel = "Einfuhr"
+		if sp.titel == "" || sp.titel == "." {
+			sp.titel = "Einfuhr"
 		}
-
-		sp, err := anlegen(titel, quelle, v, kopf, bloecke, eltern)
-		if err != nil {
-			return nil, nil, err
-		}
-		verzSeite[v] = sp.id
+		plan = append(plan, sp)
+		verzSeite[v] = sp
 	}
 
 	// Dann alle übrigen Dateien.
@@ -411,15 +465,57 @@ func (s *Server) seitenAnlegen(ctx context.Context, uid, elternID, spaceID strin
 		if indexVon[v] == strings.ToLower(d.pfad) {
 			continue // steckt schon in der Verzeichnisseite
 		}
-		titel, kopf, bloecke := einlesen.Lies(string(d.inhalt))
+		titel, kopf, bloecke := dateiLesen(d)
 		if titel == "" {
-			titel = strings.TrimSuffix(path.Base(d.pfad), path.Ext(d.pfad))
+			titel = sauberterTitel(strings.TrimSuffix(path.Base(d.pfad), path.Ext(d.pfad)))
 		}
-		if _, err := anlegen(titel, d.pfad, v, kopf, bloecke, verzSeite[v]); err != nil {
-			return nil, nil, err
+		plan = append(plan, &einfuhrSeite{
+			pfad: d.pfad, verz: v, titel: titel, kopf: kopf, bloecke: bloecke,
+			eltern: verzSeite[v],
+		})
+	}
+	return plan
+}
+
+// dateiLesen wählt den Leser nach der Endung. Markdown und HTML kommen beide
+// als Blöcke heraus; alles Weitere unterscheidet der Rest des Ablaufs nicht.
+func dateiLesen(d einfuhrDatei) (string, einlesen.Kopf, []einlesen.Block) {
+	if istHTML(d.pfad) {
+		titel, bloecke := einlesen.LiesHTML(string(d.inhalt))
+		return titel, einlesen.Kopf{}, bloecke
+	}
+	return einlesen.Lies(string(d.inhalt))
+}
+
+// anlegen schreibt den Plan in die Datenbank und trägt die Kennungen nach.
+func (s *Server) anlegen(ctx context.Context, uid, elternID, spaceID string, plan []*einfuhrSeite) ([]string, error) {
+	var wurzeln []string
+	for i, sp := range plan {
+		eltern := elternID
+		if sp.eltern != nil {
+			eltern = sp.eltern.id
+		}
+		var elternWert, spaceWert any
+		if eltern != "" {
+			elternWert = eltern
+		}
+		if spaceID != "" {
+			spaceWert = spaceID
+		}
+		var id string
+		err := s.Pool.QueryRow(ctx,
+			`INSERT INTO pages (owner_id, parent_id, space_id, title, content, icon, content_text, sort_order)
+			 VALUES ($1, $2, $3, $4, '[]'::jsonb, $5, '', $6) RETURNING id`,
+			uid, elternWert, spaceWert, sp.titel, sp.kopf.Icon, i+1).Scan(&id)
+		if err != nil {
+			return nil, err
+		}
+		sp.id = id
+		if sp.eltern == nil {
+			wurzeln = append(wurzeln, id)
 		}
 	}
-	return seiten, wurzeln, nil
+	return wurzeln, nil
 }
 
 func elternVerzeichnis(v string) string {

@@ -16,6 +16,7 @@ import PruefspurView from "./PruefspurView";
 import EinstellungenView from "./EinstellungenView";
 import TagView from "./TagView";
 import GruppenView from "./GruppenView";
+import PostfachView from "./PostfachView";
 
 export default function Workspace() {
   const nav = useNavigate();
@@ -25,6 +26,9 @@ export default function Workspace() {
   const [favorites, setFavorites] = useState<PageMeta[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [spaces, setSpaces] = useState<Space[]>([]);
+  // Zahl der ungelesenen Nachrichten. Sie hängt an keiner Ansicht, sondern an
+  // der Leiste, und wird deshalb hier gehalten.
+  const [ungelesen, setUngelesen] = useState(0);
 
   // useCallback keeps these stable, so the effect below runs once on mount
   // instead of on every render. A failed refresh is swallowed and simply leaves
@@ -38,6 +42,10 @@ export default function Workspace() {
   const refreshFav = useCallback(() => api.listFavorites().then(setFavorites).catch(() => {}), []);
   const refreshTags = useCallback(() => api.listTags().then(setTags).catch(() => {}), []);
   const refreshSpaces = useCallback(() => api.listSpaces().then(setSpaces).catch(() => {}), []);
+  const refreshPostfach = useCallback(
+    () => api.postfachAnzahl().then((a) => setUngelesen(a.ungelesen)).catch(() => {}),
+    [],
+  );
 
   useEffect(() => {
     refreshPages();
@@ -46,6 +54,16 @@ export default function Workspace() {
     refreshTags();
     refreshSpaces();
   }, [refreshPages, refreshShared, refreshFav, refreshTags, refreshSpaces]);
+
+  // Das Postfach wird regelmäßig nachgesehen. Eine Minute ist der Abstand
+  // zwischen "erfährt es zu spät" und "fragt ohne Anlass": es geht um
+  // Kommentare, nicht um eine Unterhaltung in Echtzeit. Geholt wird nur die
+  // Zahl, nicht die Liste.
+  useEffect(() => {
+    refreshPostfach();
+    const uhr = setInterval(refreshPostfach, 60_000);
+    return () => clearInterval(uhr);
+  }, [refreshPostfach]);
 
   // Navigate to the new page only after the tree has been refreshed, otherwise
   // the sidebar would briefly show no entry for the page now open.
@@ -136,6 +154,7 @@ export default function Workspace() {
         onMovePage={movePage}
         onNavigate={(to) => nav(to)}
         currentPath={loc.pathname}
+        ungelesen={ungelesen}
         onEingefuehrt={() => {
           refreshPages();
           refreshSpaces();
@@ -160,6 +179,7 @@ export default function Workspace() {
               />
             }
           />
+          <Route path="postfach" element={<PostfachView onGelesen={refreshPostfach} />} />
           <Route
             path="trash"
             element={

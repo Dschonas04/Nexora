@@ -59,6 +59,14 @@ type PageMeta struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+// PapierkorbSeite is a trashed page. It carries the date it will disappear on,
+// so the view can say how long is left instead of leaving the reader to guess
+// -- a trash with an expiry that nobody can see is a trap.
+type PapierkorbSeite struct {
+	PageMeta
+	VerfaelltAm *time.Time `json:"verfaelltAm"`
+}
+
 // Spureintrag is one row of the audit trail.
 //
 // Names and titles are frozen copies, not joins: an entry has to stay readable

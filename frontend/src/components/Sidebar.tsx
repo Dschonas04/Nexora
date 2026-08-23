@@ -3,7 +3,7 @@
 // from Workspace; what it does own is view state such as which branches are
 // open and what is currently being dragged.
 import { useEffect, useState } from "react";
-import { PageMeta, SearchHit, Space, Tag, api } from "../api/client";
+import { PageMeta, SearchHit, Space, SuchFilter, Tag, api } from "../api/client";
 import { useLizenz } from "../lizenz";
 import { useAuth } from "../auth";
 import PageTree from "./PageTree";
@@ -27,6 +27,9 @@ function gemerkteZu(): Set<string> {
 }
 
 interface Props {
+  /** Ungelesene Nachrichten -- die Zahl kommt von oben, damit sie nur einmal
+      geholt wird und nicht je Ansicht neu. */
+  ungelesen: number;
   pages: PageMeta[];
   shared: PageMeta[];
   favorites: PageMeta[];
@@ -71,6 +74,7 @@ export default function Sidebar(props: Props) {
     onNavigate,
     currentPath,
     onEingefuehrt,
+    ungelesen,
   } = props;
   const { user, logout } = useAuth();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -131,6 +135,11 @@ export default function Sidebar(props: Props) {
     api.vorlagen().then(setVorlagen).catch(() => setVorlagen([]));
   }, [frei, pages]);
   const [results, setResults] = useState<SearchHit[] | null>(null);
+  // Filter der Suche. Getrennt vom Suchwort, damit ein gesetzter Filter beim
+  // Weitertippen stehen bleibt -- man engt einmal ein und sucht dann mehrmals.
+  const [filter, setFilter] = useState<SuchFilter>({});
+  const [filterOffen, setFilterOffen] = useState(false);
+  const filterAktiv = Boolean(filter.space || filter.tag || filter.tage || filter.wer);
   const [dragId, setDragId] = useState<string | null>(null);
   // One drop target for three kinds of destination, encoded as a string: a bare
   // page id, "space:<id>" for a space header, or "root" for the ungrouped
@@ -189,10 +198,10 @@ export default function Sidebar(props: Props) {
       return;
     }
     const t = setTimeout(() => {
-      api.search(q).then(setResults).catch(() => setResults([]));
+      api.search(q, filter).then(setResults).catch(() => setResults([]));
     }, 250);
     return () => clearTimeout(t);
-  }, [q]);
+  }, [q, filter]);
 
   // Flat row without nesting or drag handles, used wherever hierarchy carries no
   // meaning: search results, favorites and pages shared with the user.
@@ -309,12 +318,77 @@ export default function Sidebar(props: Props) {
 
       <div className="search-box">
         <input placeholder="Suchen…" value={q} onChange={(e) => setQ(e.target.value)} />
+        {/* Der Knopf erscheint erst beim Suchen: ohne Suchwort gäbe es nichts
+            einzugrenzen. Der Punkt daneben sagt, dass ein Filter steht --
+            sonst wundert man sich über zu wenige Treffer. */}
+        {q.trim() !== "" && (
+          <button
+            className={"icon-btn" + (filterAktiv ? " aktiv" : "")}
+            title={filterAktiv ? "Filter (aktiv)" : "Treffer eingrenzen"}
+            onClick={() => setFilterOffen((v) => !v)}
+          >
+            ⚙
+          </button>
+        )}
       </div>
+
+      {q.trim() !== "" && filterOffen && (
+        <div className="suchfilter">
+          <select
+            value={filter.space ?? ""}
+            onChange={(e) => setFilter((f) => ({ ...f, space: e.target.value || undefined }))}
+          >
+            <option value="">Alle Ablagen</option>
+            <option value="ohne">Ohne Ablage</option>
+            {spaces.map((sp) => (
+              <option key={sp.id} value={sp.id}>
+                {sp.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filter.tag ?? ""}
+            onChange={(e) => setFilter((f) => ({ ...f, tag: e.target.value || undefined }))}
+          >
+            <option value="">Alle Schlagworte</option>
+            {tags.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filter.tage ? String(filter.tage) : ""}
+            onChange={(e) =>
+              setFilter((f) => ({ ...f, tage: e.target.value ? Number(e.target.value) : undefined }))
+            }
+          >
+            <option value="">Beliebig alt</option>
+            <option value="7">Letzte 7 Tage</option>
+            <option value="30">Letzte 30 Tage</option>
+            <option value="365">Letztes Jahr</option>
+          </select>
+          <select
+            value={filter.wer ?? ""}
+            onChange={(e) => setFilter((f) => ({ ...f, wer: e.target.value || undefined }))}
+          >
+            <option value="">Von allen</option>
+            <option value="ich">Nur meine</option>
+          </select>
+          {filterAktiv && (
+            <button className="link-btn" onClick={() => setFilter({})}>
+              zurücksetzen
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="sidebar-scroll">
         {results !== null ? (
           <div className="sidebar-section">
-            <div className="sidebar-section-title">Ergebnisse</div>
+            <div className="sidebar-section-title">
+              Ergebnisse{filterAktiv ? " (gefiltert)" : ""}
+            </div>
             {results.length === 0 && <div className="tree-row muted">Keine Treffer</div>}
             {results.map(trefferRow)}
           </div>
@@ -695,6 +769,15 @@ export default function Sidebar(props: Props) {
               <Klapptitel marke="workspace" zu={zu} klappen={klappen}>
                 Workspace
               </Klapptitel>
+              <div
+                className={"tree-row" + (currentPath === "/postfach" ? " active" : "")}
+                onClick={() => onNavigate("/postfach")}
+              >
+                <span className="tree-label">Postfach</span>
+                {/* Die Zahl steht nur da, wenn sie etwas sagt. Eine Null neben
+                    dem Eintrag wäre eine Aufforderung ohne Anlass. */}
+                {ungelesen > 0 && <span className="postfach-zaehler">{ungelesen}</span>}
+              </div>
               <div
                 className={"tree-row" + (currentPath === "/graph" ? " active" : "")}
                 onClick={() => onNavigate("/graph")}

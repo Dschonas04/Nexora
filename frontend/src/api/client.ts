@@ -317,6 +317,51 @@ export interface EinfuhrBericht {
   warnungen: string[];
 }
 
+// EinfuhrAst ist ein Knoten der Vorschau -- der Baum, wie er entstehen würde.
+// PapierkorbSeite trägt zusätzlich den Tag, an dem sie von selbst verschwindet.
+// null heißt: die Instanz löscht nichts von selbst.
+export interface PapierkorbSeite extends PageMeta {
+  verfaelltAm: string | null;
+}
+
+export interface EinfuhrAst {
+  titel: string;
+  quelle: string;
+  kinder?: EinfuhrAst[];
+}
+
+export interface EinfuhrVorschau {
+  seiten: number;
+  beilagen: number;
+  baum: EinfuhrAst[];
+  warnungen: string[];
+}
+
+// SuchFilter grenzt eine Suche ein. Alle Felder sind freiwillig; leer heißt
+// "keine Einschränkung".
+// Nachricht ist ein Eintrag im Postfach.
+export interface Nachricht {
+  id: string;
+  art: "kommentar" | "antwort" | "erwaehnung" | "freigabe";
+  pageId: string | null;
+  kommentarId: string | null;
+  ausloeserName: string;
+  seitenTitel: string;
+  text: string;
+  gelesenAm: string | null;
+  erstelltAm: string;
+}
+
+export interface SuchFilter {
+  /** Kennung einer Ablage, oder "ohne" für Seiten ohne Ablage. */
+  space?: string;
+  tag?: string;
+  /** Nur Seiten, die in den letzten n Tagen geändert wurden. */
+  tage?: number;
+  /** "ich" beschränkt auf eigene Seiten. */
+  wer?: string;
+}
+
 export interface SearchHit {
   id: string;
   parentId: string | null;
@@ -428,7 +473,7 @@ export const api = {
 
   listPages: () => req<PageMeta[]>("/pages"),
   listShared: () => req<PageMeta[]>("/pages/shared"),
-  listTrash: () => req<PageMeta[]>("/pages/trash"),
+  listTrash: () => req<PapierkorbSeite[]>("/pages/trash"),
   createPage: (parentId?: string | null, spaceId?: string | null, vorlageId?: string) =>
     req<Page>("/pages", {
       method: "POST",
@@ -518,15 +563,30 @@ export const api = {
   // Einfuhr: eine oder mehrere Markdown-Dateien, oder ein ZIP mit Struktur.
   // Wie beim Anhang an req vorbei, aus demselben Grund -- FormData setzt der
   // Browser samt Grenzmarke selbst.
-  importieren: async (dateien: File[], ziel: { parentId?: string; spaceId?: string }) => {
+  importieren: async (
+    dateien: File[],
+    ziel: { parentId?: string; spaceId?: string },
+    vorschau = false,
+  ) => {
     const body = new FormData();
     for (const d of dateien) body.append("file", d);
     if (ziel.parentId) body.append("parentId", ziel.parentId);
     if (ziel.spaceId) body.append("spaceId", ziel.spaceId);
+    // Derselbe Aufruf mit demselben Inhalt, nur ohne Folgen -- der Server
+    // rechnet denselben Plan und legt nichts an.
+    if (vorschau) body.append("vorschau", "1");
     const res = await fetch(`/api/import`, { method: "POST", credentials: "include", body });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
-    return (await res.json()) as EinfuhrBericht;
+    return (await res.json()) as EinfuhrBericht & EinfuhrVorschau;
   },
+
+  // Postfach
+  postfach: (nurUngelesen = false) =>
+    req<Nachricht[]>(`/postfach${nurUngelesen ? "?ungelesen=1" : ""}`),
+  postfachAnzahl: () => req<{ ungelesen: number }>("/postfach/anzahl"),
+  postfachGelesen: (id?: string) =>
+    req<{ ok: boolean }>(id ? `/postfach/${id}/gelesen` : "/postfach/gelesen", { method: "POST" }),
+  postfachLeeren: () => req<{ geloescht: number }>("/postfach", { method: "DELETE" }),
 
   // Per-user sharing + roles
   listShares: (id: string) => req<ShareEntry[]>(`/pages/${id}/shares`),
@@ -594,6 +654,15 @@ export const api = {
     req<void>(`/pages/${pageId}/tags/${tagId}`, { method: "DELETE" }),
 
   // encodeURIComponent matters here: a query may contain &, # or a slash.
-  search: (q: string) => req<SearchHit[]>(`/search?q=${encodeURIComponent(q)}`),
+  // Filter als Parameter statt als Suchsprache im Feld: wer "space:technik"
+  // tippen muss, tippt es falsch.
+  search: (q: string, filter?: SuchFilter) => {
+    const p = new URLSearchParams({ q });
+    if (filter?.space) p.set("space", filter.space);
+    if (filter?.tag) p.set("tag", filter.tag);
+    if (filter?.tage) p.set("tage", String(filter.tage));
+    if (filter?.wer) p.set("wer", filter.wer);
+    return req<SearchHit[]>(`/search?${p.toString()}`);
+  },
   getPublicPage: (token: string) => req<PublicPage>(`/public/${token}`),
 };

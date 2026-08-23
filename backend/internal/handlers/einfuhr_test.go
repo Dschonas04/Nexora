@@ -186,3 +186,62 @@ func TestRundlaufCodeMitRandLeerzeichen(t *testing.T) {
 		t.Fatalf("Randleerzeichen verloren:\n%s", zurueck)
 	}
 }
+
+func TestNotionKennungFaelltWeg(t *testing.T) {
+	faelle := map[string]string{
+		"Wochenplan 8f3a1b2c4d5e6f708192a3b4c5d6e7f8": "Wochenplan",
+		"Ein Ordner-8f3a1b2c4d5e6f708192a3b4c5d6e7f8": "Ein Ordner",
+		"Ganz normal":  "Ganz normal",
+		"Bericht 2026": "Bericht 2026",
+		"Nicht hex zzza1b2c4d5e6f708192a3b4c5d6e7f8": "Nicht hex zzza1b2c4d5e6f708192a3b4c5d6e7f8",
+	}
+	for rein, raus := range faelle {
+		if got := sauberterTitel(rein); got != raus {
+			t.Errorf("sauberterTitel(%q) = %q, erwartet %q", rein, got, raus)
+		}
+	}
+}
+
+func TestPlanBautDenBaum(t *testing.T) {
+	plan := planen([]einfuhrDatei{
+		{pfad: "INHALT.md", inhalt: []byte("# Deckblatt\n")},
+		{pfad: "Projekte/index.md", inhalt: []byte("# Alle Projekte\n")},
+		{pfad: "Projekte/Ofen.md", inhalt: []byte("# Ofen\n")},
+		{pfad: "Notizen/eins.md", inhalt: []byte("# Eins\n")},
+	})
+	if len(plan) != 5 {
+		t.Fatalf("erwartet fünf Seiten (drei Dateien, ein Ordner ohne Index, ein Deckblatt), bekam %d", len(plan))
+	}
+	baum := baumAusPlan(plan)
+	if len(baum) != 1 || baum[0].Titel != "Deckblatt" {
+		t.Fatalf("Deckblatt nicht oben: %+v", baum)
+	}
+	// Unter dem Deckblatt: die beiden Ordner.
+	namen := map[string]bool{}
+	for _, k := range baum[0].Kinder {
+		namen[k.Titel] = true
+	}
+	if !namen["Alle Projekte"] || !namen["Notizen"] {
+		t.Fatalf("Ordnerseiten fehlen: %+v", baum[0].Kinder)
+	}
+}
+
+func TestPlanOhneDeckblattHaengtObenAn(t *testing.T) {
+	plan := planen([]einfuhrDatei{
+		{pfad: "eins.md", inhalt: []byte("# Eins\n")},
+		{pfad: "zwei.md", inhalt: []byte("# Zwei\n")},
+	})
+	baum := baumAusPlan(plan)
+	if len(baum) != 2 {
+		t.Fatalf("erwartet zwei Wurzeln, bekam %+v", baum)
+	}
+}
+
+func TestPlanLiestAuchHTML(t *testing.T) {
+	plan := planen([]einfuhrDatei{
+		{pfad: "seite.html", inhalt: []byte("<html><body><h1>Aus HTML</h1><p>Text</p></body></html>")},
+	})
+	if len(plan) != 1 || plan[0].titel != "Aus HTML" {
+		t.Fatalf("HTML nicht gelesen: %+v", plan)
+	}
+}

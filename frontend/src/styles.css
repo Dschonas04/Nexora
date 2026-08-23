@@ -2262,3 +2262,132 @@ a {
   font-size: 13px;
   line-height: 1.6;
 }
+.einfuhr-baum {
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 4px;
+  margin-bottom: 4px;
+}
+.einfuhr-aeste {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.7;
+  list-style: none;
+}
+/* Ein Strich statt Punkten: bei fünf Ebenen sagt die Linie mehr über die
+   Zugehörigkeit als jede Aufzählungsmarke. */
+.einfuhr-aeste .einfuhr-aeste {
+  border-left: 1px solid var(--border);
+  margin-left: 3px;
+  padding-left: 14px;
+}
+.einfuhr-bericht .rechte-abschluss {
+  gap: 8px;
+}
+
+/* Wird die Frist knapp, soll die Zeile das sagen, ohne zu schreien. */
+.list-row .bald {
+  color: var(--fehler-text);
+}
+
+/* ---- Suchfilter ---------------------------------------------------------- */
+
+.suchfilter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 0 12px 8px;
+}
+.suchfilter select {
+  flex: 1 1 45%;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+}
+/* Ein gesetzter Filter muss auch dann sichtbar sein, wenn die Zeile
+   eingeklappt ist -- sonst sucht man in einer Ecke und hält das Ergebnis für
+   den ganzen Bestand. */
+.search-box .icon-btn.aktiv {
+  color: var(--accent);
+}
+
+/* ---- Postfach ------------------------------------------------------------ */
+
+.postfach-zaehler {
+  margin-left: auto;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+.postfach-leiste {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 10px;
+}
+.postfach-schalter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.wachsen {
+  flex: 1 1 auto;
+}
+.postfach-zeile {
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+.postfach-zeile:hover {
+  background: var(--hover);
+}
+/* Der Punkt trägt die Unterscheidung gelesen/ungelesen, nicht die Schriftstärke
+   allein: bei zwanzig Zeilen sieht man einen Punkt schneller als ein etwas
+   dickeres Wort. */
+.postfach-punkt {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: transparent;
+}
+.postfach-zeile.ungelesen .postfach-punkt {
+  background: var(--accent);
+}
+.postfach-zeile.ungelesen .postfach-kopf {
+  font-weight: 500;
+}
+.postfach-inhalt {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.postfach-kopf {
+  font-size: 13px;
+}
+.postfach-seite {
+  text-decoration: underline;
+}
+.postfach-auszug {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

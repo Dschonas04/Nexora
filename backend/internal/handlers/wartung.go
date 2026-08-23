@@ -336,12 +336,14 @@ func (s *Server) PapierkorbLeeren(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
 		return
 	}
-	tag, err := s.Pool.Exec(r.Context(), `DELETE FROM pages WHERE deleted_at IS NOT NULL`)
+	// Derselbe Weg wie bei der Frist -- sonst räumt der Knopf eines Tages
+	// anders auf als die Uhr, und die Anhänge blieben bei einem der beiden
+	// liegen.
+	anzahl, err := s.PapierkorbAufraeumen(r.Context(), 0)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "Löschen fehlgeschlagen")
 		return
 	}
-	anzahl := tag.RowsAffected()
 	s.spurAusRequest(r, AktPapierkorbLeer, "system", "", "",
 		map[string]interface{}{"seiten": anzahl})
 	writeJSON(w, http.StatusOK, map[string]int64{"geloescht": anzahl})

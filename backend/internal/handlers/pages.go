@@ -325,10 +325,21 @@ func (s *Server) ListTrash(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	list := []models.PageMeta{}
+	// Die Frist wird einmal gelesen und für alle Zeilen gerechnet: sie gilt für
+	// die ganze Instanz, und ein Aufruf je Zeile hieße, dieselbe Zahl fünfzig
+	// Mal zu holen.
+	tage := PapierkorbTage()
+
+	list := []models.PapierkorbSeite{}
 	for rows.Next() {
-		var p models.PageMeta
+		var p models.PapierkorbSeite
 		if err := rows.Scan(&p.ID, &p.ParentID, &p.SpaceID, &p.Title, &p.Icon, &p.UpdatedAt); err == nil {
+			// UpdatedAt trägt hier das Löschdatum -- die Spalte heißt so, weil
+			// die Leiste dieselbe Gestalt liest.
+			if tage > 0 {
+				verfaellt := p.UpdatedAt.AddDate(0, 0, tage)
+				p.VerfaelltAm = &verfaellt
+			}
 			list = append(list, p)
 		}
 	}

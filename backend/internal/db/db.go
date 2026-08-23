@@ -243,6 +243,37 @@ CREATE TABLE IF NOT EXISTS kommentare (
 CREATE INDEX IF NOT EXISTS kommentare_page_idx   ON kommentare(page_id, erstellt_am);
 CREATE INDEX IF NOT EXISTS kommentare_eltern_idx ON kommentare(eltern_id);
 
+-- Das Postfach: was an ein Konto gerichtet war, seit es zuletzt hingesehen hat.
+--
+-- Ohne diese Tabelle erreichte ein Kommentar niemanden. Er stand unter einer
+-- Seite und wartete darauf, dass jemand sie zufällig wieder öffnet -- eine
+-- Rückfrage, die eine Woche unbeantwortet bleibt, ist keine Rückfrage mehr.
+--
+-- Die Angaben zum Auslöser sind Kopien und keine Verknüpfungen. Ein Eintrag
+-- muss lesbar bleiben, wenn das Konto gelöscht wurde, das ihn ausgelöst hat;
+-- dasselbe Argument wie in der Prüfspur.
+--
+-- Der Seitenbezug hängt dagegen an der Seite: verschwindet sie endgültig,
+-- verschwindet auch die Nachricht darüber. Ein Postfacheintrag, der ins Leere
+-- führt, wäre nur noch Ärger.
+CREATE TABLE IF NOT EXISTS postfach (
+	id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	empfaenger_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	art           text NOT NULL,
+	page_id       uuid REFERENCES pages(id) ON DELETE CASCADE,
+	kommentar_id  uuid REFERENCES kommentare(id) ON DELETE CASCADE,
+	ausloeser_id  uuid REFERENCES users(id) ON DELETE SET NULL,
+	ausloeser_name text NOT NULL DEFAULT '',
+	seiten_titel  text NOT NULL DEFAULT '',
+	text          text NOT NULL DEFAULT '',
+	gelesen_am    timestamptz,
+	erstellt_am   timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS postfach_empfaenger_idx ON postfach(empfaenger_id, erstellt_am DESC);
+-- Teilindex: gefragt wird fast immer nur nach dem Ungelesenen, und das ist der
+-- kleine Teil der Tabelle.
+CREATE INDEX IF NOT EXISTS postfach_ungelesen_idx ON postfach(empfaenger_id) WHERE gelesen_am IS NULL;
+
 -- Einstellungen, die zur Laufzeit über die Oberfläche geändert werden.
 --
 -- Sie liegen NICHT in config.conf, weil eine Datei im Container niemand aus
