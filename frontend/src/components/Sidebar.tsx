@@ -765,9 +765,14 @@ export default function Sidebar(props: Props) {
               </div>
             )}
 
+            {/* Was zum eigenen Arbeiten gehört. Die Überschrift hieß einmal
+                "Workspace" -- ein englischer Rest, der außerdem nichts über
+                den Inhalt sagte: darunter standen Posteingang und Papierkorb
+                neben der Nutzerverwaltung. Die Verwaltung steht deshalb jetzt
+                für sich, siehe unten. */}
             <div className="sidebar-section">
               <Klapptitel marke="workspace" zu={zu} klappen={klappen}>
-                Workspace
+                Arbeitsbereich
               </Klapptitel>
               <div
                 className={"tree-row" + (currentPath === "/postfach" ? " active" : "")}
@@ -790,44 +795,48 @@ export default function Sidebar(props: Props) {
               >
                 <span className="tree-label">Papierkorb</span>
               </div>
-              {/* Admin view is hidden for everyone else. This only tidies the
-                  UI: the backend checks the role again on every call. */}
-              {user?.role === "admin" && (
+            </div>
+
+            {/* Verwaltung. Nur für Administratoren sichtbar -- das räumt allein
+                die Oberfläche auf, das Backend prüft die Rolle bei jedem Aufruf
+                erneut. Gruppen und Prüfspur sind zusätzlich Zusatzumfang: ein
+                Eintrag, der ohnehin abgewiesen würde, wird gar nicht erst
+                angeboten. */}
+            {user?.role === "admin" && (
+              <div className="sidebar-section">
+                <Klapptitel marke="verwaltung" zu={zu} klappen={klappen}>
+                  Verwaltung
+                </Klapptitel>
                 <div
                   className={"tree-row" + (currentPath === "/admin" ? " active" : "")}
                   onClick={() => onNavigate("/admin")}
                 >
                   <span className="tree-label">Nutzer &amp; Rollen</span>
                 </div>
-              )}
-              {/* Die Prüfspur ist Admin UND Zusatzumfang. Beides wird auch im
-                  Backend geprüft; hier geht es nur darum, keinen Eintrag
-                  anzubieten, der ohnehin abgewiesen würde. */}
-              {user?.role === "admin" && (
                 <div
                   className={"tree-row" + (currentPath === "/einstellungen" ? " active" : "")}
                   onClick={() => onNavigate("/einstellungen")}
                 >
                   <span className="tree-label">Einstellungen</span>
                 </div>
-              )}
-              {user?.role === "admin" && frei("gruppen") && (
-                <div
-                  className={"tree-row" + (currentPath === "/gruppen" ? " active" : "")}
-                  onClick={() => onNavigate("/gruppen")}
-                >
-                  <span className="tree-label">Gruppen</span>
-                </div>
-              )}
-              {user?.role === "admin" && frei("pruefspur") && (
-                <div
-                  className={"tree-row" + (currentPath === "/pruefspur" ? " active" : "")}
-                  onClick={() => onNavigate("/pruefspur")}
-                >
-                  <span className="tree-label">Prüfspur</span>
-                </div>
-              )}
-            </div>
+                {frei("gruppen") && (
+                  <div
+                    className={"tree-row" + (currentPath === "/gruppen" ? " active" : "")}
+                    onClick={() => onNavigate("/gruppen")}
+                  >
+                    <span className="tree-label">Gruppen</span>
+                  </div>
+                )}
+                {frei("pruefspur") && (
+                  <div
+                    className={"tree-row" + (currentPath === "/pruefspur" ? " active" : "")}
+                    onClick={() => onNavigate("/pruefspur")}
+                  >
+                    <span className="tree-label">Prüfspur</span>
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
