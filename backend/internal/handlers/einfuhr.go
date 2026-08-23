@@ -105,7 +105,13 @@ type einfuhrBericht struct {
 // Namen, unter denen ein Verzeichnis seine eigene Seite ablegt. Der Reihe nach
 // probiert: so wird aus einem Ordner mit index.md eine Seite mit Inhalt statt
 // einer leeren Hülle mit einer Unterseite namens "index".
-var indexNamen = []string{"index.md", "readme.md", "inhalt.md", "index.markdown"}
+var indexNamen = []string{
+	"index.md", "readme.md", "inhalt.md", "index.markdown",
+	// Dasselbe für HTML: eine Confluence-Ausfuhr legt ihr Deckblatt als
+	// index.html ab, und ohne diese Zeilen hinge es als gewöhnliche Seite
+	// neben dem Ordner statt darüber.
+	"index.html", "index.htm", "readme.html",
+}
 
 // Import nimmt Markdown entgegen: einzelne Dateien oder ein ZIP-Archiv.
 //
@@ -413,7 +419,7 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 		kandidaten := append([]string{}, indexNamen...)
 		// Obsidian legt die Notiz zum Ordner als gleichnamige Datei daneben.
 		if v != "" {
-			kandidaten = append(kandidaten, path.Base(v)+".md")
+			kandidaten = append(kandidaten, path.Base(v)+".md", path.Base(v)+".html")
 		}
 		for _, k := range kandidaten {
 			p := strings.ToLower(strings.TrimPrefix(path.Join(v, k), "/"))
