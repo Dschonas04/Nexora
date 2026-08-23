@@ -155,6 +155,20 @@ func bloeckeAus(zeilen []string) []Block {
 		}
 		text := absatzText(absatz)
 
+		// Eine eingerückte Zeile, die ganz aus einem Codestück besteht, kommt
+		// aus einem Codeblock. Der Editor hat keinen; der Export schreibt
+		// deshalb jede Zeile als `Text`, und die Einrückung steht davor statt
+		// darin. Wandert sie nicht in das Codestück hinein, verliert jeder
+		// eingerückte Codeblock beim Wiedereinlesen seine Stufen -- und
+		// Einrückung ist in Code kein Schmuck.
+		if len(absatz) == 1 && len(stapel) == 0 {
+			if einzug := absatz[0][:einzugVon(absatz[0])]; einzug != "" {
+				if inneres, marke, ok := ganzCode(text); ok {
+					text = marke + strings.ReplaceAll(einzug, "\t", "    ") + inneres + marke
+				}
+			}
+		}
+
 		// Eine Zeile, die nur aus einem Bild besteht, wird ein Bildblock. In
 		// einen Absatz gepackt wäre sie ein Verweis, den man anklicken muss --
 		// gemeint war ein Bild, das man sieht.
@@ -204,6 +218,29 @@ func ersterDerListe(k *knoten, geschwister []*knoten) {
 	if len(k.blk.Props) == 0 {
 		k.blk.Props = nil
 	}
+}
+
+// ganzCode sagt, ob eine Zeile aus nichts als einem Codestück besteht, und
+// liefert dessen Inhalt samt der Zahl der Rückstriche, die ihn einfassen.
+func ganzCode(z string) (string, string, bool) {
+	n := 0
+	for n < len(z) && z[n] == '`' {
+		n++
+	}
+	if n == 0 || len(z) < 2*n+1 {
+		return "", "", false
+	}
+	marke := z[:n]
+	if !strings.HasSuffix(z, marke) {
+		return "", "", false
+	}
+	inneres := z[n : len(z)-n]
+	// Ein Rückstrichlauf derselben Länge im Inneren hieße, dass die Zeile aus
+	// mehreren Stücken besteht und nicht aus einem.
+	if strings.Contains(inneres, marke) {
+		return "", "", false
+	}
+	return inneres, marke, true
 }
 
 // beginntBlock sagt, ob eine Zeile einen neuen Block anfängt. Ohne das würde

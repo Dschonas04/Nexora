@@ -502,6 +502,13 @@ func auszeichnen(s string, styles map[string]any) string {
 	}
 
 	if an("code") {
+		// Im Code gilt die Regel von oben NICHT: Leerzeichen am Anfang sind
+		// dort kein Rand, sondern Einrückung, und Einrückung ist in Code
+		// Inhalt. Stünde sie außerhalb der Rückstriche, verlöre sie jeder,
+		// der die Datei wieder einliest.
+		kern = s
+		links, rechts = "", ""
+
 		// Im Code bleibt jedes Zeichen, wie es ist -- deshalb wird hier NICHT
 		// maskiert. Stattdessen wird der Zaun so lang gemacht, dass er länger
 		// ist als jede Backtick-Folge im Text: anders bekommt man einen
@@ -510,8 +517,14 @@ func auszeichnen(s string, styles map[string]any) string {
 		for strings.Contains(kern, zaun) {
 			zaun += "`"
 		}
+		// Ein Füllzeichen an beiden Enden braucht es in zwei Fällen: wenn der
+		// Inhalt selbst mit einem Rückstrich anfängt oder aufhört, und wenn er
+		// an beiden Enden ein Leerzeichen hat -- genau dann nimmt ein Leser
+		// nach der Regel je eines wieder weg, und ohne Füllung wäre das der
+		// Inhalt.
 		fuellung := ""
-		if strings.HasPrefix(kern, "`") || strings.HasSuffix(kern, "`") {
+		if strings.HasPrefix(kern, "`") || strings.HasSuffix(kern, "`") ||
+			(strings.HasPrefix(kern, " ") && strings.HasSuffix(kern, " ")) {
 			fuellung = " "
 		}
 		kern = zaun + fuellung + kern + fuellung + zaun

@@ -161,3 +161,28 @@ func TestIstMarkdown(t *testing.T) {
 		}
 	}
 }
+
+func TestRundlaufCodeBehaeltEinrueckung(t *testing.T) {
+	// Der Editor hat keinen Codeblock; der Export schreibt jede Zeile als
+	// Codestück. Die Einrückung darf dabei nicht verloren gehen -- in Code
+	// ist sie kein Schmuck.
+	md := "```go\nfunc a() {\n    b()\n}\n```\n"
+	einmal := hinUndZurueck(t, md)
+	if !strings.Contains(einmal, "    b()") {
+		t.Fatalf("Einrückung nach dem ersten Lauf weg:\n%s", einmal)
+	}
+	zweimal := hinUndZurueck(t, einmal)
+	if !strings.Contains(zweimal, "    b()") {
+		t.Fatalf("Einrückung nach dem zweiten Lauf weg:\n%s", zweimal)
+	}
+}
+
+func TestRundlaufCodeMitRandLeerzeichen(t *testing.T) {
+	// Ein Leerzeichen an beiden Enden nimmt jeder Markdown-Leser wieder weg.
+	// Der Export muss deshalb füllen, sonst schrumpft der Code bei jedem Lauf.
+	md := "Vorher `  eng  ` nachher.\n"
+	zurueck := hinUndZurueck(t, hinUndZurueck(t, md))
+	if !strings.Contains(zurueck, "  eng  ") {
+		t.Fatalf("Randleerzeichen verloren:\n%s", zurueck)
+	}
+}
