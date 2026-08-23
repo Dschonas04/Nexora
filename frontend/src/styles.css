@@ -2391,3 +2391,44 @@ a {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Wartemuster beim Seitenwechsel. Die Balken sitzen dort, wo gleich Titel und
+   Text stehen, damit sich beim Eintreffen nichts verschiebt.
+
+   Sie starten unsichtbar und blenden sich erst nach kurzer Verzögerung ein:
+   eine Seite aus dem Heimnetz ist meist vorher da, und ein Muster, das nur
+   aufblitzt, ist unruhiger als gar keines. */
+.geruest-strich {
+  display: block;
+  height: 13px;
+  border-radius: 6px;
+  background: var(--border);
+  opacity: 0;
+  animation: geruest-ein 0.25s ease 0.15s forwards;
+}
+
+.geruest-titel {
+  height: 34px;
+  width: 46%;
+  border-radius: 8px;
+  margin: 0 0 22px;
+}
+
+.geruest-absatz {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+@keyframes geruest-ein {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Für Wartetexte, die eine schnelle Antwort gar nicht erst zeigen soll. */
+.empty-state.spaet {
+  opacity: 0;
+  animation: geruest-ein 0.25s ease 0.15s forwards;
+}

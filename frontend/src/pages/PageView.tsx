@@ -27,6 +27,43 @@ interface Props {
 const PALETTE = ["#e0507a", "#e08a2b", "#3aa675", "#2383e2", "#8b5cf6", "#6b7280"];
 const randomColor = () => PALETTE[Math.floor(Math.random() * PALETTE.length)];
 
+// Das Gerüst steht, solange eine Seite geholt wird: Leiste, Titel und ein paar
+// Textbalken an genau den Stellen, an denen gleich der Inhalt steht.
+//
+// Vorher stand hier ein blankes "Lädt…". Damit verschwand beim Blättern von
+// einer Seite zur nächsten die ganze Oberfläche rechts der Leiste und baute
+// sich einen Wimpernschlag später wieder auf -- im Heimnetz ein Flackern, über
+// eine träge Leitung ein Sprung, bei dem man den Platz seines Textes verliert.
+//
+// Die Balken blenden sich verzögert ein. Eine Seite, die in wenigen
+// Millisekunden da ist, zeigt deshalb gar kein Wartemuster, sondern nur den
+// ruhigen Rahmen, in den sie fällt.
+function Geruest() {
+  return (
+    <div className="page-layout">
+      <div className="page-main">
+        <div className="topbar">
+          <span className="geruest-strich" style={{ width: 140 }} />
+        </div>
+        <div className="editor-scroll">
+          <div className="page">
+            <div className="geruest-strich geruest-titel" />
+            <div className="geruest-absatz">
+              <span className="geruest-strich" style={{ width: "94%" }} />
+              <span className="geruest-strich" style={{ width: "88%" }} />
+              <span className="geruest-strich" style={{ width: "61%" }} />
+            </div>
+            <div className="geruest-absatz">
+              <span className="geruest-strich" style={{ width: "91%" }} />
+              <span className="geruest-strich" style={{ width: "43%" }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PageView({ allTags, onMetaChange, onFavChange, onTagsChange, onDelete }: Props) {
   const { id } = useParams();
   const nav = useNavigate();
@@ -144,7 +181,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     }
   };
 
-  if (loading) return <div className="empty-state">Lädt…</div>;
+  if (loading) return <Geruest />;
   if (!page) return <div className="empty-state">Seite nicht gefunden.</div>;
 
   const canEdit = page.canEdit;
