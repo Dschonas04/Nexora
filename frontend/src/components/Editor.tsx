@@ -7,6 +7,9 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { locales } from "@blocknote/core";
 import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
+import { Extension } from "@tiptap/core";
+import { Plugin } from "@tiptap/pm/state";
+import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 // Shared pattern for [[Page title]]. It carries the g flag, so lastIndex has to
 // be reset before each use; see onClickCapture below.
@@ -28,6 +31,55 @@ function caretInfo(x: number, y: number): { node: Node; offset: number } | null 
     if (r) return { node: r.offsetNode, offset: r.offset };
   }
   return null;
+}
+
+// Hebt [[Verweise]] im Text hervor.
+//
+// Ein Verweis ist gewöhnlicher Text -- gerade das macht ihn haltbar, denn er
+// überlebt jede Umbenennung der Zielseite. Nur sah er dadurch auch aus wie
+// gewöhnlicher Text: die Klammern standen roh da, und dass man darauf klicken
+// kann, sah man ihm nicht an.
+//
+// Also legt diese Erweiterung eine Auszeichnung über die Fundstellen, ohne den
+// Text selbst anzurühren. Wer den Verweis auflöst, entscheidet die Seite: gibt
+// es das Ziel, wird der Titel als Verweis gezeichnet, sonst bleibt er blass und
+// unterstrichen -- ein Hinweis auf einen Titel, den es (noch) nicht gibt.
+function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) | undefined) {
+  return Extension.create({
+    name: "nexoraVerweise",
+    addProseMirrorPlugins() {
+      return [
+        new Plugin({
+          props: {
+            decorations(zustand) {
+              const loeser = aufloesen();
+              if (!loeser) return DecorationSet.empty;
+              const deko: Decoration[] = [];
+              zustand.doc.descendants((knoten, pos) => {
+                if (!knoten.isText || !knoten.text) return;
+                const text = knoten.text;
+                WIKI_RE.lastIndex = 0;
+                let m: RegExpExecArray | null;
+                while ((m = WIKI_RE.exec(text))) {
+                  const von = pos + m.index;
+                  const bis = von + m[0].length;
+                  const kennung = loeser(m[1].trim());
+                  deko.push(Decoration.inline(von, von + 2, { class: "verweis-klammer" }));
+                  deko.push(
+                    Decoration.inline(von + 2, bis - 2, {
+                      class: kennung ? "verweis" : "verweis tot",
+                    }),
+                  );
+                  deko.push(Decoration.inline(bis - 2, bis, { class: "verweis-klammer" }));
+                }
+              });
+              return DecorationSet.create(zustand.doc, deko);
+            },
+          },
+        }),
+      ];
+    },
+  });
 }
 
 export default function Editor({
@@ -60,7 +112,17 @@ export default function Editor({
   // The editor is created once. Its content is not reactive, which is why the
   // page view remounts this component with a new key when it changes the
   // document from the outside.
-  const editor = useCreateBlockNote({ initialContent: content, dictionary: locales.de });
+  // Über eine Referenz, nicht über den Wert: der Editor wird einmal gebaut, die
+  // Liste der Seiten kommt aber nach und ändert sich weiter. Die Erweiterung
+  // fragt deshalb bei jedem Zeichnen neu nach.
+  const loeserRef = useRef(linkResolver);
+  loeserRef.current = linkResolver;
+
+  const editor = useCreateBlockNote({
+    initialContent: content,
+    dictionary: locales.de,
+    _tiptapOptions: { extensions: [verweisErweiterung(() => loeserRef.current)] },
+  });
   const wrapRef = useRef<HTMLDivElement>(null);
 
   // Read the latest page list on each "@" trigger without recreating the editor.
@@ -94,6 +156,24 @@ export default function Editor({
   // exist, falls through and behaves like an ordinary click in the text.
   const onClickCapture = (e: React.MouseEvent) => {
     if (!linkResolver || !onOpenLink) return;
+
+    // Der schnelle Weg: die Auszeichnung oben hat den Titel bereits in eine
+    // eigene Umhüllung gelegt, ihr Text ist der Titel. Er muss zuerst kommen,
+    // denn genau diese Umhüllung teilt den Text im Dokument in drei Stücke --
+    // die Suche unten fände in "Ziel" keine Klammern mehr.
+    const umhuellung = (e.target as HTMLElement | null)?.closest?.(".verweis");
+    if (umhuellung) {
+      const id = linkResolver((umhuellung.textContent || "").trim());
+      if (id) {
+        e.preventDefault();
+        e.stopPropagation();
+        onOpenLink(id);
+      }
+      return;
+    }
+
+    // Der Rückfallweg für Text ohne Auszeichnung: die Stelle unter dem Zeiger
+    // im Absatz suchen.
     const ci = caretInfo(e.clientX, e.clientY);
     if (!ci || ci.node.nodeType !== Node.TEXT_NODE) return;
     const text = ci.node.textContent || "";
