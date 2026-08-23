@@ -38,7 +38,11 @@ func (s *Server) PapierkorbUhr(ctx context.Context) {
 			if err != nil {
 				log.Printf("Papierkorb: %v", err)
 			} else if n > 0 {
-				log.Printf("Papierkorb: %d Seiten nach %d Tagen endgültig gelöscht", n, tage)
+				tagWort := "Tagen"
+				if tage == 1 {
+					tagWort = "Tag"
+				}
+				log.Printf("Papierkorb: %d Seiten nach %d %s endgültig gelöscht", n, tage, tagWort)
 				details, _ := json.Marshal(map[string]any{"seiten": n, "tage": tage, "durch": "frist"})
 				// Kein Akteur: hier hat niemand geklickt. Der Eintrag nennt
 				// die Frist, damit in der Prüfspur nachvollziehbar ist, warum

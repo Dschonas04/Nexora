@@ -245,3 +245,19 @@ func TestPlanLiestAuchHTML(t *testing.T) {
 		t.Fatalf("HTML nicht gelesen: %+v", plan)
 	}
 }
+
+func TestPlanNimmtIndexHTMLAlsDeckblatt(t *testing.T) {
+	// Eine Confluence-Ausfuhr legt ihr Deckblatt als index.html ab. Ohne das
+	// hinge es als gewöhnliche Seite neben dem Ordner statt darüber.
+	plan := planen([]einfuhrDatei{
+		{pfad: "index.html", inhalt: []byte("<h1>Startseite</h1>")},
+		{pfad: "Technik/netzplan.html", inhalt: []byte("<h1>Netzplan</h1>")},
+	})
+	baum := baumAusPlan(plan)
+	if len(baum) != 1 || baum[0].Titel != "Startseite" {
+		t.Fatalf("Deckblatt nicht oben: %+v", baum)
+	}
+	if len(baum[0].Kinder) != 1 || baum[0].Kinder[0].Titel != "Technik" {
+		t.Fatalf("Ordner nicht darunter: %+v", baum[0].Kinder)
+	}
+}
