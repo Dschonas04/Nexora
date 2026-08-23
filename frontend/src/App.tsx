@@ -10,7 +10,10 @@ export default function App() {
   const { user, loading } = useAuth();
   // Wait for the session check before routing. Without this, a signed-in user
   // reloading the page would be bounced to the login screen for a moment.
-  if (loading) return <div className="empty-state">Lädt…</div>;
+  // Verzögert eingeblendet: die Sitzungsprüfung ist meist in wenigen
+  // Millisekunden durch, und ein Wort, das nur aufblitzt, liest ohnehin
+  // niemand -- es fällt nur als Zucken auf.
+  if (loading) return <div className="empty-state spaet">Lädt…</div>;
   return (
     <Routes>
       {/* Public links stay reachable without a session, so this route comes

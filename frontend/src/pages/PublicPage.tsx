@@ -22,7 +22,7 @@ export default function PublicPage() {
   // A revoked link and a token that never existed look the same on purpose, so
   // the page reveals nothing about what else is in the workspace.
   if (err) return <div className="empty-state">Diese Seite ist nicht verfügbar.</div>;
-  if (!page) return <div className="empty-state">Lädt…</div>;
+  if (!page) return <div className="empty-state spaet">Lädt…</div>;
 
   return (
     <div className="editor-scroll">
