@@ -2400,18 +2400,25 @@ a {
    aufblitzt, ist unruhiger als gar keines. */
 .geruest-strich {
   display: block;
-  height: 13px;
-  border-radius: 6px;
-  background: var(--border);
+  height: 12px;
+  /* Rund statt eckig: ein Balken mit Kanten liest sich als Kasten, der zur
+     Seite gehört. Gemeint ist aber nur die Stelle, an der gleich Text steht. */
+  border-radius: 999px;
+  /* Aus der Schriftfarbe gemischt statt aus der Randfarbe. Der Rand ist auf
+     hellem Grund fast weiß und im Dunkeln fast schwarz; die Mischung hält in
+     jedem Grundton denselben leichten Abstand zum Hintergrund. */
+  background: color-mix(in srgb, var(--text) 9%, transparent);
   opacity: 0;
   animation: geruest-ein 0.25s ease 0.15s forwards;
 }
 
 .geruest-titel {
-  height: 34px;
-  width: 46%;
-  border-radius: 8px;
-  margin: 0 0 22px;
+  height: 30px;
+  width: 42%;
+  /* Etwas kräftiger als die Textbalken, so wie die Überschrift kräftiger ist
+     als der Absatz darunter. */
+  background: color-mix(in srgb, var(--text) 13%, transparent);
+  margin: 0 0 24px;
 }
 
 .geruest-absatz {
