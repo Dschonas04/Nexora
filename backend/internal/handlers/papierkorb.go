@@ -70,7 +70,9 @@ func (s *Server) PapierkorbAufraeumen(ctx context.Context, tage int) (int64, err
 	bedingung := `deleted_at IS NOT NULL`
 	var args []any
 	if tage > 0 {
-		bedingung += ` AND deleted_at < now() - ($1 || ' days')::interval`
+		// make_interval statt ($1 || ' days')::interval: die Verkettung würde
+		// eine Zahl als Text verlangen, und pgx schickt eine Zahl als Zahl.
+		bedingung += ` AND deleted_at < now() - make_interval(days => $1)`
 		args = append(args, tage)
 	}
 
