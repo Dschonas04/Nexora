@@ -95,7 +95,9 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var warnungen []string
+	// Nicht nil: die Antwort trägt sonst null statt einer leeren Liste, und
+	// der Aufrufer müsste beides unterscheiden können.
+	warnungen := []string{}
 	var mdDateien []einfuhrDatei
 	beilagen := map[string]einfuhrDatei{}
 
@@ -452,6 +454,8 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 	// Dieselbe Beilage kann in einer Seite mehrfach vorkommen; sie soll
 	// trotzdem nur einmal hochgeladen werden.
 	angehaengt := map[string]string{}
+	// Ein Hinweis, der bei jeder Datei erschiene, wäre kein Hinweis mehr.
+	gemeldet := map[string]bool{}
 
 	// seiteZu liefert die eingeführte Seite, auf die eine Adresse zeigt.
 	seiteZu := func(adresse string) *einfuhrSeite {
@@ -484,6 +488,16 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 	anhaengen := func(b *einfuhrDatei) string {
 		if adresse, da := angehaengt[b.pfad]; da {
 			return adresse
+		}
+		// Anhänge sind ein Zusatz. Sie über die Einfuhr doch anzulegen wäre
+		// ein Weg um die Schranke herum -- und einer, der ins Leere führt: die
+		// Datei ließe sich danach weder auflisten noch herunterladen.
+		if !lizenz.Frei(lizenz.Anhaenge) {
+			if !gemeldet["anhaenge"] {
+				gemeldet["anhaenge"] = true
+				*warnungen = append(*warnungen, "Anhänge sind ein Zusatz -- die Dateien aus dem Archiv wurden übergangen")
+			}
+			return ""
 		}
 		attID, err := s.anhangAnlegen(ctx, sp.id, uid, path.Base(b.pfad), b.inhalt)
 		if err != nil {
@@ -669,6 +683,9 @@ func (s *Server) beilagenNachtragen(ctx context.Context, uid string, seiten []*e
 	beilagen map[string]einfuhrDatei, benutzt map[string]bool, warnungen *[]string) int {
 
 	if len(beilagen) == 0 {
+		return 0
+	}
+	if !lizenz.Frei(lizenz.Anhaenge) {
 		return 0
 	}
 	verzSeite := map[string]*einfuhrSeite{}
