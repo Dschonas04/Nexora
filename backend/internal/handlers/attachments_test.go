@@ -12,12 +12,12 @@ func TestTypAusAngabeUndName(t *testing.T) {
 		{"application/pdf", "bericht.pdf", "application/pdf"},
 		{"application/octet-stream", "bericht.pdf", "application/pdf"},
 		{"", "bild.png", "image/png"},
-		// Die Typtabelle des Systems kennt beide; Hauptsache text/*, denn
-		// daran hängt die Vorschau.
+		// Diese Endungen vergibt die eigene Liste, damit der Typ nicht
+		// davon abhängt, welche Typtabelle auf dem Rechner liegt.
 		{"binary/octet-stream", "notiz.md", "text/markdown"},
-		{"", "protokoll.log", "text/x-log"},
-		// Was die Tabelle nicht führt, fängt die eigene Liste ab.
+		{"", "protokoll.log", "text/plain"},
 		{"", "nexora.conf", "text/plain"},
+		{"", "werte.yaml", "text/plain"},
 		{"text/plain; charset=utf-8", "a.txt", "text/plain"},
 		// Sagt der Browser etwas Genaueres als die Endung, gilt seine Angabe.
 		{"image/svg+xml", "zeichnung.svg", "image/svg+xml"},
