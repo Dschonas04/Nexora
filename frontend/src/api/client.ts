@@ -436,6 +436,19 @@ export const api = {
   // Read once after sign-in. Hiding locked features is a courtesy to the
   // reader, not a protection: the backend refuses the same calls with 402
   // regardless of what the interface shows.
+  // Was die Anmeldeseite anbieten darf. Öffentlich, denn hier ist noch
+  // niemand angemeldet.
+  ssoZustand: () =>
+    req<{
+      oidc: boolean;
+      oidcText: string;
+      ldap: boolean;
+      passwort: boolean;
+      anbieter: string;
+    }>("/auth/sso"),
+  ldapAnmelden: (benutzer: string, passwort: string) =>
+    req<User>("/auth/ldap", { method: "POST", body: JSON.stringify({ benutzer, passwort }) }),
+
   sitzungen: () => req<Sitzung[]>("/sitzungen"),
   sitzungBeenden: (id: string) => req<void>(`/sitzungen/${id}`, { method: "DELETE" }),
   sitzungenBeenden: () => req<{ beendet: number }>("/sitzungen", { method: "DELETE" }),

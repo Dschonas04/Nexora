@@ -110,6 +110,10 @@ func main() {
 		Ablage:    speicher,
 		Sitzungen: handlers.NeuerSitzungsSpeicher(),
 		Redis:     rd,
+		SSO: handlers.SSOEinstellungen{
+			Konf:            k,
+			OeffentlicheURL: k.OeffentlicheURL,
+		},
 	}
 
 	// Seiten aus der Zeit vor dem Suchindex bekommen ihren Fließtext nachgereicht.
@@ -134,6 +138,12 @@ func main() {
 		r.Post("/auth/register", h.Register)
 		r.Post("/auth/login", h.Login)
 		r.Post("/auth/logout", h.Logout)
+		// Anmeldung über einen fremden Ausweis. Öffentlich, weil hier noch
+		// niemand angemeldet ist -- das ist ja der Zweck.
+		r.Get("/auth/sso", h.SSOZustand)
+		r.Get("/auth/oidc/start", h.OIDCStart)
+		r.Get("/auth/oidc/zurueck", h.OIDCZurueck)
+		r.Post("/auth/ldap", h.LDAPAnmeldung)
 		// Öffentliche Links gehören zum Zusatzumfang. Die Route bleibt bestehen,
 		// antwortet ohne Lizenz aber mit 402 statt die Seite auszuliefern.
 		r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
