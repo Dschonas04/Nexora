@@ -29,6 +29,7 @@ const BESCHRIFTUNG: Record<string, string> = {
   "oeffentlich.an": "Öffentlich geschaltet",
   "oeffentlich.aus": "Öffentlich zurückgenommen",
   "anhang.hochgeladen": "Anhang hochgeladen",
+  "anhang.bearbeitet": "Anhang bearbeitet",
   "anhang.entfernt": "Anhang entfernt",
   "kommentar.angelegt": "Kommentar geschrieben",
   "kommentar.geaendert": "Kommentar bearbeitet",

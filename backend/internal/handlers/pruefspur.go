@@ -48,6 +48,7 @@ const (
 	AktOeffentlichAus    = "oeffentlich.aus"
 	AktAnhangHoch        = "anhang.hochgeladen"
 	AktAnhangWeg         = "anhang.entfernt"
+	AktAnhangBearbeitet  = "anhang.bearbeitet"
 	AktLizenzGeladen     = "lizenz.geladen"
 	AktLizenzAusgestellt = "lizenz.ausgestellt"
 

@@ -161,6 +161,11 @@ func main() {
 			r.Get("/lizenz", h.LizenzStatus)
 			// Sitzungen: die eigenen sehen und einzeln beenden. Ein fremdes
 			// Gerät auszusperren, ohne alle anderen mitzunehmen, geht nur so.
+			// Word-Anhänge lesen und zurückschreiben. Lesen darf, wer die
+			// Seite lesen darf; Schreiben verlangt zusätzlich Schreibrecht
+			// und die Lizenz für Anhänge.
+			r.Get("/pages/{id}/attachments/{attId}/word", h.WordLesen)
+			r.Put("/pages/{id}/attachments/{attId}/word", h.WordSchreiben)
 			r.Get("/sitzungen", h.ListSitzungen)
 			r.Delete("/sitzungen", h.SitzungenBeenden)
 			r.Delete("/sitzungen/{id}", h.SitzungBeenden)

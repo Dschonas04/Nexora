@@ -2691,3 +2691,43 @@ a {
   text-align: center;
   text-decoration: none;
 }
+
+/* Word-Anhang im Betrachter. Ein Blatt auf dunklem Grund, damit es sich vom
+   Rahmen absetzt wie ein Dokument auf einem Tisch. */
+.qv-word {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.qv-word-blatt {
+  background: var(--flaeche);
+  color: var(--text);
+  border-radius: var(--radius);
+  width: min(820px, 100%);
+  height: fit-content;
+  padding: 28px 32px 40px;
+}
+
+.qv-word-kopf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 18px;
+}
+
+.qv-word-hinweis {
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--lesen-bg);
+  color: var(--lesen-text);
+  line-height: 1.5;
+}
