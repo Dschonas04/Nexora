@@ -10,13 +10,19 @@
 // start. Mixing them would produce switches that quietly do nothing, so the
 // fixed ones are always marked as belonging to config.conf.
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { Einstellung, KonfigDatei, SystemZustand, api } from "../api/client";
 import { useAuth } from "../auth";
+import AdminView from "./AdminView";
+import GruppenView from "./GruppenView";
 import { anwenden, useDesign } from "../design";
+import { useRueckfrage } from "../components/Rueckfrage";
 
 type Bereich =
   | "uebersicht"
+  | "nutzer"
+  | "gruppen"
   | "sicherheit"
   | "datenbank"
   | "suche"
@@ -28,6 +34,11 @@ type Bereich =
 
 const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
   { id: "uebersicht", titel: "Übersicht", unter: "Zahlen und Zustand auf einen Blick" },
+  // Konten und Gruppen hatten je einen eigenen Eintrag in der Seitenleiste.
+  // Beides ist Verwaltung und wird selten angefasst -- es gehört dorthin, wo
+  // man ohnehin sucht, wenn man etwas einstellen will.
+  { id: "nutzer", titel: "Nutzer", unter: "Konten, Rollen, Zugänge" },
+  { id: "gruppen", titel: "Gruppen", unter: "Konten bündeln für Space-Rechte" },
   { id: "sicherheit", titel: "Sicherheit", unter: "Registrierung, Sitzungen, Administratoren" },
   { id: "datenbank", titel: "Datenbank", unter: "Größe, Tabellen, Belegung" },
   { id: "suche", titel: "Suche", unter: "Wörterbuch und Suchindex" },
@@ -42,7 +53,7 @@ const ZUSATZ: Record<string, string> = {
   versionen: "Versionsverlauf",
   anhaenge: "Anhänge",
   freigeben: "Teilen und öffentliche Links",
-  pruefspur: "Prüfspur",
+  pruefspur: "Protokoll",
   gruppen: "Gruppen und Space-Rechte",
   sso: "SSO über OIDC",
   ldap: "LDAP und Active Directory",
@@ -61,7 +72,7 @@ const ZAHL_TITEL: Record<string, string> = {
   versionen: "Versionen",
   anhaenge: "Anhänge",
   kommentare: "Kommentare",
-  spureintraege: "Prüfspur-Einträge",
+  spureintraege: "Protokoll-Einträge",
   ohneSuchtext: "ohne Suchtext",
 };
 
@@ -88,10 +99,19 @@ function bytes(n: number): string {
 }
 
 export default function EinstellungenView() {
+  const frage = useRueckfrage();
   const { user } = useAuth();
   const { neuLaden: designNeuLaden } = useDesign();
 
-  const [bereich, setBereich] = useState<Bereich>("uebersicht");
+  // Der offene Bereich steht in der Adresse, nicht im Zustand. Damit lässt
+  // sich ein Bereich verlinken, der Zurück-Knopf führt zurück in den vorigen,
+  // und die alten Adressen für Nutzer und Gruppen können hierher zeigen.
+  const nav = useNavigate();
+  const { bereich: ausAdresse } = useParams();
+  const bereich: Bereich = (BEREICHE.some((b) => b.id === ausAdresse)
+    ? ausAdresse
+    : "uebersicht") as Bereich;
+  const setBereich = (b: Bereich) => nav("/einstellungen/" + b);
   const [liste, setListe] = useState<Einstellung[]>([]);
   const [zustand, setZustand] = useState<SystemZustand | null>(null);
   const [entwurf, setEntwurf] = useState<Record<string, string>>({});
@@ -214,9 +234,12 @@ export default function EinstellungenView() {
 
   const papierkorbLeeren = async () => {
     if (
-      !confirm(
-        "Alle Seiten im Papierkorb dieser Instanz endgültig löschen? Auch die anderer Konten. Das lässt sich nicht rückgängig machen.",
-      )
+      !(await frage({
+        titel: "Papierkorb leeren",
+        text: "Alle Seiten im Papierkorb dieser Instanz werden endgültig gelöscht -- auch die anderer Konten. Das lässt sich nicht rückgängig machen.",
+        bestaetigen: "Papierkorb leeren",
+        gefaehrlich: true,
+      }))
     ) {
       return;
     }
@@ -422,6 +445,10 @@ export default function EinstellungenView() {
 
   const inhalt = () => {
     switch (bereich) {
+      case "nutzer":
+        return <AdminView />;
+      case "gruppen":
+        return <GruppenView />;
       case "uebersicht":
         return (
           <>
@@ -500,7 +527,7 @@ export default function EinstellungenView() {
               {kachel(sich?.letzterFehlversuch || "—", "Letzter Fehlversuch")}
             </div>
             <p className="muted small">
-              Vollständig nachlesbar unter <strong>Prüfspur</strong>. Passwörter werden dort
+              Vollständig nachlesbar unter <strong>Protokoll</strong>. Passwörter werden dort
               nie festgehalten, auch nicht bei einem Fehlversuch.
             </p>
           </>

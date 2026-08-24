@@ -122,7 +122,7 @@ export default function PruefspurView() {
   if (!frei("pruefspur")) {
     return (
       <div className="page-pad">
-        <h2>Prüfspur</h2>
+        <h2>Protokoll</h2>
         <p className="muted">
           Diese Funktion gehört zum Zusatzumfang und ist in der vorliegenden Lizenz
           nicht enthalten.
@@ -146,10 +146,10 @@ export default function PruefspurView() {
 
   return (
     <div className="page-pad pruefspur">
-      <h2>Prüfspur</h2>
+      <h2>Protokoll</h2>
       <p className="muted small">
         Wer hat wann was getan. Die Aufzeichnung läuft unabhängig von der Lizenz mit,
-        damit die Spur keine Lücken bekommt.
+        damit das Protokoll keine Lücken bekommt.
       </p>
 
       <div className="pruefspur-filter">

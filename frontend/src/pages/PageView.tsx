@@ -13,6 +13,7 @@ import Kommentare from "../components/Kommentare";
 import { useLizenz } from "../lizenz";
 import { schriftAuf } from "../farbe";
 import LocalGraph from "../components/LocalGraph";
+import { useEingabe } from "../components/Rueckfrage";
 
 interface Props {
   allTags: Tag[];
@@ -67,6 +68,7 @@ function Geruest() {
 export default function PageView({ allTags, onMetaChange, onFavChange, onTagsChange, onDelete }: Props) {
   const { id } = useParams();
   const nav = useNavigate();
+  const eingabe = useEingabe();
   const [page, setPage] = useState<Page | null>(null);
   const [backlinks, setBacklinks] = useState<PageMeta[]>([]);
   const [links, setLinks] = useState<PageMeta[]>([]);
@@ -236,7 +238,11 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   // Tags are matched by name, case-insensitively, and created only when none
   // exists. Otherwise typing "Projekt" twice would produce two separate tags.
   const addTag = async () => {
-    const name = prompt("Schlagwort:")?.trim();
+    const name = await eingabe({
+      titel: "Schlagwort hinzufügen",
+      feld: "Name",
+      bestaetigen: "Hinzufügen",
+    });
     if (!name) return;
     let tag = allTags.find((t) => t.name.toLowerCase() === name.toLowerCase());
     if (!tag) {

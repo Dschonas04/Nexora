@@ -8,6 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { PageMeta, Tag, api } from "../api/client";
+import { useRueckfrage } from "../components/Rueckfrage";
 
 export default function TagView({
   allTags,
@@ -18,6 +19,7 @@ export default function TagView({
 }) {
   const { tagId } = useParams();
   const nav = useNavigate();
+  const frageStellen = useRueckfrage();
   const [seiten, setSeiten] = useState<PageMeta[]>([]);
   const [laedt, setLaedt] = useState(true);
   const [fehler, setFehler] = useState<string | null>(null);
@@ -49,7 +51,15 @@ export default function TagView({
     // Hier lohnt die Rückfrage: anders als ein gelöschter Kommentar lässt sich
     // ein Schlagwort nicht wiederherstellen, und mit ihm gehen alle
     // Zuordnungen verloren.
-    if (!window.confirm(frage)) return;
+    if (
+      !(await frageStellen({
+        titel: "Schlagwort löschen",
+        text: frage,
+        bestaetigen: "Schlagwort löschen",
+        gefaehrlich: true,
+      }))
+    )
+      return;
     await api.deleteTag(tagId).catch(() => {});
     onTagsChange();
     nav("/");

@@ -10,6 +10,7 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./auth";
 import { LizenzProvider } from "./lizenz";
 import { DesignProvider } from "./design";
+import { RueckfrageProvider } from "./components/Rueckfrage";
 import App from "./App";
 import "./styles.css";
 
@@ -19,7 +20,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <AuthProvider>
         <LizenzProvider>
           <DesignProvider>
-            <App />
+            {/* Ganz außen, damit jede Ansicht eine Rückfrage stellen kann --
+                und damit der Dialog über allem liegt, was sie zeichnet. */}
+            <RueckfrageProvider>
+              <App />
+            </RueckfrageProvider>
           </DesignProvider>
         </LizenzProvider>
       </AuthProvider>

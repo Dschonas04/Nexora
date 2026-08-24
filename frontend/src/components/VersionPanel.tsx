@@ -2,6 +2,7 @@
 // content of a version is fetched when one is restored.
 import { useEffect, useState } from "react";
 import { Page, PageVersion, api } from "../api/client";
+import { useRueckfrage } from "./Rueckfrage";
 
 interface Props {
   pageId: string;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function VersionPanel({ pageId, canEdit, onRestored, onClose }: Props) {
+  const frage = useRueckfrage();
   const [versions, setVersions] = useState<PageVersion[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -21,7 +23,14 @@ export default function VersionPanel({ pageId, canEdit, onRestored, onClose }: P
   // Restoring is safe because the backend snapshots the current state first,
   // which the confirmation says so nobody fears losing their work.
   const restore = async (versionId: string) => {
-    if (!confirm("Diese Version wiederherstellen? Der aktuelle Stand wird zuerst im Verlauf gespeichert.")) return;
+    if (
+      !(await frage({
+        titel: "Version wiederherstellen",
+        text: "Der Stand dieser Version wird auf die Seite zurückgeholt. Der aktuelle Stand geht nicht verloren -- er wird vorher im Verlauf abgelegt.",
+        bestaetigen: "Wiederherstellen",
+      }))
+    )
+      return;
     setBusy(versionId);
     try {
       const page = await api.restoreVersion(pageId, versionId);
