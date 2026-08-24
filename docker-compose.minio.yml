@@ -11,29 +11,84 @@
 #     docker compose -f docker-compose.yml -f docker-compose.db.yml \
 #                    -f docker-compose.minio.yml up -d
 #
-# Der Eimer muss einmal angelegt werden -- über die Oberfläche auf Port 9011
-# oder mit:
+# Zwei Dinge sind hier bewusst unbequem gelöst:
 #
-#     docker compose exec minio mc mb /data/nexora
+# 1. Kein Kennwort hat eine Vorgabe. Compose bricht ab, wenn eines fehlt.
+#    Ein mitgeliefertes "bitte-aendern" bleibt erfahrungsgemäß stehen, und ein
+#    Objektspeicher mit bekanntem Kennwort ist ein offenes Regal.
+#
+# 2. Die Ports hören auf 127.0.0.1, nicht auf allen Adressen. Der Speicher ist
+#    für Nexora da, nicht fürs Netz; wer ihn von außen braucht, setzt
+#    MINIO_ADRESSE ausdrücklich auf 0.0.0.0 und stellt TLS davor.
 services:
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-nexora}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-nexora-bitte-aendern}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?bitte in der .env setzen}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?bitte in der .env setzen -- z.B. openssl rand -hex 24}
     volumes:
       - nexora_s3:/data
     ports:
       # Erste Zahl: die S3-Schnittstelle. Zweite: die Web-Oberfläche.
-      - "${MINIO_PORT:-9010}:9000"
-      - "${MINIO_KONSOLE_PORT:-9011}:9001"
+      - "${MINIO_ADRESSE:-127.0.0.1}:${MINIO_PORT:-9010}:9000"
+      - "${MINIO_ADRESSE:-127.0.0.1}:${MINIO_KONSOLE_PORT:-9011}:9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
       interval: 10s
       timeout: 5s
       retries: 6
     restart: unless-stopped
+
+  # Einmalige Einrichtung: Eimer anlegen und ein eigenes Konto für Nexora, das
+  # nur diesen einen Eimer sehen darf.
+  #
+  # Das Wurzelkonto ist der Verwalter des Speichers -- es darf Konten anlegen,
+  # Regeln ändern und jeden Eimer löschen. Es einer Anwendung in die Hand zu
+  # geben heißt, jeden Fehler in ihr zu einem Vollzugriff zu machen. Nexora
+  # braucht Lesen und Schreiben in einem Eimer, mehr nicht.
+  #
+  # Der Lauf ist wiederholbar: alles hier verträgt es, schon getan zu sein.
+  minio-einrichten:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?bitte in der .env setzen}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?bitte in der .env setzen}
+      EIMER: ${NEXORA_S3_BUCKET:-nexora}
+      SCHLUESSEL: ${NEXORA_S3_ZUGRIFFSSCHLUESSEL:?bitte in der .env setzen}
+      GEHEIMNIS: ${NEXORA_S3_GEHEIMNIS:?bitte in der .env setzen -- z.B. openssl rand -hex 24}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -e
+        mc alias set eigen http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing eigen/"$$EIMER"
+        cat > /tmp/regel.json <<REGEL
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+              "Resource": ["arn:aws:s3:::$$EIMER"]
+            },
+            {
+              "Effect": "Allow",
+              "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+              "Resource": ["arn:aws:s3:::$$EIMER/*"]
+            }
+          ]
+        }
+        REGEL
+        mc admin user add eigen "$$SCHLUESSEL" "$$GEHEIMNIS" 2>/dev/null || true
+        mc admin policy create eigen nexora-eimer /tmp/regel.json 2>/dev/null || true
+        mc admin policy attach eigen nexora-eimer --user "$$SCHLUESSEL" 2>/dev/null || true
+        echo "MinIO eingerichtet: Eimer $$EIMER, Konto $$SCHLUESSEL darf nur dorthin."
+    restart: "no"
 
   backend:
     environment:
@@ -42,13 +97,14 @@ services:
       NEXORA_S3_AKTIV: "ja"
       NEXORA_S3_ENDPUNKT: ${NEXORA_S3_ENDPUNKT:-http://minio:9000}
       NEXORA_S3_BUCKET: ${NEXORA_S3_BUCKET:-nexora}
-      NEXORA_S3_ZUGRIFFSSCHLUESSEL: ${MINIO_ROOT_USER:-nexora}
-      NEXORA_S3_GEHEIMNIS: ${MINIO_ROOT_PASSWORD:-nexora-bitte-aendern}
+      # Das eingeschränkte Konto von oben, nicht die Wurzel.
+      NEXORA_S3_ZUGRIFFSSCHLUESSEL: ${NEXORA_S3_ZUGRIFFSSCHLUESSEL:?bitte in der .env setzen}
+      NEXORA_S3_GEHEIMNIS: ${NEXORA_S3_GEHEIMNIS:?bitte in der .env setzen}
       # MinIO spricht Pfadstil, nicht die Unterdomänen von Amazon.
       NEXORA_S3_PFADSTIL: "ja"
     depends_on:
-      minio:
-        condition: service_healthy
+      minio-einrichten:
+        condition: service_completed_successfully
 
 volumes:
   nexora_s3:
