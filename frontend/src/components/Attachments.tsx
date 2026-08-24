@@ -38,6 +38,14 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
   // er wissen, an welcher Stelle er steht -- nicht nur, welche Datei gemeint war.
   const [offenBei, setOffenBei] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Was gerade hochgeht: Name, Nummer in der Reihe und Anteil. Ohne Anzeige
+  // sieht ein großer Anhang aus wie ein Hänger.
+  const [lauf, setLauf] = useState<{
+    name: string;
+    nummer: number;
+    gesamt: number;
+    anteil: number;
+  } | null>(null);
 
   const refresh = () => api.listAttachments(pageId).then(setItems).catch(() => setItems([]));
   useEffect(() => {
@@ -56,10 +64,14 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
     // die anderen nicht mitreißt. Am Ende steht, was nicht ankam -- vorher
     // scheiterte ein Upload lautlos und die Datei war einfach nicht da.
     const gescheitert: string[] = [];
+    const alle = Array.from(files);
     try {
-      for (const f of Array.from(files)) {
+      for (const [i, f] of alle.entries()) {
+        setLauf({ name: f.name, nummer: i + 1, gesamt: alle.length, anteil: 0 });
         try {
-          await api.uploadAttachment(pageId, f);
+          await api.uploadAttachment(pageId, f, (anteil) =>
+            setLauf({ name: f.name, nummer: i + 1, gesamt: alle.length, anteil }),
+          );
         } catch (e) {
           gescheitert.push(`${f.name} (${e instanceof Error ? e.message : "Fehler"})`);
         }
@@ -67,6 +79,7 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
       await refresh();
     } finally {
       setBusy(false);
+      setLauf(null);
       if (fileRef.current) fileRef.current.value = "";
       if (gescheitert.length > 0) {
         setFehler(
@@ -149,6 +162,23 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
           </>
         )}
       </div>
+      {lauf && (
+        <div className="hochlauf">
+          <div className="hochlauf-zeile">
+            <span className="hochlauf-name">{lauf.name}</span>
+            <span className="muted small">
+              {lauf.gesamt > 1 && `${lauf.nummer} von ${lauf.gesamt} · `}
+              {Math.round(lauf.anteil * 100)} %
+            </span>
+          </div>
+          {/* Der Balken zeigt den Anteil der SENDUNG. Bei 100 Prozent ist die
+              Datei beim Server, aber noch nicht abgelegt -- deshalb bleibt er
+              danach stehen, statt zu verschwinden, bis die Antwort da ist. */}
+          <div className="hochlauf-bahn">
+            <div className="hochlauf-fortschritt" style={{ width: `${lauf.anteil * 100}%` }} />
+          </div>
+        </div>
+      )}
       <div className="attachment-list">
         {items.length === 0 && (
           <div className="muted small">

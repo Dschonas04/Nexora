@@ -2629,3 +2629,41 @@ a {
   margin: 0;
   line-height: 1.5;
 }
+
+/* Fortschritt beim Hochladen. Der Balken zeigt, was gesendet ist -- bei
+   hundert Prozent liegt die Datei beim Server und wird dort noch abgelegt,
+   deshalb bleibt er stehen, bis die Antwort da ist. */
+.hochlauf {
+  margin: 8px 0 4px;
+}
+
+.hochlauf-zeile {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.hochlauf-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hochlauf-bahn {
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  overflow: hidden;
+}
+
+.hochlauf-fortschritt {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  /* Kurz genug, dass es der Wirklichkeit folgt, lang genug, dass es nicht
+     zuckt. */
+  transition: width 0.15s linear;
+}

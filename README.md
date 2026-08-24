@@ -132,6 +132,14 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.minio.yml
 An existing MinIO or S3 is wired up through the `NEXORA_S3_*` settings instead
 of the third file.
 
+The same instance also answers over TLS on **https://localhost:3443** with a
+certificate the container issues on first start (825 days, stored in a volume so
+a rebuild does not change it). Browsers will warn about the issuer — nobody
+issues a trusted certificate for an address in a private network. Drop a real
+certificate into the `nexora_tls` volume as `zertifikat.pem` / `schluessel.pem`
+and nothing is generated. The session cookie is marked `Secure` whenever the
+request arrived over TLS.
+
 Open **http://localhost:3000** (or whichever `PORT` you set) and create the first
 account, which becomes the workspace admin.
 
