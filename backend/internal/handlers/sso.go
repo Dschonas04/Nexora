@@ -16,10 +16,12 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -229,9 +231,14 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 	})
 
 	ziel := mit.Ziel
-	if !strings.HasPrefix(ziel, "/") || strings.HasPrefix(ziel, "//") {
-		// Nur Ziele innerhalb dieser Anwendung. Alles andere wäre eine offene
-		// Weiterleitung -- ein beliebter Baustein für Täuschungsseiten.
+	// Nur Ziele innerhalb dieser Anwendung. Alles andere wäre eine offene
+	// Weiterleitung -- ein beliebter Baustein für Täuschungsseiten.
+	//
+	// Geprüft wird auf beide Schrägstriche: "//fremd.example" ist eine Adresse
+	// mit dem Protokoll der aktuellen Seite, und "/\fremd.example" behandeln
+	// manche Browser genauso.
+	if !strings.HasPrefix(ziel, "/") ||
+		strings.HasPrefix(ziel, "//") || strings.HasPrefix(ziel, `/\`) {
 		ziel = "/"
 	}
 	http.Redirect(w, r, ziel, http.StatusFound)
@@ -246,15 +253,29 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 		email).Scan(&u.ID, &u.Email, &u.Name, &hash, &u.Role, &u.CreatedAt)
 
 	if err == nil {
-		// Ein Konto mit Passwort wird nicht stillschweigend übernommen. Wer
-		// beides will, hebt das Passwort auf -- ausdrücklich, in der
-		// Nutzerverwaltung.
-		if hash != "" && !strings.HasPrefix(hash, "sso:") {
-			return u, errors.New("Für diese Adresse gibt es bereits ein Konto mit Passwort.")
+		// Übernommen wird nur ein Konto, das AUSDRÜCKLICH über SSO entstanden
+		// ist. Jedes andere -- mit Passwort oder mit leerem Passwortfeld --
+		// bleibt unangetastet.
+		//
+		// Die frühere Fassung ließ ein leeres Passwortfeld durchgehen. Das war
+		// eine Lücke: wer im Verzeichnis eine Adresse setzen kann, hätte sich
+		// damit an ein fremdes Konto gehängt, sobald dessen Feld aus
+		// irgendeinem Grund leer war.
+		if !strings.HasPrefix(hash, "sso:") {
+			return u, errors.New("Für diese Adresse gibt es bereits ein Konto. " +
+				"Ein Administrator muss es freigeben, bevor SSO darauf zugreift.")
 		}
+		// Höherstufen nur bei einem SSO-Konto, und mit Eintrag in der
+		// Prüfspur: eine Rolle, die sich still ändert, fällt niemandem auf.
 		if admin && u.Role != "admin" {
-			s.Pool.Exec(ctx, `UPDATE users SET role='admin' WHERE id=$1`, u.ID)
-			u.Role = "admin"
+			if _, err := s.Pool.Exec(ctx, `UPDATE users SET role='admin' WHERE id=$1`, u.ID); err == nil {
+				u.Role = "admin"
+				s.spur(ctx, models.Spureintrag{
+					AkteurName: "SSO", Aktion: AktRolleGeaendert, ObjektArt: "konto",
+					ObjektID: u.ID, ObjektTitel: u.Email,
+					Details: json.RawMessage(`{"rolle":"admin","durch":"` + herkunft + `"}`),
+				})
+			}
 		}
 		return u, nil
 	}
@@ -295,11 +316,10 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 // und eine JSON-Antwort wäre eine weiße Seite mit geschweiften Klammern.
 func (s *Server) ssoFehler(w http.ResponseWriter, r *http.Request, meldung string) {
 	log.Printf("SSO abgebrochen: %s", meldung)
-	http.Redirect(w, r, "/login?sso="+urlSicher(meldung), http.StatusFound)
-}
-
-func urlSicher(s string) string {
-	return strings.NewReplacer(" ", "%20", "\"", "", "<", "", ">", "", "\n", "").Replace(s)
+	// QueryEscape statt einer eigenen Ersetzungsliste: eine handgeschriebene
+	// Liste vergisst immer ein Zeichen, und dieses eine ist dann das, mit dem
+	// sich die Adresse aufbrechen lässt.
+	http.Redirect(w, r, "/login?sso="+url.QueryEscape(meldung), http.StatusFound)
 }
 
 func zufall() string {

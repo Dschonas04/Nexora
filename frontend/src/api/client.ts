@@ -449,6 +449,15 @@ export const api = {
   ldapAnmelden: (benutzer: string, passwort: string) =>
     req<User>("/auth/ldap", { method: "POST", body: JSON.stringify({ benutzer, passwort }) }),
 
+  // Word-Anhänge: als Editorblöcke lesen und wieder als .docx zurückschreiben.
+  wordLesen: (seiteId: string, anhangId: string) =>
+    req<{ titel: string; bloecke: unknown[] }>(`/pages/${seiteId}/attachments/${anhangId}/word`),
+  wordSchreiben: (seiteId: string, anhangId: string, titel: string, bloecke: unknown) =>
+    req<{ ok: boolean; bytes: number }>(`/pages/${seiteId}/attachments/${anhangId}/word`, {
+      method: "PUT",
+      body: JSON.stringify({ titel, bloecke }),
+    }),
+
   sitzungen: () => req<Sitzung[]>("/sitzungen"),
   sitzungBeenden: (id: string) => req<void>(`/sitzungen/${id}`, { method: "DELETE" }),
   sitzungenBeenden: () => req<{ beendet: number }>("/sitzungen", { method: "DELETE" }),

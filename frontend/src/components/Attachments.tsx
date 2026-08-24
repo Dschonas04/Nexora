@@ -250,6 +250,8 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
             filename: a.filename,
             mime: a.mime,
             url: api.attachmentUrl(pageId, a.id),
+            seiteId: pageId,
+            darfSchreiben: canEdit,
           }))}
           start={offenBei}
           onClose={() => setOffenBei(null)}

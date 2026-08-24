@@ -7,12 +7,18 @@
 // happens in here and every caller gets it for free.
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { api } from "../api/client";
+import Editor from "./Editor";
+
 export interface Datei {
   id: string;
   filename: string;
   mime: string;
   /** Where the bytes live. The caller builds it -- the viewer never guesses. */
   url: string;
+  /** Für Word-Dateien: ohne beides lässt sich der Inhalt nicht holen. */
+  seiteId?: string;
+  darfSchreiben?: boolean;
 }
 
 // Der Dateityp, den der Browser beim Hochladen angibt, ist eine Behauptung und
@@ -37,6 +43,7 @@ const NACH_ENDUNG: Record<string, string> = {
   xml: "text/xml",
   yml: "text/plain",
   yaml: "text/plain",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
 
 export function echterTyp(mime: string, dateiname = ""): string {
@@ -49,7 +56,9 @@ export function echterTyp(mime: string, dateiname = ""): string {
 export const istBild = (m: string) => m.startsWith("image/");
 export const istPdf = (m: string) => m === "application/pdf";
 export const istText = (m: string) => m.startsWith("text/") || m === "application/json";
-export const zeigbar = (m: string) => istBild(m) || istPdf(m) || istText(m);
+export const istWord = (m: string) =>
+  m === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+export const zeigbar = (m: string) => istBild(m) || istPdf(m) || istText(m) || istWord(m);
 
 // Zoom bounds. Below a quarter nothing is recognisable, above eight times the
 // browser starts to struggle with large images.
@@ -69,6 +78,15 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   const [drehung, setDrehung] = useState(0);
   const [text, setText] = useState<string | null>(null);
   const [textFehler, setTextFehler] = useState(false);
+
+  // Word: Inhalt als Editorblöcke, dazu Titel und Zustand des Bearbeitens.
+  const [word, setWord] = useState<{ titel: string; bloecke: unknown[] } | null>(null);
+  const [wordFehler, setWordFehler] = useState<string | null>(null);
+  const [bearbeiten, setBearbeiten] = useState(false);
+  const [gespeichert, setGespeichert] = useState<string | null>(null);
+  // Der jeweils letzte Stand aus dem Editor. Als Referenz, damit jeder
+  // Tastendruck nicht die ganze Ansicht neu zeichnet.
+  const wordStand = useRef<{ titel: string; bloecke: unknown } | null>(null);
 
   const box = useRef<HTMLDivElement>(null);
   // Remembered so focus can go back where it was when the viewer closes. Without
@@ -100,7 +118,30 @@ export default function QuickView({ dateien, start, onClose }: Props) {
     setDrehung(0);
     setText(null);
     setTextFehler(false);
+    setWord(null);
+    setWordFehler(null);
+    setBearbeiten(false);
+    setGespeichert(null);
+    wordStand.current = null;
   }, [datei?.id]);
+
+  // Word-Anhang holen. Nicht die Bytes -- die kann der Browser nicht anzeigen
+  // --, sondern den Inhalt als Blöcke, den der Server aus der Datei liest.
+  useEffect(() => {
+    if (!datei || !istWord(typ) || !datei.seiteId) return;
+    let weg = false;
+    api
+      .wordLesen(datei.seiteId, datei.id)
+      .then((w) => {
+        if (weg) return;
+        setWord(w);
+        wordStand.current = { titel: w.titel, bloecke: w.bloecke };
+      })
+      .catch((e: Error) => !weg && setWordFehler(e.message));
+    return () => {
+      weg = true;
+    };
+  }, [datei, typ]);
 
   // Keyboard: the shortcuts a reader expects from any image viewer.
   useEffect(() => {
@@ -268,6 +309,72 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             <pre className="qv-text">
               {textFehler ? "(Vorschau konnte nicht geladen werden)" : (text ?? "Lädt…")}
             </pre>
+          )}
+          {istWord(typ) && (
+            <div className="qv-word">
+              {wordFehler ? (
+                <div className="qv-none">{wordFehler}</div>
+              ) : !word ? (
+                <div className="qv-none">Wird gelesen…</div>
+              ) : (
+                <div className="qv-word-blatt">
+                  <div className="qv-word-kopf">
+                    <strong>{word.titel}</strong>
+                    {datei.darfSchreiben && !bearbeiten && (
+                      <button className="btn" onClick={() => setBearbeiten(true)}>
+                        Bearbeiten
+                      </button>
+                    )}
+                    {bearbeiten && (
+                      <button
+                        className="btn"
+                        onClick={async () => {
+                          if (!datei.seiteId || !wordStand.current) return;
+                          setGespeichert("speichert");
+                          try {
+                            await api.wordSchreiben(
+                              datei.seiteId,
+                              datei.id,
+                              wordStand.current.titel,
+                              wordStand.current.bloecke,
+                            );
+                            setGespeichert("gespeichert");
+                            setBearbeiten(false);
+                          } catch (e) {
+                            setWordFehler((e as Error).message);
+                            setGespeichert(null);
+                          }
+                        }}
+                      >
+                        {gespeichert === "speichert" ? "Speichert…" : "Speichern"}
+                      </button>
+                    )}
+                  </div>
+                  {/* Der Hinweis steht VOR dem Bearbeiten da, nicht danach als
+                      Entschuldigung: wer eine Word-Datei hier ändert, bekommt
+                      ein sauberes Dokument mit ihrem Inhalt -- nicht dieselbe
+                      Datei mit einer geänderten Zeile. */}
+                  {bearbeiten && (
+                    <div className="qv-word-hinweis muted small">
+                      Beim Speichern wird die Datei neu geschrieben. Text, Überschriften,
+                      Listen und Tabellen bleiben; Kopfzeilen, Formatvorlagen, Kommentare,
+                      Bilder und Schriftarten gehen verloren.
+                    </div>
+                  )}
+                  <Editor
+                    key={datei.id + (bearbeiten ? ":schreiben" : ":lesen")}
+                    initialContent={word.bloecke}
+                    editable={!!bearbeiten}
+                    onChange={(bloecke) => {
+                      wordStand.current = { titel: word.titel, bloecke };
+                    }}
+                  />
+                  {gespeichert === "gespeichert" && (
+                    <div className="hinweis-ok">Gespeichert.</div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
           {!zeigbar(typ) && (
             <div className="qv-none">

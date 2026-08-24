@@ -353,6 +353,8 @@ GET    /tags                              list tags
 POST   /tags                              create
 DELETE /tags/{id}                         delete
 
+GET    /pages/{id}/attachments/{attId}/word    a .docx as editor blocks
+PUT    /pages/{id}/attachments/{attId}/word    write the blocks back as .docx
 GET    /auth/sso                         which sign-in methods this instance offers
 GET    /auth/oidc/start                  begin an OIDC sign-in (redirects to the provider)
 GET    /auth/oidc/zurueck                the provider's callback
