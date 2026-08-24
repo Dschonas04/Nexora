@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -64,15 +65,40 @@ func decode(r *http.Request, v interface{}) error {
 // reverse proxy terminates TLS; behind plain HTTP the cookie would otherwise
 // never be sent at all.
 func (s *Server) setAuthCookie(w http.ResponseWriter, token string) {
+	s.setAuthCookieFuer(w, nil, token)
+}
+
+// setAuthCookieFuer setzt das Plätzchen und markiert es als Secure, wenn die
+// Anfrage über HTTPS kam.
+//
+// Fest auf Secure zu stellen ginge nicht: dann käme über eine reine
+// HTTP-Verbindung gar kein Plätzchen mehr an, und eine Instanz im Heimnetz
+// ohne TLS wäre unbenutzbar. Umgekehrt ist ein Sitzungsplätzchen ohne Secure
+// auf einer HTTPS-Seite eine Einladung, es über einen untergeschobenen
+// HTTP-Aufruf abzugreifen.
+func (s *Server) setAuthCookieFuer(w http.ResponseWriter, r *http.Request, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   ueberTLS(r),
 		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Now().Add(SitzungDauer()),
 		MaxAge:   int(SitzungDauer().Seconds()),
 	})
+}
+
+// ueberTLS erkennt eine verschlüsselte Anfrage -- auch hinter einem Proxy, der
+// selbst entschlüsselt und es im Kopf X-Forwarded-Proto weitersagt.
+func ueberTLS(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	if r.TLS != nil {
+		return true
+	}
+	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 }
 
 // clearAuthCookie expires the cookie. The token itself stays valid until it

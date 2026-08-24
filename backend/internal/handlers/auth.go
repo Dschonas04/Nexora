@@ -218,6 +218,6 @@ func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID str
 	}
 	token, err := auth.GenerateToken(s.Secret, userID, sid, SitzungDauer())
 	if err == nil {
-		s.setAuthCookie(w, token)
+		s.setAuthCookieFuer(w, r, token)
 	}
 }

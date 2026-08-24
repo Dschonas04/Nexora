@@ -70,11 +70,24 @@ services:
     build: ./frontend
     ports:
       - "${PORT:-3000}:80"
+      # Derselbe Dienst verschlüsselt. Das Zertifikat stellt der Container beim
+      # ersten Start selbst aus und legt es in den Datenträger, damit es einen
+      # Neubau überlebt -- ein Zertifikat, das sich bei jedem Ausrollen ändert,
+      # erzeugt jedes Mal eine neue Warnung.
+      - "${PORT_TLS:-3443}:443"
+    environment:
+      # Steht im Zertifikat als Name. Ohne Angabe der Rechnername des
+      # Containers, was im Browser zu einer zweiten Warnung führt.
+      NEXORA_TLS_NAME: ${NEXORA_TLS_NAME:-nexora}
+      NEXORA_TLS_IP: ${NEXORA_TLS_IP:-}
+    volumes:
+      - nexora_tls:/etc/nginx/tls
     depends_on:
       - backend
     restart: unless-stopped
 
 volumes:
+  nexora_tls:
   # Nur die Anhänge auf der Platte. Der Datenträger der Datenbank gehört zur
   # Beilage, die sie mitbringt.
   nexora_files:

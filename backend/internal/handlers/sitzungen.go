@@ -107,7 +107,7 @@ func (s *Server) SitzungGilt(r *http.Request, w http.ResponseWriter, uid, sid st
 			`UPDATE sitzungen SET laeuft_ab=$2, angelegt_am=now(), zuletzt_am=now() WHERE id=$1`,
 			sid, neuAb); err == nil {
 			if token, err := auth.GenerateToken(s.Secret, uid, sid, SitzungDauer()); err == nil {
-				s.setAuthCookie(w, token)
+				s.setAuthCookieFuer(w, r, token)
 			}
 		}
 	} else if jetzt.Sub(zuletzt) > benutztSpanne {

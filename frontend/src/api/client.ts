@@ -580,17 +580,48 @@ export const api = {
   listAttachments: (id: string) => req<Attachment[]>(`/pages/${id}/attachments`),
   // Uploads bypass req because they send FormData: setting Content-Type by hand
   // would omit the multipart boundary the browser has to generate.
-  uploadAttachment: async (id: string, file: File) => {
-    const body = new FormData();
-    body.append("file", file);
-    const res = await fetch(`/api/pages/${id}/attachments`, {
-      method: "POST",
-      credentials: "include",
-      body,
-    });
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
-    return (await res.json()) as Attachment;
-  },
+  //
+  // Über XMLHttpRequest statt fetch, und zwar aus genau einem Grund: fetch
+  // meldet keinen Fortschritt beim Senden. Bei einer Datei von zwanzig
+  // Megabyte sieht ein Hochladen ohne Balken aus wie ein Hänger, und man
+  // klickt ein zweites Mal.
+  uploadAttachment: (id: string, file: File, fortschritt?: (anteil: number) => void) =>
+    new Promise<Attachment>((fertig, fehler) => {
+      const body = new FormData();
+      body.append("file", file);
+      const x = new XMLHttpRequest();
+      x.open("POST", `/api/pages/${id}/attachments`);
+      x.withCredentials = true;
+      x.upload.onprogress = (e) => {
+        // lengthComputable ist falsch, solange der Browser die Gesamtgröße
+        // nicht kennt -- dann ist jeder Anteil geraten, und geraten ist
+        // schlechter als unbestimmt.
+        if (e.lengthComputable && e.total > 0) fortschritt?.(e.loaded / e.total);
+      };
+      x.onload = () => {
+        if (x.status >= 200 && x.status < 300) {
+          try {
+            fertig(JSON.parse(x.responseText) as Attachment);
+          } catch {
+            fehler(new Error("Antwort war kein JSON"));
+          }
+          return;
+        }
+        let text = x.statusText;
+        try {
+          const j = JSON.parse(x.responseText);
+          if (j && j.error) text = j.error;
+        } catch {
+          /* dann eben der Statustext */
+        }
+        const e = new Error(text) as Error & { status?: number };
+        e.status = x.status;
+        fehler(e);
+      };
+      x.onerror = () => fehler(new Error("Verbindung abgebrochen"));
+      x.onabort = () => fehler(new Error("Abgebrochen"));
+      x.send(body);
+    }),
   // Used directly as an img/iframe src, so the browser fetches it with the
   // session cookie and the backend still checks access.
   attachmentUrl: (id: string, attId: string) => `/api/pages/${id}/attachments/${attId}`,
