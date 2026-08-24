@@ -95,6 +95,18 @@ license key. On 2030-08-19 the whole thing becomes Apache 2.0.
 - **Inbox**: comments on your pages, replies to your comments, `@Name` mentions
   and pages somebody shared with you. Three kinds and no more — an inbox that
   carries noise is one people stop opening
+- **Sessions you can see and end**: every sign-in is a row in the database, so a
+  lost device can be locked out without logging everyone else out. Sessions
+  renew themselves while they are in use and expire when they are not; logging
+  out revokes the token rather than only clearing the browser
+- **Sign in through Keycloak or a directory**: OIDC against any provider that
+  publishes a discovery document, or a direct bind against LDAP / Active
+  Directory. Both link by verified email address and never take over an account
+  that has its own password
+- **Word files**: a `.docx` attachment opens in the viewer and, with write
+  access, can be edited and written back. Text, headings, lists and tables
+  survive; headers, styles, comments and images do not — and the interface says
+  so before you start
 - **Audit trail**: who did what, when — sign-ins including the failed ones,
   accounts, pages, trash, permanent deletion, shares and public links. Entries
   survive the deletion of the page or account they refer to, because deleting is
@@ -142,6 +154,28 @@ request arrived over TLS.
 
 Open **http://localhost:3000** (or whichever `PORT` you set) and create the first
 account, which becomes the workspace admin.
+
+## Licensing tiers
+
+Four tiers, each containing the smaller ones:
+
+| Tier | adds |
+|---|---|
+| `free` | pages, search, trash, Markdown import and export |
+| `advanced` | version history, attachments, templates, comments |
+| `pro` | sharing and public links, conflict detection, PDF/Word export, search inside attachments |
+| `business` | groups, audit trail, OIDC, LDAP |
+
+Keys are Ed25519-signed and verified offline, which is why they carry an expiry
+of at most a year: an issued key cannot be revoked, so the date is the only
+lever there is. A key can name a tier, a list of individual extras, or both.
+
+Importing a key works from the maintenance page of any installation — it is
+checked, stored in the database and takes effect at once. *Issuing* a key needs
+the private signing key in `NEXORA_SIGNIERSCHLUESSEL`; without it the endpoint
+answers 501 and the section does not appear. That asymmetry is the whole point:
+verification is offline, so the private key is the only thing separating a
+customer from a self-issued licence.
 
 ## Configuration
 
@@ -437,6 +471,11 @@ backend/                       Go API
     versions.go                snapshots and rollback
     attachments.go             upload, download, delete
     einfuhr.go                 import: archive, page tree, link rewriting
+    sitzungen.go               stored sessions: list, revoke, renew, sweep
+    sso.go / ldap.go           sign-in through OIDC or a directory
+    word.go                    .docx attachments: read as blocks, write back
+    redis.go                   optional shared cache in front of the database
+    lizenzverwaltung.go        import and issue license keys
     postfach.go                the inbox and what fills it
     papierkorb.go              the trash and its expiry sweep
     kommentare.go              comment threads
