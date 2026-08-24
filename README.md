@@ -102,9 +102,14 @@ license key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
 ```bash
 cp .env.example .env
+cp config.beispiel.conf config.conf
 # edit .env: set POSTGRES_PASSWORD and a long random JWT_SECRET
 docker compose up -d --build
 ```
+
+`config.conf` is deliberately not tracked: it holds credentials and is edited
+from the maintenance page, so a tracked copy would be overwritten on every
+deployment.
 
 `.env.example` ships with `COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml`,
 so the command above brings its own PostgreSQL. The database and the object
@@ -130,7 +135,8 @@ account, which becomes the workspace admin.
 
 ## Configuration
 
-Everything is read from **`config.conf`**, which documents itself: 245 lines,
+Everything is read from **`config.conf`** (copied from
+`config.beispiel.conf`), which documents itself: 245 lines,
 174 of them comment. Every setting says what it does, which environment
 variable overrides it, and what happens when it is set wrong.
 
