@@ -7,7 +7,11 @@
 // paid features simply report themselves as unavailable.
 package lizenz
 
-import "sync"
+import (
+	"errors"
+	"sync"
+	"time"
+)
 
 // Funktion names one paid extra. The strings travel to the browser and into
 // license keys, so they are part of the interface and must not be renamed.
@@ -39,6 +43,71 @@ var Alle = []Funktion{
 	Pruefspur, Gruppen, SSO, LDAP, Anhangsuche, Export, Vorlagen, Kommentare, Konflikte,
 }
 
+// Stufe ist ein Bündel von Funktionen -- das, was verkauft wird.
+//
+// Einzelne Funktionen bleiben trotzdem der Maßstab im Code: geprüft wird immer
+// gegen eine Funktion, nie gegen eine Stufe. Sonst müsste jede Abfrage wissen,
+// welche Stufe was enthält, und eine Umstellung des Angebots hieße, den halben
+// Code anzufassen.
+type Stufe string
+
+const (
+	StufeFrei     Stufe = "free"
+	StufeAdvanced Stufe = "advanced"
+	StufePro      Stufe = "pro"
+	StufeBusiness Stufe = "business"
+)
+
+// StufenReihe ist die Ordnung vom kleinsten zum größten Umfang.
+var StufenReihe = []Stufe{StufeFrei, StufeAdvanced, StufePro, StufeBusiness}
+
+// stufenZusatz nennt, was eine Stufe GEGENÜBER DER VORIGEN hinzufügt. Kumulativ
+// aufgeschrieben wäre dieselbe Liste dreimal da, und beim nächsten Umsortieren
+// stimmte eine davon nicht mehr.
+var stufenZusatz = map[Stufe][]Funktion{
+	StufeFrei:     {},
+	StufeAdvanced: {Versionen, Anhaenge, Vorlagen, Kommentare},
+	StufePro:      {Freigeben, Konflikte, Export, Anhangsuche},
+	StufeBusiness: {Gruppen, Pruefspur, SSO, LDAP},
+}
+
+// FunktionenDerStufe liefert alles, was eine Stufe enthält -- einschließlich
+// dessen, was die kleineren schon enthielten.
+func FunktionenDerStufe(st Stufe) []Funktion {
+	var raus []Funktion
+	for _, s := range StufenReihe {
+		raus = append(raus, stufenZusatz[s]...)
+		if s == st {
+			return raus
+		}
+	}
+	// Unbekannte Stufe: nichts freischalten. Ein Tippfehler im Schlüssel darf
+	// nicht zufällig zu Business führen.
+	return nil
+}
+
+// StufeGueltig sagt, ob der Name eine bekannte Stufe ist.
+func StufeGueltig(st Stufe) bool {
+	for _, s := range StufenReihe {
+		if s == st {
+			return true
+		}
+	}
+	return false
+}
+
+// Aussteller signiert neue Schlüssel. Auch das implementiert das
+// premium-Paket -- der freie Kern kennt weder den privaten Schlüssel noch das
+// Verfahren und kann deshalb keine Schlüssel erzeugen, egal wie er aufgerufen
+// wird.
+type Aussteller interface {
+	// Moeglich sagt, ob überhaupt ausgestellt werden kann. Auf einer
+	// gewöhnlichen Installation ist das nein: dort liegt kein privater
+	// Schlüssel, und das soll auch so bleiben.
+	Moeglich() bool
+	Stelle(inhaber string, stufe Stufe, zusaetzlich []Funktion, ablauf time.Time) (string, error)
+}
+
 // Pruefer verifies a key and answers what it unlocks. The premium package
 // implements it; the core never sees the signature logic.
 type Pruefer interface {
@@ -51,6 +120,7 @@ type Pruefer interface {
 // minus the key itself.
 type Zustand struct {
 	Inhaber    string     `json:"inhaber"`             // who the key was issued to
+	Stufe      Stufe      `json:"stufe,omitempty"`     // das verkaufte Bündel, falls der Schlüssel eines nennt
 	Funktionen []Funktion `json:"funktionen"`          // what it unlocks
 	LaeuftAb   string     `json:"laeuft_ab,omitempty"` // ISO date, empty means perpetual
 	Gueltig    bool       `json:"gueltig"`
@@ -58,9 +128,10 @@ type Zustand struct {
 }
 
 var (
-	mu      sync.RWMutex
-	pruefer Pruefer
-	aktuell Zustand
+	mu         sync.RWMutex
+	pruefer    Pruefer
+	aussteller Aussteller
+	aktuell    Zustand
 )
 
 // Registriere installs the verifier. The premium package calls it from init(),
@@ -69,6 +140,43 @@ func Registriere(p Pruefer) {
 	mu.Lock()
 	defer mu.Unlock()
 	pruefer = p
+}
+
+// RegistriereAussteller installiert den Aussteller.
+func RegistriereAussteller(a Aussteller) {
+	mu.Lock()
+	defer mu.Unlock()
+	aussteller = a
+}
+
+// Ausstellbar sagt, ob diese Installation Schlüssel erzeugen kann.
+func Ausstellbar() bool {
+	mu.RLock()
+	defer mu.RUnlock()
+	return aussteller != nil && aussteller.Moeglich()
+}
+
+// Ausstellen erzeugt einen Schlüssel, sofern diese Installation das darf.
+func Ausstellen(inhaber string, stufe Stufe, zusaetzlich []Funktion, ablauf time.Time) (string, error) {
+	mu.RLock()
+	a := aussteller
+	mu.RUnlock()
+	if a == nil || !a.Moeglich() {
+		return "", errors.New("diese Installation kann keine Schlüssel ausstellen")
+	}
+	return a.Stelle(inhaber, stufe, zusaetzlich, ablauf)
+}
+
+// Pruefe liest einen Schlüssel, ohne den geltenden zu ersetzen. Für die
+// Verwaltung: erst sehen, was ein Schlüssel enthält, dann entscheiden.
+func Pruefe(schluessel string) (Zustand, error) {
+	mu.RLock()
+	p := pruefer
+	mu.RUnlock()
+	if p == nil {
+		return Zustand{}, errors.New("dieser Build enthält die Lizenzprüfung nicht")
+	}
+	return p.Pruefe(schluessel)
 }
 
 // Laden takes the configured key and remembers what it unlocks. It is called

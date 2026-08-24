@@ -345,6 +345,8 @@ GET    /tags                              list tags
 POST   /tags                              create
 DELETE /tags/{id}                         delete
 
+PUT    /system/lizenz                    import a license key, effective at once (admin)
+POST   /system/lizenz/ausstellen        issue a key — only where a signing key is present
 POST   /import                           Markdown/HTML files or a ZIP, multipart; parentId/spaceId
                                          optional, or neueAblage=<name> to create a space for it
 POST   /import  (vorschau=1)              the same, but only reports the tree it would create

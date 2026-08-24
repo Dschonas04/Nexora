@@ -29,12 +29,15 @@ interface Ctx {
   geladen: boolean;
   /** Whether one paid extra is available. Unknown state counts as locked. */
   frei: (extra: Extra) => boolean;
+  /** Nach dem Einlesen eines Schlüssels: Zustand sofort neu holen. */
+  neuLaden: () => void;
 }
 
 const LizenzCtx = createContext<Ctx>({
   lizenz: null,
   geladen: false,
   frei: () => false,
+  neuLaden: () => {},
 });
 
 export function LizenzProvider({ children }: { children: ReactNode }) {
@@ -53,6 +56,10 @@ export function LizenzProvider({ children }: { children: ReactNode }) {
   // Ein Fehlschlag wird zudem nicht mehr als Antwort genommen: das Backend ist
   // beim Ausrollen für ein paar Sekunden weg, und eine Instanz, die danach
   // dauerhaft ihre Lizenz vergisst, ist schlechter als eine, die kurz wartet.
+  // Zähler statt Schalter: jeder Aufruf von neuLaden stößt den Effekt erneut
+  // an, auch wenn sich das Konto nicht geändert hat.
+  const [runde, setRunde] = useState(0);
+
   useEffect(() => {
     if (!user) {
       setLizenz(null);
@@ -85,13 +92,15 @@ export function LizenzProvider({ children }: { children: ReactNode }) {
     return () => {
       abgebrochen = true;
     };
-  }, [user]);
+  }, [user, runde]);
 
   const frei = (extra: Extra) =>
     !!lizenz?.gueltig && lizenz.freigeschaltet.includes(extra);
 
   return (
-    <LizenzCtx.Provider value={{ lizenz, geladen, frei }}>{children}</LizenzCtx.Provider>
+    <LizenzCtx.Provider value={{ lizenz, geladen, frei, neuLaden: () => setRunde((r) => r + 1) }}>
+      {children}
+    </LizenzCtx.Provider>
   );
 }
 

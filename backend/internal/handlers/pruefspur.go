@@ -35,19 +35,20 @@ const (
 	AktKontoGeloescht = "konto.geloescht"
 	AktRolleGeaendert = "konto.rolle"
 
-	AktSeiteAngelegt  = "seite.angelegt"
-	AktSeiteGeaendert = "seite.geaendert"
-	AktSeiteGeloescht = "seite.geloescht" // in den Papierkorb
-	AktSeiteEntfernt  = "seite.entfernt"  // endgültig
-	AktSeiteWieder    = "seite.wiederhergestellt"
-	AktVersionZurueck = "version.zurueckgeholt"
-	AktFreigabe       = "freigabe.erteilt"
-	AktFreigabeWeg    = "freigabe.entzogen"
-	AktOeffentlichAn  = "oeffentlich.an"
-	AktOeffentlichAus = "oeffentlich.aus"
-	AktAnhangHoch     = "anhang.hochgeladen"
-	AktAnhangWeg      = "anhang.entfernt"
-	AktLizenzGeladen  = "lizenz.geladen"
+	AktSeiteAngelegt     = "seite.angelegt"
+	AktSeiteGeaendert    = "seite.geaendert"
+	AktSeiteGeloescht    = "seite.geloescht" // in den Papierkorb
+	AktSeiteEntfernt     = "seite.entfernt"  // endgültig
+	AktSeiteWieder       = "seite.wiederhergestellt"
+	AktVersionZurueck    = "version.zurueckgeholt"
+	AktFreigabe          = "freigabe.erteilt"
+	AktFreigabeWeg       = "freigabe.entzogen"
+	AktOeffentlichAn     = "oeffentlich.an"
+	AktOeffentlichAus    = "oeffentlich.aus"
+	AktAnhangHoch        = "anhang.hochgeladen"
+	AktAnhangWeg         = "anhang.entfernt"
+	AktLizenzGeladen     = "lizenz.geladen"
+	AktLizenzAusgestellt = "lizenz.ausgestellt"
 
 	AktKommentar          = "kommentar.angelegt"
 	AktKommentarGeaendert = "kommentar.geaendert"
