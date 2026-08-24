@@ -836,7 +836,11 @@ export default function Sidebar(props: Props) {
                 die Oberfläche auf, das Backend prüft die Rolle bei jedem Aufruf
                 erneut. Gruppen und Prüfspur sind zusätzlich Zusatzumfang: ein
                 Eintrag, der ohnehin abgewiesen würde, wird gar nicht erst
-                angeboten. */}
+                angeboten.
+
+                Die Einstellungen haben keine eigene Zeile mehr, sie hängen am
+                Zahnrad in der Überschrift -- dort sucht man sie, und die Liste
+                darunter bleibt für das, was man wirklich anklickt. */}
             {user?.role === "admin" && (
               <div className="sidebar-section">
                 <Klapptitel
@@ -844,8 +848,9 @@ export default function Sidebar(props: Props) {
                   zu={zu}
                   klappen={klappen}
                   symbol={<Zahnrad />}
-                  symbolTitel="Einstellungen öffnen"
+                  symbolTitel="Einstellungen"
                   symbolAktion={() => onNavigate("/einstellungen")}
+                  symbolAktiv={currentPath === "/einstellungen"}
                 >
                   Verwaltung
                 </Klapptitel>
@@ -854,12 +859,6 @@ export default function Sidebar(props: Props) {
                   onClick={() => onNavigate("/admin")}
                 >
                   <span className="tree-label">Nutzer &amp; Rollen</span>
-                </div>
-                <div
-                  className={"tree-row" + (currentPath === "/einstellungen" ? " active" : "")}
-                  onClick={() => onNavigate("/einstellungen")}
-                >
-                  <span className="tree-label">Einstellungen</span>
                 </div>
                 {frei("gruppen") && (
                   <div
@@ -948,6 +947,7 @@ function Klapptitel({
   symbol,
   symbolTitel,
   symbolAktion,
+  symbolAktiv,
   children,
 }: {
   marke: string;
@@ -961,6 +961,10 @@ function Klapptitel({
   // Ist eine Aktion hinterlegt, wird aus dem Sinnbild eine Schaltfläche. Ohne
   // sie bleibt es reine Beschriftung.
   symbolAktion?: () => void;
+  // Hebt das Sinnbild hervor, solange man auf der Ansicht steht, die es
+  // öffnet. Ohne das verlöre man beim Klick die Anzeige, wo man ist -- die
+  // Zeile, die das sonst übernahm, gibt es nicht mehr.
+  symbolAktiv?: boolean;
   children: React.ReactNode;
 }) {
   const eingeklappt = zu.has(marke);
@@ -977,7 +981,7 @@ function Klapptitel({
       {symbol &&
         (symbolAktion ? (
           <button
-            className="klapp-symbol klapp-symbol-btn"
+            className={"klapp-symbol klapp-symbol-btn" + (symbolAktiv ? " aktiv" : "")}
             title={symbolTitel}
             aria-label={symbolTitel}
             // Sonst klappt die Überschrift zusätzlich zu, weil der Klick
