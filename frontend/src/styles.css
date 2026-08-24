@@ -2598,3 +2598,29 @@ a {
   outline: none;
   border-color: var(--accent);
 }
+
+/* Wahl des Ziels in der Einfuhr: an der Wurzel darf ein Archiv seine eigene
+   Ablage mitbringen. */
+.einfuhr-ziel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--flaeche);
+}
+
+.einfuhr-schalter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.einfuhr-ziel p {
+  margin: 0;
+  line-height: 1.5;
+}

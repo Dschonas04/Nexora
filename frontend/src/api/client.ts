@@ -315,6 +315,8 @@ export interface EinfuhrBericht {
   anhaenge: number;
   wurzeln: string[];
   warnungen: string[];
+  /** Gesetzt, wenn die Einfuhr eine eigene Ablage angelegt hat. */
+  ablage?: { id: string; name: string };
 }
 
 // EinfuhrAst ist ein Knoten der Vorschau -- der Baum, wie er entstehen würde.
@@ -335,6 +337,8 @@ export interface EinfuhrVorschau {
   beilagen: number;
   baum: EinfuhrAst[];
   warnungen: string[];
+  /** Name der Ablage, die entstehen würde. */
+  ablage?: string;
 }
 
 // SuchFilter grenzt eine Suche ein. Alle Felder sind freiwillig; leer heißt
@@ -565,13 +569,16 @@ export const api = {
   // Browser samt Grenzmarke selbst.
   importieren: async (
     dateien: File[],
-    ziel: { parentId?: string; spaceId?: string },
+    // neueAblage schließt die beiden anderen aus: das Archiv bringt dann
+    // seine eigene Ablage mit, statt sich in eine vorhandene zu mischen.
+    ziel: { parentId?: string; spaceId?: string; neueAblage?: string },
     vorschau = false,
   ) => {
     const body = new FormData();
     for (const d of dateien) body.append("file", d);
     if (ziel.parentId) body.append("parentId", ziel.parentId);
     if (ziel.spaceId) body.append("spaceId", ziel.spaceId);
+    if (ziel.neueAblage) body.append("neueAblage", ziel.neueAblage);
     // Derselbe Aufruf mit demselben Inhalt, nur ohne Folgen -- der Server
     // rechnet denselben Plan und legt nichts an.
     if (vorschau) body.append("vorschau", "1");

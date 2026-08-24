@@ -39,7 +39,9 @@ license key. On 2030-08-19 the whole thing becomes Apache 2.0.
   between imported files are rewritten to `[[Page title]]`, so they still lead
   somewhere and feed backlinks and the graph; images and other files become
   attachments of the page that uses them, and anything nothing referenced is
-  attached to its folder's page rather than dropped. Front matter supplies title,
+  attached to its folder's page rather than dropped. An archive can bring its
+  own space instead of merging into an existing one, which is what makes an
+  exported space importable again as a whole. Front matter supplies title,
   tags and icon. Free, like the export — the way in must not sit behind a licence
   either
 - **PDF and Word export**: a typeset document for a page, or a whole space as one
@@ -343,7 +345,8 @@ GET    /tags                              list tags
 POST   /tags                              create
 DELETE /tags/{id}                         delete
 
-POST   /import                           Markdown/HTML files or a ZIP, multipart; parentId/spaceId optional
+POST   /import                           Markdown/HTML files or a ZIP, multipart; parentId/spaceId
+                                         optional, or neueAblage=<name> to create a space for it
 POST   /import  (vorschau=1)              the same, but only reports the tree it would create
 
 GET    /postfach[?ungelesen=1]            inbox entries, newest first

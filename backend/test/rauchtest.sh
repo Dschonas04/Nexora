@@ -105,6 +105,27 @@ pruefe "eine Seite eingeführt" "1" "$(printf '%s' "$EIN" | feld "['seiten']")"
 pruefe "Vorschau legt nichts an" "1" \
        "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/import" -F "file=@$ARBEIT/probe.md" -F "vorschau=1" | feld "['seiten']")"
 
+echo "== Einfuhr als eigene Ablage"
+printf '# Aus dem Archiv\n\nInhalt.\n' > "$ARBEIT/ablage.md"
+pruefe "Vorschau nennt die Ablage" "Umzug" \
+       "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/import" -F "file=@$ARBEIT/ablage.md" \
+          -F "neueAblage=Umzug" -F "vorschau=1" | feld "['ablage']")"
+pruefe "Vorschau legt keine Ablage an" "0" \
+       "$(hole "$BASIS/api/spaces" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+ABL=$(curl -s -b "$KEKSE" -X POST "$BASIS/api/import" -F "file=@$ARBEIT/ablage.md" -F "neueAblage=Umzug")
+pruefe "Ablage angelegt" "Umzug" "$(printf '%s' "$ABL" | feld "['ablage']['name']")"
+pruefe "Ablage steht in der Liste" "1" \
+       "$(hole "$BASIS/api/spaces" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+ABL_ID=$(printf '%s' "$ABL" | feld "['ablage']['id']")
+pruefe "Seite liegt in der Ablage" "1" \
+       "$(hole "$BASIS/api/pages" | ABL_ID="$ABL_ID" python3 -c '
+import json, os, sys
+ziel = os.environ["ABL_ID"]
+print(sum(1 for p in json.load(sys.stdin) if p.get("spaceId") == ziel))')"
+pruefe "beides zusammen wird abgewiesen" "400" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X POST "$BASIS/api/import" \
+          -F "file=@$ARBEIT/ablage.md" -F "neueAblage=Zwei" -F "spaceId=$ABL_ID")"
+
 echo "== Ausgabe"
 pruefe "Markdown" "200" "$(code "$BASIS/api/pages/$SEITE/markdown")"
 
