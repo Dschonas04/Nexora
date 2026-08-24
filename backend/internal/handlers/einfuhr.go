@@ -57,6 +57,9 @@ type einfuhrVorschau struct {
 	Beilagen  int          `json:"beilagen"`
 	Baum      []einfuhrAst `json:"baum"`
 	Warnungen []string     `json:"warnungen"`
+	// Gesetzt, wenn die Einfuhr eine eigene Ablage anlegen wird. In der
+	// Vorschau steht hier nur der Name -- angelegt ist sie da noch nicht.
+	Ablage string `json:"ablage,omitempty"`
 }
 
 // einfuhrAst ist ein Knoten der Vorschau. Quelle steht daneben, weil ein Titel
@@ -100,6 +103,15 @@ type einfuhrBericht struct {
 	Anhaenge  int      `json:"anhaenge"`
 	Wurzeln   []string `json:"wurzeln"`
 	Warnungen []string `json:"warnungen"`
+	// Die angelegte Ablage, falls die Einfuhr eine mitgebracht hat. Die
+	// Oberfläche springt danach hinein -- eine Einfuhr, die man erst suchen
+	// muss, ist halb verloren.
+	Ablage *einfuhrAblage `json:"ablage,omitempty"`
+}
+
+type einfuhrAblage struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // Namen, unter denen ein Verzeichnis seine eigene Seite ablegt. Der Reihe nach
@@ -132,6 +144,22 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 
 	elternID := strings.TrimSpace(r.FormValue("parentId"))
 	spaceID := strings.TrimSpace(r.FormValue("spaceId"))
+	// Eine ganze Ablage einführen: das Archiv bringt seine eigene mit, statt
+	// sich in eine vorhandene zu mischen. Genau der Weg zurück aus der
+	// Ausfuhr -- ein Space, den man exportiert hat, kommt so wieder herein,
+	// ohne dass man vorher von Hand eine Ablage anlegt.
+	neueAblage := strings.TrimSpace(r.FormValue("neueAblage"))
+	if neueAblage != "" {
+		if elternID != "" || spaceID != "" {
+			writeErr(w, http.StatusBadRequest,
+				"entweder eine neue Ablage oder ein vorhandenes Ziel, nicht beides")
+			return
+		}
+		if len([]rune(neueAblage)) > 120 {
+			writeErr(w, http.StatusBadRequest, "Name der Ablage ist zu lang")
+			return
+		}
+	}
 
 	// Wer hierhin schreiben darf, entscheidet dieselbe Regel wie beim
 	// Anlegen einer einzelnen Seite. Eine Einfuhr ist nichts anderes als
@@ -211,8 +239,27 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 			Beilagen:  len(beilagen),
 			Baum:      baumAusPlan(plan),
 			Warnungen: warnungen,
+			Ablage:    neueAblage,
 		})
 		return
+	}
+
+	// Erst jetzt anlegen, nicht schon bei der Vorschau: sonst bliebe nach
+	// jedem Blick in ein Archiv eine leere Ablage stehen.
+	var ablage *einfuhrAblage
+	if neueAblage != "" {
+		var neu einfuhrAblage
+		neu.Name = neueAblage
+		if err := s.Pool.QueryRow(r.Context(),
+			`INSERT INTO spaces (owner_id, name) VALUES ($1, $2) RETURNING id`,
+			uid, neueAblage).Scan(&neu.ID); err != nil {
+			writeErr(w, http.StatusInternalServerError, "Ablage konnte nicht angelegt werden")
+			return
+		}
+		s.spurAusRequest(r, AktSpaceAngelegt, "space", neu.ID, neu.Name,
+			map[string]any{"aus": "einfuhr"})
+		spaceID = neu.ID
+		ablage = &neu
 	}
 
 	wurzeln, err := s.anlegen(r.Context(), uid, elternID, spaceID, plan)
@@ -247,7 +294,14 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 	// würde bemerken, dass etwas fehlt.
 	anhaenge += s.beilagenNachtragen(r.Context(), uid, seiten, beilagen, benutzt, &warnungen)
 
-	s.spurAusRequest(r, AktEinfuhr, "seite", elternID, einfuhrName(mdDateien),
+	// Bei einer eigenen Ablage steht sie im Eintrag, sonst die Zielseite: die
+	// Frage hinterher lautet "wohin ging das", und darauf muss der Eintrag
+	// antworten können.
+	art, zielID := "seite", elternID
+	if ablage != nil {
+		art, zielID = "space", ablage.ID
+	}
+	s.spurAusRequest(r, AktEinfuhr, art, zielID, einfuhrName(mdDateien),
 		map[string]any{"seiten": len(seiten), "anhaenge": anhaenge, "dateien": len(koepfe)})
 
 	writeJSON(w, http.StatusCreated, einfuhrBericht{
@@ -255,6 +309,7 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 		Anhaenge:  anhaenge,
 		Wurzeln:   wurzeln,
 		Warnungen: warnungen,
+		Ablage:    ablage,
 	})
 }
 

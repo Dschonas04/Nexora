@@ -15,7 +15,9 @@ export default function Einfuhr({
   onFertig,
   onClose,
 }: {
-  // Genau eines von beidem: unter eine Seite oder in eine Ablage.
+  // Genau eines von beidem: unter eine Seite oder in eine Ablage. Ist keines
+  // gesetzt, landet die Einfuhr an der Wurzel -- und nur dann darf sie
+  // stattdessen eine eigene Ablage mitbringen.
   ziel: { parentId?: string; spaceId?: string };
   zielName: string;
   onFertig: (bericht: EinfuhrBericht) => void;
@@ -30,6 +32,11 @@ export default function Einfuhr({
   const [fehler, setFehler] = useState<string | null>(null);
   const [ueber, setUeber] = useState(false);
   const wahl = useRef<HTMLInputElement>(null);
+  // Eine ganze Ablage einführen. Möglich nur an der Wurzel: in einer Ablage
+  // eine zweite anzulegen ergäbe keine Ordnung, sondern zwei.
+  const alsAblageMoeglich = !ziel.parentId && !ziel.spaceId;
+  const [alsAblage, setAlsAblage] = useState(false);
+  const [ablageName, setAblageName] = useState("");
   // Zähler statt Schalter: über einem Kindelement feuert dragleave, obwohl der
   // Zeiger den Kasten nie verlassen hat.
   const tiefe = useRef(0);
@@ -43,12 +50,19 @@ export default function Einfuhr({
   // Erst rechnen lassen, dann fragen. Zweihundert Seiten rückgängig zu machen
   // hieße, sie einzeln in den Papierkorb zu schieben -- die Vorschau kostet
   // einen Klick und erspart genau das.
+  // Aus "Homelab.zip" wird "Homelab": der Name, unter dem die Ablage
+  // ausgeführt wurde, ist der beste Vorschlag für die, die daraus entsteht.
+  const nameAusDatei = (dateien: File[]) =>
+    (dateien[0]?.name ?? "").replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+
   const pruefen = async (gewaehlt: File[]) => {
     if (gewaehlt.length === 0) return;
     setLaeuft(true);
     setFehler(null);
+    const name = alsAblage ? ablageName.trim() || nameAusDatei(gewaehlt) : "";
+    if (alsAblage && !ablageName.trim() && name) setAblageName(name);
     try {
-      const v = await api.importieren(gewaehlt, ziel, true);
+      const v = await api.importieren(gewaehlt, { ...ziel, neueAblage: name }, true);
       setDateien(gewaehlt);
       setVorschau(v);
     } catch (e) {
@@ -62,7 +76,10 @@ export default function Einfuhr({
     setLaeuft(true);
     setFehler(null);
     try {
-      const b = await api.importieren(dateien, ziel);
+      const b = await api.importieren(dateien, {
+        ...ziel,
+        neueAblage: alsAblage ? ablageName.trim() || nameAusDatei(dateien) : undefined,
+      });
       setBericht(b);
       onFertig(b);
     } catch (e) {
@@ -76,7 +93,9 @@ export default function Einfuhr({
     <div className="qv-overlay" onClick={() => !laeuft && onClose()}>
       <div className="qv-box einfuhr-box" onClick={(e) => e.stopPropagation()}>
         <div className="qv-head">
-          <span className="qv-title">Einfuhr nach „{zielName}“</span>
+          <span className="qv-title">
+            Einfuhr nach „{alsAblage ? ablageName.trim() || "neuer Ablage" : zielName}“
+          </span>
           <div className="qv-actions">
             <button className="btn" disabled={laeuft} onClick={onClose}>
               {bericht ? "Fertig" : "Abbrechen"}
@@ -86,6 +105,32 @@ export default function Einfuhr({
 
         <div className="einfuhr-inhalt">
           {fehler && <div className="fehler">{fehler}</div>}
+
+          {!bericht && !vorschau && alsAblageMoeglich && (
+            <div className="einfuhr-ziel">
+              <label className="einfuhr-schalter">
+                <input
+                  type="checkbox"
+                  checked={alsAblage}
+                  onChange={(e) => setAlsAblage(e.target.checked)}
+                />
+                <span>Als eigene Ablage anlegen</span>
+              </label>
+              {alsAblage ? (
+                <input
+                  className="rueckfrage-feld"
+                  placeholder="Name der Ablage (sonst der Dateiname)"
+                  value={ablageName}
+                  onChange={(e) => setAblageName(e.target.value)}
+                />
+              ) : (
+                <p className="muted small">
+                  Ohne Haken landen die Seiten unter „Ohne Ablage“. Mit Haken entsteht eine
+                  neue Ablage -- so kommt eine ausgeführte Ablage als Ganzes zurück.
+                </p>
+              )}
+            </div>
+          )}
 
           {!bericht && !vorschau && (
             <>
@@ -163,7 +208,7 @@ export default function Einfuhr({
                 {vorschau.seiten} {vorschau.seiten === 1 ? "Seite" : "Seiten"} würden entstehen
                 {vorschau.beilagen > 0 &&
                   `, ${vorschau.beilagen} ${vorschau.beilagen === 1 ? "Datei" : "Dateien"} werden Anhänge`}
-                .
+                {vorschau.ablage && ` — in der neuen Ablage „${vorschau.ablage}“`}.
               </p>
               <div className="einfuhr-baum">
                 <Aeste knoten={vorschau.baum} />
@@ -202,7 +247,7 @@ export default function Einfuhr({
                 {bericht.seiten} {bericht.seiten === 1 ? "Seite" : "Seiten"} angelegt
                 {bericht.anhaenge > 0 &&
                   `, ${bericht.anhaenge} ${bericht.anhaenge === 1 ? "Anhang" : "Anhänge"} übernommen`}
-                .
+                {bericht.ablage && ` in der neuen Ablage „${bericht.ablage.name}“`}.
               </p>
               {bericht.warnungen.length > 0 && (
                 <>
