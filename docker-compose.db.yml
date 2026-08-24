@@ -1,0 +1,33 @@
+# Beilage: eine Postgres, die zu Nexora gehört.
+#
+# Für alle, die keine eigene betreiben. Wer eine hat, lässt diese Datei weg und
+# setzt stattdessen DATABASE_URL in der .env -- Nexora legt sein Schema beim
+# Start selbst an und braucht dafür nur ein Konto mit Rechten auf einer
+# leeren Datenbank.
+#
+#     docker compose -f docker-compose.yml -f docker-compose.db.yml up -d
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nexora
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexora}
+      POSTGRES_DB: nexora
+    volumes:
+      - nexora_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexora"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # Erst starten, wenn die Datenbank wirklich antwortet. Ohne das läuft das
+  # Backend beim ersten Hochfahren in eine geschlossene Tür und fällt um.
+  backend:
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  nexora_db:
