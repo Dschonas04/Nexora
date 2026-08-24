@@ -2498,6 +2498,13 @@ a {
   color: var(--text);
 }
 
+/* Solange die Einstellungen offen sind, bleibt das Zahnrad hervorgehoben --
+   sonst sähe man der Leiste nicht mehr an, wo man steht. */
+.klapp-symbol-btn.aktiv {
+  background: var(--hover);
+  color: var(--accent-lesbar);
+}
+
 .klapp-symbol svg {
   width: 13px;
   height: 13px;
