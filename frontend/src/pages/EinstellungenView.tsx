@@ -1013,7 +1013,12 @@ export default function EinstellungenView() {
             <h3>Dienst neu starten</h3>
             <p className="muted small">
               Nötig, damit Änderungen an der Konfigurationsdatei greifen: gelesen wird sie nur beim
-              Start. Der Dienst beendet sich; hochgefahren wird er von dem, was ihn betreibt —
+              Start. Betroffen ist <strong>allein dieser Dienst</strong> — die Oberfläche und die
+              Datenbank laufen in eigenen Containern weiter und werden nicht angefasst. Für die
+              Dauer des Starts, ein bis zwei Sekunden, antwortet die Anwendung nicht.
+            </p>
+            <p className="muted small">
+              Der Dienst beendet sich selbst; hochgefahren wird er von dem, was ihn betreibt —
               Docker mit <code>restart: unless-stopped</code>, systemd, Kubernetes.{" "}
               <strong>Gibt es nichts davon, bleibt er aus.</strong>
             </p>

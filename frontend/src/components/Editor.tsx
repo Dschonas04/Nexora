@@ -82,6 +82,29 @@ function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) 
   });
 }
 
+
+// siehtNachMarkdownAus entscheidet, ob ein eingefügter Text als Markdown
+// gemeint war.
+//
+// Die Frage ist nötig, weil die Antwort nicht immer ja ist: wer eine Zeile aus
+// einem Protokoll einfügt, will sie so, wie sie ist. Deshalb wird nicht nach
+// einzelnen Zeichen gesucht, sondern nach den Formen, die niemand versehentlich
+// tippt -- eine Überschrift am Zeilenanfang, eine Aufzählung, ein Zitat, ein
+// Code-Zaun, ein Verweis in Klammern oder ein Wort zwischen zwei Sternenpaaren.
+const MARKDOWN_MUSTER = [
+  /^#{1,6}\s+\S/m,
+  /^\s*[-*+]\s+\S/m,
+  /^\s*\d+\.\s+\S/m,
+  /^\s*>\s+\S/m,
+  /^```/m,
+  /\*\*[^*\n]+\*\*/,
+  /\[[^\]\n]+\]\([^)\n]+\)/,
+];
+
+function siehtNachMarkdownAus(text: string): boolean {
+  return MARKDOWN_MUSTER.some((m) => m.test(text));
+}
+
 export default function Editor({
   initialContent,
   editable = true,
@@ -194,8 +217,48 @@ export default function Editor({
     }
   };
 
+  // Eingefügtes Markdown als Markdown übernehmen.
+  //
+  // Ohne das landete "## Titel" als die vier Zeichen, die dort stehen -- und
+  // das ist der übliche Weg, auf dem Text hier ankommt: aus einer Notizen-App,
+  // einer Antwort, einem README. Der Editor kennt die Umwandlung bereits, sie
+  // wurde nur nie an die Zwischenablage gehängt.
+  //
+  // Nur reiner Text wird angefasst. Liegt HTML in der Zwischenablage, kann
+  // BlockNote das selbst und besser.
+  const onPasteCapture = (e: React.ClipboardEvent) => {
+    if (!editable) return;
+    const zwischen = e.clipboardData;
+    if (!zwischen || zwischen.getData("text/html")) return;
+    const text = zwischen.getData("text/plain");
+    if (!text || !siehtNachMarkdownAus(text)) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    void (async () => {
+      const bloecke = await editor.tryParseMarkdownToBlocks(text);
+      if (bloecke.length === 0) return;
+      const hier = editor.getTextCursorPosition().block;
+      const leer =
+        Array.isArray(hier.content) && hier.content.length === 0 && hier.type === "paragraph";
+      // In einen leeren Absatz hinein statt darunter: sonst bliebe über dem
+      // eingefügten Text eine leere Zeile stehen.
+      if (leer) {
+        editor.replaceBlocks([hier], bloecke);
+      } else {
+        editor.insertBlocks(bloecke, hier, "after");
+      }
+      onChange?.(editor.document);
+    })();
+  };
+
   return (
-    <div ref={wrapRef} className={linkResolver ? "editor-wraps has-wikilinks" : "editor-wraps"} onClickCapture={onClickCapture}>
+    <div
+      ref={wrapRef}
+      className={linkResolver ? "editor-wraps has-wikilinks" : "editor-wraps"}
+      onClickCapture={onClickCapture}
+      onPasteCapture={onPasteCapture}
+    >
       <BlockNoteView
         editor={editor}
         editable={editable}

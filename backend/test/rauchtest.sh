@@ -54,25 +54,43 @@ createdb -h 127.0.0.1 -p "$PGPORT" -U nexora nexora
 echo "== Backend bauen"
 ( cd "$WURZEL" && go build -o "$ARBEIT/nexora" . )
 
-echo "== Backend starten"
-DATABASE_URL="postgres://nexora@127.0.0.1:${PGPORT}/nexora?sslmode=disable" \
-JWT_SECRET="rauchtest-geheimnis-lang-genug-fuer-hs256" \
-NEXORA_DATA_DIR="$ARBEIT/anhaenge" \
-PORT="$APIPORT" \
-NEXORA_CONFIG="/dev/null" \
-"$ARBEIT/nexora" > "$ARBEIT/dienst.log" 2>&1 &
-DIENST_PID=$!
+# Als Funktion, weil der Papierkorb weiter unten einen zweiten Start mit einer
+# anderen Frist braucht -- die Uhr räumt beim Hochfahren einmal auf, und genau
+# das soll geprüft werden.
+starte_dienst() {
+    DATABASE_URL="postgres://nexora@127.0.0.1:${PGPORT}/nexora?sslmode=disable" \
+    JWT_SECRET="rauchtest-geheimnis-lang-genug-fuer-hs256" \
+    NEXORA_DATA_DIR="$ARBEIT/anhaenge" \
+    PORT="$APIPORT" \
+    NEXORA_CONFIG="/dev/null" \
+    NEXORA_PAPIERKORB_TAGE="${1:-}" \
+    "$ARBEIT/nexora" >> "$ARBEIT/dienst.log" 2>&1 &
+    DIENST_PID=$!
 
-for i in $(seq 1 40); do
-    sleep 0.5
-    if curl -fsS --max-time 2 "$BASIS/healthz" >/dev/null 2>&1; then break; fi
-    if ! kill -0 "$DIENST_PID" 2>/dev/null; then
-        echo "Das Backend ist beim Start ausgestiegen:" >&2
-        cat "$ARBEIT/dienst.log" >&2
-        exit 1
-    fi
-done
-curl -fsS --max-time 2 "$BASIS/healthz" >/dev/null || { echo "Backend antwortet nicht" >&2; cat "$ARBEIT/dienst.log" >&2; exit 1; }
+    for i in $(seq 1 40); do
+        sleep 0.5
+        if curl -fsS --max-time 2 "$BASIS/healthz" >/dev/null 2>&1; then break; fi
+        if ! kill -0 "$DIENST_PID" 2>/dev/null; then
+            echo "Das Backend ist beim Start ausgestiegen:" >&2
+            cat "$ARBEIT/dienst.log" >&2
+            exit 1
+        fi
+    done
+    curl -fsS --max-time 2 "$BASIS/healthz" >/dev/null || {
+        echo "Backend antwortet nicht" >&2; cat "$ARBEIT/dienst.log" >&2; exit 1; }
+}
+
+halte_dienst_an() {
+    kill "$DIENST_PID" 2>/dev/null || true
+    wait "$DIENST_PID" 2>/dev/null || true
+    for i in $(seq 1 20); do
+        curl -fsS --max-time 1 "$BASIS/healthz" >/dev/null 2>&1 || break
+        sleep 0.3
+    done
+}
+
+echo "== Backend starten"
+starte_dienst
 
 code() { curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" "$@"; }
 hole() { curl -s -b "$KEKSE" "$@"; }
@@ -135,6 +153,41 @@ pruefe "liegt im Papierkorb" "1" \
        "$(hole "$BASIS/api/pages/trash" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
 pruefe "trägt ein Verfallsdatum" "True" \
        "$(hole "$BASIS/api/pages/trash" | python3 -c 'import json,sys;print(json.load(sys.stdin)[0]["verfaelltAm"] is not None)')"
+pruefe "zurückgeholt" "200" "$(code -X POST "$BASIS/api/pages/$SEITE/restore")"
+pruefe "Papierkorb wieder leer" "0" \
+       "$(hole "$BASIS/api/pages/trash" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+hole -X DELETE "$BASIS/api/pages/$SEITE" >/dev/null
+pruefe "endgültig entfernt" "200" "$(code -X DELETE "$BASIS/api/pages/$SEITE/purge")"
+pruefe "danach nicht mehr auffindbar" "404" "$(code "$BASIS/api/pages/$SEITE")"
+
+echo "== Papierkorb räumt sich selbst"
+# Die Frist ist eine Zusage, die ohne Prüfung niemand nachrechnet: eine Seite
+# in den Papierkorb legen, ihren Löschzeitpunkt um fünf Tage zurückdatieren
+# und den Dienst mit der Frist 1 neu starten. Die Uhr räumt beim Hochfahren
+# einmal auf -- danach muss die Seite fort sein.
+#
+# Zurückdatiert wird in der Wegwerf-Datenbank dieses Tests, nicht irgendwo
+# sonst. Anders ließe sich ein Ablauf über Tage nicht in Sekunden prüfen.
+#
+# Die 0 wird absichtlich NICHT geprüft: sie heißt "nie von selbst", und die Uhr
+# überspringt sie. Ein Test, der 0 als "sofort alles" liest, hätte die
+# Bedeutung verdreht.
+FRIST=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
+        -d '{"title":"Verfaellt"}' | feld "['id']")
+hole -X DELETE "$BASIS/api/pages/$FRIST" >/dev/null
+pruefe "liegt im Papierkorb" "1" \
+       "$(hole "$BASIS/api/pages/trash" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -q \
+     -c "UPDATE pages SET deleted_at = now() - interval '5 days' WHERE deleted_at IS NOT NULL"
+halte_dienst_an
+starte_dienst 1
+pruefe "von der Frist geräumt" "0" \
+       "$(hole "$BASIS/api/pages/trash" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+pruefe "Räumung steht im Protokoll" "1" \
+       "$(grep -c 'Papierkorb: 1 Seiten nach 1 Tag' "$ARBEIT/dienst.log" || true)"
+pruefe "Frist steht in der Prüfspur" "1" \
+       "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
+          "SELECT count(*) FROM pruefspur WHERE akteur_name='Frist'")"
 
 echo "== Postfach"
 pruefe "Postfach antwortet" "200" "$(code "$BASIS/api/postfach")"

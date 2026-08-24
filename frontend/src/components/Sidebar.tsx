@@ -392,12 +392,16 @@ export default function Sidebar(props: Props) {
           <button className="text-btn" onClick={onCreateSpace}>
             + Space
           </button>
+          {/* Beschriftet statt als Pfeil: ein Symbol allein sagt nicht, dass
+              sich hier ein ganzes Archiv einlesen lässt -- und seit die
+              Einfuhr eine eigene Ablage anlegen kann, ist das der Weg zurück
+              aus einer Ausfuhr. */}
           <button
-            className="icon-btn"
-            title="Markdown oder HTML einführen"
+            className="text-btn"
+            title="Markdown, HTML oder ein ZIP einlesen -- wahlweise als eigene Ablage"
             onClick={() => setEinfuhrZiel({ ziel: {}, name: "Seiten" })}
           >
-            ↑
+            ↑ Einlesen
           </button>
         </div>
       )}
@@ -749,6 +753,12 @@ export default function Sidebar(props: Props) {
                 </button>
                 <button className="btn" onClick={() => onCreateRoot()}>
                   Erste Seite anlegen
+                </button>
+                <button
+                  className="btn"
+                  onClick={() => setEinfuhrZiel({ ziel: {}, name: "Seiten" })}
+                >
+                  Ablage einlesen
                 </button>
               </div>
             )}
