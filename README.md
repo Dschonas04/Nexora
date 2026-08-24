@@ -106,6 +106,25 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+`.env.example` ships with `COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml`,
+so the command above brings its own PostgreSQL. The database and the object
+store are deliberately kept out of the main file — most installations already
+run one, and tying Nexora to its own copy would mean operating them twice:
+
+```bash
+# Nexora only, against a database you already run (set DATABASE_URL)
+COMPOSE_FILE=docker-compose.yml
+
+# with the bundled PostgreSQL (default)
+COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml
+
+# plus a bundled MinIO for attachments
+COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.minio.yml
+```
+
+An existing MinIO or S3 is wired up through the `NEXORA_S3_*` settings instead
+of the third file.
+
 Open **http://localhost:3000** (or whichever `PORT` you set) and create the first
 account, which becomes the workspace admin.
 
@@ -410,8 +429,10 @@ frontend/                      React SPA (Vite + TypeScript)
                                ShareDialog, LocalGraph, SpaceRechte, Einfuhr
   src/pages                    Login, Register, Workspace, PageView, PostfachView,
                                PublicPage, TrashView, GraphView, AdminView,
-                               PruefspurView
-docker-compose.yml             db + backend + frontend
+                               PruefspurView (shown as "Protokoll")
+docker-compose.yml             backend + frontend
+docker-compose.db.yml          optional: bundled PostgreSQL
+docker-compose.minio.yml       optional: bundled MinIO for attachments
 ```
 
 

@@ -1,0 +1,54 @@
+# Beilage: ein MinIO für die Anhänge.
+#
+# Ohne diese Datei liegen Anhänge auf der Platte des Backends -- das reicht für
+# eine Instanz auf einem Rechner. Der Objektspeicher lohnt, sobald die Anhänge
+# eigenständig gesichert, geteilt oder auf ein anderes Gerät gelegt werden
+# sollen.
+#
+# Wer bereits ein MinIO oder einen S3-Dienst betreibt, nimmt diese Datei NICHT,
+# sondern trägt die vorhandenen Zugangsdaten als NEXORA_S3_* in die .env ein.
+#
+#     docker compose -f docker-compose.yml -f docker-compose.db.yml \
+#                    -f docker-compose.minio.yml up -d
+#
+# Der Eimer muss einmal angelegt werden -- über die Oberfläche auf Port 9011
+# oder mit:
+#
+#     docker compose exec minio mc mb /data/nexora
+services:
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-nexora}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-nexora-bitte-aendern}
+    volumes:
+      - nexora_s3:/data
+    ports:
+      # Erste Zahl: die S3-Schnittstelle. Zweite: die Web-Oberfläche.
+      - "${MINIO_PORT:-9010}:9000"
+      - "${MINIO_KONSOLE_PORT:-9011}:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  backend:
+    environment:
+      # Hier zählt der Containername, nicht der veröffentlichte Port: das
+      # Backend spricht MinIO über das Netz des Verbunds an.
+      NEXORA_S3_AKTIV: "ja"
+      NEXORA_S3_ENDPUNKT: ${NEXORA_S3_ENDPUNKT:-http://minio:9000}
+      NEXORA_S3_BUCKET: ${NEXORA_S3_BUCKET:-nexora}
+      NEXORA_S3_ZUGRIFFSSCHLUESSEL: ${MINIO_ROOT_USER:-nexora}
+      NEXORA_S3_GEHEIMNIS: ${MINIO_ROOT_PASSWORD:-nexora-bitte-aendern}
+      # MinIO spricht Pfadstil, nicht die Unterdomänen von Amazon.
+      NEXORA_S3_PFADSTIL: "ja"
+    depends_on:
+      minio:
+        condition: service_healthy
+
+volumes:
+  nexora_s3:

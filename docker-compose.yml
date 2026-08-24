@@ -1,23 +1,27 @@
+# Nexora selbst: Backend und Oberfläche.
+#
+# Datenbank und Objektspeicher stehen absichtlich NICHT hier. Beides sind
+# Dienste, die man im Bestand oft schon hat -- eine gepflegte Postgres, ein
+# MinIO für alles im Haus. Sie fest an Nexora zu ketten hieße, sie doppelt zu
+# betreiben oder Nexora nicht nehmen zu können.
+#
+# Wer sie nicht hat, legt die Beilagen dazu:
+#
+#     docker compose -f docker-compose.yml -f docker-compose.db.yml up -d
+#     docker compose -f docker-compose.yml -f docker-compose.db.yml \
+#                    -f docker-compose.minio.yml up -d
+#
+# Damit man das nicht bei jedem Aufruf tippt, trägt man dieselbe Liste einmal
+# als COMPOSE_FILE in die .env ein -- siehe .env.example.
+#
 services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_USER: nexora
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexora}
-      POSTGRES_DB: nexora
-    volumes:
-      - nexora_db:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nexora"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    restart: unless-stopped
-
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgres://nexora:${POSTGRES_PASSWORD:-nexora}@db:5432/nexora?sslmode=disable
+      # Die Datenbank kann mitgeliefert oder fremd sein. Die Vorgabe zeigt auf
+      # den Dienst aus docker-compose.db.yml; wer eine eigene betreibt, setzt
+      # DATABASE_URL in der .env und lässt die Beilage weg.
+      DATABASE_URL: ${DATABASE_URL:-postgres://nexora:${POSTGRES_PASSWORD:-nexora}@db:5432/nexora?sslmode=disable}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       PORT: "8080"
       NEXORA_DATA_DIR: /data/attachments
@@ -50,9 +54,6 @@ services:
       # Ohne diesen Schritt zeigt die Wartungsseite die Datei an und sagt, dass
       # sie nur lesbar ist. Wer das so will, hängt zusätzlich ein :ro an.
       - ./config.conf:/etc/nexora/config.conf
-    depends_on:
-      db:
-        condition: service_healthy
     restart: unless-stopped
 
   frontend:
@@ -64,5 +65,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  nexora_db:
+  # Nur die Anhänge auf der Platte. Der Datenträger der Datenbank gehört zur
+  # Beilage, die sie mitbringt.
   nexora_files:
