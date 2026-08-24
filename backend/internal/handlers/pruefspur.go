@@ -31,6 +31,7 @@ const (
 	AktAnmeldung      = "anmeldung"
 	AktAnmeldungFehl  = "anmeldung.fehlgeschlagen"
 	AktAbmeldung      = "abmeldung"
+	AktSitzungBeendet = "sitzung.beendet"
 	AktKontoAngelegt  = "konto.angelegt"
 	AktKontoGeloescht = "konto.geloescht"
 	AktRolleGeaendert = "konto.rolle"

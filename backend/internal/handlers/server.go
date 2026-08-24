@@ -29,6 +29,12 @@ const (
 type Server struct {
 	Pool   *pgxpool.Pool
 	Secret []byte
+	// Sitzungen ist der kurze Zwischenspeicher für die Sitzungsprüfung. Darf
+	// nil sein -- dann wird jedes Mal gefragt.
+	Sitzungen *sitzungsSpeicher
+	// Redis ist der gemeinsame Zwischenspeicher über mehrere Instanzen hinweg.
+	// Darf nil sein: ohne ihn läuft alles weiter, nur ohne geteilten Speicher.
+	Redis *RedisSpeicher
 	// Ablage entscheidet, wo die Bytes eines Anhangs liegen: auf der Platte
 	// oder in einem S3-Eimer. Die Handler kennen den Unterschied nicht.
 	Ablage ablage.Ablage

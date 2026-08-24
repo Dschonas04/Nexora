@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -106,7 +107,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.issueSession(w, u.ID)
+	s.issueSession(w, r, u.ID)
 	s.spur(r.Context(), models.Spureintrag{
 		AkteurID: u.ID, AkteurName: u.Name, AkteurEmail: u.Email,
 		Aktion: AktKontoAngelegt, ObjektArt: "konto", ObjektID: u.ID,
@@ -151,7 +152,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.issueSession(w, u.ID)
+	s.issueSession(w, r, u.ID)
 	s.spur(r.Context(), models.Spureintrag{
 		AkteurID: u.ID, AkteurName: u.Name, AkteurEmail: u.Email,
 		Aktion: AktAnmeldung, ObjektArt: "konto", ObjektID: u.ID,
@@ -160,8 +161,30 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
-// Logout clears the cookie. See clearAuthCookie: the token stays valid.
+// Logout beendet die Sitzung und löscht das Plätzchen.
+//
+// Das Widerrufen ist der eigentliche Teil: früher blieb das Token gültig, weil
+// es unterschrieben war -- abgemeldet war nur der Browser, der es wegwarf.
 func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
+	// Die Kennung kommt aus dem Plätzchen, nicht aus dem Zusammenhang: das
+	// Abmelden liegt bewusst vor der Anmeldeprüfung, damit es auch mit einem
+	// abgelaufenen Token noch geht. Ohne diese Zeile bliebe die Sitzung
+	// bestehen und das Token weiter brauchbar -- genau das, was Abmelden
+	// verhindern soll.
+	sid := middleware.SitzungID(r)
+	if sid == "" {
+		if c, err := r.Cookie("nexora_token"); err == nil {
+			_, ausKeks, err := auth.ParseToken(s.Secret, c.Value)
+			if err == nil {
+				sid = ausKeks
+			}
+		}
+	}
+	if sid != "" {
+		s.Pool.Exec(r.Context(),
+			`UPDATE sitzungen SET widerrufen_am=now() WHERE id=$1 AND widerrufen_am IS NULL`, sid)
+		s.sitzungMerken(sid, false)
+	}
 	s.spurAusRequest(r, AktAbmeldung, "konto", middleware.UserID(r), "", nil)
 	s.clearAuthCookie(w)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
@@ -183,11 +206,17 @@ func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
-// issueSession signs a token and sets the cookie. A signing failure leaves the
-// caller without a session; the surrounding handler still reports success, and
-// the frontend then lands back on the login screen.
-func (s *Server) issueSession(w http.ResponseWriter, userID string) {
-	token, err := auth.GenerateToken(s.Secret, userID, SitzungDauer())
+// issueSession legt die Sitzung an, unterschreibt ein Token darauf und setzt
+// das Plätzchen. Scheitert das Anlegen, wird trotzdem ein Token ausgestellt --
+// nur eben ohne Sitzungskennung: lieber angemeldet ohne Liste als gar nicht
+// angemeldet, weil eine Nebensache klemmt.
+func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID string) {
+	sid, err := s.sitzungAnlegen(r.Context(), r, userID)
+	if err != nil {
+		log.Printf("Sitzung anlegen: %v", err)
+		sid = ""
+	}
+	token, err := auth.GenerateToken(s.Secret, userID, sid, SitzungDauer())
 	if err == nil {
 		s.setAuthCookie(w, token)
 	}

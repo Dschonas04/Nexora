@@ -345,6 +345,9 @@ GET    /tags                              list tags
 POST   /tags                              create
 DELETE /tags/{id}                         delete
 
+GET    /sitzungen                        the signed-in account's stored sessions
+DELETE /sitzungen                        end every session but the current one
+DELETE /sitzungen/{id}                   end one session, effective immediately
 PUT    /system/lizenz                    import a license key, effective at once (admin)
 POST   /system/lizenz/ausstellen        issue a key — only where a signing key is present
 POST   /import                           Markdown/HTML files or a ZIP, multipart; parentId/spaceId

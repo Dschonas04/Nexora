@@ -193,6 +193,18 @@ export interface Lizenz {
   ausstellbar?: boolean;
 }
 
+// Sitzung ist eine gespeicherte Anmeldung. "diese" markiert die, mit der
+// gerade gearbeitet wird -- ohne sie beendet man leicht sich selbst.
+export interface Sitzung {
+  id: string;
+  angelegtAm: string;
+  zuletztAm: string;
+  laeuftAb: string;
+  ip: string;
+  browser: string;
+  diese: boolean;
+}
+
 // Spureintrag is one row of the audit trail. Names and titles are frozen copies
 // taken when the action happened, so an entry stays readable after the account
 // or page it refers to is gone.
@@ -424,6 +436,10 @@ export const api = {
   // Read once after sign-in. Hiding locked features is a courtesy to the
   // reader, not a protection: the backend refuses the same calls with 402
   // regardless of what the interface shows.
+  sitzungen: () => req<Sitzung[]>("/sitzungen"),
+  sitzungBeenden: (id: string) => req<void>(`/sitzungen/${id}`, { method: "DELETE" }),
+  sitzungenBeenden: () => req<{ beendet: number }>("/sitzungen", { method: "DELETE" }),
+
   lizenz: () => req<Lizenz>("/lizenz"),
   lizenzEinlesen: (schluessel: string) =>
     req<Lizenz>("/system/lizenz", { method: "PUT", body: JSON.stringify({ schluessel }) }),

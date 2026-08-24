@@ -189,6 +189,38 @@ pruefe "Frist steht in der Prüfspur" "1" \
        "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
           "SELECT count(*) FROM pruefspur WHERE akteur_name='Frist'")"
 
+echo "== Sitzungen"
+pruefe "eine Sitzung steht in der Liste" "1" \
+       "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+pruefe "sie ist als diese markiert" "True" \
+       "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(json.load(sys.stdin)[0]["diese"])')"
+# Zweite Anmeldung von einem anderen "Geraet", eigene Keksdose.
+curl -s -c "$ARBEIT/kekse2.txt" -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
+     -A "Mozilla/5.0 (Windows NT 10.0) Firefox/140.0" \
+     -d '{"email":"rauch@test.invalid","password":"rauchtest-passwort"}' >/dev/null
+pruefe "jetzt zwei Sitzungen" "2" \
+       "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+pruefe "das Geraet wird benannt" "Firefox auf Windows" \
+       "$(hole "$BASIS/api/sitzungen" | python3 -c '
+import json,sys
+print(next(s["browser"] for s in json.load(sys.stdin) if not s["diese"]))')"
+FREMD=$(hole "$BASIS/api/sitzungen" | python3 -c '
+import json,sys
+print(next(s["id"] for s in json.load(sys.stdin) if not s["diese"]))')
+pruefe "fremde Sitzung beenden" "200" "$(code -X DELETE "$BASIS/api/sitzungen/$FREMD")"
+# Das Token der zweiten Anmeldung muss sofort wertlos sein -- genau das konnte
+# die alte, rein gerechnete Sitzung nicht.
+pruefe "beendetes Token gilt nicht mehr" "401" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -b "$ARBEIT/kekse2.txt" "$BASIS/api/auth/me")"
+pruefe "wieder nur eine Sitzung" "1" \
+       "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+# Abmelden widerruft ebenfalls -- frueher blieb das Token gueltig.
+curl -s -c "$ARBEIT/kekse3.txt" -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
+     -d '{"email":"rauch@test.invalid","password":"rauchtest-passwort"}' >/dev/null
+curl -s -b "$ARBEIT/kekse3.txt" -X POST "$BASIS/api/auth/logout" >/dev/null
+pruefe "nach dem Abmelden gilt das Token nicht mehr" "401" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -b "$ARBEIT/kekse3.txt" "$BASIS/api/auth/me")"
+
 echo "== Lizenz"
 # Ein eigenes Schlüsselpaar für den Test: der öffentliche Teil steckt fest im
 # Programm, also lässt sich hier nicht mit einem echten Schlüssel prüfen -- und
