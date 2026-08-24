@@ -227,6 +227,21 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Beim Einlesen einer ganzen Ablage fällt das eigene Inhaltsverzeichnis
+	// weg -- siehe istAusfuhrVerzeichnis.
+	if neueAblage != "" {
+		behalten := mdDateien[:0]
+		for _, d := range mdDateien {
+			if strings.EqualFold(path.Base(d.pfad), "INHALT.md") && istAusfuhrVerzeichnis(d.inhalt) {
+				warnungen = append(warnungen,
+					"INHALT.md der Ausfuhr übergangen -- die Ablage selbst ist das Verzeichnis")
+				continue
+			}
+			behalten = append(behalten, d)
+		}
+		mdDateien = behalten
+	}
+
 	plan := planen(mdDateien)
 
 	// Vorschau: derselbe Plan, aber nichts wird angelegt. Wer zweihundert
@@ -406,6 +421,38 @@ func istHTML(name string) bool {
 		return true
 	}
 	return false
+}
+
+// istAusfuhrVerzeichnis erkennt das Inhaltsverzeichnis, das die eigene Ausfuhr
+// jedem Archiv beilegt.
+//
+// Beim Einlesen einer ganzen Ablage ist es überflüssig: die Liste der Seiten
+// ist die Ablage selbst, und als Seite eingeführt stünde sie doppelt da --
+// einmal als Verzeichnis, einmal als Wirklichkeit. Beim Einlesen in etwas
+// Vorhandenes bleibt es dagegen stehen; dort ist es der einzige Hinweis, was
+// zusammengehörte.
+//
+// Erkannt wird die Form, die export.go schreibt, und nur sie: eine Überschrift,
+// eine Zeile "N Seiten, ausgegeben am ...", danach ausschließlich Verweise.
+// Ein selbst geschriebenes INHALT.md sieht anders aus und bleibt unangetastet.
+func istAusfuhrVerzeichnis(inhalt []byte) bool {
+	zeilen := strings.Split(strings.TrimSpace(string(inhalt)), "\n")
+	if len(zeilen) < 2 || !strings.HasPrefix(zeilen[0], "# ") {
+		return false
+	}
+	gesehen := false
+	for _, z := range zeilen[1:] {
+		z = strings.TrimSpace(z)
+		switch {
+		case z == "":
+		case strings.HasPrefix(z, "- [") && strings.Contains(z, "](<"):
+			gesehen = true
+		case strings.Contains(z, "ausgegeben am"):
+		default:
+			return false
+		}
+	}
+	return gesehen
 }
 
 func istMarkdown(name string) bool {
