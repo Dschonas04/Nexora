@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { Einstellung, KonfigDatei, SystemZustand, api } from "../api/client";
+import { Einstellung, KonfigDatei, Sitzung, SystemZustand, api } from "../api/client";
 import { useAuth } from "../auth";
 import { useLizenz } from "../lizenz";
 import AdminView from "./AdminView";
@@ -25,6 +25,7 @@ type Bereich =
   | "nutzer"
   | "gruppen"
   | "sicherheit"
+  | "sitzungen"
   | "datenbank"
   | "suche"
   | "anhaenge"
@@ -40,7 +41,8 @@ const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
   // man ohnehin sucht, wenn man etwas einstellen will.
   { id: "nutzer", titel: "Nutzer", unter: "Konten, Rollen, Zugänge" },
   { id: "gruppen", titel: "Gruppen", unter: "Konten bündeln für Space-Rechte" },
-  { id: "sicherheit", titel: "Sicherheit", unter: "Registrierung, Sitzungen, Administratoren" },
+  { id: "sicherheit", titel: "Sicherheit", unter: "Registrierung, Laufzeiten, Administratoren" },
+  { id: "sitzungen", titel: "Sitzungen", unter: "Angemeldete Geräte, einzeln beendbar" },
   { id: "datenbank", titel: "Datenbank", unter: "Größe, Tabellen, Belegung" },
   { id: "suche", titel: "Suche", unter: "Wörterbuch und Suchindex" },
   { id: "anhaenge", titel: "Anhänge", unter: "Größenbegrenzung und Belegung" },
@@ -97,6 +99,21 @@ function bytes(n: number): string {
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
   return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+
+// Ein Zeitpunkt, wie man ihn vorliest: Datum und Uhrzeit, ohne Sekunden und
+// ohne Zeitzone -- die Frage lautet "wann war ich das", nicht "wie spät war es
+// in UTC".
+function zeitpunkt(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function EinstellungenView() {
@@ -177,6 +194,19 @@ export default function EinstellungenView() {
     ablauf: "",
   });
   const [ausgestellt, setAusgestellt] = useState("");
+
+  // Sitzungen. Erst beim Öffnen des Bereichs geholt: die Liste ändert sich
+  // ständig, und sie interessiert nur den, der gerade hinsieht.
+  const [sitzungen, setSitzungen] = useState<Sitzung[] | null>(null);
+  const sitzungenLaden = useCallback(() => {
+    api
+      .sitzungen()
+      .then(setSitzungen)
+      .catch(() => setSitzungen([]));
+  }, []);
+  useEffect(() => {
+    if (bereich === "sitzungen") sitzungenLaden();
+  }, [bereich, sitzungenLaden]);
 
   useEffect(() => {
     if (bereich !== "wartung" || konfig) return;
@@ -494,6 +524,100 @@ export default function EinstellungenView() {
 
   const inhalt = () => {
     switch (bereich) {
+      case "sitzungen":
+        return (
+          <>
+            <h3>Angemeldete Geräte</h3>
+            <p className="muted small">
+              Jede Anmeldung steht als Zeile in der Datenbank. Deshalb lässt sich eine
+              einzelne beenden -- ein verlorenes Gerät auszusperren, ohne alle anderen
+              mitzunehmen, geht nur so. Wer täglich arbeitet, bleibt angemeldet: eine
+              Sitzung, die mehr als die Hälfte ihrer Zeit hinter sich hat, wird beim
+              nächsten Aufruf verlängert.
+            </p>
+            {sitzungen === null ? (
+              <p className="muted">Wird geladen…</p>
+            ) : sitzungen.length === 0 ? (
+              <p className="muted">Keine gespeicherte Sitzung.</p>
+            ) : (
+              <table className="tabelle">
+                <thead>
+                  <tr>
+                    <th>Gerät</th>
+                    <th>Adresse</th>
+                    <th>Zuletzt</th>
+                    <th>Läuft ab</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {sitzungen.map((si) => (
+                    <tr key={si.id}>
+                      <td>
+                        {si.browser}
+                        {si.diese && (
+                          <span className="pill frei" style={{ marginLeft: 8 }}>
+                            dieses Gerät
+                          </span>
+                        )}
+                      </td>
+                      <td className="muted small">{si.ip || "—"}</td>
+                      <td className="muted small">{zeitpunkt(si.zuletztAm)}</td>
+                      <td className="muted small">{zeitpunkt(si.laeuftAb)}</td>
+                      <td>
+                        <button
+                          className="btn"
+                          onClick={async () => {
+                            if (
+                              !(await frage({
+                                titel: si.diese ? "Hier abmelden" : "Sitzung beenden",
+                                text: si.diese
+                                  ? "Diese Sitzung ist die, mit der du gerade arbeitest. Nach dem Beenden musst du dich neu anmelden."
+                                  : `Die Sitzung auf ${si.browser} wird sofort ungültig. Wer sie benutzt, landet auf der Anmeldeseite.`,
+                                bestaetigen: "Beenden",
+                                gefaehrlich: !si.diese,
+                              }))
+                            )
+                              return;
+                            await api.sitzungBeenden(si.id).catch(() => {});
+                            if (si.diese) window.location.href = "/login";
+                            else sitzungenLaden();
+                          }}
+                        >
+                          Beenden
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {(sitzungen?.length ?? 0) > 1 && (
+              <div className="knopfreihe">
+                <button
+                  className="btn"
+                  onClick={async () => {
+                    if (
+                      !(await frage({
+                        titel: "Überall sonst abmelden",
+                        text: "Alle anderen Sitzungen werden beendet. Diese hier bleibt bestehen.",
+                        bestaetigen: "Alle anderen beenden",
+                        gefaehrlich: true,
+                      }))
+                    )
+                      return;
+                    const r = await api.sitzungenBeenden().catch(() => null);
+                    if (r) setMeldung({ text: `${r.beendet} Sitzung(en) beendet.`, art: "ok" });
+                    sitzungenLaden();
+                  }}
+                >
+                  Überall sonst abmelden
+                </button>
+              </div>
+            )}
+          </>
+        );
+
       case "nutzer":
         return <AdminView />;
       case "gruppen":

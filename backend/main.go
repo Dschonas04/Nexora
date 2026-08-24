@@ -98,7 +98,19 @@ func main() {
 	}
 	log.Printf("Anhänge: %s", speicher.Name())
 
-	h := &handlers.Server{Pool: pool, Secret: []byte(secret), Ablage: speicher}
+	// Redis ist freiwillig: ohne ihn läuft alles weiter, nur ohne geteilten
+	// Zwischenspeicher. Deshalb wird ein Fehlschlag beim Verbinden geloggt und
+	// nicht zum Abbruch.
+	rd := handlers.NeuRedis(ctx, k.RedisAdresse, k.RedisPasswort, k.RedisDatenbank, k.RedisVorsilbe)
+	defer rd.Schliessen()
+
+	h := &handlers.Server{
+		Pool:      pool,
+		Secret:    []byte(secret),
+		Ablage:    speicher,
+		Sitzungen: handlers.NeuerSitzungsSpeicher(),
+		Redis:     rd,
+	}
 
 	// Seiten aus der Zeit vor dem Suchindex bekommen ihren Fließtext nachgereicht.
 	// Ohne das lieferte die Volltextsuche für ältere Seiten stillschweigend nichts
@@ -130,13 +142,18 @@ func main() {
 		// Everything below requires a valid session cookie. Ownership and sharing
 		// are checked per request inside the handlers, not here.
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.Auth([]byte(secret)))
+			r.Use(middleware.Auth([]byte(secret), h.SitzungGilt))
 
 			r.Get("/auth/me", h.Me)
 
 			// Sagt der Oberfläche, was freigeschaltet ist, damit sie Gesperrtes gar
 			// nicht erst anbietet. Enthält kein Geheimnis.
 			r.Get("/lizenz", h.LizenzStatus)
+			// Sitzungen: die eigenen sehen und einzeln beenden. Ein fremdes
+			// Gerät auszusperren, ohne alle anderen mitzunehmen, geht nur so.
+			r.Get("/sitzungen", h.ListSitzungen)
+			r.Delete("/sitzungen", h.SitzungenBeenden)
+			r.Delete("/sitzungen/{id}", h.SitzungBeenden)
 			// Einlesen und Ausstellen: beides nur für Administratoren, geprüft
 			// im Handler. Ausstellen antwortet auf einer gewöhnlichen
 			// Installation mit 501 -- dort liegt kein privater Schlüssel.
@@ -343,6 +360,8 @@ func main() {
 	// Starts: der läuft nach dreißig Sekunden ab, die Uhr soll laufen, solange
 	// der Dienst läuft.
 	go h.PapierkorbUhr(context.Background())
+	// Abgelaufene und widerrufene Sitzungen verschwinden nach einer Schonzeit.
+	go h.SitzungenUhr(context.Background())
 
 	srv := &http.Server{
 		Addr:              ":" + port,

@@ -359,6 +359,21 @@ CREATE UNIQUE INDEX IF NOT EXISTS space_rechte_gruppe_idx
 CREATE UNIQUE INDEX IF NOT EXISTS space_rechte_user_idx
 	ON space_rechte(space_id, user_id) WHERE user_id IS NOT NULL;
 
+CREATE TABLE IF NOT EXISTS sitzungen (
+    id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id       uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    angelegt_am   timestamptz NOT NULL DEFAULT now(),
+    zuletzt_am    timestamptz NOT NULL DEFAULT now(),
+    laeuft_ab     timestamptz NOT NULL,
+    widerrufen_am timestamptz,
+    ip            text NOT NULL DEFAULT '',
+    browser       text NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS sitzungen_user_idx ON sitzungen(user_id);
+-- Die Aufräumabfrage sucht nach abgelaufenen; ohne den Index läuft sie über
+-- alles, auch über die vielen gültigen.
+CREATE INDEX IF NOT EXISTS sitzungen_ablauf_idx ON sitzungen(laeuft_ab);
+
 CREATE TABLE IF NOT EXISTS einstellungen (
 	schluessel    text PRIMARY KEY,
 	wert          text NOT NULL,

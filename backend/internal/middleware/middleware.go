@@ -13,12 +13,27 @@ import (
 type ctxKey string
 
 const userKey ctxKey = "userID"
+const sitzungKey ctxKey = "sitzungID"
 
 // Auth validates the JWT cookie and injects the user id into the request
 // context. It answers 401 for a missing as well as an invalid token, so an
 // attacker learns nothing from the difference. Authorisation, meaning who may
 // touch which page, is decided later in the handlers.
-func Auth(secret []byte) func(http.Handler) http.Handler {
+// SitzungPruefer sagt, ob eine gespeicherte Sitzung noch gilt. Die Middleware
+// bekommt ihn hereingereicht, statt selbst eine Datenbank zu kennen -- so bleibt
+// sie prüfbar, und wo die Antwort herkommt (Datenbank, Zwischenspeicher)
+// entscheidet der Aufrufer.
+type SitzungPruefer func(r *http.Request, w http.ResponseWriter, uid, sid string) bool
+
+// Auth validates the JWT cookie and injects the user id into the request
+// context. It answers 401 for a missing as well as an invalid token, so an
+// attacker learns nothing from the difference. Authorisation, meaning who may
+// touch which page, is decided later in the handlers.
+//
+// Zweite Stufe seit den gespeicherten Sitzungen: das Token sagt, wer es war,
+// die Sitzung sagt, ob es noch gelten soll. Ohne diese Trennung bliebe ein
+// Token nach dem Abmelden weiter brauchbar -- unterschrieben ist es ja.
+func Auth(secret []byte, pruefe SitzungPruefer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// httpOnly cookie rather than an Authorization header: script on the
@@ -28,15 +43,31 @@ func Auth(secret []byte) func(http.Handler) http.Handler {
 				http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 				return
 			}
-			uid, err := auth.ParseToken(secret, c.Value)
+			uid, sid, err := auth.ParseToken(secret, c.Value)
 			if err != nil {
 				http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 				return
 			}
+			if pruefe != nil && !pruefe(r, w, uid, sid) {
+				http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+				return
+			}
 			ctx := context.WithValue(r.Context(), userKey, uid)
+			if sid != "" {
+				ctx = context.WithValue(ctx, sitzungKey, sid)
+			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// SitzungID returns the session the request was authenticated with. Empty for
+// a token from before sessions were stored.
+func SitzungID(r *http.Request) string {
+	if v, ok := r.Context().Value(sitzungKey).(string); ok {
+		return v
+	}
+	return ""
 }
 
 // UserID returns the authenticated user id set by the Auth middleware.

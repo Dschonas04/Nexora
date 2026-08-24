@@ -222,11 +222,17 @@ func EinfuhrGrenze() int64 {
 // are affected: a token already handed out carries its own expiry and cannot be
 // shortened afterwards.
 func SitzungDauer() time.Duration {
+	return time.Duration(SitzungTage()) * 24 * time.Hour
+}
+
+// SitzungTage ist dieselbe Angabe in Tagen -- die Datenbank rechnet mit
+// Tagen, nicht mit Nanosekunden.
+func SitzungTage() int {
 	n, err := strconv.Atoi(wert("sitzung_tage"))
 	if err != nil || n <= 0 {
-		n = 7
+		return 7
 	}
-	return time.Duration(n) * 24 * time.Hour
+	return n
 }
 
 // istHexFarbe prüft #rrggbb. Bewusst eng: der Wert wird im Browser in eine

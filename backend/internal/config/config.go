@@ -75,6 +75,16 @@ type Konfig struct {
 	S3TLS       bool
 	S3Pfadstil  bool
 
+	// --- Redis ---
+	//
+	// Freiwillig. Redis ist hier ein Zwischenspeicher, keine Ablage: alles,
+	// was darin liegt, steht auch in der Datenbank. Fehlt Redis, läuft die
+	// Anwendung vollständig weiter.
+	RedisAdresse   string
+	RedisPasswort  string
+	RedisDatenbank int
+	RedisVorsilbe  string
+
 	// --- LDAP / Active Directory ---
 	LDAPAktiv          bool
 	LDAPServer         string
@@ -124,6 +134,8 @@ func Standard() Konfig {
 		S3Region:   "us-east-1",
 		S3TLS:      false,
 		S3Pfadstil: true,
+
+		RedisVorsilbe: "nexora",
 
 		LDAPAktiv:          false,
 		LDAPStartTLS:       true,
@@ -245,6 +257,11 @@ func Laden(pfad string) Konfig {
 	text(&k.S3Region, "s3_region", "NEXORA_S3_REGION")
 	jaNein(&k.S3TLS, "s3_tls", "NEXORA_S3_TLS")
 	jaNein(&k.S3Pfadstil, "s3_pfadstil", "NEXORA_S3_PFADSTIL")
+
+	text(&k.RedisAdresse, "redis_adresse", "NEXORA_REDIS_ADRESSE")
+	text(&k.RedisPasswort, "redis_passwort", "NEXORA_REDIS_PASSWORT")
+	zahl(&k.RedisDatenbank, "redis_datenbank", "NEXORA_REDIS_DATENBANK")
+	text(&k.RedisVorsilbe, "redis_vorsilbe", "NEXORA_REDIS_VORSILBE")
 
 	jaNein(&k.LDAPAktiv, "ldap_aktiv", "NEXORA_LDAP_AKTIV")
 	text(&k.LDAPServer, "ldap_server", "NEXORA_LDAP_SERVER")
