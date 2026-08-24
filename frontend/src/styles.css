@@ -2539,3 +2539,62 @@ a {
   font-size: 13px;
   line-height: 1.5;
 }
+
+/* Rückfrage vor folgenreichen Schritten. Sie ersetzt den Kasten des Browsers:
+   derselbe Grundton, dieselben Knöpfe wie überall sonst, und der bestätigende
+   Knopf sagt, was er tut. */
+.modal.rueckfrage {
+  max-width: 420px;
+}
+
+.rueckfrage-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.rueckfrage-knoepfe {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 4px 16px 16px;
+}
+
+/* Der Knopf, der weitermacht. Betont, weil er die Antwort ist, die man in den
+   meisten Fällen sucht -- aber nur, solange nichts verloren geht. */
+.rueckfrage .btn.betont {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/* Geht etwas verloren, ist Rot ehrlicher als Blau. Die Fläche bleibt dezent,
+   die Schrift trägt die Warnung -- ein knallroter Klotz drängt zum Klicken,
+   und genau das soll er hier nicht. */
+.rueckfrage .btn.warnend {
+  background: var(--fehler-bg);
+  border-color: var(--fehler-rand);
+  color: var(--fehler-text);
+}
+
+.rueckfrage .btn.warnend:hover {
+  border-color: var(--fehler-text);
+}
+
+/* Feld im Rückfrage-Dialog: dort, wo früher window.prompt stand. */
+.rueckfrage-feld {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--flaeche);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.rueckfrage-feld:focus {
+  outline: none;
+  border-color: var(--accent);
+}

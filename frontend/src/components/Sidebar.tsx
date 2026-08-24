@@ -834,13 +834,12 @@ export default function Sidebar(props: Props) {
 
             {/* Verwaltung. Nur für Administratoren sichtbar -- das räumt allein
                 die Oberfläche auf, das Backend prüft die Rolle bei jedem Aufruf
-                erneut. Gruppen und Prüfspur sind zusätzlich Zusatzumfang: ein
-                Eintrag, der ohnehin abgewiesen würde, wird gar nicht erst
-                angeboten.
+                erneut. Das Protokoll ist zusätzlich Zusatzumfang: ein Eintrag,
+                der ohnehin abgewiesen würde, wird gar nicht erst angeboten.
 
-                Die Einstellungen haben keine eigene Zeile mehr, sie hängen am
-                Zahnrad in der Überschrift -- dort sucht man sie, und die Liste
-                darunter bleibt für das, was man wirklich anklickt. */}
+                Einstellungen, Nutzer und Gruppen haben keine eigene Zeile mehr:
+                sie liegen alle hinter dem Zahnrad in der Überschrift. Was in
+                der Liste steht, ist zum Nachlesen da, nicht zum Einstellen. */}
             {user?.role === "admin" && (
               <div className="sidebar-section">
                 <Klapptitel
@@ -850,30 +849,16 @@ export default function Sidebar(props: Props) {
                   symbol={<Zahnrad />}
                   symbolTitel="Einstellungen"
                   symbolAktion={() => onNavigate("/einstellungen")}
-                  symbolAktiv={currentPath === "/einstellungen"}
+                  symbolAktiv={currentPath.startsWith("/einstellungen")}
                 >
                   Verwaltung
                 </Klapptitel>
-                <div
-                  className={"tree-row" + (currentPath === "/admin" ? " active" : "")}
-                  onClick={() => onNavigate("/admin")}
-                >
-                  <span className="tree-label">Nutzer &amp; Rollen</span>
-                </div>
-                {frei("gruppen") && (
-                  <div
-                    className={"tree-row" + (currentPath === "/gruppen" ? " active" : "")}
-                    onClick={() => onNavigate("/gruppen")}
-                  >
-                    <span className="tree-label">Gruppen</span>
-                  </div>
-                )}
                 {frei("pruefspur") && (
                   <div
                     className={"tree-row" + (currentPath === "/pruefspur" ? " active" : "")}
                     onClick={() => onNavigate("/pruefspur")}
                   >
-                    <span className="tree-label">Prüfspur</span>
+                    <span className="tree-label">Protokoll</span>
                   </div>
                 )}
               </div>

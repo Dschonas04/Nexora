@@ -8,8 +8,10 @@ import { useCallback, useEffect, useState } from "react";
 import { Gruppe, Mitglied, api } from "../api/client";
 import { useAuth } from "../auth";
 import { useLizenz } from "../lizenz";
+import { useRueckfrage } from "../components/Rueckfrage";
 
 export default function GruppenView() {
+  const frage = useRueckfrage();
   const { user } = useAuth();
   const { frei, geladen } = useLizenz();
 
@@ -57,10 +59,14 @@ export default function GruppenView() {
     // Rückfrage, weil mit der Gruppe auch alle Rechte fallen, die über sie
     // vergeben wurden -- das trifft womöglich Leute, die gerade arbeiten.
     if (
-      !window.confirm(
-        `Gruppe „${g.name}“ löschen? Alle über sie vergebenen Space-Rechte entfallen damit. ` +
-          `Die Konten selbst bleiben.`,
-      )
+      !(await frage({
+        titel: "Gruppe löschen",
+        text:
+          `Die Gruppe „${g.name}“ wird gelöscht. Alle über sie vergebenen Rechte an Ablagen ` +
+          `entfallen damit; die Konten selbst bleiben.`,
+        bestaetigen: "Gruppe löschen",
+        gefaehrlich: true,
+      }))
     )
       return;
     await api.gruppeLoeschen(g.id).catch(() => {});
@@ -78,21 +84,21 @@ export default function GruppenView() {
   if (!geladen) return null;
   if (user?.role !== "admin") {
     return (
-      <div className="page-pad">
-        <h2>Gruppen</h2>
-        <p className="muted">Diese Seite ist Administratoren vorbehalten.</p>
-      </div>
+      <>
+        <h3>Gruppen</h3>
+        <p className="muted small">Dieser Bereich ist Administratoren vorbehalten.</p>
+      </>
     );
   }
   if (!frei("gruppen")) {
     return (
-      <div className="page-pad">
-        <h2>Gruppen</h2>
-        <p className="muted">
+      <>
+        <h3>Gruppen</h3>
+        <p className="muted small">
           Diese Funktion gehört zum Zusatzumfang und ist in der vorliegenden Lizenz nicht
           enthalten.
         </p>
-      </div>
+      </>
     );
   }
 
@@ -102,8 +108,8 @@ export default function GruppenView() {
     : mitglieder;
 
   return (
-    <div className="page-pad einstellungen">
-      <h2>Gruppen</h2>
+    <div className="gruppenliste">
+      <h3>Gruppen</h3>
       <p className="muted small">
         Eine Gruppe bündelt Konten. Zugriff bekommt sie nicht hier, sondern an einem Space —
         über das Schlüsselsymbol neben seinem Namen in der Seitenleiste.

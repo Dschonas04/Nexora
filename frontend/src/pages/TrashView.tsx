@@ -1,10 +1,12 @@
 // The trash. Deleted pages live here until they are restored or purged.
 import { useEffect, useState } from "react";
 import { PapierkorbSeite, api } from "../api/client";
+import { useRueckfrage } from "../components/Rueckfrage";
 
 // onChange tells the workspace to reload its page tree, since restoring and
 // purging both change what the sidebar should show.
 export default function TrashView({ onChange }: { onChange: () => void }) {
+  const frage = useRueckfrage();
   const [items, setItems] = useState<PapierkorbSeite[]>([]);
 
   const refresh = () => api.listTrash().then(setItems).catch(() => setItems([]));
@@ -19,7 +21,15 @@ export default function TrashView({ onChange }: { onChange: () => void }) {
   };
   // Purging cascades to the subpages and cannot be undone, so it asks first.
   const purge = async (id: string) => {
-    if (!confirm("Diese Seite und ihre Unterseiten endgültig löschen? Das kann nicht rückgängig gemacht werden.")) return;
+    if (
+      !(await frage({
+        titel: "Endgültig löschen",
+        text: "Diese Seite und ihre Unterseiten werden endgültig entfernt, samt ihrer Anhänge. Das lässt sich nicht rückgängig machen.",
+        bestaetigen: "Endgültig löschen",
+        gefaehrlich: true,
+      }))
+    )
+      return;
     await api.purgePage(id);
     refresh();
     onChange();

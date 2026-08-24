@@ -5,11 +5,12 @@
 // sidebar has to follow. The refresh callbacks passed down are how a view says
 // "something you display has changed".
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { PageMeta, Space, Tag, api } from "../api/client";
 import Sidebar from "../components/Sidebar";
 import PageView from "./PageView";
 import TagView from "./TagView";
+import { useEingabe, useRueckfrage } from "../components/Rueckfrage";
 
 // Nachgeladen statt mitgeliefert: diese Ansichten ruft man selten auf, ihr Code
 // steckte aber im selben Bündel wie die Seitenansicht und musste bei jedem
@@ -20,15 +21,15 @@ import TagView from "./TagView";
 // Anwendung für alle anderen schneller.
 const TrashView = lazy(() => import("./TrashView"));
 const GraphView = lazy(() => import("./GraphView"));
-const AdminView = lazy(() => import("./AdminView"));
 const PruefspurView = lazy(() => import("./PruefspurView"));
 const EinstellungenView = lazy(() => import("./EinstellungenView"));
-const GruppenView = lazy(() => import("./GruppenView"));
 const PostfachView = lazy(() => import("./PostfachView"));
 
 export default function Workspace() {
   const nav = useNavigate();
   const loc = useLocation();
+  const frage = useRueckfrage();
+  const eingabe = useEingabe();
   const [pages, setPages] = useState<PageMeta[]>([]);
   const [shared, setShared] = useState<PageMeta[]>([]);
   const [favorites, setFavorites] = useState<PageMeta[]>([]);
@@ -88,7 +89,14 @@ export default function Workspace() {
   // Deleting moves the page to the trash rather than removing it. Favorites are
   // refreshed too, since the page may have been pinned.
   const deletePage = async (id: string) => {
-    if (!confirm("Diese Seite und ihre Unterseiten in den Papierkorb verschieben?")) return;
+    if (
+      !(await frage({
+        titel: "Seite in den Papierkorb",
+        text: "Diese Seite und ihre Unterseiten wandern in den Papierkorb. Von dort lassen sie sich zurückholen.",
+        bestaetigen: "In den Papierkorb",
+      }))
+    )
+      return;
     await api.deletePage(id);
     await refreshPages();
     await refreshFav();
@@ -96,15 +104,25 @@ export default function Workspace() {
   };
 
   const createSpace = async () => {
-    const name = prompt("Space-Name:")?.trim();
+    const name = await eingabe({
+      titel: "Neue Ablage",
+      text: "Eine Ablage bündelt Seiten zu einem Thema und trägt die Rechte für alle darin.",
+      feld: "Name",
+      bestaetigen: "Anlegen",
+    });
     if (!name) return;
     await api.createSpace(name);
     refreshSpaces();
   };
 
   const renameSpace = async (id: string, current: string) => {
-    const name = prompt("Space umbenennen:", current)?.trim();
-    if (!name) return;
+    const name = await eingabe({
+      titel: "Ablage umbenennen",
+      feld: "Name",
+      vorgabe: current,
+      bestaetigen: "Umbenennen",
+    });
+    if (!name || name === current) return;
     await api.renameSpace(id, name);
     refreshSpaces();
   };
@@ -112,7 +130,15 @@ export default function Workspace() {
   // The pages survive and become ungrouped, which the confirmation spells out
   // so nobody expects a space to take its content with it.
   const deleteSpace = async (id: string) => {
-    if (!confirm("Diesen Space löschen? Seine Seiten bleiben erhalten und werden gruppenlos.")) return;
+    if (
+      !(await frage({
+        titel: "Ablage löschen",
+        text: "Die Ablage wird gelöscht. Ihre Seiten bleiben erhalten und stehen danach unter „Ohne Ablage“; erteilte Rechte an der Ablage verfallen.",
+        bestaetigen: "Ablage löschen",
+        gefaehrlich: true,
+      }))
+    )
+      return;
     await api.deleteSpace(id);
     await refreshSpaces();
     await refreshPages();
@@ -203,10 +229,14 @@ export default function Workspace() {
               }
             />
             <Route path="graph" element={<GraphView />} />
-            <Route path="admin" element={<AdminView />} />
+            {/* Konten und Gruppen liegen jetzt in den Einstellungen. Die alten
+                Adressen bleiben gültig und führen dorthin -- ein Lesezeichen
+                soll nicht ins Leere laufen. */}
+            <Route path="admin" element={<Navigate to="/einstellungen/nutzer" replace />} />
             <Route path="pruefspur" element={<PruefspurView />} />
             <Route path="einstellungen" element={<EinstellungenView />} />
-            <Route path="gruppen" element={<GruppenView />} />
+            <Route path="einstellungen/:bereich" element={<EinstellungenView />} />
+            <Route path="gruppen" element={<Navigate to="/einstellungen/gruppen" replace />} />
             <Route
               path="tag/:tagId"
               element={<TagView allTags={tags} onTagsChange={refreshTags} />}
