@@ -353,6 +353,10 @@ GET    /tags                              list tags
 POST   /tags                              create
 DELETE /tags/{id}                         delete
 
+GET    /auth/sso                         which sign-in methods this instance offers
+GET    /auth/oidc/start                  begin an OIDC sign-in (redirects to the provider)
+GET    /auth/oidc/zurueck                the provider's callback
+POST   /auth/ldap                        sign in against LDAP / Active Directory
 GET    /sitzungen                        the signed-in account's stored sessions
 DELETE /sitzungen                        end every session but the current one
 DELETE /sitzungen/{id}                   end one session, effective immediately

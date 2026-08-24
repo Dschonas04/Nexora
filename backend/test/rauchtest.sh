@@ -221,6 +221,18 @@ curl -s -b "$ARBEIT/kekse3.txt" -X POST "$BASIS/api/auth/logout" >/dev/null
 pruefe "nach dem Abmelden gilt das Token nicht mehr" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$ARBEIT/kekse3.txt" "$BASIS/api/auth/me")"
 
+echo "== SSO"
+# Ohne Einrichtung und ohne Lizenz darf nichts angeboten werden -- ein Knopf,
+# der danach mit 402 antwortet, waere ein Versprechen ohne Deckung.
+pruefe "nichts angeboten, weil nichts eingerichtet" "False" \
+       "$(hole "$BASIS/api/auth/sso" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["oidc"] or d["ldap"])')"
+pruefe "Passwort bleibt moeglich" "True" \
+       "$(hole "$BASIS/api/auth/sso" | feld "['passwort']")"
+pruefe "OIDC ohne Lizenz weist ab" "402" "$(code "$BASIS/api/auth/oidc/start")"
+pruefe "LDAP ohne Lizenz weist ab" "402" \
+       "$(code -X POST "$BASIS/api/auth/ldap" -H 'Content-Type: application/json' \
+          -d '{"benutzer":"wer","passwort":"was"}')"
+
 echo "== Lizenz"
 # Ein eigenes Schlüsselpaar für den Test: der öffentliche Teil steckt fest im
 # Programm, also lässt sich hier nicht mit einem echten Schlüssel prüfen -- und
