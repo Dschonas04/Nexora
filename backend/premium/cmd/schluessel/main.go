@@ -10,8 +10,12 @@
 //	schluessel -neu
 //	    generates a fresh key pair and prints both halves
 //
-//	schluessel -inhaber "Firma X" -funktionen versionen,anhaenge -ablauf 2027-12-31
-//	    signs a key; the private key comes from NEXORA_SIGNIERSCHLUESSEL
+//	schluessel -inhaber "Firma X" -stufe pro
+//	    signs a key for one year; the private key comes from
+//	    NEXORA_SIGNIERSCHLUESSEL
+//
+//	schluessel -inhaber "Firma X" -stufe advanced -funktionen gruppen
+//	    a tier plus one extra bought on top
 //
 //	schluessel -zeige <schlüssel>
 //	    prints what a key contains, without checking the signature
@@ -35,8 +39,9 @@ import (
 func main() {
 	neu := flag.Bool("neu", false, "neues Schlüsselpaar erzeugen")
 	inhaber := flag.String("inhaber", "", "auf wen die Lizenz ausgestellt wird")
-	funktionen := flag.String("funktionen", "", "Komma-Liste, oder 'alle'")
-	ablauf := flag.String("ablauf", "", "Ablaufdatum JJJJ-MM-TT, leer heißt unbefristet")
+	stufe := flag.String("stufe", "", "free, advanced, pro oder business")
+	funktionen := flag.String("funktionen", "", "einzelne Zusätze über die Stufe hinaus, Komma-Liste")
+	ablauf := flag.String("ablauf", "", "Ablaufdatum JJJJ-MM-TT, leer heißt ein Jahr")
 	zeige := flag.String("zeige", "", "Inhalt eines Schlüssels anzeigen")
 	flag.Parse()
 
@@ -46,7 +51,7 @@ func main() {
 	case *zeige != "":
 		anzeigen(*zeige)
 	case *inhaber != "":
-		ausstellen(*inhaber, *funktionen, *ablauf)
+		ausstellen(*inhaber, *stufe, *funktionen, *ablauf)
 	default:
 		flag.Usage()
 		fmt.Fprintf(os.Stderr, "\nBekannte Funktionen: %s\n", namen(kern.Alle))
@@ -70,7 +75,7 @@ func schluesselpaar() {
 	fmt.Println("Zum Ausstellen als NEXORA_SIGNIERSCHLUESSEL setzen.")
 }
 
-func ausstellen(inhaber, funktionen, ablauf string) {
+func ausstellen(inhaber, stufe, funktionen, ablauf string) {
 	rohPriv := os.Getenv("NEXORA_SIGNIERSCHLUESSEL")
 	if rohPriv == "" {
 		fatal("NEXORA_SIGNIERSCHLUESSEL ist nicht gesetzt")
@@ -80,48 +85,42 @@ func ausstellen(inhaber, funktionen, ablauf string) {
 		fatal("NEXORA_SIGNIERSCHLUESSEL ist kein gültiger privater Ed25519-Schlüssel")
 	}
 
-	var liste []string
-	if funktionen == "alle" || funktionen == "" {
-		for _, f := range kern.Alle {
-			liste = append(liste, string(f))
+	var zusatz []kern.Funktion
+	for _, teil := range strings.Split(funktionen, ",") {
+		teil = strings.TrimSpace(teil)
+		if teil == "" {
+			continue
 		}
-	} else {
-		for _, teil := range strings.Split(funktionen, ",") {
-			teil = strings.TrimSpace(teil)
-			if !bekannt(teil) {
-				fatal("unbekannte Funktion %q -- bekannt sind: %s", teil, namen(kern.Alle))
-			}
-			liste = append(liste, teil)
+		if !bekannt(teil) {
+			fatal("unbekannte Funktion %q -- bekannt sind: %s", teil, namen(kern.Alle))
 		}
+		zusatz = append(zusatz, kern.Funktion(teil))
 	}
 
+	var bis time.Time
 	if ablauf != "" {
-		if _, err := time.Parse("2006-01-02", ablauf); err != nil {
+		bis, err = time.Parse("2006-01-02", ablauf)
+		if err != nil {
 			fatal("Ablaufdatum %q ist nicht JJJJ-MM-TT", ablauf)
 		}
 	}
 
-	n := plizenz.Nutzlast{
-		Inhaber:     inhaber,
-		Funktionen:  liste,
-		Ablauf:      ablauf,
-		Ausgestellt: time.Now().Format("2006-01-02"),
-	}
-	daten, err := json.Marshal(n)
+	schluessel, err := plizenz.Ausstellen(ed25519.PrivateKey(priv), inhaber,
+		kern.Stufe(stufe), zusatz, bis)
 	if err != nil {
-		fatal("Daten konnten nicht verpackt werden: %v", err)
+		fatal("%v", err)
 	}
-	sig := ed25519.Sign(ed25519.PrivateKey(priv), daten)
 
 	fmt.Printf("Lizenz für %s", inhaber)
-	if ablauf != "" {
-		fmt.Printf(", gültig bis %s", ablauf)
-	} else {
-		fmt.Printf(", unbefristet")
+	if stufe != "" {
+		fmt.Printf(", Stufe %s", stufe)
 	}
-	fmt.Printf("\nFunktionen: %s\n\n", strings.Join(liste, ", "))
-	fmt.Println(base64.RawURLEncoding.EncodeToString(daten) + "." +
-		base64.RawURLEncoding.EncodeToString(sig))
+	if len(zusatz) > 0 {
+		fmt.Printf(" plus %s", namen(zusatz))
+	}
+	fmt.Println()
+	fmt.Printf("Enthalten: %s\n\n", namen(append(kern.FunktionenDerStufe(kern.Stufe(stufe)), zusatz...)))
+	fmt.Println(schluessel)
 }
 
 func anzeigen(schluessel string) {

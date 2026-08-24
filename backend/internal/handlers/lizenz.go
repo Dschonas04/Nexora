@@ -52,12 +52,29 @@ func (s *Server) LizenzStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Die Stufen samt Inhalt kommen mit: die Oberfläche soll zeigen können,
+	// was eine höhere Stufe brächte, ohne dieselbe Tabelle ein zweites Mal zu
+	// führen.
+	stufen := make([]map[string]any, 0, len(lizenz.StufenReihe))
+	for _, st := range lizenz.StufenReihe {
+		namen := make([]string, 0, 12)
+		for _, f := range lizenz.FunktionenDerStufe(st) {
+			namen = append(namen, string(f))
+		}
+		stufen = append(stufen, map[string]any{"name": string(st), "funktionen": namen})
+	}
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"gueltig":        z.Gueltig,
 		"inhaber":        z.Inhaber,
+		"stufe":          string(z.Stufe),
 		"laeuft_ab":      z.LaeuftAb,
 		"grund":          z.Grund,
 		"alle_extras":    alle,
 		"freigeschaltet": frei,
+		"stufen":         stufen,
+		// Nur dort wahr, wo ein privater Schlüssel hinterlegt ist -- also beim
+		// Herausgeber, nicht beim Kunden.
+		"ausstellbar": lizenz.Ausstellbar(),
 	})
 }

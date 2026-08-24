@@ -33,8 +33,11 @@ const oeffentlicherSchluessel = "dsY-UfRNTuGKqTGdjBlJtb5k1rR8FJOarJ-nD9JJRlo"
 // Nutzlast is what gets signed. Field names are short because the whole thing
 // ends up in a key the customer has to copy by hand.
 type Nutzlast struct {
-	Inhaber     string   `json:"i"`           // who the key is for
-	Funktionen  []string `json:"f"`           // unlocked extras
+	Inhaber string `json:"i"` // who the key is for
+	// Die verkaufte Stufe. Sie ist die übliche Form; die Liste darunter bleibt
+	// für Sonderfälle -- ein Kunde, der genau eine Funktion dazukauft.
+	Stufe       string   `json:"s,omitempty"`
+	Funktionen  []string `json:"f,omitempty"` // einzeln freigeschaltete Zusätze
 	Ablauf      string   `json:"a,omitempty"` // ISO date, empty means perpetual
 	Ausgestellt string   `json:"d"`           // issue date, for the record
 }
@@ -107,22 +110,45 @@ func (p *Pruefer) Pruefe(schluessel string) (kern.Zustand, error) {
 		}
 	}
 
+	// Aus der Stufe wird die Liste, dann kommen einzeln genannte Zusätze dazu.
+	// Ein Schlüssel darf beides tragen: die Stufe für das Übliche, die Liste
+	// für das, was jemand darüber hinaus gekauft hat.
+	gewuenscht := n.Funktionen
+	var stufe kern.Stufe
+	if n.Stufe != "" {
+		if !kern.StufeGueltig(kern.Stufe(n.Stufe)) {
+			return kern.Zustand{}, fmt.Errorf("unbekannte Stufe %q", n.Stufe)
+		}
+		stufe = kern.Stufe(n.Stufe)
+		for _, f := range kern.FunktionenDerStufe(stufe) {
+			gewuenscht = append(gewuenscht, string(f))
+		}
+	}
+
 	// Unknown names in the key are dropped rather than passed through: a key
 	// from a newer generator must not unlock anything this build cannot do.
+	//
+	// Doppelte fallen dabei ebenfalls weg -- Stufe und Liste dürfen sich
+	// überschneiden, in der Antwort steht jede Funktion einmal.
+	gesehen := map[kern.Funktion]bool{}
 	var erlaubt []kern.Funktion
-	for _, f := range n.Funktionen {
+	for _, f := range gewuenscht {
 		for _, bekannt := range kern.Alle {
-			if kern.Funktion(f) == bekannt {
+			if kern.Funktion(f) == bekannt && !gesehen[bekannt] {
+				gesehen[bekannt] = true
 				erlaubt = append(erlaubt, bekannt)
 			}
 		}
 	}
-	if len(erlaubt) == 0 {
+	// Die freie Stufe schaltet nichts frei, und das ist kein Fehler: ein
+	// Schlüssel auf "free" ist eine gültige Aussage über den Umfang.
+	if len(erlaubt) == 0 && stufe != kern.StufeFrei {
 		return kern.Zustand{}, errors.New("Schlüssel schaltet keine Funktion frei, die dieser Build kennt")
 	}
 
 	return kern.Zustand{
 		Inhaber:    n.Inhaber,
+		Stufe:      stufe,
 		Funktionen: erlaubt,
 		LaeuftAb:   n.Ablauf,
 		Gueltig:    true,

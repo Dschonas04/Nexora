@@ -181,10 +181,16 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
 export interface Lizenz {
   gueltig: boolean;
   inhaber: string;
+  /** Die verkaufte Stufe, falls der Schlüssel eine nennt. */
+  stufe?: string;
   laeuft_ab: string;
   grund: string;
   alle_extras: string[];
   freigeschaltet: string[];
+  /** Was jede Stufe enthält -- damit die Oberfläche keine zweite Tabelle führt. */
+  stufen?: { name: string; funktionen: string[] }[];
+  /** Nur beim Herausgeber wahr: dort liegt der private Signierschlüssel. */
+  ausstellbar?: boolean;
 }
 
 // Spureintrag is one row of the audit trail. Names and titles are frozen copies
@@ -419,6 +425,17 @@ export const api = {
   // reader, not a protection: the backend refuses the same calls with 402
   // regardless of what the interface shows.
   lizenz: () => req<Lizenz>("/lizenz"),
+  lizenzEinlesen: (schluessel: string) =>
+    req<Lizenz>("/system/lizenz", { method: "PUT", body: JSON.stringify({ schluessel }) }),
+  lizenzAusstellen: (p: {
+    inhaber: string;
+    stufe: string;
+    funktionen?: string[];
+    ablauf?: string;
+  }) => req<{ schluessel: string }>("/system/lizenz/ausstellen", {
+    method: "POST",
+    body: JSON.stringify(p),
+  }),
 
   pruefspur: (p: { aktion?: string; akteur?: string; objekt?: string; limit?: number } = {}) => {
     const q = new URLSearchParams();

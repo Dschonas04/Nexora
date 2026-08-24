@@ -189,6 +189,34 @@ pruefe "Frist steht in der Prüfspur" "1" \
        "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
           "SELECT count(*) FROM pruefspur WHERE akteur_name='Frist'")"
 
+echo "== Lizenz"
+# Ein eigenes Schlüsselpaar für den Test: der öffentliche Teil steckt fest im
+# Programm, also lässt sich hier nicht mit einem echten Schlüssel prüfen -- und
+# ein echter gehört ohnehin nicht in ein Verzeichnis. Geprüft wird deshalb, was
+# ohne gültige Signatur passieren MUSS: Zurückweisung.
+pruefe "unsinniger Schlüssel wird abgewiesen" "400" \
+       "$(code -X PUT "$BASIS/api/system/lizenz" -H 'Content-Type: application/json' \
+          -d '{"schluessel":"kein.schluessel"}')"
+pruefe "Ausstellen ohne Signierschlüssel geht nicht" "501" \
+       "$(code -X POST "$BASIS/api/system/lizenz/ausstellen" -H 'Content-Type: application/json' \
+          -d '{"inhaber":"Wer auch immer","stufe":"pro"}')"
+pruefe "Stufen stehen im Status" "4" \
+       "$(hole "$BASIS/api/lizenz" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["stufen"]))')"
+pruefe "Business enthält alles" "True" \
+       "$(hole "$BASIS/api/lizenz" | python3 -c '
+import json,sys
+d = json.load(sys.stdin)
+alle = set(d["alle_extras"])
+business = next(s for s in d["stufen"] if s["name"] == "business")
+print(set(business["funktionen"]) == alle)')"
+pruefe "frei enthält nichts" "0" \
+       "$(hole "$BASIS/api/lizenz" | python3 -c '
+import json,sys
+d = json.load(sys.stdin)
+print(len(next(s for s in d["stufen"] if s["name"] == "free")["funktionen"]))')"
+pruefe "leerer Schlüssel nimmt die Lizenz zurück" "200" \
+       "$(code -X PUT "$BASIS/api/system/lizenz" -H 'Content-Type: application/json' -d '{"schluessel":""}')"
+
 echo "== Postfach"
 pruefe "Postfach antwortet" "200" "$(code "$BASIS/api/postfach")"
 pruefe "Zähler antwortet" "0" "$(hole "$BASIS/api/postfach/anzahl" | feld "['ungelesen']")"

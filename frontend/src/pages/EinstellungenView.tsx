@@ -14,6 +14,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { Einstellung, KonfigDatei, SystemZustand, api } from "../api/client";
 import { useAuth } from "../auth";
+import { useLizenz } from "../lizenz";
 import AdminView from "./AdminView";
 import GruppenView from "./GruppenView";
 import { anwenden, useDesign } from "../design";
@@ -167,6 +168,16 @@ export default function EinstellungenView() {
   const [konfigHinweise, setKonfigHinweise] = useState<string[]>([]);
   const [neustartWort, setNeustartWort] = useState("");
 
+  // Lizenz: einlesen und -- beim Herausgeber -- ausstellen.
+  const { lizenz: lizenzJetzt, neuLaden: lizenzNeuLaden } = useLizenz();
+  const [schluesselFeld, setSchluesselFeld] = useState("");
+  const [ausstellen, setAusstellen] = useState({
+    inhaber: "",
+    stufe: "pro",
+    ablauf: "",
+  });
+  const [ausgestellt, setAusgestellt] = useState("");
+
   useEffect(() => {
     if (bereich !== "wartung" || konfig) return;
     api
@@ -209,6 +220,44 @@ export default function EinstellungenView() {
       // Entwurf im Feld zeigt sonst weiter die Sterne, die inzwischen wieder
       // echte Werte sind.
       setKonfig(null);
+    } catch (e) {
+      setMeldung({ text: (e as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
+
+  const schluesselEinlesen = async () => {
+    setLaeuft("lizenz");
+    try {
+      const z = await api.lizenzEinlesen(schluesselFeld.trim());
+      lizenzNeuLaden();
+      laden();
+      setSchluesselFeld("");
+      setMeldung({
+        text: z.gueltig
+          ? `Lizenz für ${z.inhaber} übernommen${z.stufe ? ` (Stufe ${z.stufe})` : ""}.`
+          : "Lizenz entfernt -- es gilt wieder der freie Umfang.",
+        art: "ok",
+      });
+    } catch (e) {
+      setMeldung({ text: (e as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
+
+  const schluesselAusstellen = async () => {
+    setLaeuft("ausstellen");
+    setAusgestellt("");
+    try {
+      const r = await api.lizenzAusstellen({
+        inhaber: ausstellen.inhaber.trim(),
+        stufe: ausstellen.stufe,
+        ablauf: ausstellen.ablauf || undefined,
+      });
+      setAusgestellt(r.schluessel);
+      setMeldung({ text: "Schlüssel ausgestellt.", art: "ok" });
     } catch (e) {
       setMeldung({ text: (e as Error).message, art: "fehler" });
     } finally {
@@ -852,12 +901,107 @@ export default function EinstellungenView() {
                 </div>
               </div>
             )}
+            <h3>Stufen</h3>
             <p className="muted small">
-              Der Schlüssel wird beim Start gelesen (<code>NEXORA_LIZENZ</code> oder{" "}
-              <code>lizenz</code> in <code>config.conf</code>) und lässt sich hier bewusst
-              nicht ändern — ein Geheimnis gehört nicht in ein Formular, das jeder
-              Administrator öffnen kann.
+              Jede Stufe enthält die kleineren mit. Geprüft wird im Code immer gegen die
+              einzelne Funktion, nie gegen die Stufe — deshalb kann ein Schlüssel auch eine
+              Stufe plus einzelne Zusätze tragen.
             </p>
+            <table className="tabelle">
+              <tbody>
+                {(lizenzJetzt?.stufen ?? []).map((st) => (
+                  <tr key={st.name}>
+                    <td>
+                      <strong>{st.name}</strong>
+                      {lizenzJetzt?.stufe === st.name && (
+                        <span className="pill frei" style={{ marginLeft: 8 }}>
+                          in Betrieb
+                        </span>
+                      )}
+                    </td>
+                    <td className="muted small">
+                      {st.funktionen.length === 0
+                        ? "Grundumfang"
+                        : st.funktionen.map((f) => ZUSATZ[f] ?? f).join(", ")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <h3>Schlüssel einlesen</h3>
+            <p className="muted small">
+              Wirkt sofort und überdauert den Neustart: der Schlüssel wird geprüft und in der
+              Datenbank abgelegt, wo er Vorrang vor <code>config.conf</code> hat. Ein leeres
+              Feld nimmt die Lizenz zurück.
+            </p>
+            <textarea
+              className="konfig-feld"
+              rows={3}
+              placeholder="<Daten>.<Signatur>"
+              value={schluesselFeld}
+              onChange={(e) => setSchluesselFeld(e.target.value)}
+            />
+            <div className="knopfreihe">
+              <button className="btn" disabled={laeuft !== null} onClick={schluesselEinlesen}>
+                {laeuft === "lizenz" ? "Wird geprüft…" : "Einlesen"}
+              </button>
+            </div>
+
+            {lizenzJetzt?.ausstellbar ? (
+              <>
+                <h3>Schlüssel ausstellen</h3>
+                <p className="muted small">
+                  Möglich, weil auf dieser Installation ein privater Signierschlüssel
+                  hinterlegt ist (<code>NEXORA_SIGNIERSCHLUESSEL</code>). Auf einer
+                  gewöhnlichen Installation fehlt er, und dieser Abschnitt erscheint nicht —
+                  sonst könnte sich jeder seine Lizenz selbst schreiben.
+                </p>
+                <div className="knopfreihe">
+                  <input
+                    placeholder="Inhaber"
+                    value={ausstellen.inhaber}
+                    onChange={(e) => setAusstellen({ ...ausstellen, inhaber: e.target.value })}
+                  />
+                  <select
+                    value={ausstellen.stufe}
+                    onChange={(e) => setAusstellen({ ...ausstellen, stufe: e.target.value })}
+                  >
+                    {(lizenzJetzt?.stufen ?? []).map((st) => (
+                      <option key={st.name} value={st.name}>
+                        {st.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="date"
+                    value={ausstellen.ablauf}
+                    onChange={(e) => setAusstellen({ ...ausstellen, ablauf: e.target.value })}
+                    aria-label="Gültig bis, leer heißt ein Jahr"
+                  />
+                  <button
+                    className="btn"
+                    disabled={laeuft !== null || ausstellen.inhaber.trim() === ""}
+                    onClick={schluesselAusstellen}
+                  >
+                    {laeuft === "ausstellen" ? "Wird signiert…" : "Ausstellen"}
+                  </button>
+                </div>
+                <p className="muted small">
+                  Ohne Datum gilt ein Jahr; länger wird nicht ausgestellt. Geprüft wird
+                  offline, ein ausgegebener Schlüssel lässt sich also nicht zurückrufen — das
+                  Ablaufdatum ist der einzige Hebel.
+                </p>
+                {ausgestellt && (
+                  <textarea className="konfig-feld" rows={3} readOnly value={ausgestellt} />
+                )}
+              </>
+            ) : (
+              <p className="muted small">
+                Schlüssel <strong>ausstellen</strong> kann diese Installation nicht: dafür
+                braucht es den privaten Signierschlüssel, und der gehört zum Herausgeber.
+              </p>
+            )}
           </>
         );
 

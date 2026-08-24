@@ -58,7 +58,14 @@ func main() {
 	// Der Lizenzschlüssel schaltet die kostenpflichtigen Zusätze frei. Fehlt er
 	// oder taugt er nicht, läuft der Server mit dem freien Umfang weiter -- ein
 	// ungültiger Schlüssel darf den Start nie verhindern.
-	lizenz.Laden(k.Lizenz)
+	// Vorrang hat, was über die Verwaltung eingelesen wurde; die Datei ist der
+	// Rückfall. Andernfalls ließe sich eine Lizenz zwar im Browser einspielen,
+	// wäre nach dem nächsten Neustart aber wieder die alte aus der Datei.
+	schluessel := k.Lizenz
+	if ausDB := handlers.LizenzAusDatenbank(ctx, pool); ausDB != "" {
+		schluessel = ausDB
+	}
+	lizenz.Laden(schluessel)
 	if z := lizenz.Aktuell(); z.Gueltig {
 		log.Printf("Lizenz für %s gültig, freigeschaltet: %v", z.Inhaber, z.Funktionen)
 	} else {
@@ -130,6 +137,11 @@ func main() {
 			// Sagt der Oberfläche, was freigeschaltet ist, damit sie Gesperrtes gar
 			// nicht erst anbietet. Enthält kein Geheimnis.
 			r.Get("/lizenz", h.LizenzStatus)
+			// Einlesen und Ausstellen: beides nur für Administratoren, geprüft
+			// im Handler. Ausstellen antwortet auf einer gewöhnlichen
+			// Installation mit 501 -- dort liegt kein privater Schlüssel.
+			r.Put("/system/lizenz", h.LizenzEinlesen)
+			r.Post("/system/lizenz/ausstellen", h.LizenzAusstellen)
 
 			// The static /pages/... routes must be registered before /pages/{id},
 			// otherwise chi would match "shared" and "trash" as page ids.
