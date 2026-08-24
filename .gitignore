@@ -1,6 +1,12 @@
 # Environment
 .env
 
+# Die laufende Konfiguration. Sie gehoert dem Betrieb, nicht dem Verzeichnis:
+# sie enthaelt Zugangsdaten, und sie wird auf der Wartungsseite bearbeitet --
+# ein verfolgter Stand wuerde bei jedem Ausrollen darueber hinweggeschrieben.
+# Vorlage: config.beispiel.conf
+config.conf
+
 # Node
 node_modules/
 npm-debug.log*
