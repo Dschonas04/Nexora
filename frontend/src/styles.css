@@ -333,6 +333,11 @@ a {
 .page-title {
   border: none;
   outline: none;
+  /* Ohne diese Zeile nimmt das Eingabefeld die Vorgabe des Browsers: Weiß.
+     Auf dem leicht gegrauten Grund stand der Titel dadurch in einem hellen
+     Kasten, im Dunkelmodus in einem leuchtenden. Der Titel ist Text auf der
+     Seite, keine Fläche. */
+  background: transparent;
   width: 100%;
   font-size: 38px;
   font-weight: 700;
