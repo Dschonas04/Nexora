@@ -1143,6 +1143,51 @@ export default function EinstellungenView() {
               </div>
             )}
 
+            <h3>Verbund</h3>
+            <p className="muted small">
+              Die Dienste, mit denen dieser hier redet, samt Antwortzeit. Der Docker-Verbund
+              selbst steht hier nicht: dafür bräuchte der Container den Steuerkanal von
+              Docker, und wer den hat, ist auf dem Wirt allmächtig — das ist eine Liste von
+              Containern nicht wert.
+            </p>
+            <table className="tabelle verbund-tabelle">
+              <tbody>
+                {(z.verbund ?? []).map((d) => (
+                  <tr key={d.name}>
+                    <td>
+                      <strong>{d.name}</strong>
+                      <div className="muted small">{d.rolle}</div>
+                    </td>
+                    <td>
+                      <span
+                        className={
+                          "pill " +
+                          (d.zustand === "läuft"
+                            ? "frei"
+                            : d.zustand === "fehlt"
+                              ? "gesperrt"
+                              : "")
+                        }
+                      >
+                        {d.zustand}
+                      </span>
+                      {d.zustand === "fehlt" && !d.notwendig && (
+                        <div className="muted small">nicht schlimm</div>
+                      )}
+                    </td>
+                    <td className="muted small">
+                      <code>{d.adresse || "—"}</code>
+                      {d.fassung && <div>Fassung {d.fassung}</div>}
+                    </td>
+                    <td className="muted small">
+                      {d.antwort || "—"}
+                      {d.hinweis && <div>{d.hinweis}</div>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
             <h3>Nur beim Start änderbar</h3>
             <p className="muted small">
               Diese Werte stehen in <code>config.conf</code> oder in der Umgebung. Sie werden

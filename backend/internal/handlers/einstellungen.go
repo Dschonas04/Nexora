@@ -600,6 +600,9 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 			"sitzungTage":        int(SitzungDauer().Hours() / 24),
 		},
 		"warnungen": k.Warnungen(),
+		// Die Dienste, mit denen dieser hier redet. Nicht der Docker-Verbund
+		// selbst -- den sieht Nexora nicht, siehe verbund.go.
+		"verbund": s.verbund(ctx),
 	})
 }
 
