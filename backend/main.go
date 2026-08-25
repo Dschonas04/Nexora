@@ -21,13 +21,13 @@ import (
 
 func main() {
 	// Einstellungen kommen aus config.conf, überschrieben von Umgebungsvariablen,
-	// überschrieben von nichts. Siehe internal/config und config.conf; jeder
-	// Wert hat eine Vorgabe, damit der Server auch ohne Konfiguration startet.
+	// overridden by nothing. See internal/config and config.conf; every value
+	// has a default so the server starts without any configuration at all.
 	k := config.Laden("")
 
-	// Gefährliche Vorgaben werden benannt, aber nicht bestraft: eine
-	// Heimlabor-Installation mit dem Vorgabegeheimnis soll starten, man soll
-	// es nur nicht übersehen können.
+	// Dangerous defaults are named but not punished: a home lab installation
+	// running on the default secret should start, it just must not be possible
+	// to overlook.
 	for _, w := range k.Warnungen() {
 		log.Printf("ACHTUNG: %s", w)
 	}
@@ -55,12 +55,12 @@ func main() {
 	}
 	log.Println("database ready")
 
-	// Der Lizenzschlüssel schaltet die kostenpflichtigen Zusätze frei. Fehlt er
-	// oder taugt er nicht, läuft der Server mit dem freien Umfang weiter, ein
-	// ungültiger Schlüssel darf den Start nie verhindern.
-	// Vorrang hat, was über die Verwaltung eingelesen wurde; die Datei ist der
-	// Rückfall. Andernfalls ließe sich eine Lizenz zwar im Browser einspielen,
-	// wäre nach dem nächsten Neustart aber wieder die alte aus der Datei.
+	// The license key unlocks the paid extras. If it is missing or no good, the
+	// server carries on with the free feature set: an invalid key must never
+	// keep it from starting.
+	// What was imported through the administration pages wins; the file is the
+	// fallback. Otherwise a license could be imported in the browser and would
+	// be back to the old one from the file after the next restart.
 	schluessel := k.Lizenz
 	if ausDB := handlers.LizenzAusDatenbank(ctx, pool); ausDB != "" {
 		schluessel = ausDB
@@ -72,13 +72,13 @@ func main() {
 		log.Printf("keine gültige Lizenz (%s). Zusatzfunktionen bleiben gesperrt.", z.Grund)
 	}
 
-	// Ablage wählen. Der Objektspeicher ist die Ausnahme, die Platte die Regel:
-	// wer S3 nicht einrichtet, soll nichts davon merken.
+	// Choose where attachments live. The object store is the exception, the disk
+	// is the rule: whoever does not set up S3 should never notice it exists.
 	//
-	// Ein nicht erreichbarer Objektspeicher fällt bewusst auf die Platte zurück,
-	// statt den Start zu verhindern. Eine Instanz, die läuft und deren neue
-	// Anhänge lokal liegen, ist besser als eine, die gar nicht hochkommt,
-	// gemeldet wird es deutlich.
+	// An unreachable object store deliberately falls back to the disk rather
+	// than preventing startup. An instance that runs with its new attachments
+	// stored locally beats one that does not come up at all, and the fallback is
+	// reported loudly.
 	var speicher ablage.Ablage = ablage.NeuePlatte(dataDir)
 	if k.S3Aktiv && k.S3Endpunkt != "" {
 		s3, err := ablage.NeuS3(ctx, ablage.Einstellungen{
@@ -98,9 +98,8 @@ func main() {
 	}
 	log.Printf("Anhänge: %s", speicher.Name())
 
-	// Redis ist freiwillig: ohne ihn läuft alles weiter, nur ohne geteilten
-	// Zwischenspeicher. Deshalb wird ein Fehlschlag beim Verbinden geloggt und
-	// nicht zum Abbruch.
+	// Redis is optional: without it everything keeps working, only without a
+	// shared cache. A failure to connect is therefore logged, not fatal.
 	rd := handlers.NeuRedis(ctx, k.RedisAdresse, k.RedisPasswort, k.RedisDatenbank, k.RedisVorsilbe)
 	defer rd.Schliessen()
 
@@ -116,14 +115,13 @@ func main() {
 		},
 	}
 
-	// Seiten aus der Zeit vor dem Suchindex bekommen ihren Fließtext nachgereicht.
-	// Ohne das lieferte die Volltextsuche für ältere Seiten stillschweigend nichts
-	// das sieht wie ein leeres Ergebnis aus, nicht wie ein Fehler.
+	// Pages from before the search index get their plain text filled in. Without
+	// that, full text search silently returned nothing for older pages, which
+	// looks like an empty result rather than a fault.
 	h.IndexNachziehen(ctx)
 
-	// Laufzeiteinstellungen aus der Datenbank in den Zwischenspeicher. Sie
-	// überschreiben, was in config.conf steht, gesetzt wurden sie später und
-	// mit Absicht.
+	// Runtime settings from the database into the cache. They override whatever
+	// config.conf says, because they were set later and on purpose.
 	h.EinstellungenLaden(ctx, k)
 
 	r := chi.NewRouter()
@@ -138,14 +136,14 @@ func main() {
 		r.Post("/auth/register", h.Register)
 		r.Post("/auth/login", h.Login)
 		r.Post("/auth/logout", h.Logout)
-		// Anmeldung über einen fremden Ausweis. Öffentlich, weil hier noch
-		// niemand angemeldet ist, das ist ja der Zweck.
+		// Signing in with an outside identity. Public, because nobody is signed
+		// in yet, which is rather the point.
 		r.Get("/auth/sso", h.SSOZustand)
 		r.Get("/auth/oidc/start", h.OIDCStart)
 		r.Get("/auth/oidc/zurueck", h.OIDCZurueck)
 		r.Post("/auth/ldap", h.LDAPAnmeldung)
-		// Öffentliche Links gehören zum Zusatzumfang. Die Route bleibt bestehen,
-		// antwortet ohne Lizenz aber mit 402 statt die Seite auszuliefern.
+		// Public links are a paid extra. The route stays in place but answers
+		// 402 without a license instead of serving the page.
 		r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
 			Get("/public/{token}", h.GetPublicPage)
 
@@ -156,22 +154,22 @@ func main() {
 
 			r.Get("/auth/me", h.Me)
 
-			// Sagt der Oberfläche, was freigeschaltet ist, damit sie Gesperrtes gar
-			// nicht erst anbietet. Enthält kein Geheimnis.
+			// Tells the interface what is unlocked so it never offers what is
+			// locked. Contains no secret.
 			r.Get("/lizenz", h.LizenzStatus)
-			// Sitzungen: die eigenen sehen und einzeln beenden. Ein fremdes
-			// Gerät auszusperren, ohne alle anderen mitzunehmen, geht nur so.
-			// Word-Anhänge lesen und zurückschreiben. Lesen darf, wer die
-			// Seite lesen darf; Schreiben verlangt zusätzlich Schreibrecht
-			// und die Lizenz für Anhänge.
+			// Sessions: see your own and end them one at a time. Locking out one
+			// device without taking everybody else with it works no other way.
+			// Reading and writing Word attachments. Whoever may read the page may
+			// read the file; writing additionally needs write access and the
+			// attachments license.
 			r.Get("/pages/{id}/attachments/{attId}/word", h.WordLesen)
 			r.Put("/pages/{id}/attachments/{attId}/word", h.WordSchreiben)
 			r.Get("/sitzungen", h.ListSitzungen)
 			r.Delete("/sitzungen", h.SitzungenBeenden)
 			r.Delete("/sitzungen/{id}", h.SitzungBeenden)
-			// Einlesen und Ausstellen: beides nur für Administratoren, geprüft
-			// im Handler. Ausstellen antwortet auf einer gewöhnlichen
-			// Installation mit 501, dort liegt kein privater Schlüssel.
+			// Importing and issuing: both administrators only, checked inside the
+			// handler. On an ordinary installation issuing answers 501, because
+			// no private key lives there.
 			r.Put("/system/lizenz", h.LizenzEinlesen)
 			r.Post("/system/lizenz/ausstellen", h.LizenzAusstellen)
 
@@ -196,9 +194,9 @@ func main() {
 			r.Post("/pages/{id}/tags", h.AttachTag)
 			r.Delete("/pages/{id}/tags/{tagId}", h.DetachTag)
 
-			// Version history, Zusatz. Die Schnappschüsse selbst schreibt der
-			// Kern weiter mit; gesperrt ist nur das Ansehen und Zurückholen. Sonst
-			// klaffte nach dem Freischalten eine Lücke in der Geschichte.
+			// Version history, a paid extra. The core keeps writing the snapshots
+			// regardless; only viewing and restoring are locked. Otherwise there
+			// would be a gap in the history right after unlocking.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Versionen))
 				r.Get("/pages/{id}/versions", h.ListVersions)
@@ -206,7 +204,7 @@ func main() {
 				r.Post("/pages/{id}/versions/{versionId}/restore", h.RestoreVersion)
 			})
 
-			// Attachments, Zusatz
+			// Attachments, a paid extra.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Anhaenge))
 				r.Get("/pages/{id}/attachments", h.ListAttachments)
@@ -215,7 +213,7 @@ func main() {
 				r.Delete("/pages/{id}/attachments/{attId}", h.DeleteAttachment)
 			})
 
-			// Per-user sharing, Zusatz
+			// Per-user sharing, a paid extra.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Freigeben))
 				r.Get("/pages/{id}/shares", h.ListShares)
@@ -223,15 +221,14 @@ func main() {
 				r.Delete("/pages/{id}/shares/{userId}", h.RemoveShare)
 			})
 
-			// Einstellungen und Systemzustand. Ausschließlich für Admins, das
-			// prüfen die Handler selbst, deshalb steht hier keine weitere
-			// Hürde, sondern nur die Route.
-			// Das Aussehen darf jeder lesen, sonst sähe ein normaler Benutzer
-			// die eingestellten Farben nie, denn die Einstellungsseite selbst ist
-			// ihm verwehrt.
-			// Postfach. Frei wie die Leiste selbst, es zeigt nur, was
-			// anderswo ohnehin passiert ist, und ohne Kommentare und
-			// Freigaben bleibt es eben leer.
+			// Settings and system state. Administrators only, which the handlers
+			// check themselves, so there is no extra gate here, only the route.
+			// Anyone may read the appearance, otherwise an ordinary user would
+			// never see the configured colours, since the settings page itself
+			// is closed to them.
+			// The inbox. Free like the sidebar itself: it only shows what
+			// happened elsewhere anyway, and without comments and shares it
+			// simply stays empty.
 			r.Get("/postfach", h.ListPostfach)
 			r.Get("/postfach/anzahl", h.PostfachAnzahl)
 			r.Post("/postfach/gelesen", h.PostfachGelesen)
@@ -249,15 +246,16 @@ func main() {
 			r.Get("/system/ablage", h.AblageZustand)
 			r.Post("/system/ablage/test", h.S3Testen)
 
-			// Wartung: Konfigurationsdatei, Neustart, Papierkorb der Instanz.
-			// Auch hier prüfen die Handler die Rolle selbst.
+			// Maintenance: configuration file, restart, the instance-wide trash.
+			// Here too the handlers check the role themselves.
 			r.Get("/system/konfig", h.KonfigLesen)
 			r.Put("/system/konfig", h.KonfigSchreiben)
 			r.Post("/system/neustart", h.Neustart)
 			r.Post("/system/papierkorb", h.PapierkorbLeeren)
 
-			// Kommentare, Zusatz. Wer die Seite lesen darf, darf auch
-			// mitreden; feiner wird es hier nicht, das prüfen die Handler.
+			// Comments, a paid extra. Whoever may read the page may join the
+			// conversation; it gets no finer than that, and the handlers check
+			// it.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Kommentare))
 				r.Get("/pages/{id}/kommentare", h.ListKommentare)
@@ -267,12 +265,12 @@ func main() {
 				r.Post("/kommentare/{kommentarId}/erledigt", h.ToggleErledigt)
 			})
 
-			// Gruppen und Space-Rechte, Zusatz.
+			// Groups and space permissions, a paid extra.
 			//
-			// Der Zusatz sperrt das VERWALTEN. Ob bestehende Rechte noch
-			// gelten, entscheidet pagePerm selbst, ohne Lizenz greifen sie
-			// nicht, gelöscht werden sie aber auch nicht. So kommt nach dem
-			// Wiederfreischalten alles unverändert zurück.
+			// The extra locks MANAGING them. Whether existing permissions still
+			// apply is decided by pagePerm itself: without a license they do not
+			// take effect, but neither are they deleted. So everything comes
+			// back unchanged once the extra is unlocked again.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Gruppen))
 				r.Get("/gruppen", h.ListGruppen)
@@ -284,31 +282,31 @@ func main() {
 				r.Put("/spaces/{id}/rechte", h.SetzeSpaceRecht)
 			})
 
-			// Space-Export, Zusatz. Die Antwort ist ein ZIP-Strom, deshalb
-			// steht hier kein writeJSON dahinter.
+			// Space export, a paid extra. The answer is a ZIP stream, which is
+			// why no writeJSON stands behind it.
 			r.With(handlers.VerlangeFunktion(lizenz.Export)).
 				Get("/spaces/{id}/export", h.ExportSpace)
 
-			// Vorlagen, Zusatz. Eine Vorlage ist eine gewöhnliche Seite mit
-			// einem Schalter; gesperrt ist nur das Anlegen und Auflisten.
+			// Templates, a paid extra. A template is an ordinary page with a flag
+			// on it; only creating and listing them is locked.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Vorlagen))
 				r.Get("/vorlagen", h.ListVorlagen)
 				r.Post("/pages/{id}/vorlage", h.SetzeVorlage)
 			})
 
-			// Prüfspur, Zusatz. GESCHRIEBEN wird sie immer, auch ohne
-			// Lizenz: eine Spur mit einem Loch genau über dem unlizenzierten
-			// Zeitraum wäre wertlos. Nur das Lesen ist kostenpflichtig.
+			// The audit trail, a paid extra. It is always WRITTEN, license or
+			// not: a trail with a hole exactly over the unlicensed period would
+			// be worthless. Only reading it costs money.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Pruefspur))
 				r.Get("/pruefspur", h.ListPruefspur)
 				r.Get("/pruefspur/aktionen", h.PruefspurAktionen)
 			})
 
-			// Kontenverwaltung bleibt frei, ohne sie ließe sich eine
-			// Mehrbenutzer-Instanz gar nicht betreiben. Die /users-Routen sind
-			// Admins vorbehalten, das erzwingen die Handler selbst.
+			// Account administration stays free; without it a multi-user instance
+			// could not be run at all. The /users routes are reserved for
+			// administrators, which the handlers enforce themselves.
 			r.Get("/users", h.ListUsers)
 			r.Post("/users", h.CreateUser)
 			r.Delete("/users/{id}", h.DeleteUser)
@@ -323,23 +321,22 @@ func main() {
 			r.Put("/spaces/{id}/oeffentlich", h.SetSpaceOeffentlich)
 
 			// Backlinks (pages linking here via [[wiki-link]] or manual links)
-			// Markdown-Ausgabe einer Seite. Serverseitig, damit sie auch ohne
-			// geladenen Editor funktioniert, und weil die Umwandlung im Editor
-			// ausdrücklich verlustbehaftet ist.
+			// Markdown export of one page. Done on the server so it works without
+			// a loaded editor, and because the conversion inside the editor is
+			// explicitly lossy.
 			r.Get("/pages/{id}/markdown", h.ExportMarkdown)
 
-			// Gesetzte Dokumente, Zusatz. Markdown bleibt frei: den eigenen
-			// Bestand aus dem System zu bekommen darf nie an einer Lizenz
-			// hängen. PDF und Word sind kein Ausweg, sondern Darstellung.
+			// Typeset documents, a paid extra. Markdown stays free: getting your
+			// own content out of the system must never depend on a license.
+			// PDF and Word are presentation, not an escape route.
 			r.With(handlers.VerlangeFunktion(lizenz.Export)).Group(func(r chi.Router) {
 				r.Get("/pages/{id}/pdf", h.ExportPDF)
 				r.Get("/pages/{id}/word", h.ExportWord)
 			})
 
-			// Einfuhr: einzelne Markdown-Dateien oder ein ganzes Archiv.
-			// Frei wie die Markdown-Ausgabe und aus demselben Grund, der Weg
-			// in das System hinein darf so wenig an einer Lizenz hängen wie der
-			// Weg heraus.
+			// Import: single Markdown files or a whole archive. Free like the
+			// Markdown export and for the same reason: the way into the system
+			// should depend on a license as little as the way out.
 			r.Post("/import", h.Import)
 
 			r.Get("/pages/{id}/backlinks", h.Backlinks)
@@ -371,9 +368,9 @@ func main() {
 		w.Write([]byte("ok"))
 	})
 
-	// Der Papierkorb räumt sich selbst. Eigener Zusammenhang, nicht der des
-	// Starts: der läuft nach dreißig Sekunden ab, die Uhr soll laufen, solange
-	// der Dienst läuft.
+	// The trash sweeps itself. Its own context, not the startup one: that
+	// expires after thirty seconds, and this clock should run as long as the
+	// service does.
 	go h.PapierkorbUhr(context.Background())
 	// Expired and revoked sessions disappear after a grace period.
 	go h.SitzungenUhr(context.Background())
