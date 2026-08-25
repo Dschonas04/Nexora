@@ -31,7 +31,7 @@ type Server struct {
 	Pool   *pgxpool.Pool
 	Secret []byte
 	// Sitzungen ist der kurze Zwischenspeicher für die Sitzungsprüfung. Darf
-	// nil sein -- dann wird jedes Mal gefragt.
+	// nil sein, dann wird jedes Mal gefragt.
 	Sitzungen *sitzungsSpeicher
 	// Redis ist der gemeinsame Zwischenspeicher über mehrere Instanzen hinweg.
 	// Darf nil sein: ohne ihn läuft alles weiter, nur ohne geteilten Speicher.
@@ -91,7 +91,7 @@ func (s *Server) setAuthCookieFuer(w http.ResponseWriter, r *http.Request, token
 	})
 }
 
-// ueberTLS erkennt eine verschlüsselte Anfrage -- auch hinter einem Proxy, der
+// ueberTLS erkennt eine verschlüsselte Anfrage, auch hinter einem Proxy, der
 // selbst entschlüsselt und es im Kopf X-Forwarded-Proto weitersagt.
 func ueberTLS(r *http.Request) bool {
 	if r == nil {

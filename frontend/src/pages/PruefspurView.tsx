@@ -201,7 +201,7 @@ export default function PruefspurView() {
                 <td>{beschriften(e.aktion)}</td>
                 <td>
                   {e.objektTitel || <span className="muted">{e.objektArt || "—"}</span>}
-                  {/* Details sind je Vorgang verschieden -- etwa an wen freigegeben
+                  {/* Details sind je Vorgang verschieden, etwa an wen freigegeben
                       wurde. Roh anzuzeigen ist ehrlicher, als sie zu verbergen. */}
                   {e.details && Object.keys(e.details).length > 0 && (
                     <div className="muted small">

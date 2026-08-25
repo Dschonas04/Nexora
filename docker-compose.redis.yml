@@ -2,7 +2,7 @@
 #
 # Freiwillig, und zwar wirklich: ohne ihn läuft Nexora vollständig, nur mit
 # einer Datenbankabfrage mehr je Anfrage. Er lohnt, sobald mehrere Instanzen
-# nebeneinander laufen -- dann teilen sie sich, was sie über Sitzungen wissen --
+# nebeneinander laufen, dann teilen sie sich, was sie über Sitzungen wissen,
 # oder wenn die Datenbank ohnehin knapp ist.
 #
 #     docker compose -f docker-compose.yml -f docker-compose.db.yml \

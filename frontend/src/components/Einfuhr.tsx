@@ -16,7 +16,7 @@ export default function Einfuhr({
   onClose,
 }: {
   // Genau eines von beidem: unter eine Seite oder in eine Ablage. Ist keines
-  // gesetzt, landet die Einfuhr an der Wurzel -- und nur dann darf sie
+  // gesetzt, landet die Einfuhr an der Wurzel, und nur dann darf sie
   // stattdessen eine eigene Ablage mitbringen.
   ziel: { parentId?: string; spaceId?: string };
   zielName: string;
@@ -48,7 +48,7 @@ export default function Einfuhr({
   }, [onClose, laeuft]);
 
   // Erst rechnen lassen, dann fragen. Zweihundert Seiten rückgängig zu machen
-  // hieße, sie einzeln in den Papierkorb zu schieben -- die Vorschau kostet
+  // hieße, sie einzeln in den Papierkorb zu schieben, die Vorschau kostet
   // einen Klick und erspart genau das.
   // Aus "Homelab.zip" wird "Homelab": der Name, unter dem die Ablage
   // ausgeführt wurde, ist der beste Vorschlag für die, die daraus entsteht.
@@ -126,7 +126,7 @@ export default function Einfuhr({
               ) : (
                 <p className="muted small">
                   Ohne Haken landen die Seiten unter „Ohne Ablage“. Mit Haken entsteht eine
-                  neue Ablage -- so kommt eine ausgeführte Ablage als Ganzes zurück.
+                  neue Ablage, so kommt eine ausgeführte Ablage als Ganzes zurück.
                 </p>
               )}
             </div>
@@ -268,7 +268,7 @@ export default function Einfuhr({
 }
 
 // Aeste zeigt den geplanten Baum. Die Quelldatei steht klein daneben: ein Titel
-// allein verrät nicht, woher er kommt -- und genau das will man wissen, wenn
+// allein verrät nicht, woher er kommt, und genau das will man wissen, wenn
 // eine Seite an unerwarteter Stelle steht.
 function Aeste({ knoten }: { knoten: EinfuhrAst[] }) {
   return (

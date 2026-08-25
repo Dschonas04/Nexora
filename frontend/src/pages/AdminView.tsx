@@ -3,7 +3,7 @@
 // Absicherung.
 //
 // Sie wird innerhalb der Einstellungen gezeigt und bringt deshalb keinen
-// eigenen Rahmen mehr mit -- Überschrift und Abstände kommen von dort.
+// eigenen Rahmen mehr mit, Überschrift und Abstände kommen von dort.
 import { useEffect, useState } from "react";
 import { User, api } from "../api/client";
 import { useAuth } from "../auth";

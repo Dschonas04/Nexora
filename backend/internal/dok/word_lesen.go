@@ -12,7 +12,7 @@
 // Das ist keine Nachlässigkeit, sondern die Grenze des Vorhabens: der Editor
 // kennt zehn Blockarten, Word kennt hunderte. Wer eine Word-Datei hier
 // bearbeitet und zurückschreibt, bekommt ein sauberes Dokument mit ihrem
-// Inhalt -- nicht dieselbe Datei mit einer geänderten Zeile. Deshalb sagt die
+// Inhalt, nicht dieselbe Datei mit einer geänderten Zeile. Deshalb sagt die
 // Oberfläche das vorher.
 package dok
 
@@ -53,7 +53,7 @@ func AusWord(roh []byte) (Dokument, error) {
 		break
 	}
 	if len(xmlRoh) == 0 {
-		return Dokument{}, errors.New("kein Hauptteil in der Datei -- ist es wirklich eine .docx?")
+		return Dokument{}, errors.New("kein Hauptteil in der Datei. Ist es wirklich eine .docx?")
 	}
 	return wordZuDokument(xmlRoh)
 }
@@ -65,7 +65,7 @@ type wDokument struct {
 
 type wBody struct {
 	// Reihenfolge zählt: Absätze und Tabellen wechseln sich ab. Deshalb ein
-	// gemeinsames Feld statt zweier Listen -- sonst stünden alle Tabellen am
+	// gemeinsames Feld statt zweier Listen, sonst stünden alle Tabellen am
 	// Ende.
 	Inhalt []wInhalt `xml:",any"`
 }
@@ -193,7 +193,7 @@ func wordAbsatz(p wInhalt) (Absatz, bool) {
 	istNummer := false
 	if p.Eigenschaften.Nummern.ID.Wert != "" {
 		// numId sagt: der Absatz gehört zu einer Liste. Ob Punkte oder Ziffern,
-		// steht in numbering.xml -- einer eigenen Datei mit eigener Struktur.
+		// steht in numbering.xml, einer eigenen Datei mit eigener Struktur.
 		// Sie zusätzlich zu lesen wäre viel Aufwand für eine Unterscheidung,
 		// die man im Editor mit einem Klick ändert. Deshalb: Aufzählung, außer
 		// der Stil sagt ausdrücklich etwas anderes.
@@ -272,7 +272,7 @@ func nurText(st []Stueck) string {
 // NachBloecken übersetzt ein Dokument in die Blöcke, die der Editor versteht.
 //
 // Nur die Typen, die BlockNote kennt: Absatz, Überschrift (Ebene 1 bis 3),
-// Aufzählung, nummerierte Liste, Tabelle. Ein unbekannter wird ein Absatz --
+// Aufzählung, nummerierte Liste, Tabelle. Ein unbekannter wird ein Absatz,
 // ein Block, den der Editor nicht kennt, ließe die Seite gar nicht erst
 // öffnen, und das wäre der schlechtere Ausgang.
 func NachBloecken(d Dokument) []map[string]any {

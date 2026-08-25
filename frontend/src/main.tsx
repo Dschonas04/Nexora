@@ -20,7 +20,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <AuthProvider>
         <LizenzProvider>
           <DesignProvider>
-            {/* Ganz außen, damit jede Ansicht eine Rückfrage stellen kann --
+            {/* Ganz außen, damit jede Ansicht eine Rückfrage stellen kann,
                 und damit der Dialog über allem liegt, was sie zeichnet. */}
             <RueckfrageProvider>
               <App />

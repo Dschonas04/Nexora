@@ -8,7 +8,7 @@
 // über die Nummerierungsdefinitionen von Word. Das ist eine bewusste
 // Entscheidung: numbering.xml ist der Teil des Formats, an dem sich Word am
 // schnellsten stört, und eine Datei, die Word als beschädigt meldet, ist
-// wertlos -- eine Liste, die als Text richtig dasteht, aber nicht per Klick
+// wertlos, eine Liste, die als Text richtig dasteht, aber nicht per Klick
 // weiternummeriert, ist es nicht.
 package dok
 
@@ -25,7 +25,7 @@ func wxml(s string) string {
 		"&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;",
 	)
 	// Steuerzeichen sind in XML 1.0 nicht erlaubt und machen die Datei
-	// unlesbar -- Word öffnet sie dann gar nicht erst.
+	// unlesbar, Word öffnet sie dann gar nicht erst.
 	var b strings.Builder
 	for _, c := range s {
 		if c < 0x20 && c != '\t' && c != '\n' {
@@ -247,7 +247,7 @@ func WordMehrere(docs []Dokument) ([]byte, error) {
 </Relationships>`
 
 	// Nur die Formatvorlagen, auf die oben verwiesen wird. Word ergänzt beim
-	// Speichern selbst, was ihm fehlt; was hier steht, muss aber stimmen --
+	// Speichern selbst, was ihm fehlt; was hier steht, muss aber stimmen,
 	// ein Verweis auf eine Vorlage, die es nicht gibt, ist ein Fehler in der
 	// Datei.
 	var vorlagen strings.Builder

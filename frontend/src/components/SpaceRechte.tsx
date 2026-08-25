@@ -8,7 +8,7 @@
 //
 // Aufbau der Maske: erst wer schon Zugriff hat, darunter das Erteilen. Wer
 // diesen Kasten öffnet, will meistens zuerst nachsehen und erst dann etwas
-// ändern -- und das Hinzufügen setzt voraus, dass man die bestehende Liste
+// ändern, und das Hinzufügen setzt voraus, dass man die bestehende Liste
 // kennt, sonst vergibt man ein Recht zweimal.
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -95,7 +95,7 @@ export default function SpaceRechte({
     laden();
   };
 
-  // Schon vergebene Ziele nicht noch einmal anbieten -- ändern geht in der
+  // Schon vergebene Ziele nicht noch einmal anbieten, ändern geht in der
   // Liste darüber, und zwei Wege für dieselbe Sache verwirren nur.
   const vergeben = useMemo(
     () => new Set(rechte.map((r) => r.gruppeId ?? r.userId)),

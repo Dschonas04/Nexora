@@ -101,7 +101,7 @@ export default function TagView({
             {seiten.map((p) => (
               <div key={p.id} className="tree-row" onClick={() => nav(`/page/${p.id}`)}>
                 <span className="tree-label">{p.title || "Ohne Titel"}</span>
-                {/* Ein Schlagwort kann an einer geteilten Seite hängen -- das
+                {/* Ein Schlagwort kann an einer geteilten Seite hängen, das
                     gehört dazugesagt, sonst wundert man sich, warum sie nicht
                     im eigenen Baum steht. */}
                 {p.shared && <span className="pill klein">geteilt</span>}

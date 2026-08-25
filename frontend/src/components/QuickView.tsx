@@ -14,7 +14,7 @@ export interface Datei {
   id: string;
   filename: string;
   mime: string;
-  /** Where the bytes live. The caller builds it -- the viewer never guesses. */
+  /** Where the bytes live. The caller builds it, the viewer never guesses. */
   url: string;
   /** Für Word-Dateien: ohne beides lässt sich der Inhalt nicht holen. */
   seiteId?: string;
@@ -24,7 +24,7 @@ export interface Datei {
 // Der Dateityp, den der Browser beim Hochladen angibt, ist eine Behauptung und
 // manchmal gar keine: bei unbekannter Endung schickt er nichts oder
 // "application/octet-stream". Dann entscheidet die Endung des Dateinamens.
-// Ohne das steht eine PDF-Datei in der Liste und meldet "keine Vorschau" --
+// Ohne das steht eine PDF-Datei in der Liste und meldet "keine Vorschau",
 // obwohl sie eine hätte.
 const NACH_ENDUNG: Record<string, string> = {
   pdf: "application/pdf",
@@ -125,7 +125,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
     wordStand.current = null;
   }, [datei?.id]);
 
-  // Word-Anhang holen. Nicht die Bytes -- die kann der Browser nicht anzeigen
+  // Word-Anhang holen. Nicht die Bytes, die kann der Browser nicht anzeigen
   // --, sondern den Inhalt als Blöcke, den der Server aus der Datei liest.
   useEffect(() => {
     if (!datei || !istWord(typ) || !datei.seiteId) return;
@@ -293,7 +293,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             // nachzubauen wäre viel Code für ein schlechteres Ergebnis.
             //
             // <object> statt <iframe>: Browser, die PDF nicht selbst anzeigen
-            // können -- und mobile Browser können es meist nicht --, zeigen
+            // können, und mobile Browser können es meist nicht --, zeigen
             // dann den Inhalt zwischen den Marken statt einer leeren weißen
             // Fläche, vor der man ratlos sitzt.
             <object className="qv-frame" data={datei.url} type="application/pdf" aria-label={datei.filename}>
@@ -352,7 +352,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                   </div>
                   {/* Der Hinweis steht VOR dem Bearbeiten da, nicht danach als
                       Entschuldigung: wer eine Word-Datei hier ändert, bekommt
-                      ein sauberes Dokument mit ihrem Inhalt -- nicht dieselbe
+                      ein sauberes Dokument mit ihrem Inhalt, nicht dieselbe
                       Datei mit einer geänderten Zeile. */}
                   {bearbeiten && (
                     <div className="qv-word-hinweis muted small">

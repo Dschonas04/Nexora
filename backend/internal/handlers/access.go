@@ -35,7 +35,7 @@ func (s *Server) isAdmin(ctx context.Context, uid string) bool {
 // how pages end up visible to the wrong people.
 //
 // Space rights only count while the Gruppen extra is licensed. Without it the
-// rows may still exist -- they are not deleted when a licence lapses -- but
+// rows may still exist, they are not deleted when a licence lapses, but
 // they grant nothing, and access falls back to owner, admin and page shares.
 func (s *Server) pagePerm(ctx context.Context, uid, pageID string) (canRead, canEdit, isOwner, ok bool) {
 	gruppenAn := lizenz.Frei(lizenz.Gruppen)
@@ -51,11 +51,11 @@ func (s *Server) pagePerm(ctx context.Context, uid, pageID string) (canRead, can
 			(SELECT role = 'admin' FROM users WHERE id = $2),
 			(SELECT sh.permission FROM page_shares sh
 			  WHERE sh.page_id = p.id AND sh.user_id = $2),
-			-- Bestes Recht am Space: einzeln vergeben, über eine Gruppe --
+			-- Bestes Recht am Space: einzeln vergeben, über eine Gruppe,
 			-- oder daher, dass die Ablage öffentlich ist. Alle drei Wege
 			-- landen im selben UNION und werden danach nach Stufe sortiert,
 			-- damit der stärkste gewinnt. Die Reihenfolge im ORDER BY ist die
-			-- Stufenleiter, nicht das Alphabet -- 'lesen' käme sonst vor
+			-- Stufenleiter, nicht das Alphabet, 'lesen' käme sonst vor
 			-- 'schreiben'.
 			(SELECT x.recht FROM (
 			   SELECT sr.recht FROM space_rechte sr
@@ -120,13 +120,13 @@ func (s *Server) darfSpaceVerwalten(ctx context.Context, uid, spaceID string) bo
 // spaceZugriffSQL liefert die SQL-Bedingung, unter der ein Konto Zugriff auf
 // den Space einer Seite hat. Zwei Wege führen hinein:
 //
-//	ein vergebenes Recht  -- einzeln oder über eine Gruppe, nur mit Zusatzumfang
-//	eine öffentliche Ablage -- für jedes angemeldete Konto der Instanz
+//	ein vergebenes Recht, einzeln oder über eine Gruppe, nur mit Zusatzumfang
+//	eine öffentliche Ablage, für jedes angemeldete Konto der Instanz
 //
 // Das steht hier als eine Zeichenkette und nicht viermal ausgeschrieben in den
 // Abfragen, die sie brauchen. Genau das ist der Punkt: Sichtbarkeit an vier
 // Stellen getrennt zu formulieren heißt, dass eines Tages drei davon dasselbe
-// sagen und die vierte etwas anderes -- und eine abweichende Rechteprüfung ist
+// sagen und die vierte etwas anderes, und eine abweichende Rechteprüfung ist
 // der Weg, auf dem Seiten bei den Falschen landen.
 //
 // Die Platzhalter werden übergeben, weil sie je Abfrage andere Nummern haben:

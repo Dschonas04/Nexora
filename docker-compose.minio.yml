@@ -1,6 +1,6 @@
 # Beilage: ein MinIO für die Anhänge.
 #
-# Ohne diese Datei liegen Anhänge auf der Platte des Backends -- das reicht für
+# Ohne diese Datei liegen Anhänge auf der Platte des Backends, das reicht für
 # eine Instanz auf einem Rechner. Der Objektspeicher lohnt, sobald die Anhänge
 # eigenständig gesichert, geteilt oder auf ein anderes Gerät gelegt werden
 # sollen.
@@ -26,7 +26,7 @@ services:
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?bitte in der .env setzen}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?bitte in der .env setzen -- z.B. openssl rand -hex 24}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?bitte in der .env setzen, z.B. openssl rand -hex 24}
     volumes:
       - nexora_s3:/data
     ports:
@@ -43,7 +43,7 @@ services:
   # Einmalige Einrichtung: Eimer anlegen und ein eigenes Konto für Nexora, das
   # nur diesen einen Eimer sehen darf.
   #
-  # Das Wurzelkonto ist der Verwalter des Speichers -- es darf Konten anlegen,
+  # Das Wurzelkonto ist der Verwalter des Speichers, es darf Konten anlegen,
   # Regeln ändern und jeden Eimer löschen. Es einer Anwendung in die Hand zu
   # geben heißt, jeden Fehler in ihr zu einem Vollzugriff zu machen. Nexora
   # braucht Lesen und Schreiben in einem Eimer, mehr nicht.
@@ -59,7 +59,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?bitte in der .env setzen}
       EIMER: ${NEXORA_S3_BUCKET:-nexora}
       SCHLUESSEL: ${NEXORA_S3_ZUGRIFFSSCHLUESSEL:?bitte in der .env setzen}
-      GEHEIMNIS: ${NEXORA_S3_GEHEIMNIS:?bitte in der .env setzen -- z.B. openssl rand -hex 24}
+      GEHEIMNIS: ${NEXORA_S3_GEHEIMNIS:?bitte in der .env setzen, z.B. openssl rand -hex 24}
     entrypoint: /bin/sh
     command:
       - -c

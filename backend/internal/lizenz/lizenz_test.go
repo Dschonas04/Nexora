@@ -17,7 +17,7 @@ import (
 // selbst aus.
 //
 // Ein fertiger Schlüssel im Repository wäre ein Schlüssel für jeden, der es
-// klont -- und weil offline geprüft wird, ließe er sich nie zurückziehen.
+// klont, und weil offline geprüft wird, ließe er sich nie zurückziehen.
 // Nebenbei prüft der Test so den ganzen Weg vom Signieren bis zum
 // Freischalten, statt nur die halbe Strecke.
 func einrichten(t *testing.T) ed25519.PrivateKey {
@@ -104,11 +104,11 @@ func TestVeraenderterSchluesselWirdAbgelehnt(t *testing.T) {
 	s := schluessel(t, priv, plizenz.Nutzlast{Inhaber: "Echt", Funktionen: alleNamen()})
 
 	// Ein einzelnes Zeichen im Datenteil kippen. Die Signatur darf dann nicht
-	// mehr passen -- das ist der Kern des ganzen Verfahrens.
+	// mehr passen, das ist der Kern des ganzen Verfahrens.
 	//
 	// Gekippt wird an fester Stelle statt nach einem bestimmten Buchstaben zu
 	// suchen: welche Zeichen im Base64 vorkommen, hängt vom Inhalt ab, und ein
-	// nicht gefundener Buchstabe hätte den Schlüssel unverändert gelassen --
+	// nicht gefundener Buchstabe hätte den Schlüssel unverändert gelassen,
 	// der Test wäre dann grün gewesen, ohne je etwas zu prüfen.
 	punkt := strings.Index(s, ".")
 	if punkt < 2 {

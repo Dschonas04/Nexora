@@ -37,7 +37,7 @@ type Bereich =
 const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
   { id: "uebersicht", titel: "Übersicht", unter: "Zahlen und Zustand auf einen Blick" },
   // Konten und Gruppen hatten je einen eigenen Eintrag in der Seitenleiste.
-  // Beides ist Verwaltung und wird selten angefasst -- es gehört dorthin, wo
+  // Beides ist Verwaltung und wird selten angefasst, es gehört dorthin, wo
   // man ohnehin sucht, wenn man etwas einstellen will.
   { id: "nutzer", titel: "Nutzer", unter: "Konten, Rollen, Zugänge" },
   { id: "gruppen", titel: "Gruppen", unter: "Konten bündeln für Space-Rechte" },
@@ -102,7 +102,7 @@ function bytes(n: number): string {
 }
 
 // Ein Zeitpunkt, wie man ihn vorliest: Datum und Uhrzeit, ohne Sekunden und
-// ohne Zeitzone -- die Frage lautet "wann war ich das", nicht "wie spät war es
+// ohne Zeitzone, die Frage lautet "wann war ich das", nicht "wie spät war es
 // in UTC".
 function zeitpunkt(iso: string): string {
   const d = new Date(iso);
@@ -138,7 +138,7 @@ export default function EinstellungenView() {
   const [laedt, setLaedt] = useState(true);
 
   // Objektspeicher-Test. Die Zugangsdaten bleiben ausschließlich hier im
-  // Formular -- gespeichert wird nichts davon, siehe den Hinweis im Bereich.
+  // Formular, gespeichert wird nichts davon, siehe den Hinweis im Bereich.
   const [ablage, setAblage] = useState<string>("");
   const [s3, setS3] = useState({
     endpunkt: "",
@@ -178,14 +178,14 @@ export default function EinstellungenView() {
   }, []);
 
   // Wartung. Die Datei wird erst beim Öffnen des Bereichs geholt: sie enthält
-  // Zugangsdaten -- wenn auch unkenntlich gemacht -- und geht niemanden etwas
+  // Zugangsdaten, wenn auch unkenntlich gemacht, und geht niemanden etwas
   // an, der nur die Farben ändern wollte.
   const [konfig, setKonfig] = useState<KonfigDatei | null>(null);
   const [konfigEntwurf, setKonfigEntwurf] = useState("");
   const [konfigHinweise, setKonfigHinweise] = useState<string[]>([]);
   const [neustartWort, setNeustartWort] = useState("");
 
-  // Lizenz: einlesen und -- beim Herausgeber -- ausstellen.
+  // Lizenz: einlesen und, beim Herausgeber, ausstellen.
   const { lizenz: lizenzJetzt, neuLaden: lizenzNeuLaden } = useLizenz();
   const [schluesselFeld, setSchluesselFeld] = useState("");
   const [ausstellen, setAusstellen] = useState({
@@ -228,7 +228,7 @@ export default function EinstellungenView() {
       setMeldung(
         r.hinweise.length === 0
           ? { text: "Der Entwurf ist in Ordnung.", art: "ok" }
-          : { text: `${r.hinweise.length} Auffälligkeit(en) -- siehe unten.`, art: "fehler" },
+          : { text: `${r.hinweise.length} Auffälligkeit(en). Sie stehen unten.`, art: "fehler" },
       );
     } catch (e) {
       setMeldung({ text: (e as Error).message, art: "fehler" });
@@ -267,7 +267,7 @@ export default function EinstellungenView() {
       setMeldung({
         text: z.gueltig
           ? `Lizenz für ${z.inhaber} übernommen${z.stufe ? ` (Stufe ${z.stufe})` : ""}.`
-          : "Lizenz entfernt -- es gilt wieder der freie Umfang.",
+          : "Lizenz entfernt. Es gilt wieder der freie Umfang.",
         art: "ok",
       });
     } catch (e) {
@@ -300,7 +300,7 @@ export default function EinstellungenView() {
     try {
       await api.neustarten();
       setMeldung({
-        text: "Der Dienst wird beendet. Kommt er nicht von selbst wieder, startet ihn nichts neu -- dann hilft nur der Container-Verwalter.",
+        text: "Der Dienst wird beendet. Kommt er nicht von selbst wieder, startet ihn nichts neu. Dann hilft nur der Container-Verwalter.",
         art: "ok",
       });
       setNeustartWort("");
@@ -315,7 +315,7 @@ export default function EinstellungenView() {
     if (
       !(await frage({
         titel: "Papierkorb leeren",
-        text: "Alle Seiten im Papierkorb dieser Instanz werden endgültig gelöscht -- auch die anderer Konten. Das lässt sich nicht rückgängig machen.",
+        text: "Alle Seiten im Papierkorb dieser Instanz werden endgültig gelöscht, auch die anderer Konten. Das lässt sich nicht rückgängig machen.",
         bestaetigen: "Papierkorb leeren",
         gefaehrlich: true,
       }))
@@ -530,7 +530,7 @@ export default function EinstellungenView() {
             <h3>Angemeldete Geräte</h3>
             <p className="muted small">
               Jede Anmeldung steht als Zeile in der Datenbank. Deshalb lässt sich eine
-              einzelne beenden -- ein verlorenes Gerät auszusperren, ohne alle anderen
+              einzelne beenden, ein verlorenes Gerät auszusperren, ohne alle anderen
               mitzunehmen, geht nur so. Wer täglich arbeitet, bleibt angemeldet: eine
               Sitzung, die mehr als die Hälfte ihrer Zeit hinter sich hat, wird beim
               nächsten Aufruf verlängert.
@@ -1145,48 +1145,35 @@ export default function EinstellungenView() {
 
             <h3>Verbund</h3>
             <p className="muted small">
-              Die Dienste, mit denen dieser hier redet, samt Antwortzeit. Der Docker-Verbund
-              selbst steht hier nicht: dafür bräuchte der Container den Steuerkanal von
-              Docker, und wer den hat, ist auf dem Wirt allmächtig — das ist eine Liste von
-              Containern nicht wert.
+              Die Dienste, mit denen dieser hier spricht, samt Antwortzeit. Der
+              Docker-Verbund selbst steht nicht dabei: dafür bräuchte der Container den
+              Steuerkanal von Docker, und wer den hat, ist auf dem Wirt allmächtig. Eine
+              Liste von Containern ist das nicht wert.
             </p>
-            <table className="tabelle verbund-tabelle">
-              <tbody>
-                {(z.verbund ?? []).map((d) => (
-                  <tr key={d.name}>
-                    <td>
-                      <strong>{d.name}</strong>
-                      <div className="muted small">{d.rolle}</div>
-                    </td>
-                    <td>
-                      <span
-                        className={
-                          "pill " +
-                          (d.zustand === "läuft"
-                            ? "frei"
-                            : d.zustand === "fehlt"
-                              ? "gesperrt"
-                              : "")
-                        }
-                      >
-                        {d.zustand}
-                      </span>
-                      {d.zustand === "fehlt" && !d.notwendig && (
-                        <div className="muted small">nicht schlimm</div>
-                      )}
-                    </td>
-                    <td className="muted small">
-                      <code>{d.adresse || "—"}</code>
-                      {d.fassung && <div>Fassung {d.fassung}</div>}
-                    </td>
-                    <td className="muted small">
-                      {d.antwort || "—"}
-                      {d.hinweis && <div>{d.hinweis}</div>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="verbund">
+              {(z.verbund ?? []).map((d) => (
+                <div
+                  key={d.name}
+                  className={
+                    "verbund-karte" +
+                    (d.zustand === "läuft" ? " laeuft" : d.zustand === "fehlt" ? " fehlt" : " aus")
+                  }
+                >
+                  <div className="verbund-kopf">
+                    <span className="verbund-name">{d.name}</span>
+                    <span className="verbund-zustand">{d.zustand}</span>
+                  </div>
+                  <div className="verbund-rolle">{d.rolle}</div>
+                  <div className="verbund-adresse">{d.adresse || "keine Adresse"}</div>
+                  <div className="verbund-werte">
+                    {d.fassung && <span>Fassung {d.fassung}</span>}
+                    {d.antwort && <span>{d.antwort}</span>}
+                    {d.zustand === "fehlt" && !d.notwendig && <span>nicht schlimm</span>}
+                  </div>
+                  {d.hinweis && <div className="verbund-hinweis">{d.hinweis}</div>}
+                </div>
+              ))}
+            </div>
 
             <h3>Nur beim Start änderbar</h3>
             <p className="muted small">
@@ -1260,7 +1247,7 @@ export default function EinstellungenView() {
                 </p>
                 {/* Der Satz steht hier und nicht im Kleingedruckten: wer
                     Zugangsdaten sucht und Sterne findet, hält sie sonst für
-                    verloren und schreibt sie neu -- ausgerechnet die, die
+                    verloren und schreibt sie neu, ausgerechnet die, die
                     stimmen. */}
                 <p className="muted small">
                   Zugangsdaten sind unkenntlich gemacht. Zeilen mit{" "}

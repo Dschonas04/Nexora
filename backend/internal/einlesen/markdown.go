@@ -2,8 +2,8 @@
 //
 // handlers/markdown.go writes documents out; this reads them in. The two are
 // deliberately not one reversible mapping. What arrives here may have been
-// written anywhere -- an Obsidian vault, a Notion export, a git wiki, a folder
-// of notes -- so the reader has to cope with ordinary Markdown, not only with
+// written anywhere, an Obsidian vault, a Notion export, a git wiki, a folder
+// of notes, so the reader has to cope with ordinary Markdown, not only with
 // what this system's own writer produces.
 //
 // It implements a subset of CommonMark, and the subset is chosen by what the
@@ -11,7 +11,7 @@
 // levels, the three kinds of list, tables, images and seven inline styles. It
 // has no code block, no quote block and no divider. Those therefore arrive as
 // marked-up paragraphs: the frame is lost, every character is kept. Emitting a
-// block type the editor does not know would be worse than lossy -- the page
+// block type the editor does not know would be worse than lossy, the page
 // would refuse to open.
 //
 // Nothing here fails. An unreadable construct becomes text, because an import
@@ -54,7 +54,7 @@ type TabellenZeile struct {
 	Cells [][]Inline `json:"cells"`
 }
 
-// Kopf ist der Vorspann einer Datei -- die Angaben, die vor dem Text stehen und
+// Kopf ist der Vorspann einer Datei, die Angaben, die vor dem Text stehen und
 // nicht zum Text gehören.
 type Kopf struct {
 	Titel string
@@ -93,7 +93,7 @@ var (
 
 // Lies wandelt eine Markdown-Datei in Blöcke um.
 //
-// Der zurückgegebene Titel ist die Überschrift, die ganz oben stand -- sie wird
+// Der zurückgegebene Titel ist die Überschrift, die ganz oben stand, sie wird
 // aus dem Text entfernt, weil der Titel in Nexora ein eigenes Feld ist und
 // sonst zweimal auf der Seite stünde. Steht dort keine, bleibt er leer und der
 // Aufrufer nimmt den Dateinamen.
@@ -122,7 +122,7 @@ func Lies(md string) (string, Kopf, []Block) {
 //
 // Bewusst kein YAML-Leser: gebraucht werden drei Angaben, und eine Bibliothek
 // für Dateien einzubinden, die ohnehin meist keinen Vorspann haben, steht in
-// keinem Verhältnis. Was nicht verstanden wird, wird übergangen -- der Kopf
+// keinem Verhältnis. Was nicht verstanden wird, wird übergangen, der Kopf
 // darf den Import einer Datei nicht verhindern.
 func Vorspann(md string) (Kopf, string) {
 	var k Kopf
@@ -195,7 +195,7 @@ func saubereMarke(s string) string {
 }
 
 // NurText zieht den reinen Text aus Inline-Stücken. Wird für Titel gebraucht,
-// die im Dokument ausgezeichnet waren -- ein Seitentitel trägt keine Fettung.
+// die im Dokument ausgezeichnet waren, ein Seitentitel trägt keine Fettung.
 func NurText(teile []Inline) string {
 	var b strings.Builder
 	for _, t := range teile {

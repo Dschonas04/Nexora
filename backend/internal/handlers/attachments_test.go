@@ -3,7 +3,7 @@ package handlers
 import "testing"
 
 // Der Typ entscheidet über Vorschau und Volltextsuche. Kommt er nichtssagend
-// an -- und das tut er bei jeder Endung, die der Browser nicht kennt --, muss
+// an, und das tut er bei jeder Endung, die der Browser nicht kennt --, muss
 // die Endung einspringen.
 func TestTypAusAngabeUndName(t *testing.T) {
 	faelle := []struct {

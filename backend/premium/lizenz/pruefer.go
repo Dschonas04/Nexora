@@ -1,5 +1,5 @@
 // Package lizenz verifies Nexora license keys. It is the paid half of the
-// project and carries its own license -- see premium/LICENSE.
+// project and carries its own license, see premium/LICENSE.
 //
 // A key is self-contained: it names the holder, the unlocked extras and an
 // optional expiry, and it carries an Ed25519 signature over exactly that data.
@@ -35,7 +35,7 @@ const oeffentlicherSchluessel = "dsY-UfRNTuGKqTGdjBlJtb5k1rR8FJOarJ-nD9JJRlo"
 type Nutzlast struct {
 	Inhaber string `json:"i"` // who the key is for
 	// Die verkaufte Stufe. Sie ist die übliche Form; die Liste darunter bleibt
-	// für Sonderfälle -- ein Kunde, der genau eine Funktion dazukauft.
+	// für Sonderfälle, ein Kunde, der genau eine Funktion dazukauft.
 	Stufe       string   `json:"s,omitempty"`
 	Funktionen  []string `json:"f,omitempty"` // einzeln freigeschaltete Zusätze
 	Ablauf      string   `json:"a,omitempty"` // ISO date, empty means perpetual
@@ -58,7 +58,7 @@ func NeuerPruefer(oeffentlich ed25519.PublicKey) *Pruefer {
 }
 
 // init registers this package as the verifier. Importing it is what switches
-// the paid extras on -- see backend/premium_an.go.
+// the paid extras on, see backend/premium_an.go.
 func init() {
 	roh, err := base64.RawURLEncoding.DecodeString(oeffentlicherSchluessel)
 	if err != nil || len(roh) != ed25519.PublicKeySize {
@@ -90,7 +90,7 @@ func (p *Pruefer) Pruefe(schluessel string) (kern.Zustand, error) {
 	// Signature first. Everything below trusts the payload, so nothing may be
 	// read out of it before this check passed.
 	if !ed25519.Verify(p.oeffentlich, daten, sig) {
-		return kern.Zustand{}, errors.New("Signatur passt nicht -- Schlüssel ungültig oder verändert")
+		return kern.Zustand{}, errors.New("Signatur passt nicht. Schlüssel ungültig oder verändert.")
 	}
 
 	var n Nutzlast
@@ -128,7 +128,7 @@ func (p *Pruefer) Pruefe(schluessel string) (kern.Zustand, error) {
 	// Unknown names in the key are dropped rather than passed through: a key
 	// from a newer generator must not unlock anything this build cannot do.
 	//
-	// Doppelte fallen dabei ebenfalls weg -- Stufe und Liste dürfen sich
+	// Doppelte fallen dabei ebenfalls weg, Stufe und Liste dürfen sich
 	// überschneiden, in der Antwort steht jede Funktion einmal.
 	gesehen := map[kern.Funktion]bool{}
 	var erlaubt []kern.Funktion

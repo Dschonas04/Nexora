@@ -2,7 +2,7 @@
 //
 // Vorher war eine Sitzung nichts als ein unterschriebenes Token: gültig, bis
 // die Zeit ablief, und durch nichts aufzuhalten. Abmelden löschte nur das
-// Plätzchen im Browser -- wer das Token vorher kopiert hatte, blieb angemeldet.
+// Plätzchen im Browser, wer das Token vorher kopiert hatte, blieb angemeldet.
 // Ein verlorenes Notebook konnte man nicht aussperren, ohne allen anderen den
 // Zugang zu nehmen.
 //
@@ -10,8 +10,8 @@
 // nur darauf. Damit lässt sich eine einzelne beenden, und die Liste beantwortet
 // die Frage, wer gerade angemeldet ist.
 //
-// Der Preis ist eine Abfrage je Anfrage. Sie ist billig -- ein Zugriff über den
-// Primärschlüssel -- und wird zusätzlich zwischengespeichert, siehe
+// Der Preis ist eine Abfrage je Anfrage. Sie ist billig, ein Zugriff über den
+// Primärschlüssel, und wird zusätzlich zwischengespeichert, siehe
 // sitzungsspeicher.go.
 package handlers
 
@@ -33,7 +33,7 @@ const sitzungsTakt = 6 * time.Hour
 
 // aufgefrischtAb: erst wenn eine Sitzung so weit fortgeschritten ist, wird sie
 // verlängert. Bei jeder Anfrage zu verlängern hieße, bei jeder Anfrage zu
-// schreiben -- viel Last für nichts.
+// schreiben, viel Last für nichts.
 const aufgefrischtAb = 0.5
 
 // benutztSpanne begrenzt, wie oft "zuletzt benutzt" nachgeführt wird. Ohne das
@@ -48,7 +48,7 @@ type Sitzung struct {
 	LaeuftAb   time.Time `json:"laeuftAb"`
 	IP         string    `json:"ip"`
 	Browser    string    `json:"browser"`
-	// Wahr für die Sitzung, mit der gerade gefragt wird -- damit die Liste
+	// Wahr für die Sitzung, mit der gerade gefragt wird, damit die Liste
 	// sagen kann "dieses Gerät" und nicht versehentlich das eigene beendet.
 	Diese bool `json:"diese"`
 }
@@ -68,7 +68,7 @@ func (s *Server) sitzungAnlegen(ctx context.Context, r *http.Request, userID str
 // hängt in der Middleware.
 func (s *Server) SitzungGilt(r *http.Request, w http.ResponseWriter, uid, sid string) bool {
 	// Ein Token ohne Sitzungskennung stammt aus der Zeit davor. Es gilt bis zum
-	// Ablauf weiter -- alle auf einmal abzumelden wäre eine unnötige Härte für
+	// Ablauf weiter, alle auf einmal abzumelden wäre eine unnötige Härte für
 	// eine Änderung, von der niemand etwas mitbekommen soll.
 	if sid == "" {
 		return true
@@ -98,7 +98,7 @@ func (s *Server) SitzungGilt(r *http.Request, w http.ResponseWriter, uid, sid st
 	jetzt := time.Now()
 
 	// Auffrischen: hat die Sitzung mehr als die Hälfte ihrer Zeit hinter sich,
-	// bekommt sie neue -- samt neuem Plätzchen. Wer täglich arbeitet, wird so
+	// bekommt sie neue, samt neuem Plätzchen. Wer täglich arbeitet, wird so
 	// nie abgemeldet; wer wochenlang nicht kommt, schon.
 	gesamt := laeuftAb.Sub(angelegt)
 	if gesamt > 0 && jetzt.Sub(angelegt) > time.Duration(float64(gesamt)*aufgefrischtAb) {
@@ -167,7 +167,7 @@ func (s *Server) SitzungBeenden(w http.ResponseWriter, r *http.Request) {
 	s.sitzungMerken(id, false)
 	s.spurAusRequest(r, AktSitzungBeendet, "sitzung", id, "", nil)
 
-	// Die eigene zu beenden ist erlaubt -- dann muss auch das Plätzchen weg,
+	// Die eigene zu beenden ist erlaubt, dann muss auch das Plätzchen weg,
 	// sonst schickt der Browser weiter ein Token, das nirgends mehr gilt.
 	if id == middleware.SitzungID(r) {
 		s.clearAuthCookie(w)
@@ -205,7 +205,7 @@ func (s *Server) SitzungenBeenden(w http.ResponseWriter, r *http.Request) {
 // SitzungenUhr räumt abgelaufene und widerrufene Sitzungen weg.
 //
 // Nicht sofort nach dem Ablauf: eine Zeile, die noch ein paar Tage steht,
-// beantwortet die Frage "wann war ich zuletzt von wo angemeldet" -- und genau
+// beantwortet die Frage "wann war ich zuletzt von wo angemeldet", und genau
 // die stellt man nach einem Vorfall.
 func (s *Server) SitzungenUhr(ctx context.Context) {
 	uhr := time.NewTicker(sitzungsTakt)

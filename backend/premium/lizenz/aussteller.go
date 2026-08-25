@@ -27,7 +27,7 @@ const HoechsteLaufzeit = 366 * 24 * time.Hour
 
 // Ausstellen signiert einen Lizenzschlüssel.
 //
-// Hier und nur hier entsteht ein Schlüssel -- die Befehlszeile und die
+// Hier und nur hier entsteht ein Schlüssel, die Befehlszeile und die
 // Verwaltungsoberfläche rufen dieselbe Stelle auf. Zwei Wege, die dieselben
 // Regeln je für sich umsetzen, driften auseinander, und die Regel, die dann
 // fehlt, ist erfahrungsgemäß die Frist.

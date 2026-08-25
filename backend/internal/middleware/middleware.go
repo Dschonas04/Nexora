@@ -20,7 +20,7 @@ const sitzungKey ctxKey = "sitzungID"
 // attacker learns nothing from the difference. Authorisation, meaning who may
 // touch which page, is decided later in the handlers.
 // SitzungPruefer sagt, ob eine gespeicherte Sitzung noch gilt. Die Middleware
-// bekommt ihn hereingereicht, statt selbst eine Datenbank zu kennen -- so bleibt
+// bekommt ihn hereingereicht, statt selbst eine Datenbank zu kennen, so bleibt
 // sie prüfbar, und wo die Antwort herkommt (Datenbank, Zwischenspeicher)
 // entscheidet der Aufrufer.
 type SitzungPruefer func(r *http.Request, w http.ResponseWriter, uid, sid string) bool
@@ -32,7 +32,7 @@ type SitzungPruefer func(r *http.Request, w http.ResponseWriter, uid, sid string
 //
 // Zweite Stufe seit den gespeicherten Sitzungen: das Token sagt, wer es war,
 // die Sitzung sagt, ob es noch gelten soll. Ohne diese Trennung bliebe ein
-// Token nach dem Abmelden weiter brauchbar -- unterschrieben ist es ja.
+// Token nach dem Abmelden weiter brauchbar, unterschrieben ist es ja.
 func Auth(secret []byte, pruefe SitzungPruefer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -26,7 +26,7 @@ export default function VersionPanel({ pageId, canEdit, onRestored, onClose }: P
     if (
       !(await frage({
         titel: "Version wiederherstellen",
-        text: "Der Stand dieser Version wird auf die Seite zurückgeholt. Der aktuelle Stand geht nicht verloren -- er wird vorher im Verlauf abgelegt.",
+        text: "Der Stand dieser Version wird auf die Seite zurückgeholt. Der aktuelle Stand geht nicht verloren, er wird vorher im Verlauf abgelegt.",
         bestaetigen: "Wiederherstellen",
       }))
     )

@@ -4,11 +4,11 @@
 # Die Prüfungen mit "go test" fassen keine Datenbank an, und genau dort sitzen
 # die Fehler, die man nicht sieht: eine Abfrage, die sich nicht übersetzen
 # lässt, fällt erst auf, wenn sie zum ersten Mal läuft. Ein Beispiel aus der
-# Wirklichkeit war ($1 || ' days')::interval -- alle Prüfungen grün, und der
+# Wirklichkeit war ($1 || ' days')::interval, alle Prüfungen grün, und der
 # Papierkorb räumte trotzdem nie auf.
 #
 # Deshalb hier: echte Postgres-Instanz, echtes Programm, echte Aufrufe über
-# HTTP. Alles in einem Wegwerf-Verzeichnis, das am Ende verschwindet -- der
+# HTTP. Alles in einem Wegwerf-Verzeichnis, das am Ende verschwindet, der
 # Test darf nichts hinterlassen, auch wenn er scheitert.
 set -euo pipefail
 
@@ -55,7 +55,7 @@ echo "== Backend bauen"
 ( cd "$WURZEL" && go build -o "$ARBEIT/nexora" . )
 
 # Als Funktion, weil der Papierkorb weiter unten einen zweiten Start mit einer
-# anderen Frist braucht -- die Uhr räumt beim Hochfahren einmal auf, und genau
+# anderen Frist braucht, die Uhr räumt beim Hochfahren einmal auf, und genau
 # das soll geprüft werden.
 starte_dienst() {
     DATABASE_URL="postgres://nexora@127.0.0.1:${PGPORT}/nexora?sslmode=disable" \
@@ -164,7 +164,7 @@ echo "== Papierkorb räumt sich selbst"
 # Die Frist ist eine Zusage, die ohne Prüfung niemand nachrechnet: eine Seite
 # in den Papierkorb legen, ihren Löschzeitpunkt um fünf Tage zurückdatieren
 # und den Dienst mit der Frist 1 neu starten. Die Uhr räumt beim Hochfahren
-# einmal auf -- danach muss die Seite fort sein.
+# einmal auf, danach muss die Seite fort sein.
 #
 # Zurückdatiert wird in der Wegwerf-Datenbank dieses Tests, nicht irgendwo
 # sonst. Anders ließe sich ein Ablauf über Tage nicht in Sekunden prüfen.
@@ -208,13 +208,13 @@ FREMD=$(hole "$BASIS/api/sitzungen" | python3 -c '
 import json,sys
 print(next(s["id"] for s in json.load(sys.stdin) if not s["diese"]))')
 pruefe "fremde Sitzung beenden" "200" "$(code -X DELETE "$BASIS/api/sitzungen/$FREMD")"
-# Das Token der zweiten Anmeldung muss sofort wertlos sein -- genau das konnte
+# Das Token der zweiten Anmeldung muss sofort wertlos sein, genau das konnte
 # die alte, rein gerechnete Sitzung nicht.
 pruefe "beendetes Token gilt nicht mehr" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$ARBEIT/kekse2.txt" "$BASIS/api/auth/me")"
 pruefe "wieder nur eine Sitzung" "1" \
        "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
-# Abmelden widerruft ebenfalls -- frueher blieb das Token gueltig.
+# Abmelden widerruft ebenfalls, frueher blieb das Token gueltig.
 curl -s -c "$ARBEIT/kekse3.txt" -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
      -d '{"email":"rauch@test.invalid","password":"rauchtest-passwort"}' >/dev/null
 curl -s -b "$ARBEIT/kekse3.txt" -X POST "$BASIS/api/auth/logout" >/dev/null
@@ -222,7 +222,7 @@ pruefe "nach dem Abmelden gilt das Token nicht mehr" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$ARBEIT/kekse3.txt" "$BASIS/api/auth/me")"
 
 echo "== SSO"
-# Ohne Einrichtung und ohne Lizenz darf nichts angeboten werden -- ein Knopf,
+# Ohne Einrichtung und ohne Lizenz darf nichts angeboten werden, ein Knopf,
 # der danach mit 402 antwortet, waere ein Versprechen ohne Deckung.
 pruefe "nichts angeboten, weil nichts eingerichtet" "False" \
        "$(hole "$BASIS/api/auth/sso" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["oidc"] or d["ldap"])')"
@@ -235,7 +235,7 @@ pruefe "LDAP ohne Lizenz weist ab" "402" \
 
 echo "== Lizenz"
 # Ein eigenes Schlüsselpaar für den Test: der öffentliche Teil steckt fest im
-# Programm, also lässt sich hier nicht mit einem echten Schlüssel prüfen -- und
+# Programm, also lässt sich hier nicht mit einem echten Schlüssel prüfen, und
 # ein echter gehört ohnehin nicht in ein Verzeichnis. Geprüft wird deshalb, was
 # ohne gültige Signatur passieren MUSS: Zurückweisung.
 pruefe "unsinniger Schlüssel wird abgewiesen" "400" \

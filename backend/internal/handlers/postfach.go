@@ -1,13 +1,13 @@
 // The inbox: what was addressed to an account since it last looked.
 //
 // Until now a comment reached nobody. It sat under a page and waited for
-// somebody to open that page again by chance -- and a question that stays
+// somebody to open that page again by chance, and a question that stays
 // unanswered for a week has stopped being a question. The same for a page
 // somebody shared with you: it appeared in a list you had no reason to check.
 //
 // Three things land here, and deliberately only three: a comment on a page you
 // own, a reply to a comment you wrote, and your name in somebody's comment.
-// Everything else -- a page changed, a tag added, somebody looked at your work
+// Everything else, a page changed, a tag added, somebody looked at your work
 // -- is noise, and an inbox that carries noise is an inbox people stop opening.
 package handlers
 
@@ -24,7 +24,7 @@ import (
 )
 
 // Die Arten. Sie stehen als Zeichenketten in der Zeile, weil die Oberfläche
-// sie zum Formulieren des Satzes braucht -- "hat auf deinen Kommentar
+// sie zum Formulieren des Satzes braucht, "hat auf deinen Kommentar
 // geantwortet" liest sich anders als "hat dich erwähnt".
 const (
 	PostKommentar = "kommentar"

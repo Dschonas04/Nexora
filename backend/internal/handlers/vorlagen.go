@@ -6,7 +6,7 @@
 // store would have meant a second editing surface and a second notion of who
 // may see what, for no gain a reader would notice.
 //
-// Creating from a template copies the content once. It does not link the two --
+// Creating from a template copies the content once. It does not link the two,
 // changing a template later leaves pages made from it alone, which is what
 // people expect from the word "template" and not from the word "reference".
 package handlers
@@ -58,7 +58,7 @@ func (s *Server) ListVorlagen(w http.ResponseWriter, r *http.Request) {
 //
 // Only the owner decides. An admin could technically reach the row, but
 // declaring someone else's page a template would change what it means to them
-// without asking -- it would show up in every colleague's new-page menu.
+// without asking, it would show up in every colleague's new-page menu.
 func (s *Server) SetzeVorlage(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -86,7 +86,7 @@ func (s *Server) SetzeVorlage(w http.ResponseWriter, r *http.Request) {
 }
 
 // inhaltAusVorlage liest den Inhalt einer Vorlage, wenn der Aufrufer sie
-// benutzen darf. Fehlt sie oder ist sie keine, kommt nichts zurück -- die neue
+// benutzen darf. Fehlt sie oder ist sie keine, kommt nichts zurück, die neue
 // Seite entsteht dann einfach leer, statt dass der Aufruf scheitert.
 func (s *Server) inhaltAusVorlage(r *http.Request, uid, vorlageID string) (json.RawMessage, string) {
 	if vorlageID == "" {

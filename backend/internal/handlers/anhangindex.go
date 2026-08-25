@@ -14,7 +14,7 @@ import (
 //
 // Needed because attachments uploaded before this existed carry nothing, and a
 // search that silently misses every older file looks like an empty result
-// rather than a missing index -- the same trap as with the page index.
+// rather than a missing index, the same trap as with the page index.
 //
 // Deliberately an explicit action rather than something that runs at startup:
 // it reads every file back out of storage, which over an object store means

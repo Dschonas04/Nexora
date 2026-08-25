@@ -21,13 +21,13 @@ function gemerkteZu(): Set<string> {
     return new Set<string>(roh ? (JSON.parse(roh) as string[]) : []);
   } catch {
     // Ein privates Fenster ohne Speicher oder ein kaputter Eintrag darf die
-    // Leiste nicht lahmlegen -- dann eben alles aufgeklappt.
+    // Leiste nicht lahmlegen, dann eben alles aufgeklappt.
     return new Set<string>();
   }
 }
 
 interface Props {
-  /** Ungelesene Nachrichten -- die Zahl kommt von oben, damit sie nur einmal
+  /** Ungelesene Nachrichten, die Zahl kommt von oben, damit sie nur einmal
       geholt wird und nicht je Ansicht neu. */
   ungelesen: number;
   pages: PageMeta[];
@@ -48,7 +48,7 @@ interface Props {
   onMovePage: (id: string, parentId: string | null, spaceId: string | null) => void;
   onNavigate: (to: string) => void;
   currentPath: string;
-  // Nach einer Einfuhr sind Seiten, Ablagen und Schlagworte veraltet -- die
+  // Nach einer Einfuhr sind Seiten, Ablagen und Schlagworte veraltet, die
   // Leiste kann sie nicht selbst nachladen, sie besitzt keine davon.
   onEingefuehrt: () => void;
 }
@@ -79,7 +79,7 @@ export default function Sidebar(props: Props) {
   const { user, logout } = useAuth();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // Eingeklappte Abschnitte der Leiste. Getrennt von `expanded`, das die
-  // Verzweigungen INNERHALB eines Baums steuert -- hier geht es um den
+  // Verzweigungen INNERHALB eines Baums steuert, hier geht es um den
   // Abschnitt als Ganzes.
   const [zu, setZu] = useState<Set<string>>(gemerkteZu);
   const klappen = (key: string) =>
@@ -95,7 +95,7 @@ export default function Sidebar(props: Props) {
     });
   // Beim Ziehen klappt ein Abschnitt von selbst auf, sobald der Zeiger über
   // seiner Überschrift verweilt. Ohne das müsste man die Seite ablegen,
-  // aufklappen, wieder aufnehmen -- oder das Ziel bliebe unsichtbar.
+  // aufklappen, wieder aufnehmen, oder das Ziel bliebe unsichtbar.
   const aufklappen = (key: string) => setZu((prev) => {
     if (!prev.has(key)) return prev;
     const n = new Set(prev);
@@ -115,7 +115,7 @@ export default function Sidebar(props: Props) {
   const [vorlagen, setVorlagen] = useState<PageMeta[]>([]);
   const [vorlagenOffen, setVorlagenOffen] = useState(false);
   const [rechteFuer, setRechteFuer] = useState<{ id: string; name: string } | null>(null);
-  // Kennung der Ablage, deren Sichtbarkeitsmenü offen steht -- höchstens eine
+  // Kennung der Ablage, deren Sichtbarkeitsmenü offen steht, höchstens eine
   // zur Zeit, deshalb ein einzelner Wert und keine Menge.
   const [sichtbarkeitFuer, setSichtbarkeitFuer] = useState<string | null>(null);
   // Dasselbe für das Export-Menü einer Ablage.
@@ -126,7 +126,7 @@ export default function Sidebar(props: Props) {
   >(null);
   // Lange Listen werden auf vier Einträge gekürzt. Eine Leiste, die von
   // fünfzehn Ablagen und dreißig Schlagwörtern gefüllt wird, ist keine
-  // Übersicht mehr -- man scrollt an allem vorbei, was man sucht. Der Rest ist
+  // Übersicht mehr, man scrollt an allem vorbei, was man sucht. Der Rest ist
   // einen Klick entfernt und die Zahl daneben sagt, wie viel dort wartet.
   const [alleSpaces, setAlleSpaces] = useState(false);
   const [alleTags, setAlleTags] = useState(false);
@@ -136,7 +136,7 @@ export default function Sidebar(props: Props) {
   }, [frei, pages]);
   const [results, setResults] = useState<SearchHit[] | null>(null);
   // Filter der Suche. Getrennt vom Suchwort, damit ein gesetzter Filter beim
-  // Weitertippen stehen bleibt -- man engt einmal ein und sucht dann mehrmals.
+  // Weitertippen stehen bleibt, man engt einmal ein und sucht dann mehrmals.
   const [filter, setFilter] = useState<SuchFilter>({});
   const [filterOffen, setFilterOffen] = useState(false);
   const filterAktiv = Boolean(filter.space || filter.tag || filter.tage || filter.wer);
@@ -221,7 +221,7 @@ export default function Sidebar(props: Props) {
   // It is split on those markers and rendered as React nodes. That matters:
   // ts_headline does NOT escape the surrounding text, so page content
   // containing a < arrives verbatim. React escapes every text node, which is
-  // what keeps it inert -- dangerouslySetInnerHTML here would be a stored XSS.
+  // what keeps it inert, dangerouslySetInnerHTML here would be a stored XSS.
   const trefferRow = (h: SearchHit) => (
     <div
       key={h.id}
@@ -319,7 +319,7 @@ export default function Sidebar(props: Props) {
       <div className="search-box">
         <input placeholder="Suchen…" value={q} onChange={(e) => setQ(e.target.value)} />
         {/* Der Knopf erscheint erst beim Suchen: ohne Suchwort gäbe es nichts
-            einzugrenzen. Der Punkt daneben sagt, dass ein Filter steht --
+            einzugrenzen. Der Punkt daneben sagt, dass ein Filter steht,
             sonst wundert man sich über zu wenige Treffer. */}
         {q.trim() !== "" && (
           <button
@@ -384,7 +384,7 @@ export default function Sidebar(props: Props) {
       )}
 
       {/* Die beiden Aktionen hingen bisher an der Überschrift "Seiten". Damit
-          waren sie an einen Abschnitt gebunden, den es nicht immer gibt --
+          waren sie an einen Abschnitt gebunden, den es nicht immer gibt,
           und der neben benannten Ablagen ohnehin fehl am Platz wirkte. Sie
           stehen jetzt für sich, oberhalb aller Abschnitte. */}
       {results === null && (
@@ -393,12 +393,12 @@ export default function Sidebar(props: Props) {
             + Space
           </button>
           {/* Beschriftet statt als Pfeil: ein Symbol allein sagt nicht, dass
-              sich hier ein ganzes Archiv einlesen lässt -- und seit die
+              sich hier ein ganzes Archiv einlesen lässt, und seit die
               Einfuhr eine eigene Ablage anlegen kann, ist das der Weg zurück
               aus einer Ausfuhr. */}
           <button
             className="text-btn"
-            title="Markdown, HTML oder ein ZIP einlesen -- wahlweise als eigene Ablage"
+            title="Markdown, HTML oder ein ZIP einlesen, wahlweise als eigene Ablage"
             onClick={() => setEinfuhrZiel({ ziel: {}, name: "Seiten" })}
           >
             ↑ Einlesen
@@ -452,7 +452,7 @@ export default function Sidebar(props: Props) {
                       dropOnSpace(sp.id);
                     }}
                   >
-                    {/* Der ganze linke Teil klappt -- Pfeil und Name. Das
+                    {/* Der ganze linke Teil klappt, Pfeil und Name. Das
                         Umbenennen hat jetzt einen eigenen Knopf: eine
                         Beschriftung, die beim Anklicken ein Eingabefeld
                         aufmacht, ist nicht das, was man von einer Überschrift
@@ -664,7 +664,7 @@ export default function Sidebar(props: Props) {
             )}
 
             {/* Der Auffangabschnitt für Seiten, die in keiner Ablage liegen.
-                Er erscheint nur, wenn er etwas enthält -- oder wenn gerade eine
+                Er erscheint nur, wenn er etwas enthält, oder wenn gerade eine
                 Seite gezogen wird, denn dann ist er das Ziel, mit dem man eine
                 Seite wieder aus ihrer Ablage herausholt. Eine leere Überschrift
                 "Seiten" zwischen benannten Ablagen sagte nichts und stand nur
@@ -701,7 +701,7 @@ export default function Sidebar(props: Props) {
                 )}
                 <span className="tree-actions">
                   {/* Ohne den Pfeil würde React das Klickereignis als erstes
-                      Argument durchreichen -- und das wäre dann die
+                      Argument durchreichen, und das wäre dann die
                       Vorlagen-Kennung. */}
                   <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
                     +
@@ -811,7 +811,7 @@ export default function Sidebar(props: Props) {
             )}
 
             {/* Was zum eigenen Arbeiten gehört. Die Überschrift hieß einmal
-                "Workspace" -- ein englischer Rest, der außerdem nichts über
+                "Workspace", ein englischer Rest, der außerdem nichts über
                 den Inhalt sagte: darunter standen Posteingang und Papierkorb
                 neben der Nutzerverwaltung. Die Verwaltung steht deshalb jetzt
                 für sich, siehe unten. */}
@@ -842,7 +842,7 @@ export default function Sidebar(props: Props) {
               </div>
             </div>
 
-            {/* Verwaltung. Nur für Administratoren sichtbar -- das räumt allein
+            {/* Verwaltung. Nur für Administratoren sichtbar, das räumt allein
                 die Oberfläche auf, das Backend prüft die Rolle bei jedem Aufruf
                 erneut. Das Protokoll ist zusätzlich Zusatzumfang: ein Eintrag,
                 der ohnehin abgewiesen würde, wird gar nicht erst angeboten.
@@ -949,7 +949,7 @@ function Klapptitel({
   zu: Set<string>;
   klappen: (marke: string) => void;
   anzahl?: number;
-  // Sinnbild vor dem Namen. Nur dort gesetzt, wo es etwas unterscheidet --
+  // Sinnbild vor dem Namen. Nur dort gesetzt, wo es etwas unterscheidet,
   // ein Symbol neben jeder Überschrift wäre Zierrat und keine Hilfe.
   symbol?: React.ReactNode;
   symbolTitel?: string;
@@ -957,7 +957,7 @@ function Klapptitel({
   // sie bleibt es reine Beschriftung.
   symbolAktion?: () => void;
   // Hebt das Sinnbild hervor, solange man auf der Ansicht steht, die es
-  // öffnet. Ohne das verlöre man beim Klick die Anzeige, wo man ist -- die
+  // öffnet. Ohne das verlöre man beim Klick die Anzeige, wo man ist, die
   // Zeile, die das sonst übernahm, gibt es nicht mehr.
   symbolAktiv?: boolean;
   children: React.ReactNode;
@@ -1006,7 +1006,7 @@ function Klapptitel({
 // real elements.
 //
 // Everything between the markers goes through React as a text node and is
-// therefore escaped, which is the whole reason this is safe -- the database
+// therefore escaped, which is the whole reason this is safe, the database
 // hands over raw page text, not escaped HTML.
 //
 // The one imperfection: a page that literally contains "<b>" gets that piece

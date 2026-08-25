@@ -97,7 +97,7 @@ type SearchHit struct {
 	// Ausschnitt carries <b> around the matched words. The rest is raw page
 	// text: ts_headline does not escape anything. The interface splits on the
 	// markers and renders the pieces as text nodes, which is what makes it
-	// safe -- see markiere() in the sidebar.
+	// safe, see markiere() in the sidebar.
 	Ausschnitt string `json:"ausschnitt"`
 	Eigen      bool   `json:"eigen"` // false means: reached through a share or as admin
 	// Quelle names the attachment a hit came from, empty when the page text

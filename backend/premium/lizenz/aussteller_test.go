@@ -128,7 +128,7 @@ func TestLaufzeit(t *testing.T) {
 	}
 }
 
-// Ein abgelaufener Schlüssel schaltet nichts frei -- sonst wäre die Frist eine
+// Ein abgelaufener Schlüssel schaltet nichts frei, sonst wäre die Frist eine
 // Behauptung ohne Folgen.
 func TestAbgelaufenerSchluesselGiltNicht(t *testing.T) {
 	oeff, priv := paar(t)
@@ -144,7 +144,7 @@ func TestAbgelaufenerSchluesselGiltNicht(t *testing.T) {
 	}
 }
 
-// Ein veränderter Schlüssel muss auffallen -- sonst könnte sich jeder die
+// Ein veränderter Schlüssel muss auffallen, sonst könnte sich jeder die
 // Stufe umschreiben.
 func TestVeraenderterSchluesselFaelltAuf(t *testing.T) {
 	oeff, priv := paar(t)
@@ -172,7 +172,7 @@ func TestVeraenderterSchluesselFaelltAuf(t *testing.T) {
 	}
 }
 
-// selbstGebaut unterschreibt eine Nutzlast unmittelbar -- für die Fälle, die
+// selbstGebaut unterschreibt eine Nutzlast unmittelbar, für die Fälle, die
 // der Aussteller zu Recht verweigert und die der Prüfer trotzdem abfangen muss.
 func selbstGebaut(t *testing.T, priv ed25519.PrivateKey, n Nutzlast) string {
 	t.Helper()

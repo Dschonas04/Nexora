@@ -12,7 +12,7 @@ export default function App() {
   // reloading the page would be bounced to the login screen for a moment.
   // Verzögert eingeblendet: die Sitzungsprüfung ist meist in wenigen
   // Millisekunden durch, und ein Wort, das nur aufblitzt, liest ohnehin
-  // niemand -- es fällt nur als Zucken auf.
+  // niemand, es fällt nur als Zucken auf.
   if (loading) return <div className="empty-state spaet">Lädt…</div>;
   return (
     <Routes>

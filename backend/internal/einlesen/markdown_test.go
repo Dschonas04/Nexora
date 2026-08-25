@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// alsJSON macht aus Blöcken das, was in der Datenbank landet -- die Tests
+// alsJSON macht aus Blöcken das, was in der Datenbank landet, die Tests
 // prüfen gegen diese Gestalt, weil genau sie der Editor zu sehen bekommt.
 func alsJSON(t *testing.T, b []Block) string {
 	t.Helper()
@@ -265,7 +265,7 @@ func TestZitatWirdKursiv(t *testing.T) {
 }
 
 func TestListeDirektNachAbsatz(t *testing.T) {
-	// Ohne Leerzeile dazwischen -- das kommt in echten Notizen dauernd vor.
+	// Ohne Leerzeile dazwischen, das kommt in echten Notizen dauernd vor.
 	_, _, b := Lies("Text darüber\n- Punkt\n")
 	if len(b) != 2 || b[1].Type != "bulletListItem" {
 		t.Fatalf("Liste im Absatz verschluckt: %s", alsJSON(t, b))

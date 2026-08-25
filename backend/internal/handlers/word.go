@@ -91,7 +91,7 @@ type wordSchreibenReq struct {
 
 // WordSchreiben legt die geänderten Blöcke wieder als .docx ab.
 func (s *Server) WordSchreiben(w http.ResponseWriter, r *http.Request) {
-	// Schreiben in eine Datei ist Bearbeiten eines Anhangs -- dieselbe Lizenz
+	// Schreiben in eine Datei ist Bearbeiten eines Anhangs, dieselbe Lizenz
 	// wie das Hochladen.
 	if !lizenz.Frei(lizenz.Anhaenge) {
 		writeErr(w, http.StatusPaymentRequired, "Anhänge gehören zum Zusatzumfang")
@@ -136,7 +136,7 @@ func (s *Server) WordSchreiben(w http.ResponseWriter, r *http.Request) {
 
 	// Unter derselben Kennung ablegen: der Anhang behält seine Adresse, alle
 	// Verweise darauf bleiben gültig. Erst schreiben, dann die Größe
-	// nachführen -- andersherum stünde in der Zeile eine Zahl, die nicht zur
+	// nachführen, andersherum stünde in der Zeile eine Zahl, die nicht zur
 	// Datei gehört.
 	if _, err := s.Ablage.Schreiben(r.Context(), attID, bytes.NewReader(roh),
 		int64(len(roh)), mime); err != nil {
@@ -146,7 +146,7 @@ func (s *Server) WordSchreiben(w http.ResponseWriter, r *http.Request) {
 	s.Pool.Exec(r.Context(), `UPDATE attachments SET size=$2 WHERE id=$1`, attID, len(roh))
 
 	// Der Volltext wird nachgezogen, sonst fände die Suche noch den alten
-	// Stand -- und das ist die Art Fehler, die man erst Wochen später bemerkt.
+	// Stand, und das ist die Art Fehler, die man erst Wochen später bemerkt.
 	if lizenz.Frei(lizenz.Anhangsuche) {
 		if txt := textAusAnhang(r.Context(), roh, mime, name); txt != "" {
 			s.Pool.Exec(r.Context(),

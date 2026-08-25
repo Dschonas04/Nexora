@@ -1,7 +1,7 @@
 # Beilage: eine Postgres, die zu Nexora gehört.
 #
 # Für alle, die keine eigene betreiben. Wer eine hat, lässt diese Datei weg und
-# setzt stattdessen DATABASE_URL in der .env -- Nexora legt sein Schema beim
+# setzt stattdessen DATABASE_URL in der .env, Nexora legt sein Schema beim
 # Start selbst an und braucht dafür nur ein Konto mit Rechten auf einer
 # leeren Datenbank.
 #

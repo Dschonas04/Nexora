@@ -45,7 +45,7 @@ Please include a description, steps to reproduce, and potential impact.
 > boot:
 >
 > ```
-> ACHTUNG: jwt_geheimnis steht auf der Vorgabe -- jede Sitzung ist fälschbar
+> ACHTUNG: jwt_geheimnis steht auf der Vorgabe, jede Sitzung ist fälschbar
 > ```
 
 ### Recommended

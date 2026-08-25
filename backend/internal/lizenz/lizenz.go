@@ -1,6 +1,6 @@
 // Package lizenz is the gate between the freely licensed core and the paid
 // extras. It lives on the Apache side on purpose and knows nothing about how a
-// key is verified -- it only asks whoever registered itself as the verifier.
+// key is verified, it only asks whoever registered itself as the verifier.
 //
 // Without a registered verifier every extra stays locked. That is what makes a
 // build without the premium directory possible: the core compiles and runs, the
@@ -23,7 +23,7 @@ const (
 	Freigeben Funktion = "freigeben" // sharing with accounts and public read-only links
 
 	// Business extras. Kept as separate names rather than one "enterprise"
-	// switch so a key can grant exactly what was paid for -- an audit trail
+	// switch so a key can grant exactly what was paid for, an audit trail
 	// without groups is a perfectly sensible purchase.
 	Pruefspur   Funktion = "pruefspur"   // audit trail of who did what
 	Gruppen     Funktion = "gruppen"     // groups, space permissions, space-manager role
@@ -43,7 +43,7 @@ var Alle = []Funktion{
 	Pruefspur, Gruppen, SSO, LDAP, Anhangsuche, Export, Vorlagen, Kommentare, Konflikte,
 }
 
-// Stufe ist ein Bündel von Funktionen -- das, was verkauft wird.
+// Stufe ist ein Bündel von Funktionen, das, was verkauft wird.
 //
 // Einzelne Funktionen bleiben trotzdem der Maßstab im Code: geprüft wird immer
 // gegen eine Funktion, nie gegen eine Stufe. Sonst müsste jede Abfrage wissen,
@@ -71,7 +71,7 @@ var stufenZusatz = map[Stufe][]Funktion{
 	StufeBusiness: {Gruppen, Pruefspur, SSO, LDAP},
 }
 
-// FunktionenDerStufe liefert alles, was eine Stufe enthält -- einschließlich
+// FunktionenDerStufe liefert alles, was eine Stufe enthält, einschließlich
 // dessen, was die kleineren schon enthielten.
 func FunktionenDerStufe(st Stufe) []Funktion {
 	var raus []Funktion
@@ -97,7 +97,7 @@ func StufeGueltig(st Stufe) bool {
 }
 
 // Aussteller signiert neue Schlüssel. Auch das implementiert das
-// premium-Paket -- der freie Kern kennt weder den privaten Schlüssel noch das
+// premium-Paket, der freie Kern kennt weder den privaten Schlüssel noch das
 // Verfahren und kann deshalb keine Schlüssel erzeugen, egal wie er aufgerufen
 // wird.
 type Aussteller interface {

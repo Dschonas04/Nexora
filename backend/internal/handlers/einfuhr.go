@@ -1,4 +1,4 @@
-// Importing Markdown -- a single file, or a whole archive with its structure.
+// Importing Markdown, a single file, or a whole archive with its structure.
 //
 // Export answers "what happens if we stop using this". Import answers the
 // question that comes first and is asked more often: what happens to the notes
@@ -8,7 +8,7 @@
 //
 // The archive keeps its shape. A folder becomes a page, the files inside it
 // become its subpages, and links between files are rewritten so they still
-// point somewhere after the move -- that is the part a copy-and-paste migration
+// point somewhere after the move, that is the part a copy-and-paste migration
 // never gets right.
 package handlers
 
@@ -33,7 +33,7 @@ import (
 )
 
 // einfuhrDatei ist eine Datei aus der Einfuhr, mit dem Pfad, unter dem sie im
-// Archiv stand -- der Pfad ist das, woran Verweise sie später wiederfinden.
+// Archiv stand, der Pfad ist das, woran Verweise sie später wiederfinden.
 type einfuhrDatei struct {
 	pfad   string
 	inhalt []byte
@@ -58,12 +58,12 @@ type einfuhrVorschau struct {
 	Baum      []einfuhrAst `json:"baum"`
 	Warnungen []string     `json:"warnungen"`
 	// Gesetzt, wenn die Einfuhr eine eigene Ablage anlegen wird. In der
-	// Vorschau steht hier nur der Name -- angelegt ist sie da noch nicht.
+	// Vorschau steht hier nur der Name, angelegt ist sie da noch nicht.
 	Ablage string `json:"ablage,omitempty"`
 }
 
 // einfuhrAst ist ein Knoten der Vorschau. Quelle steht daneben, weil ein Titel
-// allein nicht verrät, aus welcher Datei er stammt -- und genau das ist die
+// allein nicht verrät, aus welcher Datei er stammt, und genau das ist die
 // Frage, wenn eine Seite an einer unerwarteten Stelle auftaucht.
 type einfuhrAst struct {
 	Titel  string       `json:"titel"`
@@ -104,7 +104,7 @@ type einfuhrBericht struct {
 	Wurzeln   []string `json:"wurzeln"`
 	Warnungen []string `json:"warnungen"`
 	// Die angelegte Ablage, falls die Einfuhr eine mitgebracht hat. Die
-	// Oberfläche springt danach hinein -- eine Einfuhr, die man erst suchen
+	// Oberfläche springt danach hinein, eine Einfuhr, die man erst suchen
 	// muss, ist halb verloren.
 	Ablage *einfuhrAblage `json:"ablage,omitempty"`
 }
@@ -128,7 +128,7 @@ var indexNamen = []string{
 // Import nimmt Markdown entgegen: einzelne Dateien oder ein ZIP-Archiv.
 //
 // Der Ablauf hat zwei Durchgänge, und das ist kein Umweg. Erst entstehen alle
-// Seiten, dann werden die Verweise aufgelöst -- ein Verweis auf eine Datei, die
+// Seiten, dann werden die Verweise aufgelöst, ein Verweis auf eine Datei, die
 // später an die Reihe käme, hätte im ersten Durchgang kein Ziel. Wer in einem
 // Durchgang arbeitet, kann Querverweise nur nach vorn auflösen, und ein
 // Wiki verweist in beide Richtungen.
@@ -146,7 +146,7 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 	spaceID := strings.TrimSpace(r.FormValue("spaceId"))
 	// Eine ganze Ablage einführen: das Archiv bringt seine eigene mit, statt
 	// sich in eine vorhandene zu mischen. Genau der Weg zurück aus der
-	// Ausfuhr -- ein Space, den man exportiert hat, kommt so wieder herein,
+	// Ausfuhr, ein Space, den man exportiert hat, kommt so wieder herein,
 	// ohne dass man vorher von Hand eine Ablage anlegt.
 	neueAblage := strings.TrimSpace(r.FormValue("neueAblage"))
 	if neueAblage != "" {
@@ -228,13 +228,13 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Beim Einlesen einer ganzen Ablage fällt das eigene Inhaltsverzeichnis
-	// weg -- siehe istAusfuhrVerzeichnis.
+	// weg, siehe istAusfuhrVerzeichnis.
 	if neueAblage != "" {
 		behalten := mdDateien[:0]
 		for _, d := range mdDateien {
 			if strings.EqualFold(path.Base(d.pfad), "INHALT.md") && istAusfuhrVerzeichnis(d.inhalt) {
 				warnungen = append(warnungen,
-					"INHALT.md der Ausfuhr übergangen -- die Ablage selbst ist das Verzeichnis")
+					"INHALT.md der Ausfuhr übergangen. Die Ablage selbst ist das Verzeichnis.")
 				continue
 			}
 			behalten = append(behalten, d)
@@ -245,7 +245,7 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 	plan := planen(mdDateien)
 
 	// Vorschau: derselbe Plan, aber nichts wird angelegt. Wer zweihundert
-	// Dateien einführt, will vorher sehen, was daraus wird -- rückgängig
+	// Dateien einführt, will vorher sehen, was daraus wird, rückgängig
 	// machen hieße sonst, zweihundert Seiten einzeln in den Papierkorb zu
 	// schieben.
 	if r.FormValue("vorschau") != "" {
@@ -305,7 +305,7 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Was im Archiv lag und auf das keine Seite verweist, hängt an der Seite
-	// seines Verzeichnisses. Sonst verschwände es beim Import -- und niemand
+	// seines Verzeichnisses. Sonst verschwände es beim Import, und niemand
 	// würde bemerken, dass etwas fehlt.
 	anhaenge += s.beilagenNachtragen(r.Context(), uid, seiten, beilagen, benutzt, &warnungen)
 
@@ -339,7 +339,7 @@ func einfuhrName(dateien []einfuhrDatei) string {
 // archivLesen packt ein ZIP aus und trennt Markdown von allem anderen.
 //
 // Einträge mit ".." im Pfad werden verworfen. Sie könnten hier zwar nichts
-// anrichten -- geschrieben wird nichts auf die Platte, die Pfade dienen nur dem
+// anrichten, geschrieben wird nichts auf die Platte, die Pfade dienen nur dem
 // Wiederfinden von Verweisen --, aber ein Archiv, das so etwas enthält, hat es
 // nicht gut gemeint, und der Rest davon verdient dasselbe Misstrauen.
 func archivLesen(datei io.ReaderAt, groesse int64) ([]einfuhrDatei, map[string]einfuhrDatei, []string) {
@@ -403,7 +403,7 @@ var notionMuster = regexp.MustCompile(`^(.*[^ -])[ -]+([0-9a-f]{32})$`)
 
 // sauberterTitel macht aus einem Datei- oder Ordnernamen einen Titel.
 //
-// Notion-Ausfuhren tragen ihre innere Kennung im Namen -- "Wochenplan
+// Notion-Ausfuhren tragen ihre innere Kennung im Namen, "Wochenplan
 // 8f3a...c1" --, und wer das nicht abschneidet, bekommt hundert Seiten mit
 // Kauderwelsch im Titel. Am Pfad ändert das nichts: Verweise werden über den
 // Pfad aufgelöst, nicht über den Titel.
@@ -427,7 +427,7 @@ func istHTML(name string) bool {
 // jedem Archiv beilegt.
 //
 // Beim Einlesen einer ganzen Ablage ist es überflüssig: die Liste der Seiten
-// ist die Ablage selbst, und als Seite eingeführt stünde sie doppelt da --
+// ist die Ablage selbst, und als Seite eingeführt stünde sie doppelt da,
 // einmal als Verzeichnis, einmal als Wirklichkeit. Beim Einlesen in etwas
 // Vorhandenes bleibt es dagegen stehen; dort ist es der einzige Hinweis, was
 // zusammengehörte.
@@ -463,7 +463,7 @@ func istMarkdown(name string) bool {
 	return false
 }
 
-// planen baut den Seitenbaum aus den Pfaden im Archiv -- ohne etwas anzulegen.
+// planen baut den Seitenbaum aus den Pfaden im Archiv, ohne etwas anzulegen.
 //
 // Ein Verzeichnis wird zu einer Seite. Enthält es index.md (oder README.md,
 // oder INHALT.md, wie der eigene Export sie schreibt), ist dieses Dokument der
@@ -529,7 +529,7 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 		if v != "" {
 			// Obsidian legt die Notiz zum Ordner IN den Ordner, gleichnamig.
 			kandidaten = append(kandidaten, path.Join(v, path.Base(v)+".md"), path.Join(v, path.Base(v)+".html"))
-			// Notion legt sie DANEBEN -- gleicher Name wie der Ordner, eine
+			// Notion legt sie DANEBEN, gleicher Name wie der Ordner, eine
 			// Ebene höher. Beide Sitten sind verbreitet, und beide meinen
 			// dasselbe: dieser Text gehört zu diesem Ordner.
 			kandidaten = append(kandidaten, v+".md", v+".html")
@@ -706,12 +706,12 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 			return adresse
 		}
 		// Anhänge sind ein Zusatz. Sie über die Einfuhr doch anzulegen wäre
-		// ein Weg um die Schranke herum -- und einer, der ins Leere führt: die
+		// ein Weg um die Schranke herum, und einer, der ins Leere führt: die
 		// Datei ließe sich danach weder auflisten noch herunterladen.
 		if !lizenz.Frei(lizenz.Anhaenge) {
 			if !gemeldet["anhaenge"] {
 				gemeldet["anhaenge"] = true
-				*warnungen = append(*warnungen, "Anhänge sind ein Zusatz -- die Dateien aus dem Archiv wurden übergangen")
+				*warnungen = append(*warnungen, "Anhänge sind ein Zusatz. Die Dateien aus dem Archiv wurden übergangen.")
 			}
 			return ""
 		}
@@ -738,7 +738,7 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 			}
 			if ziel := seiteZu(t.Href); ziel != nil {
 				// Die Beschriftung geht dabei verloren, wenn sie vom Titel
-				// abweicht -- ein Wiki-Verweis trägt den Titel der Zielseite.
+				// abweicht, ein Wiki-Verweis trägt den Titel der Zielseite.
 				// Dafür überlebt der Verweis das Umbenennen von Dateien, das
 				// beim Import ohnehin stattfindet.
 				out = append(out, einlesen.Inline{
@@ -802,7 +802,7 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 // zielPfad macht aus einer Adresse im Dokument einen Pfad im Archiv.
 //
 // Adressen ins Netz und Ankersprünge haben kein Ziel im Archiv und liefern
-// leer. Der Rest wird entprozentet -- ein Verweis auf "mein%20bild.png" meint
+// leer. Der Rest wird entprozentet, ein Verweis auf "mein%20bild.png" meint
 // die Datei "mein bild.png", und ohne diesen Schritt fände er sie nie.
 func zielPfad(adresse, verzeichnis string) string {
 	if adresse == "" || strings.HasPrefix(adresse, "#") {
@@ -868,7 +868,7 @@ func (s *Server) inhaltSchreiben(ctx context.Context, sp *einfuhrSeite) error {
 }
 
 // tagsSetzen legt die Schlagworte aus dem Vorspann an und hängt sie an.
-// Schlagworte gehören dem Konto, nicht der Seite -- ein vorhandenes wird
+// Schlagworte gehören dem Konto, nicht der Seite, ein vorhandenes wird
 // wiederverwendet statt verdoppelt.
 func (s *Server) tagsSetzen(ctx context.Context, uid string, sp *einfuhrSeite) {
 	for _, name := range sp.kopf.Tags {
@@ -891,7 +891,7 @@ func (s *Server) tagsSetzen(ctx context.Context, uid string, sp *einfuhrSeite) {
 
 // beilagenNachtragen hängt an, worauf niemand verwiesen hat.
 //
-// Ein Archiv enthält oft Dateien, die in keinem Dokument vorkommen -- alte
+// Ein Archiv enthält oft Dateien, die in keinem Dokument vorkommen, alte
 // Fassungen, Bilder aus einem gelöschten Absatz, Anlagen. Sie beim Import
 // fallen zu lassen wäre stiller Verlust; sie landen an der Seite ihres
 // Verzeichnisses, wo sie auch im Archiv lagen.
@@ -948,7 +948,7 @@ func (s *Server) beilagenNachtragen(ctx context.Context, uid string, seiten []*e
 
 // anhangAnlegen speichert Bytes als Anhang einer Seite. Dieselbe Reihenfolge
 // wie beim Hochladen über den Browser: erst die Zeile, dann die Datei, und bei
-// einem Fehler die Zeile wieder weg -- ein Anhang, den man anklicken kann und
+// einem Fehler die Zeile wieder weg, ein Anhang, den man anklicken kann und
 // der ins Leere führt, ist schlimmer als keiner.
 func (s *Server) anhangAnlegen(ctx context.Context, seiteID, uid, dateiname string, inhalt []byte) (string, error) {
 	if dateiname == "" || dateiname == "." || dateiname == "/" {
@@ -977,7 +977,7 @@ func (s *Server) anhangAnlegen(ctx context.Context, seiteID, uid, dateiname stri
 
 // darfInSpaceSchreiben prüft das Recht, in einer Ablage neue Seiten anzulegen.
 // Dieselbe Stufenleiter wie überall: Eigentümer, Administrator, ein Recht
-// 'schreiben' oder 'verwalten' -- oder eine Ablage, die für alle offen steht.
+// 'schreiben' oder 'verwalten', oder eine Ablage, die für alle offen steht.
 func (s *Server) darfInSpaceSchreiben(ctx context.Context, uid, spaceID string) bool {
 	var erlaubt bool
 	err := s.Pool.QueryRow(ctx, `

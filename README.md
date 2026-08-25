@@ -243,8 +243,8 @@ install with the default secret should still run, it should just be impossible
 to miss that it did:
 
 ```
-ACHTUNG: jwt_geheimnis steht auf der Vorgabe -- jede Sitzung ist fälschbar
-ACHTUNG: LDAP ohne TLS -- Zugangsdaten gehen im Klartext über das Netz
+ACHTUNG: jwt_geheimnis steht auf der Vorgabe, jede Sitzung ist fälschbar
+ACHTUNG: LDAP ohne TLS, Zugangsdaten gehen im Klartext über das Netz
 ```
 
 ### Two things to know before the first start

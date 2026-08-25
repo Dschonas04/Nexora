@@ -1,4 +1,4 @@
-// Kein Testlauf im Bau eingerichtet -- diese Datei dient als ausführbare
+// Kein Testlauf im Bau eingerichtet, diese Datei dient als ausführbare
 // Beschreibung dessen, was die Rechnung leisten muss, und als Vorlage, sobald
 // ein Testlauf für das Frontend dazukommt.
 import { kontrast, ausHex, lesbarAuf, schriftAuf } from "./farbe";

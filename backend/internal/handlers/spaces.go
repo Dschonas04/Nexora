@@ -18,9 +18,9 @@ import (
 // hold a right on, and the public ones.
 func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
-	// Eigene Spaces, die mit einem Recht -- und die öffentlichen. Ohne den
+	// Eigene Spaces, die mit einem Recht, und die öffentlichen. Ohne den
 	// zweiten Teil erschienen die freigegebenen Seiten in der Leiste ohne den
-	// Space, zu dem sie gehören -- also lose, statt geordnet.
+	// Space, zu dem sie gehören, also lose, statt geordnet.
 	//
 	// Sortiert wird so, dass die öffentlichen Ablagen oben stehen: sie sind das
 	// Gemeinsame und damit meist das, was man sucht.
@@ -140,7 +140,7 @@ func (s *Server) DeleteSpace(w http.ResponseWriter, r *http.Request) {
 
 	// Eine Ablage zu löschen ist folgenreich: die Seiten darin verlieren ihre
 	// Zuordnung und die erteilten Rechte verschwinden mit. Bisher hinterließ
-	// das keine Spur -- hinterher war nicht mehr festzustellen, dass es die
+	// das keine Spur, hinterher war nicht mehr festzustellen, dass es die
 	// Ablage überhaupt gab.
 	s.spurAusRequest(r, AktSpaceGeloescht, "space", id, name, nil)
 
@@ -151,7 +151,7 @@ type spaceOeffentlichReq struct {
 	Oeffentlich string `json:"oeffentlich"` // "nein" | "lesen" | "schreiben"
 }
 
-// SetSpaceOeffentlich schaltet eine Ablage für die ganze Instanz frei -- oder
+// SetSpaceOeffentlich schaltet eine Ablage für die ganze Instanz frei, oder
 // nimmt das zurück.
 //
 // Gemeint ist ausdrücklich "offen für alle angemeldeten Konten dieser Instanz",

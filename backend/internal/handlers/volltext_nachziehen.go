@@ -8,7 +8,7 @@ import (
 
 // IndexNachziehen fills content_text for pages written before the search index
 // existed. Without it the full text search would silently return nothing for
-// every older page -- the worst kind of failure, because it looks like an empty
+// every older page, the worst kind of failure, because it looks like an empty
 // result rather than a broken index.
 //
 // It runs at startup and is cheap on a warm database: the WHERE clause matches

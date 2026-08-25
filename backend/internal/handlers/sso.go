@@ -1,6 +1,6 @@
 // Anmeldung über einen fremden Ausweis: OIDC und LDAP.
 //
-// Beide beantworten dieselbe Frage -- "wer ist das" -- auf verschiedenen Wegen,
+// Beide beantworten dieselbe Frage, "wer ist das", auf verschiedenen Wegen,
 // und beide enden an derselben Stelle: einem Konto in dieser Instanz und einer
 // Sitzung darauf. Was danach kommt, weiß nichts mehr von SSO.
 //
@@ -8,7 +8,7 @@
 // Kehrseite, die man kennen muss: wer im Verzeichnis eine Adresse ändern kann,
 // kann damit auf ein bestehendes Konto zeigen. Deshalb gilt die Verknüpfung nur
 // für Adressen, die der Anbieter als bestätigt meldet, und nur, wenn das Konto
-// nicht selbst ein Passwort trägt -- sonst wäre SSO ein Weg, die Passwortprüfung
+// nicht selbst ein Passwort trägt, sonst wäre SSO ein Weg, die Passwortprüfung
 // zu umgehen.
 package handlers
 
@@ -35,7 +35,7 @@ import (
 
 // SSOEinstellungen sind die Werte aus der Konfiguration, die hier gebraucht
 // werden. Der Server bekommt sie beim Start gereicht, statt config selbst zu
-// lesen -- so bleibt der Handler prüfbar.
+// lesen, so bleibt der Handler prüfbar.
 type SSOEinstellungen struct {
 	Konf config.Konfig
 	// OeffentlicheURL ist die Adresse, unter der die Instanz von außen zu
@@ -122,7 +122,7 @@ func (s *Server) OIDCStart(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.SSO.OeffentlicheURL == "" {
 		writeErr(w, http.StatusPreconditionFailed,
-			"oeffentliche_url ist nicht gesetzt -- ohne sie gibt es keine Rücksprungadresse")
+			"oeffentliche_url ist nicht gesetzt. Ohne sie gibt es keine Rücksprungadresse.")
 		return
 	}
 	_, oauthKonf, err := s.oidcAnbieter(r.Context())
@@ -232,7 +232,7 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 
 	ziel := mit.Ziel
 	// Nur Ziele innerhalb dieser Anwendung. Alles andere wäre eine offene
-	// Weiterleitung -- ein beliebter Baustein für Täuschungsseiten.
+	// Weiterleitung, ein beliebter Baustein für Täuschungsseiten.
 	//
 	// Geprüft wird auf beide Schrägstriche: "//fremd.example" ist eine Adresse
 	// mit dem Protokoll der aktuellen Seite, und "/\fremd.example" behandeln
@@ -254,7 +254,7 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 
 	if err == nil {
 		// Übernommen wird nur ein Konto, das AUSDRÜCKLICH über SSO entstanden
-		// ist. Jedes andere -- mit Passwort oder mit leerem Passwortfeld --
+		// ist. Jedes andere, mit Passwort oder mit leerem Passwortfeld,
 		// bleibt unangetastet.
 		//
 		// Die frühere Fassung ließ ein leeres Passwortfeld durchgehen. Das war
@@ -281,7 +281,7 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 	}
 
 	// Neues Konto. Der Passwort-Platzhalter beginnt mit "sso:" und ist kein
-	// gültiger bcrypt-Wert -- eine Anmeldung mit Passwort scheitert daran
+	// gültiger bcrypt-Wert, eine Anmeldung mit Passwort scheitert daran
 	// zuverlässig, ohne dass es dafür eine eigene Spalte braucht.
 	if name == "" {
 		name = strings.SplitN(email, "@", 2)[0]
@@ -290,7 +290,7 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 	if admin {
 		rolle = "admin"
 	}
-	// Das erste Konto einer leeren Instanz wird Administrator -- dieselbe Regel
+	// Das erste Konto einer leeren Instanz wird Administrator, dieselbe Regel
 	// wie bei der Registrierung mit Passwort.
 	var vorhanden int
 	s.Pool.QueryRow(ctx, `SELECT count(*) FROM users`).Scan(&vorhanden)

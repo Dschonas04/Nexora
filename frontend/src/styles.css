@@ -1,5 +1,5 @@
 /* Drei Grundtöne. Umgestellt wird über ein data-grundton am <html>, gesetzt
-   vom Design-Provider -- so wechselt die ganze Oberfläche in einem Zug, ohne
+   vom Design-Provider, so wechselt die ganze Oberfläche in einem Zug, ohne
    dass ein einzelnes Bauteil davon wissen muss.
 
    Der Vorgabewert ist "grau": reines Weiß auf einem großen Bildschirm ist
@@ -52,7 +52,7 @@
   --border: #3a3a37;
   --hover: #333330;
   /* Im Dunkeln sind die getönten Flächen dunkle Einfärbungen, nicht helle
-     Pastelltöne -- sonst leuchtet ein Fehlerkasten wie eine Lampe. */
+     Pastelltöne, sonst leuchtet ein Fehlerkasten wie eine Lampe. */
   --fehler-bg: rgba(207, 34, 46, 0.16);
   --fehler-rand: rgba(207, 34, 46, 0.45);
   --fehler-text: #f28b82;
@@ -1164,7 +1164,7 @@ a {
 
 /* Quickviewer: Blättern, Zähler, Fußzeile.
    Der Körper wird relativ positioniert, damit die Pfeile darin schweben statt
-   Platz wegzunehmen -- sonst schrumpft das Bild um deren Breite. */
+   Platz wegzunehmen, sonst schrumpft das Bild um deren Breite. */
 .qv-body {
   position: relative;
 }
@@ -1275,7 +1275,7 @@ a {
   vertical-align: top;
 }
 /* Löschungen, Rollenwechsel und Fehlanmeldungen sind das, wonach jemand in
-   einer Prüfspur zuerst sucht -- die bekommen eine Kante. */
+   einer Prüfspur zuerst sucht, die bekommen eine Kante. */
 .pruefspur-tabelle tr.auffaellig td:first-child {
   box-shadow: inset 3px 0 0 var(--muted);
 }
@@ -1291,7 +1291,7 @@ a {
 }
 
 /* Konflikthinweis. Er sitzt bewusst über dem Text und nicht als flüchtige
-   Meldung am Rand -- solange er steht, speichert der Editor nicht mehr. */
+   Meldung am Rand, solange er steht, speichert der Editor nicht mehr. */
 .konflikt-banner {
   position: sticky;
   top: 0;
@@ -1351,7 +1351,7 @@ a {
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
 }
-/* Antworten rücken einmal ein und nie weiter -- tiefer wird ein Faden
+/* Antworten rücken einmal ein und nie weiter, tiefer wird ein Faden
    unlesbar, und das Backend flacht ohnehin ab. */
 .kommentar.antwort {
   margin-left: 24px;
@@ -1563,7 +1563,7 @@ a {
 }
 /* Freigeschaltete Funktionen bekommen eine deutlich flachere Ecke als die
    runden Marken sonst. Eine Pille sagt "Etikett", ein fast eckiges Feld sagt
-   "Zustand" -- und ein Zustand ist es hier: an oder aus. */
+   "Zustand", und ein Zustand ist es hier: an oder aus. */
 .pill.frei {
   background: rgba(46, 160, 67, 0.14);
   border-color: rgba(46, 160, 67, 0.45);
@@ -1579,7 +1579,7 @@ a {
 
 /* Bewusst neutral gehalten statt gelb: der Kasten steht dauerhaft auf der
    Seite, solange etwas zu bemängeln ist. Eine Signalfarbe, die nie weggeht,
-   wird nach zwei Tagen überlesen -- ein ruhiger Grund mit klarer Überschrift
+   wird nach zwei Tagen überlesen, ein ruhiger Grund mit klarer Überschrift
    nicht. */
 .warnkasten {
   border: 1px solid var(--border);
@@ -1600,7 +1600,7 @@ a {
   margin: 10px 0;
 }
 
-/* Flächen heben sich vom Grundton ab -- im gegrauten und im dunklen Ton macht
+/* Flächen heben sich vom Grundton ab, im gegrauten und im dunklen Ton macht
    das den Unterschied zwischen "Kasten" und "irgendwo Text". */
 .einstellung,
 .kachel,
@@ -1630,7 +1630,7 @@ a {
   border-color: var(--muted);
 }
 /* Die getroffene Wahl wird durch einen kräftigeren Rahmen kenntlich, nicht
-   durch einen farbigen Ring -- die Kachel zeigt ja bereits einen Farbton, und
+   durch einen farbigen Ring, die Kachel zeigt ja bereits einen Farbton, und
    zwei Farben nebeneinander sagen weniger als eine. */
 .tonkachel.gewaehlt {
   border-color: var(--text);
@@ -1650,7 +1650,7 @@ a {
 }
 /* Die Probe zeigt den Ton, statt ihn zu beschreiben: zwei Streifen für Grund
    und Fläche, damit auch der Unterschied zwischen Weiß und Gegraut sichtbar
-   wird -- der ist in Worten kaum zu fassen. */
+   wird, der ist in Worten kaum zu fassen. */
 .tonprobe {
   display: block;
   height: 34px;
@@ -1738,7 +1738,7 @@ a {
   font-variant-numeric: tabular-nums;
 }
 /* Ein Schlagwort ohne Seiten ist meist ein Überbleibsel. Es wird nicht
-   versteckt -- sonst könnte man es nie loswerden -- aber es tritt zurück. */
+   versteckt, sonst könnte man es nie loswerden, aber es tritt zurück. */
 .tag-anzahl.leer {
   opacity: 0.45;
 }
@@ -2016,7 +2016,7 @@ a {
 
 /* Der Pfeil trägt keine eigene Fläche und keinen Rahmen: er soll Teil der
    Überschrift sein, nicht ein Knopf davor. Die Breite ist fest, damit die
-   Beschriftungen aller Abschnitte auf derselben Kante beginnen -- ein Pfeil,
+   Beschriftungen aller Abschnitte auf derselben Kante beginnen, ein Pfeil,
    der zwischen ▸ und ▾ die Zeile verschiebt, lässt die ganze Leiste zappeln. */
 .klapp-btn {
   border: none;
@@ -2034,7 +2034,7 @@ a {
   color: var(--text);
 }
 
-/* Der Name klappt mit. mr: auto schiebt alles Weitere -- Zahl, Knöpfe -- nach
+/* Der Name klappt mit. mr: auto schiebt alles Weitere, Zahl, Knöpfe, nach
    rechts, wie es die Überschrift mit space-between ohnehin vorsieht. */
 .klapp-name {
   cursor: pointer;
@@ -2114,7 +2114,7 @@ a {
 }
 /* Der Schleier liegt über der ganzen Seite, nimmt aber keine Zeigerereignisse
    an: sonst würde er selbst das Ziel des Wurfs und dragleave feuerte in dem
-   Moment, in dem er erscheint -- die Hervorhebung ginge sofort wieder aus. */
+   Moment, in dem er erscheint, die Hervorhebung ginge sofort wieder aus. */
 .seiten-abwurf-schleier {
   position: absolute;
   inset: 0;
@@ -2131,7 +2131,7 @@ a {
   border-radius: var(--radius);
 }
 
-/* Fehler beim Hochladen. Ruhig gesetzt, aber nicht zu übersehen -- vorher
+/* Fehler beim Hochladen. Ruhig gesetzt, aber nicht zu übersehen, vorher
    scheiterte ein Upload lautlos und die Datei fehlte einfach. */
 .anhang-fehler {
   display: flex;
@@ -2151,7 +2151,7 @@ a {
 }
 
 /* Menü hinter einem Knopf (Export). Wie das Vorlagen-Menü, nur an anderer
-   Stelle -- die Liste selbst teilt sich die Gestaltung mit jenem. */
+   Stelle, die Liste selbst teilt sich die Gestaltung mit jenem. */
 .exportmenue {
   position: relative;
   display: inline-flex;
@@ -2319,7 +2319,7 @@ a {
   font-size: 12px;
 }
 /* Ein gesetzter Filter muss auch dann sichtbar sein, wenn die Zeile
-   eingeklappt ist -- sonst sucht man in einer Ecke und hält das Ergebnis für
+   eingeklappt ist, sonst sucht man in einer Ecke und hält das Ergebnis für
    den ganzen Bestand. */
 .search-box .icon-btn.aktiv {
   color: var(--accent);
@@ -2445,12 +2445,12 @@ a {
   animation: geruest-ein 0.25s ease 0.15s forwards;
 }
 
-/* [[Verweise]] im Text. Der Text bleibt, wie er ist -- ausgezeichnet wird nur,
+/* [[Verweise]] im Text. Der Text bleibt, wie er ist, ausgezeichnet wird nur,
    was man sieht: der Titel als Verweis, die Klammern zurückgenommen.
 
    Ein Titel, den es nicht gibt, wird nicht versteckt, sondern blass und
    gestrichelt gezeigt. Ein Verweis, der ins Leere geht, ist eine Information,
-   kein Fehler -- oft ist es eine Seite, die noch geschrieben werden will. */
+   kein Fehler, oft ist es eine Seite, die noch geschrieben werden will. */
 .has-wikilinks .verweis {
   color: var(--accent-lesbar);
   cursor: pointer;
@@ -2485,7 +2485,7 @@ a {
 }
 
 /* Als Schaltfläche: dieselbe Größe wie zuvor, nur mit einer Fläche, die auf
-   Zeigen anspringt -- sonst sieht man dem Zahnrad nicht an, dass es mehr ist
+   Zeigen anspringt, sonst sieht man dem Zahnrad nicht an, dass es mehr ist
    als Beschriftung. */
 .klapp-symbol-btn {
   border: 0;
@@ -2503,7 +2503,7 @@ a {
   color: var(--text);
 }
 
-/* Solange die Einstellungen offen sind, bleibt das Zahnrad hervorgehoben --
+/* Solange die Einstellungen offen sind, bleibt das Zahnrad hervorgehoben,
    sonst sähe man der Leiste nicht mehr an, wo man steht. */
 .klapp-symbol-btn.aktiv {
   background: var(--hover);
@@ -2567,7 +2567,7 @@ a {
 }
 
 /* Der Knopf, der weitermacht. Betont, weil er die Antwort ist, die man in den
-   meisten Fällen sucht -- aber nur, solange nichts verloren geht. */
+   meisten Fällen sucht, aber nur, solange nichts verloren geht. */
 .rueckfrage .btn.betont {
   background: var(--accent);
   border-color: var(--accent);
@@ -2575,7 +2575,7 @@ a {
 }
 
 /* Geht etwas verloren, ist Rot ehrlicher als Blau. Die Fläche bleibt dezent,
-   die Schrift trägt die Warnung -- ein knallroter Klotz drängt zum Klicken,
+   die Schrift trägt die Warnung, ein knallroter Klotz drängt zum Klicken,
    und genau das soll er hier nicht. */
 .rueckfrage .btn.warnend {
   background: var(--fehler-bg);
@@ -2630,7 +2630,7 @@ a {
   line-height: 1.5;
 }
 
-/* Fortschritt beim Hochladen. Der Balken zeigt, was gesendet ist -- bei
+/* Fortschritt beim Hochladen. Der Balken zeigt, was gesendet ist, bei
    hundert Prozent liegt die Datei beim Server und wird dort noch abgelegt,
    deshalb bleibt er stehen, bis die Antwort da ist. */
 .hochlauf {
@@ -2732,12 +2732,87 @@ a {
   line-height: 1.5;
 }
 
-/* Übersicht der Dienste. Die erste Spalte trägt Namen und Rolle, deshalb darf
-   sie breiter sein als der Rest. */
-.verbund-tabelle td:first-child {
-  min-width: 180px;
+/* Die Dienste des Verbunds als Karten statt als Tabelle.
+   Eine Tabelle zwingt jede Zeile in dieselben vier Spalten, obwohl die Angaben
+   ungleich lang sind: die Datenbank nennt ihre Verbindungen, der Speicher seine
+   Belegung, und mancher Dienst hat gar keinen Hinweis. Als Karte darf jeder so
+   viel Platz nehmen, wie er braucht. */
+.verbund {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
 }
 
-.verbund-tabelle td {
-  vertical-align: top;
+.verbund-karte {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  background: var(--flaeche);
+  /* Der Streifen links trägt den Zustand. Farbe allein wäre für die Hälfte der
+     Leute keine Auskunft, deshalb steht er zusätzlich als Wort daneben. */
+  border-left: 3px solid var(--border);
+}
+
+.verbund-karte.laeuft {
+  border-left-color: var(--erfolg-text);
+}
+
+.verbund-karte.fehlt {
+  border-left-color: var(--fehler-text);
+}
+
+.verbund-kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.verbund-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.verbund-zustand {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.verbund-karte.laeuft .verbund-zustand {
+  color: var(--erfolg-text);
+}
+
+.verbund-karte.fehlt .verbund-zustand {
+  color: var(--fehler-text);
+}
+
+.verbund-rolle {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.verbund-adresse {
+  margin-top: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.verbund-werte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.verbund-hinweis {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
 }

@@ -30,7 +30,7 @@ func CheckPassword(hash, pw string) bool {
 type Claims struct {
 	UserID string `json:"uid"`
 	// SitzungID verweist auf die Zeile in der Tabelle sitzungen. Ohne sie wäre
-	// ein Token bis zum Ablauf gültig, egal was danach passiert -- Abmelden,
+	// ein Token bis zum Ablauf gültig, egal was danach passiert, Abmelden,
 	// Passwortwechsel, ein verlorenes Gerät. Mit ihr entscheidet die Datenbank
 	// bei jeder Anfrage mit.
 	SitzungID string `json:"sid,omitempty"`
@@ -39,7 +39,7 @@ type Claims struct {
 
 // GenerateToken signs a session token for userID that expires after ttl.
 //
-// sitzungID darf leer sein -- dann ist das Token wie früher rein rechnerisch
+// sitzungID darf leer sein, dann ist das Token wie früher rein rechnerisch
 // gültig. Genutzt wird das nirgends mehr; die Möglichkeit bleibt, damit ein
 // altes Token aus einer Sitzung vor dieser Änderung nicht schlagartig ungültig
 // wird.

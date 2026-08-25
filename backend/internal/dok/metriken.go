@@ -1,13 +1,13 @@
 // Zeichenbreiten der PDF-Grundschriften, in Tausendstel der Schriftgröße.
 //
 // Ohne sie kann kein Umbruch berechnet werden: eine Proportionalschrift hat für
-// jedes Zeichen eine andere Breite, und ohne Tabelle bliebe nur zu raten -- mit
+// jedes Zeichen eine andere Breite, und ohne Tabelle bliebe nur zu raten, mit
 // dem Ergebnis, dass Zeilen über den Rand hinauslaufen oder viel zu früh
 // umbrechen.
 //
 // Die Zahlen stammen aus den Metriken der URW-Schriften (Nimbus Sans und Nimbus
 // Mono), die zu Helvetica und Courier maßgleich sind. Der Index ist der
-// Zeichencode nach WinAnsiEncoding -- dieselbe Kodierung, die den Schriften im
+// Zeichencode nach WinAnsiEncoding, dieselbe Kodierung, die den Schriften im
 // PDF mitgegeben wird, damit Umlaute ankommen.
 //
 // Erzeugt aus den AFM-Dateien; von Hand geändert wird hier nichts.

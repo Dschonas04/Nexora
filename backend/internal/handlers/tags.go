@@ -23,7 +23,7 @@ import (
 func (s *Server) ListTags(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	// Die Anzahl kommt mit. Ohne sie ist ein Schlagwort in der Seitenleiste
-	// nur ein Wort mit einem Punkt davor -- erst die Zahl sagt, ob dahinter
+	// nur ein Wort mit einem Punkt davor, erst die Zahl sagt, ob dahinter
 	// etwas steckt, und macht ein verwaistes Schlagwort sichtbar.
 	rows, err := s.Pool.Query(r.Context(),
 		`SELECT t.id, t.name, t.color,
@@ -50,7 +50,7 @@ func (s *Server) ListTags(w http.ResponseWriter, r *http.Request) {
 //
 // Schlagworte gehören einem Konto, die Seiten dahinter nicht zwangsläufig: man
 // kann eine geteilte Seite mit einem eigenen Schlagwort versehen. Gefiltert
-// wird deshalb nach derselben Regel wie überall -- Eigentümer, Admin oder
+// wird deshalb nach derselben Regel wie überall, Eigentümer, Admin oder
 // ausdrückliche Freigabe.
 func (s *Server) SeitenZuTag(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
@@ -213,7 +213,7 @@ func (s *Server) ListFavorites(w http.ResponseWriter, r *http.Request) {
 // Two things it gets right that the previous ILIKE version did not.
 //
 // First, access: the result set is built with the SAME rule pagePerm applies to
-// a single page -- owner, admin, or an explicit share. A search that reached
+// a single page, owner, admin, or an explicit share. A search that reached
 // further than the page itself would be a leak, and one that reached less would
 // hide a page the user can open by link.
 //
@@ -287,7 +287,7 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	// escapes it before rendering, so this is data, never markup.
 	// Zwei Quellen, ein Ergebnis: die Seite selbst und ihre Anhänge.
 	//
-	// Ein Anhangtreffer erscheint als Treffer der Seite, an der er hängt --
+	// Ein Anhangtreffer erscheint als Treffer der Seite, an der er hängt,
 	// alles andere wäre für den Suchenden eine tote Zeile, denn eine Datei ohne
 	// ihre Seite ist kein Ort, an den man gehen kann. Woher der Treffer kam,
 	// steht daneben.
@@ -335,7 +335,7 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 		LIMIT 50`
 
 	// Der Adminstatus wird einmal aufgelöst und als Parameter übergeben, statt
-	// die users-Tabelle in die Suchabfrage zu ziehen -- das hielte den
+	// die users-Tabelle in die Suchabfrage zu ziehen, das hielte den
 	// Abfrageplan sonst unnötig davon ab, den GIN-Index zu benutzen.
 	args[2] = s.isAdmin(r.Context(), uid)
 	args[3] = lizenz.Frei(lizenz.Gruppen)

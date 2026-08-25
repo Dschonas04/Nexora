@@ -1,5 +1,5 @@
 // File attachments. Metadata lives in the database, the bytes live in the
-// configured Ablage -- local disk or an S3 bucket -- as one object per
+// configured Ablage, local disk or an S3 bucket, as one object per
 // attachment id. That split means a backup has to cover both, otherwise rows
 // point at objects that are gone.
 package handlers
@@ -20,7 +20,7 @@ import (
 )
 
 // Vorgabe, falls die Einstellung fehlt. Die tatsächliche Grenze kommt aus
-// MaxAnhangBytes und lässt sich im Betrieb ändern -- der Wert muss aber zur
+// MaxAnhangBytes und lässt sich im Betrieb ändern, der Wert muss aber zur
 // client_max_body_size im nginx davor passen, sonst bricht der schon vorher ab.
 const maxUploadBytes = 25 << 20
 
@@ -93,12 +93,12 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ab hier entscheidet die Ablage, wo die Bytes landen -- Platte oder
+	// Ab hier entscheidet die Ablage, wo die Bytes landen, Platte oder
 	// Objektspeicher. Der Handler sieht keinen Unterschied.
 	//
 	// Der Mitschnitt hängt sich in den Strom: die Datei läuft ohnehin durch,
 	// und sie zum Auslesen ein zweites Mal zu holen wäre eine vermeidbare
-	// Runde -- beim Objektspeicher sogar übers Netz.
+	// Runde, beim Objektspeicher sogar übers Netz.
 	strom := &mitschnitt{quelle: file}
 	written, err := s.Ablage.Schreiben(r.Context(), attID, strom, header.Size, mime)
 	if err != nil {
@@ -133,7 +133,7 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 
 // typAusAngabeUndName bestimmt den Dateityp.
 //
-// Was der Browser beim Hochladen mitschickt, ist eine Behauptung -- und bei
+// Was der Browser beim Hochladen mitschickt, ist eine Behauptung, und bei
 // einer ihm unbekannten Endung schickt er gar nichts oder
 // "application/octet-stream". Der Typ entscheidet aber darüber, ob eine Datei
 // später eine Vorschau bekommt und ob ihr Text in die Suche wandert. Eine
@@ -156,7 +156,7 @@ func typAusAngabeUndName(angabe, dateiname string) string {
 	if endung != "" {
 		// Die eigene Liste zuerst. mime.TypeByExtension liest die
 		// Typtabellen des Systems mit, und die fallen von Rechner zu
-		// Rechner verschieden aus -- dieselbe Datei bekäme auf dem
+		// Rechner verschieden aus, dieselbe Datei bekäme auf dem
 		// Arbeitsplatz und im Container zwei verschiedene Typen. Für die
 		// Endungen, an denen hier etwas hängt, wird der Typ deshalb fest
 		// vergeben.

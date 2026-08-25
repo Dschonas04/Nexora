@@ -4,7 +4,7 @@
 // Warum eine eigene Zwischenform und nicht der Umweg über Markdown: Markdown
 // kennt keine Seitenränder, keine Schriftgrößen und keinen Seitenumbruch. Wer
 // ein PDF setzen will, braucht genau das. Die Umwandlung nach Markdown bleibt
-// deshalb, wo sie ist -- sie beantwortet eine andere Frage.
+// deshalb, wo sie ist, sie beantwortet eine andere Frage.
 //
 // Gelesen wird dasselbe Dokument des Editors. Es ist derselbe JSON-Baum, aber
 // mit einem anderen Ziel: hier zählt, was ein Textstück AUSSIEHT (fett, fest,
@@ -29,7 +29,7 @@ const (
 	ArtCode
 	ArtZitat
 	ArtTabelle
-	ArtDatei // Bild, Ton, Video oder Anhang -- als Verweiszeile
+	ArtDatei // Bild, Ton, Video oder Anhang, als Verweiszeile
 	ArtTrenner
 )
 
@@ -135,7 +135,7 @@ func lies(knoten []knoten, tiefe int) []Absatz {
 			a.Art = ArtCode
 			a.Sprache, _ = k.Props["language"].(string)
 			// Tabulatoren werden zu Leerzeichen: die Grundschriften eines PDF
-			// kennen kein Tabulatorzeichen, es würde ersatzlos verschwinden --
+			// kennen kein Tabulatorzeichen, es würde ersatzlos verschwinden,
 			// und ausgerechnet im Code trägt die Einrückung Bedeutung.
 			a.Zeilen = strings.Split(strings.ReplaceAll(rohtext(k.Content), "\t", "    "), "\n")
 			nummer = 0
@@ -204,7 +204,7 @@ func stuecke(roh json.RawMessage) []Stueck {
 	}
 	var teile []stueckJSON
 	if err := json.Unmarshal(roh, &teile); err != nil {
-		// Einzelne Zeichenkette, oder ein Objekt mit content -- so kommen die
+		// Einzelne Zeichenkette, oder ein Objekt mit content, so kommen die
 		// Zellen einer Tabelle.
 		var s string
 		if json.Unmarshal(roh, &s) == nil {

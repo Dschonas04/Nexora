@@ -1,7 +1,7 @@
 # Nexora selbst: Backend und Oberfläche.
 #
 # Datenbank und Objektspeicher stehen absichtlich NICHT hier. Beides sind
-# Dienste, die man im Bestand oft schon hat -- eine gepflegte Postgres, ein
+# Dienste, die man im Bestand oft schon hat, eine gepflegte Postgres, ein
 # MinIO für alles im Haus. Sie fest an Nexora zu ketten hieße, sie doppelt zu
 # betreiben oder Nexora nicht nehmen zu können.
 #
@@ -12,7 +12,7 @@
 #                    -f docker-compose.minio.yml up -d
 #
 # Damit man das nicht bei jedem Aufruf tippt, trägt man dieselbe Liste einmal
-# als COMPOSE_FILE in die .env ein -- siehe .env.example.
+# als COMPOSE_FILE in die .env ein, siehe .env.example.
 #
 services:
   backend:
@@ -29,7 +29,7 @@ services:
       # läuft mit dem freien Umfang, gesperrte Aufrufe antworten mit 402.
       NEXORA_LIZENZ: ${NEXORA_LIZENZ:-}
       # Objektspeicher. Leer lassen heißt: Anhänge bleiben auf der Platte.
-      # Der Endpunkt muss aus Sicht DIESES Containers erreichbar sein -- läuft
+      # Der Endpunkt muss aus Sicht DIESES Containers erreichbar sein, läuft
       # MinIO in einem anderen Compose-Verbund, ist das die Adresse des Wirts
       # mit dem veröffentlichten Port, nicht der Containername.
       NEXORA_S3_AKTIV: ${NEXORA_S3_AKTIV:-}
@@ -49,14 +49,14 @@ services:
       #
       # Grund: sie enthaelt Zugangsdaten und wird auf der Wartungsseite
       # bearbeitet. Ein verfolgter Stand wuerde bei jedem Ausrollen darueber
-      # hinweggeschrieben -- und weil eine Einbindung am Inode haengt, sahen
+      # hinweggeschrieben, und weil eine Einbindung am Inode haengt, sahen
       # Wirt und Container danach zwei verschiedene Dateien.
       #
-      # Fehlt sie, startet Nexora trotzdem -- dann gelten Vorgaben und die
+      # Fehlt sie, startet Nexora trotzdem, dann gelten Vorgaben und die
       # Umgebungsvariablen oben.
       #
       # Beschreibbar eingehängt, damit die Wartungsseite die Datei ändern kann.
-      # Damit das wirkt, muss die Datei auch dem Dienst gehören -- er läuft im
+      # Damit das wirkt, muss die Datei auch dem Dienst gehören, er läuft im
       # Container als uid/gid 10001:
       #
       #     sudo chgrp 10001 config.conf && sudo chmod 660 config.conf
@@ -72,7 +72,7 @@ services:
       - "${PORT:-3000}:80"
       # Derselbe Dienst verschlüsselt. Das Zertifikat stellt der Container beim
       # ersten Start selbst aus und legt es in den Datenträger, damit es einen
-      # Neubau überlebt -- ein Zertifikat, das sich bei jedem Ausrollen ändert,
+      # Neubau überlebt, ein Zertifikat, das sich bei jedem Ausrollen ändert,
       # erzeugt jedes Mal eine neue Warnung.
       - "${PORT_TLS:-3443}:443"
     environment:

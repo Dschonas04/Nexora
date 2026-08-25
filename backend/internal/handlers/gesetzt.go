@@ -1,6 +1,6 @@
 // Export als gesetztes Dokument: PDF und Word.
 //
-// Markdown bleibt frei -- den eigenen Bestand aus dem System zu bekommen darf
+// Markdown bleibt frei, den eigenen Bestand aus dem System zu bekommen darf
 // nie hinter einer Lizenz liegen, das ist der Kern des Versprechens, das eine
 // BSL macht. Gesetzte Dokumente sind etwas anderes: sie sind kein Ausweg,
 // sondern eine Darstellung, und die gehört zum Zusatzumfang.
