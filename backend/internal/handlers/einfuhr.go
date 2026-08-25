@@ -32,15 +32,15 @@ import (
 	"nexora/internal/middleware"
 )
 
-// einfuhrDatei ist eine Datei aus der Einfuhr, mit dem Pfad, unter dem sie im
-// Archiv stand, der Pfad ist das, woran Verweise sie später wiederfinden.
+// einfuhrDatei is one file from the import, together with the path it had
+// inside the archive. That path is what links later find it by.
 type einfuhrDatei struct {
 	pfad   string
 	inhalt []byte
 }
 
-// einfuhrSeite ist eine Seite, während sie entsteht: erst angelegt, dann mit
-// aufgelösten Verweisen gefüllt.
+// einfuhrSeite is a page while it comes into being: created first, then filled
+// with content once every id is known.
 type einfuhrSeite struct {
 	id      string
 	titel   string
@@ -57,22 +57,22 @@ type einfuhrVorschau struct {
 	Beilagen  int          `json:"beilagen"`
 	Baum      []einfuhrAst `json:"baum"`
 	Warnungen []string     `json:"warnungen"`
-	// Gesetzt, wenn die Einfuhr eine eigene Ablage anlegen wird. In der
-	// Vorschau steht hier nur der Name, angelegt ist sie da noch nicht.
+	// Set when the import will create a space of its own. In the preview this
+	// only carries the name; nothing has been created at that point.
 	Ablage string `json:"ablage,omitempty"`
 }
 
-// einfuhrAst ist ein Knoten der Vorschau. Quelle steht daneben, weil ein Titel
-// allein nicht verrät, aus welcher Datei er stammt, und genau das ist die
-// Frage, wenn eine Seite an einer unerwarteten Stelle auftaucht.
+// einfuhrAst is one node of the preview. The source file stands next to the
+// title because a title alone does not reveal which file it came from, and that
+// is exactly the question when a page turns up somewhere unexpected.
 type einfuhrAst struct {
 	Titel  string       `json:"titel"`
 	Quelle string       `json:"quelle"`
 	Kinder []einfuhrAst `json:"kinder,omitempty"`
 }
 
-// baumAusPlan formt die flache Planliste in die Gestalt, die die Vorschau
-// anzeigt.
+// baumAusPlan turns the flat plan into the shape the preview expects: a tree
+// with children, not a list with paths.
 func baumAusPlan(plan []*einfuhrSeite) []einfuhrAst {
 	kinder := map[*einfuhrSeite][]*einfuhrSeite{}
 	var oben []*einfuhrSeite
@@ -103,9 +103,9 @@ type einfuhrBericht struct {
 	Anhaenge  int      `json:"anhaenge"`
 	Wurzeln   []string `json:"wurzeln"`
 	Warnungen []string `json:"warnungen"`
-	// Die angelegte Ablage, falls die Einfuhr eine mitgebracht hat. Die
-	// Oberfläche springt danach hinein, eine Einfuhr, die man erst suchen
-	// muss, ist halb verloren.
+	// The space that was created, if the import brought one along. The
+	// interface jumps into it afterwards: an import you have to go looking for
+	// is half lost.
 	Ablage *einfuhrAblage `json:"ablage,omitempty"`
 }
 
@@ -114,24 +114,23 @@ type einfuhrAblage struct {
 	Name string `json:"name"`
 }
 
-// Namen, unter denen ein Verzeichnis seine eigene Seite ablegt. Der Reihe nach
-// probiert: so wird aus einem Ordner mit index.md eine Seite mit Inhalt statt
-// einer leeren Hülle mit einer Unterseite namens "index".
+// The names under which a directory keeps its own page. Tried in order, so a
+// folder containing index.md becomes a page with content rather than an empty
+// shell with a subpage called "index".
 var indexNamen = []string{
 	"index.md", "readme.md", "inhalt.md", "index.markdown",
-	// Dasselbe für HTML: eine Confluence-Ausfuhr legt ihr Deckblatt als
-	// index.html ab, und ohne diese Zeilen hinge es als gewöhnliche Seite
-	// neben dem Ordner statt darüber.
+	// The same for HTML: a Confluence export keeps its cover page as
+	// index.html, and without these lines it would hang beside the folder as an
+	// ordinary page instead of above it.
 	"index.html", "index.htm", "readme.html",
 }
 
-// Import nimmt Markdown entgegen: einzelne Dateien oder ein ZIP-Archiv.
+// Import accepts Markdown: single files or a ZIP archive.
 //
-// Der Ablauf hat zwei Durchgänge, und das ist kein Umweg. Erst entstehen alle
-// Seiten, dann werden die Verweise aufgelöst, ein Verweis auf eine Datei, die
-// später an die Reihe käme, hätte im ersten Durchgang kein Ziel. Wer in einem
-// Durchgang arbeitet, kann Querverweise nur nach vorn auflösen, und ein
-// Wiki verweist in beide Richtungen.
+// The process has two passes, and that is not a detour. First every page is
+// created, then the links are resolved: a link to a file that would only come
+// up later would have no target in the first pass. Working in a single pass can
+// resolve cross references forwards only, and a wiki links in both directions.
 func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 
@@ -144,10 +143,9 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 
 	elternID := strings.TrimSpace(r.FormValue("parentId"))
 	spaceID := strings.TrimSpace(r.FormValue("spaceId"))
-	// Eine ganze Ablage einführen: das Archiv bringt seine eigene mit, statt
-	// sich in eine vorhandene zu mischen. Genau der Weg zurück aus der
-	// Ausfuhr, ein Space, den man exportiert hat, kommt so wieder herein,
-	// ohne dass man vorher von Hand eine Ablage anlegt.
+	// Importing a whole space: the archive brings its own instead of mixing into
+	// an existing one. This is the way back from an export, so a space that was
+	// exported comes back in without creating a space by hand first.
 	neueAblage := strings.TrimSpace(r.FormValue("neueAblage"))
 	if neueAblage != "" {
 		if elternID != "" || spaceID != "" {
@@ -161,9 +159,9 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Wer hierhin schreiben darf, entscheidet dieselbe Regel wie beim
-	// Anlegen einer einzelnen Seite. Eine Einfuhr ist nichts anderes als
-	// viele Seiten auf einmal, und sie darf kein Schlupfloch daneben sein.
+	// Who may write here is decided by the same rule as creating a single page.
+	// An import is nothing but many pages at once, and it must not be a loophole
+	// beside that rule.
 	if elternID != "" {
 		if _, darf, _, ok := s.pagePerm(r.Context(), uid, elternID); !ok || !darf {
 			writeErr(w, http.StatusForbidden, "keine Schreibrechte auf der Zielseite")
@@ -175,8 +173,8 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Nicht nil: die Antwort trägt sonst null statt einer leeren Liste, und
-	// der Aufrufer müsste beides unterscheiden können.
+	// Not nil: otherwise the response carries null instead of an empty list, and
+	// the caller would have to tell the two apart.
 	warnungen := []string{}
 	var mdDateien []einfuhrDatei
 	beilagen := map[string]einfuhrDatei{}
@@ -215,9 +213,8 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 		if istMarkdown(name) || istHTML(name) {
 			mdDateien = append(mdDateien, einfuhrDatei{pfad: name, inhalt: inhalt})
 		} else {
-			// Eine einzeln hochgeladene Datei, die kein Markdown ist, hat
-			// keine Seite, an die sie gehört. Sie hier stillschweigend zu
-			// verwerfen wäre der unangenehmere Ausgang.
+			// A single uploaded file that is not Markdown has no page to belong
+			// to. Discarding it silently here would be the nastier outcome.
 			warnungen = append(warnungen, name+": weder Markdown noch HTML, übergangen")
 		}
 	}
@@ -227,8 +224,8 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Beim Einlesen einer ganzen Ablage fällt das eigene Inhaltsverzeichnis
-	// weg, siehe istAusfuhrVerzeichnis.
+	// When a whole space is read back in, our own table of contents is dropped,
+	// see istAusfuhrVerzeichnis.
 	if neueAblage != "" {
 		behalten := mdDateien[:0]
 		for _, d := range mdDateien {
@@ -244,10 +241,9 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 
 	plan := planen(mdDateien)
 
-	// Vorschau: derselbe Plan, aber nichts wird angelegt. Wer zweihundert
-	// Dateien einführt, will vorher sehen, was daraus wird, rückgängig
-	// machen hieße sonst, zweihundert Seiten einzeln in den Papierkorb zu
-	// schieben.
+	// Preview: the same plan, but nothing is created. Someone importing two
+	// hundred files wants to see what will come of it beforehand, because
+	// undoing it would mean moving two hundred pages into the trash one by one.
 	if r.FormValue("vorschau") != "" {
 		writeJSON(w, http.StatusOK, einfuhrVorschau{
 			Seiten:    len(plan),
@@ -259,8 +255,8 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Erst jetzt anlegen, nicht schon bei der Vorschau: sonst bliebe nach
-	// jedem Blick in ein Archiv eine leere Ablage stehen.
+	// Created only now, not during the preview: otherwise every glance into an
+	// archive would leave an empty space behind.
 	var ablage *einfuhrAblage
 	if neueAblage != "" {
 		var neu einfuhrAblage
@@ -304,14 +300,14 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 		s.tagsSetzen(r.Context(), uid, sp)
 	}
 
-	// Was im Archiv lag und auf das keine Seite verweist, hängt an der Seite
-	// seines Verzeichnisses. Sonst verschwände es beim Import, und niemand
-	// würde bemerken, dass etwas fehlt.
+	// Whatever was in the archive that no page refers to is attached to the page
+	// of its directory. Otherwise it would vanish on import, and nobody would
+	// notice something is missing.
 	anhaenge += s.beilagenNachtragen(r.Context(), uid, seiten, beilagen, benutzt, &warnungen)
 
-	// Bei einer eigenen Ablage steht sie im Eintrag, sonst die Zielseite: die
-	// Frage hinterher lautet "wohin ging das", und darauf muss der Eintrag
-	// antworten können.
+	// With a space of its own, that space goes into the entry, otherwise the
+	// target page does. The question afterwards is "where did this go", and the
+	// entry has to be able to answer it.
 	art, zielID := "seite", elternID
 	if ablage != nil {
 		art, zielID = "space", ablage.ID
@@ -336,12 +332,12 @@ func einfuhrName(dateien []einfuhrDatei) string {
 	return fmt.Sprintf("%d Dateien", len(dateien))
 }
 
-// archivLesen packt ein ZIP aus und trennt Markdown von allem anderen.
+// archivLesen unpacks a ZIP and separates Markdown from everything else.
 //
-// Einträge mit ".." im Pfad werden verworfen. Sie könnten hier zwar nichts
-// anrichten, geschrieben wird nichts auf die Platte, die Pfade dienen nur dem
-// Wiederfinden von Verweisen, aber ein Archiv, das so etwas enthält, hat es
-// nicht gut gemeint, und der Rest davon verdient dasselbe Misstrauen.
+// Paths containing ".." are rejected. They could do no damage here, since
+// nothing is written to disk and the paths only serve to resolve links, but an
+// archive containing such a thing did not mean well, and the rest of it earns
+// the same suspicion.
 func archivLesen(datei io.ReaderAt, groesse int64) ([]einfuhrDatei, map[string]einfuhrDatei, []string) {
 	var md []einfuhrDatei
 	beilagen := map[string]einfuhrDatei{}
@@ -361,8 +357,8 @@ func archivLesen(datei io.ReaderAt, groesse int64) ([]einfuhrDatei, map[string]e
 			warnungen = append(warnungen, e.Name+": verdächtiger Pfad, übergangen")
 			continue
 		}
-		// Beiwerk der Packprogramme. Es als Anhang zu übernehmen wäre für
-		// niemanden ein Gewinn.
+		// Debris from archiving tools. Taking it along as an attachment would
+		// be a gain for nobody.
 		if strings.HasPrefix(pfad, "__MACOSX/") || path.Base(pfad) == ".DS_Store" ||
 			strings.HasPrefix(path.Base(pfad), "._") || strings.HasPrefix(path.Base(pfad), ".") {
 			continue
@@ -390,23 +386,21 @@ func archivLesen(datei io.ReaderAt, groesse int64) ([]einfuhrDatei, map[string]e
 			beilagen[pfad] = einfuhrDatei{pfad: pfad, inhalt: inhalt}
 		}
 	}
-	// In der Reihenfolge des Archivs anzulegen hieße, sich auf die Laune des
-	// Packprogramms zu verlassen. Nach Pfad sortiert steht ein Verzeichnis vor
-	// seinem Inhalt, und der Baum entsteht von oben nach unten.
+	// Creating things in archive order would mean relying on the mood of the
+	// archiving tool. Sorted by path, a directory comes before its content, and
+	// the tree grows from the top down.
 	sort.Slice(md, func(i, j int) bool { return md[i].pfad < md[j].pfad })
 	return md, beilagen, warnungen
 }
 
-// notionMuster erkennt die Kennung, die Notion an jeden Datei- und Ordnernamen
-// hängt: 32 Stellen hexadezimal, mit einem Leerzeichen davor.
+// notionMuster recognises the id Notion appends to every file and folder name.
+//
+// A Notion export writes "Weekly plan 8f3a...c1", and whoever does not cut that
+// off ends up with a hundred pages carrying gibberish in the title. It changes
+// nothing about the path: links are resolved by path, not by title.
 var notionMuster = regexp.MustCompile(`^(.*[^ -])[ -]+([0-9a-f]{32})$`)
 
-// sauberterTitel macht aus einem Datei- oder Ordnernamen einen Titel.
-//
-// Notion-Ausfuhren tragen ihre innere Kennung im Namen, "Wochenplan
-// 8f3a...c1", und wer das nicht abschneidet, bekommt hundert Seiten mit
-// Kauderwelsch im Titel. Am Pfad ändert das nichts: Verweise werden über den
-// Pfad aufgelöst, nicht über den Titel.
+// sauberterTitel strips that id from a name.
 func sauberterTitel(name string) string {
 	name = strings.TrimSpace(name)
 	if m := notionMuster.FindStringSubmatch(name); m != nil {
@@ -423,18 +417,17 @@ func istHTML(name string) bool {
 	return false
 }
 
-// istAusfuhrVerzeichnis erkennt das Inhaltsverzeichnis, das die eigene Ausfuhr
-// jedem Archiv beilegt.
+// istAusfuhrVerzeichnis recognises the table of contents our own export puts
+// into every archive.
 //
-// Beim Einlesen einer ganzen Ablage ist es überflüssig: die Liste der Seiten
-// ist die Ablage selbst, und als Seite eingeführt stünde sie doppelt da,
-// einmal als Verzeichnis, einmal als Wirklichkeit. Beim Einlesen in etwas
-// Vorhandenes bleibt es dagegen stehen; dort ist es der einzige Hinweis, was
-// zusammengehörte.
+// When a whole space is read back in it is redundant: the list of pages is the
+// space itself, and imported as a page it would stand there twice, once as an
+// index and once as reality. Importing into something existing keeps it, since
+// there it is the only hint of what belonged together.
 //
-// Erkannt wird die Form, die export.go schreibt, und nur sie: eine Überschrift,
-// eine Zeile "N Seiten, ausgegeben am ...", danach ausschließlich Verweise.
-// Ein selbst geschriebenes INHALT.md sieht anders aus und bleibt unangetastet.
+// Only the exact shape export.go writes is recognised: a heading, a line
+// "N Seiten, ausgegeben am ...", then nothing but links. A hand-written
+// INHALT.md looks different and is left alone.
 func istAusfuhrVerzeichnis(inhalt []byte) bool {
 	zeilen := strings.Split(strings.TrimSpace(string(inhalt)), "\n")
 	if len(zeilen) < 2 || !strings.HasPrefix(zeilen[0], "# ") {
@@ -463,23 +456,21 @@ func istMarkdown(name string) bool {
 	return false
 }
 
-// planen baut den Seitenbaum aus den Pfaden im Archiv, ohne etwas anzulegen.
+// planen builds the page tree from the paths in the archive without creating
+// anything.
 //
-// Ein Verzeichnis wird zu einer Seite. Enthält es index.md (oder README.md,
-// oder INHALT.md, wie der eigene Export sie schreibt), ist dieses Dokument der
-// Inhalt dieser Seite; sonst entsteht eine leere Seite, die nur die Unterseiten
-// zusammenhält. Beides ist besser als der flache Haufen, zu dem ein Import
-// sonst führt.
+// A directory becomes a page. If it contains index.md (or README.md, or
+// INHALT.md as our own export writes it), that document is the content of the
+// page; otherwise an empty page appears that merely holds the subpages
+// together. Either beats the flat heap an import otherwise produces.
 //
-// Getrennt vom Anlegen, damit dieselbe Rechnung zweimal gebraucht werden kann:
-// einmal für die Vorschau, die nichts anfasst, und einmal für die Einfuhr. Wer
-// die Vorschau aus einem zweiten Stück Code baut, zeigt eines Tages etwas
-// anderes an, als er anlegt.
+// Kept separate from creating, so the same calculation can be used twice: once
+// for the preview, which shows it, and once for the import, which acts on it.
 func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 	var plan []*einfuhrSeite
 
-	// Alle vorkommenden Verzeichnisse einsammeln, samt der Zwischenstufen: ein
-	// Archiv, das nur "a/b/c.md" enthält, hat trotzdem die Ebenen a und a/b.
+	// Collect every directory that appears, intermediate levels included: an
+	// archive holding only "a/b/c.md" still has the levels a and a/b.
 	verzeichnisse := map[string]bool{"": true}
 	for _, d := range dateien {
 		v := path.Dir(d.pfad)
@@ -517,9 +508,9 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 	for _, d := range dateien {
 		vorhanden[strings.ToLower(d.pfad)] = true
 	}
-	// Welche Pfade dadurch verbraucht sind. Ohne diese Menge entstünde die
-	// Ordnernotiz zweimal: einmal als Inhalt des Ordners und einmal als
-	// gewöhnliche Datei ihres eigenen Verzeichnisses.
+	// Which paths are used up by that. Without this set the folder note would
+	// come into being twice: once as the content of the folder and once as an
+	// ordinary file of its own directory.
 	istIndex := map[string]bool{}
 	for _, v := range sortiert {
 		var kandidaten []string
@@ -529,9 +520,9 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 		if v != "" {
 			// Obsidian keeps the folder note INSIDE the folder, under the same name.
 			kandidaten = append(kandidaten, path.Join(v, path.Base(v)+".md"), path.Join(v, path.Base(v)+".html"))
-			// Notion legt sie DANEBEN, gleicher Name wie der Ordner, eine
-			// Ebene höher. Beide Sitten sind verbreitet, und beide meinen
-			// dasselbe: dieser Text gehört zu diesem Ordner.
+			// Notion puts it BESIDE the folder, same name as the folder, one
+			// level up. Both conventions are common, and both mean the same
+			// thing: this text belongs to this folder.
 			kandidaten = append(kandidaten, v+".md", v+".html")
 		}
 		for _, k := range kandidaten {
@@ -551,9 +542,9 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 	for _, v := range sortiert {
 		idx, hatIndex := indexVon[v]
 		if v == "" && !hatIndex {
-			// Kein Deckblatt im Archiv: die obersten Dateien hängen direkt an
-			// der Zielseite. Eine zusätzliche Hülle "Import" wäre eine Ebene,
-			// die niemand angelegt hat.
+			// No cover page in the archive: the top level files hang directly
+			// off the target page. An extra shell called "Import" would be a
+			// level nobody asked for.
 			continue
 		}
 
@@ -597,8 +588,8 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 	return plan
 }
 
-// dateiLesen wählt den Leser nach der Endung. Markdown und HTML kommen beide
-// als Blöcke heraus; alles Weitere unterscheidet der Rest des Ablaufs nicht.
+// dateiLesen picks the reader by file extension. Markdown and HTML both come
+// out as blocks; beyond that the rest of the process makes no distinction.
 func dateiLesen(d einfuhrDatei) (string, einlesen.Kopf, []einlesen.Block) {
 	if istHTML(d.pfad) {
 		titel, bloecke := einlesen.LiesHTML(string(d.inhalt))
@@ -654,21 +645,20 @@ func findeDatei(dateien []einfuhrDatei, kleinPfad string) *einfuhrDatei {
 	return nil
 }
 
-// verweiseAufloesen schreibt die Verweise einer Seite um und liefert die Zahl
-// der dabei angelegten Anhänge.
+// verweiseAufloesen rewrites the links of one page and returns the number of
+// attachments created along the way.
 //
-// Drei Fälle. Ein Verweis auf eine andere eingeführte Datei wird zu
-// [[Titel]], der Verweisform, die Nexora selbst schreibt und die Rückverweise
-// und Wissensnetz speist. Ein Verweis auf eine Beilage wird zum Anhang dieser
-// Seite. Alles andere bleibt, wie es war: eine Adresse ins Netz ist nach dem
-// Import so gültig wie davor.
+// Three cases. A link to another imported file becomes [[Title]], the link form
+// Nexora writes itself, which feeds backlinks and the knowledge graph. A link
+// to a bundled file becomes an attachment of this page. Everything else stays
+// as it was: an address on the web is as valid after the import as before.
 func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrSeite,
 	nachPfad map[string]*einfuhrSeite, beilagen map[string]einfuhrDatei,
 	benutzt map[string]bool, warnungen *[]string) int {
 
 	anzahl := 0
-	// Dieselbe Beilage kann in einer Seite mehrfach vorkommen; sie soll
-	// trotzdem nur einmal hochgeladen werden.
+	// The same bundled file can appear several times on one page; it should
+	// still be uploaded only once.
 	angehaengt := map[string]string{}
 	// A warning that appeared for every file would stop being a warning.
 	gemeldet := map[string]bool{}
@@ -699,15 +689,15 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 		return nil
 	}
 
-	// anhaengen legt die Beilage als Anhang dieser Seite an und gibt die
-	// Adresse zurück, unter der sie abrufbar ist.
+	// anhaengen stores the bundled file as an attachment of this page and
+	// returns the address it can be fetched under.
 	anhaengen := func(b *einfuhrDatei) string {
 		if adresse, da := angehaengt[b.pfad]; da {
 			return adresse
 		}
-		// Anhänge sind ein Zusatz. Sie über die Einfuhr doch anzulegen wäre
-		// ein Weg um die Schranke herum, und einer, der ins Leere führt: die
-		// Datei ließe sich danach weder auflisten noch herunterladen.
+		// Attachments are a paid extra. Creating them through the import anyway
+		// would be a way around the gate, and one that leads nowhere: the file
+		// could afterwards be neither listed nor downloaded.
 		if !lizenz.Frei(lizenz.Anhaenge) {
 			if !gemeldet["anhaenge"] {
 				gemeldet["anhaenge"] = true
@@ -737,10 +727,10 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 				continue
 			}
 			if ziel := seiteZu(t.Href); ziel != nil {
-				// Die Beschriftung geht dabei verloren, wenn sie vom Titel
-				// abweicht, ein Wiki-Verweis trägt den Titel der Zielseite.
-				// Dafür überlebt der Verweis das Umbenennen von Dateien, das
-				// beim Import ohnehin stattfindet.
+				// The label is lost when it differs from the title, since a
+				// wiki link carries the title of the target page. In exchange
+				// the link survives files being renamed, which happens during
+				// an import anyway.
 				out = append(out, einlesen.Inline{
 					Type: "text",
 					Text: "[[" + ziel.titel + "]]",
@@ -801,9 +791,9 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 
 // zielPfad macht aus einer Adresse im Dokument einen Pfad im Archiv.
 //
-// Adressen ins Netz und Ankersprünge haben kein Ziel im Archiv und liefern
-// leer. Der Rest wird entprozentet, ein Verweis auf "mein%20bild.png" meint
-// die Datei "mein bild.png", und ohne diesen Schritt fände er sie nie.
+// Web addresses and anchor jumps have no target inside the archive and return
+// empty. The rest is percent-decoded: a link to "my%20image.png" means the file
+// "my image.png", and without this step it would never be found.
 func zielPfad(adresse, verzeichnis string) string {
 	if adresse == "" || strings.HasPrefix(adresse, "#") {
 		return ""
@@ -824,8 +814,8 @@ func zielPfad(adresse, verzeichnis string) string {
 		adresse = entpackt
 	}
 	adresse = strings.ReplaceAll(adresse, "\\", "/")
-	// Eine absolute Adresse zeigt in einem Archiv auf dessen Wurzel und wird
-	// deshalb nicht am Verzeichnis der verweisenden Datei ausgerichtet.
+	// An absolute address points at the archive root and is therefore not
+	// resolved relative to the directory of the linking file.
 	if strings.HasPrefix(adresse, "/") {
 		return path.Clean(strings.TrimPrefix(adresse, "/"))
 	}
@@ -837,9 +827,9 @@ func zielPfad(adresse, verzeichnis string) string {
 
 // verweisMerken hält den Verweis zusätzlich in page_links fest.
 //
-// Der Text trägt [[Titel]] und ist damit lesbar; die Zeile hier trägt die
-// Kennung und überlebt deshalb das Umbenennen der Zielseite. Beides zu haben
-// kostet eine Zeile und rettet das Wissensnetz.
+// The text carries [[Title]] and is therefore readable; the row here carries
+// the id and therefore survives the target page being renamed. Having both
+// costs one row and saves the knowledge graph.
 func (s *Server) verweisMerken(ctx context.Context, quelle, ziel string) {
 	if quelle == ziel {
 		return
@@ -867,9 +857,9 @@ func (s *Server) inhaltSchreiben(ctx context.Context, sp *einfuhrSeite) error {
 	return err
 }
 
-// tagsSetzen legt die Schlagworte aus dem Vorspann an und hängt sie an.
-// Schlagworte gehören dem Konto, nicht der Seite, ein vorhandenes wird
-// wiederverwendet statt verdoppelt.
+// tagsSetzen creates the tags from the front matter and attaches them. Tags
+// belong to the account, not to the page, so an existing one is reused rather
+// than duplicated.
 func (s *Server) tagsSetzen(ctx context.Context, uid string, sp *einfuhrSeite) {
 	for _, name := range sp.kopf.Tags {
 		name = strings.TrimSpace(name)
@@ -891,10 +881,10 @@ func (s *Server) tagsSetzen(ctx context.Context, uid string, sp *einfuhrSeite) {
 
 // beilagenNachtragen hängt an, worauf niemand verwiesen hat.
 //
-// Ein Archiv enthält oft Dateien, die in keinem Dokument vorkommen, alte
-// Fassungen, Bilder aus einem gelöschten Absatz, Anlagen. Sie beim Import
-// fallen zu lassen wäre stiller Verlust; sie landen an der Seite ihres
-// Verzeichnisses, wo sie auch im Archiv lagen.
+// An archive often contains files no document refers to: old versions, images
+// from a deleted paragraph, enclosures. Dropping them during the import would
+// be a quiet loss; they end up on the page of their directory, where they sat
+// in the archive too.
 func (s *Server) beilagenNachtragen(ctx context.Context, uid string, seiten []*einfuhrSeite,
 	beilagen map[string]einfuhrDatei, benutzt map[string]bool, warnungen *[]string) int {
 
@@ -947,9 +937,9 @@ func (s *Server) beilagenNachtragen(ctx context.Context, uid string, seiten []*e
 }
 
 // anhangAnlegen speichert Bytes als Anhang einer Seite. Dieselbe Reihenfolge
-// wie beim Hochladen über den Browser: erst die Zeile, dann die Datei, und bei
-// einem Fehler die Zeile wieder weg, ein Anhang, den man anklicken kann und
-// der ins Leere führt, ist schlimmer als keiner.
+// the same order as an upload through the browser: the row first, then the
+// file, and on failure the row goes away again. An attachment you can click
+// that leads nowhere is worse than none at all.
 func (s *Server) anhangAnlegen(ctx context.Context, seiteID, uid, dateiname string, inhalt []byte) (string, error) {
 	if dateiname == "" || dateiname == "." || dateiname == "/" {
 		dateiname = "datei"
@@ -975,9 +965,9 @@ func (s *Server) anhangAnlegen(ctx context.Context, seiteID, uid, dateiname stri
 	return attID, nil
 }
 
-// darfInSpaceSchreiben prüft das Recht, in einer Ablage neue Seiten anzulegen.
-// Dieselbe Stufenleiter wie überall: Eigentümer, Administrator, ein Recht
-// 'schreiben' oder 'verwalten', oder eine Ablage, die für alle offen steht.
+// darfInSpaceSchreiben checks the right to create new pages in a space. The
+// same ladder as everywhere else: owner, administrator, a right of 'schreiben'
+// or 'verwalten', or a space that stands open to everyone.
 func (s *Server) darfInSpaceSchreiben(ctx context.Context, uid, spaceID string) bool {
 	var erlaubt bool
 	err := s.Pool.QueryRow(ctx, `

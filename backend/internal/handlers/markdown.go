@@ -24,8 +24,8 @@ import (
 	"nexora/internal/middleware"
 )
 
-// block ist ein Knoten des Editor-Dokuments. Nur die Felder, die für Markdown
-// zählen, Farben und Ausrichtung haben in Markdown kein Gegenstück.
+// block is one node of the editor document. Only the fields that matter for
+// Markdown: colours and alignment have no counterpart there.
 type block struct {
 	Type     string          `json:"type"`
 	Props    map[string]any  `json:"props"`
@@ -43,8 +43,8 @@ type inline struct {
 	Props   map[string]any  `json:"props"`   // bei Erwähnungen
 }
 
-// MarkdownAusInhalt wandelt ein gespeichertes Dokument um. Exportiert, weil der
-// Space-Export dieselbe Umwandlung braucht.
+// MarkdownAusInhalt converts a stored document. Exported because the space
+// export needs the same conversion.
 func MarkdownAusInhalt(roh json.RawMessage) string {
 	var bloecke []block
 	if err := json.Unmarshal(roh, &bloecke); err != nil {
@@ -52,17 +52,16 @@ func MarkdownAusInhalt(roh json.RawMessage) string {
 	}
 	var b strings.Builder
 	schreibeBloecke(&b, bloecke, "")
-	// Mehr als eine Leerzeile hintereinander bringt in Markdown nichts und
-	// sieht in der Datei nach Versehen aus.
+	// More than one blank line in a row achieves nothing in Markdown and looks
+	// like an accident in the file.
 	return strings.TrimSpace(mehrfacheLeerzeilen(b.String())) + "\n"
 }
 
-// mehrfacheLeerzeilen dünnt Leerzeilen aus, aber nur außerhalb von
-// Codeblöcken.
+// mehrfacheLeerzeilen thins out blank lines, but only outside code blocks.
 //
-// Der Unterschied ist kein Feinschliff: in einem Codeblock sind zwei
-// Leerzeilen hintereinander Inhalt. Sie stillschweigend zu einer zu machen
-// hieße, den exportierten Code zu verändern.
+// The difference is not a nicety: inside a code block two blank lines in a row
+// are content. Silently collapsing them into one would mean altering the code
+// that was exported.
 func mehrfacheLeerzeilen(s string) string {
 	var b strings.Builder
 	imCode := false
@@ -85,9 +84,9 @@ func mehrfacheLeerzeilen(s string) string {
 	return b.String()
 }
 
-// istListe sagt, ob ein Block ein Listeneintrag ist. Steht als eigene Funktion
-// da, weil an drei Stellen dieselbe Aufzählung gebraucht wird und eine davon
-// eines Tages einen neuen Typ vergessen würde.
+// istListe reports whether a block is a list item. It stands as its own
+// function because the same enumeration is needed in three places, and one of
+// them would one day forget a newly added type.
 func istListe(typ string) bool {
 	switch typ {
 	case "bulletListItem", "numberedListItem", "checkListItem", "toggleListItem":
@@ -96,23 +95,21 @@ func istListe(typ string) bool {
 	return false
 }
 
-// schreibeBloecke geht die Liste durch. einzug ist die Einrückung, die dieser
-// Ebene vorausgeht, eine Zeichenkette und keine Tiefenzahl, weil
-// verschachtelte Einträge sich nicht an einer festen Schrittweite ausrichten,
-// sondern an der Breite der Marke ihres Elternteils: unter "1. " beginnt der
-// Inhalt in Spalte 3, unter "- " in Spalte 2. Mit einer festen Schrittweite von
-// zwei Zeichen wäre ein Untereintrag einer nummerierten Liste keiner, sondern
-// eine neue Liste daneben.
+// schreibeBloecke walks the list. einzug is the indentation preceding this
+// level, a string rather than a depth count, because nested entries do not line
+// up on a fixed step but on the width of their parent's marker: under "1. " the
+// content starts in column 3, under "- " in column 2. With a fixed step of two
+// characters a sub-entry of a numbered list would not be one, but a new list
+// beside it.
 func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 	nummer := 0
-	// Merkt, ob zuletzt ein Listeneintrag geschrieben wurde. Folgt darauf ein
-	// Absatz ohne Leerzeile, liest ihn jeder Markdown-Leser als Fortsetzung
-	// des letzten Eintrags und schluckt ihn in die Liste.
+	// Remembers whether the last thing written was a list item. If a paragraph
+	// follows without a blank line, every Markdown reader takes it as a
+	// continuation of that item and swallows it into the list.
 	warListe := false
 
 	for _, bl := range bloecke {
-		// Breite der Marke dieses Eintrags; nur Listen geben sie an ihre
-		// Kinder weiter.
+		// Width of this item's marker; only lists pass it on to their children.
 		markenBreite := 0
 
 		if !istListe(bl.Type) && warListe {
@@ -130,9 +127,9 @@ func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 			nummer = 0
 
 		case "bulletListItem", "toggleListItem":
-			// Eine Klappliste ist beim Lesen eine Aufzählung; Markdown kennt
-			// das Zusammenklappen nicht. Der Inhalt ist wichtiger als die
-			// Bedienung, also wird sie zur Aufzählung statt zu verschwinden.
+			// A toggle list reads as a bullet list; Markdown has no notion of
+			// collapsing. The content matters more than the interaction, so it
+			// becomes a bullet rather than disappearing.
 			marke := "- "
 			markenBreite = len(marke)
 			fmt.Fprintf(b, "%s%s%s\n", einzug, marke, zeile(bl.Content, einzug+"  "))
@@ -156,8 +153,8 @@ func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 				haken = "x"
 			}
 			marke := "- [" + haken + "] "
-			// Die Fortsetzungsspalte liegt hinter "- ", nicht hinter der
-			// Kästchenmarke: das Kästchen gehört bereits zum Inhalt.
+			// The continuation column sits after "- ", not after the checkbox
+			// marker: the checkbox is already part of the content.
 			markenBreite = 2
 			fmt.Fprintf(b, "%s%s%s\n", einzug, marke, zeile(bl.Content, einzug+"  "))
 			nummer = 0
@@ -173,8 +170,8 @@ func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 			nummer = 0
 
 		case "quote":
-			// Mehrzeilige Zitate brauchen das > vor jeder Zeile, sonst bricht
-			// das Zitat nach der ersten ab.
+			// Multi-line quotes need the > in front of every line, otherwise the
+			// quote ends after the first one.
 			for _, z := range strings.Split(zeile(bl.Content, ""), "\n") {
 				fmt.Fprintf(b, "%s> %s\n", einzug, strings.TrimRight(z, " "))
 			}
@@ -194,8 +191,8 @@ func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 			if bl.Type == "image" {
 				fmt.Fprintf(b, "\n%s![%s](%s)\n", einzug, klammersicher(name), adressSicher(adresse))
 			} else {
-				// Für Video, Ton und Dateien gibt es in Markdown kein
-				// Einbetten, ein Verweis ist das Ehrlichste.
+				// Markdown has no embedding for video, audio and files, so a
+				// link is the most honest form.
 				fmt.Fprintf(b, "\n%s[%s](%s)\n", einzug, klammersicher(name), adressSicher(adresse))
 			}
 			if bildunterschrift != "" && bildunterschrift != name {
@@ -211,8 +208,8 @@ func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 		case "paragraph":
 			t := zeile(bl.Content, einzug)
 			if strings.TrimSpace(t) == "" {
-				// Ein leerer Absatz ist im Editor eine Leerzeile. Genau das
-				// soll er in Markdown auch sein, nicht drei.
+				// An empty paragraph is a blank line in the editor. It should be
+				// exactly that in Markdown too, not three.
 				b.WriteString("\n")
 			} else {
 				fmt.Fprintf(b, "%s%s\n\n", einzug, t)
@@ -228,16 +225,16 @@ func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 		}
 
 		if len(bl.Children) > 0 {
-			// Verschachtelte Listen rücken um die Breite der eigenen Marke
-			// ein, alles andere bleibt auf der Ebene, eine eingerückte
-			// Überschrift wäre in Markdown ein Codeblock.
+			// Nested lists indent by the width of their own marker, everything
+			// else stays on its level: an indented heading would be a code block
+			// in Markdown.
 			kindEinzug := einzug
 			if markenBreite > 0 {
 				kindEinzug = einzug + strings.Repeat(" ", markenBreite)
 			}
 			schreibeBloecke(b, bl.Children, kindEinzug)
-			// Nach den Kindern gilt die Merkung des Elternteils nicht mehr;
-			// was zuletzt geschrieben wurde, stand in der Unterebene.
+			// After the children the parent's note no longer holds: the last
+			// thing written was on the level below.
 			warListe = istListe(bl.Type)
 		}
 	}
@@ -253,10 +250,9 @@ func schreibeTabelle(b *strings.Builder, bl block, einzug string) {
 	if err := json.Unmarshal(bl.Content, &inhalt); err != nil || len(inhalt.Rows) == 0 {
 		return
 	}
-	// Alle Zeilen auf dieselbe Spaltenzahl bringen. Eine Tabelle mit
-	// verbundenen oder fehlenden Zellen hat unterschiedlich lange Zeilen, und
-	// eine Zeile mit mehr Trennstrichen als der Kopf zerlegt in vielen Lesern
-	// die ganze Tabelle.
+	// Bring every row to the same number of columns. A table with merged or
+	// missing cells has rows of differing length, and a row with more separators
+	// than the header tears the whole table apart in many readers.
 	breite := 0
 	for _, z := range inhalt.Rows {
 		if len(z.Cells) > breite {
@@ -271,9 +267,8 @@ func schreibeTabelle(b *strings.Builder, bl block, einzug string) {
 		zellen := make([]string, breite)
 		for j := range zellen {
 			if j < len(zeileD.Cells) {
-				// Ein Zeilenumbruch in einer Zelle würde die Tabelle
-				// zerreißen; der senkrechte Strich ebenso, deshalb wird er in
-				// zellSicher maskiert.
+				// A line break inside a cell would tear the table apart, and so
+				// would a vertical bar, which is why zellSicher escapes it.
 				zellen[j] = zellSicher(zeile(zeileD.Cells[j], ""))
 			}
 		}
@@ -295,14 +290,13 @@ func zellSicher(s string) string {
 	return strings.ReplaceAll(s, "|", "\\|")
 }
 
-// zeile setzt den Inhalt eines Blocks in eine Zeile um und behandelt harte
-// Umbrüche.
+// zeile turns the content of a block into one line and deals with hard breaks.
 //
-// Ein Umbruch innerhalb eines Absatzes ist im Editor ein Umbruch und kein neuer
-// Absatz. Roh übernommen wäre er in Markdown gar nichts, der Text liefe
-// zusammen, oder, in einem Listeneintrag, das Ende der Liste. Zwei
-// Leerzeichen vor dem Umbruch machen daraus den harten Umbruch, und die
-// Folgezeile bekommt die Einrückung der Fortsetzungsspalte.
+// A break inside a paragraph is a break in the editor, not a new paragraph.
+// Taken over raw it would be nothing at all in Markdown: the text would run
+// together, or, inside a list item, end the list. Two spaces before the break
+// turn it into a hard break, and the following line receives the indentation of
+// the continuation column.
 func zeile(roh json.RawMessage, fortsetzung string) string {
 	t := text(roh)
 	if !strings.Contains(t, "\n") {
@@ -324,11 +318,10 @@ func text(roh json.RawMessage) string {
 	}
 	var teile []inline
 	if err := json.Unmarshal(roh, &teile); err != nil {
-		// Zwei andere Gestalten kommen vor. Erstens eine einzelne
-		// Zeichenkette. Zweitens ein Objekt mit einem content-Feld, so
-		// liefert der Editor seit einiger Zeit die Zellen einer Tabelle. Ohne
-		// diesen zweiten Fall blieben alle Zellen leer: die Tabelle stünde da,
-		// aber ohne Inhalt.
+		// Two other shapes occur. First a plain string. Second an object with a
+		// content field, which is how the editor has been returning table cells
+		// for a while. Without that second case every cell would stay empty: the
+		// table would be there, but without content.
 		var s string
 		if json.Unmarshal(roh, &s) == nil {
 			return s
@@ -348,8 +341,8 @@ func text(roh json.RawMessage) string {
 		case "link":
 			b.WriteString("[" + klammersicher(text(t.Content)) + "](" + adressSicher(t.Href) + ")")
 		case "mention":
-			// Erwähnungen zeigen im Editor einen Namen, dahinter steckt eine
-			// Seite. Als reiner Name wäre der Bezug weg.
+			// Mentions show a name in the editor with a page behind it. As a
+			// bare name the reference would be gone.
 			name, _ := t.Props["title"].(string)
 			if name == "" {
 				name, _ = t.Props["name"].(string)
@@ -365,27 +358,27 @@ func text(roh json.RawMessage) string {
 	return b.String()
 }
 
-// entschaerfen maskiert Zeichen, die Markdown als Anweisung liest, obwohl sie
-// im Text nur Zeichen sind.
+// entschaerfen escapes characters Markdown reads as instructions even though
+// they are only characters in the text.
 //
-// Ohne das ist die Ausgabe nicht das, was auf der Seite stand: aus einem
-// Sternchen wird eine Auszeichnung, aus "2026. Ein gutes Jahr" eine
-// nummerierte Liste, aus "[[Notiz]]" ein Verweis, den niemand gesetzt hat. Das
-// ist genau die Art Abweichung, die beim Wiedereinlesen sichtbar wird.
+// Without it the output is not what stood on the page: an asterisk becomes
+// formatting, "2026. A good year" becomes a numbered list, "[[Note]]" becomes a
+// link nobody made. That is exactly the kind of drift that shows when the file
+// is read back in.
 //
-// Maskiert wird sparsam. Ein Unterstrich mitten im Wort bleibt stehen, weil
-// CommonMark ihn dort ohnehin nicht als Auszeichnung liest, ihn zu maskieren
-// würde jeden Dateinamen und jeden Bezeichner mit Rückstrichen übersäen, ohne
-// dass sich am Ergebnis etwas ändert.
+// The escaping is sparing. An underscore inside a word is left alone, because
+// CommonMark does not read it as formatting there anyway; escaping it would
+// litter every file name and identifier with backslashes without changing the
+// result.
 func entschaerfen(s string) string {
 	if s == "" {
 		return s
 	}
-	// [[Seitentitel]] ist in Nexora ein Verweis, auch wenn er als gewöhnlicher
-	// Text im Dokument steht, der Editor erkennt ihn am Muster. Würden die
-	// Klammern maskiert, käme aus dem Export ein Text zurück, der einmal ein
-	// Verweis war und keiner mehr ist. Also bleiben diese Stellen unberührt
-	// und nur das dazwischen wird entschärft.
+	// [[Page title]] is a link in Nexora even when it sits in the document as
+	// ordinary text; the editor recognises it by the pattern. If the brackets
+	// were escaped, the export would hand back text that once was a link and is
+	// one no longer. So those spots stay untouched and only what lies between
+	// them is escaped.
 	if stellen := wikiMuster.FindAllStringIndex(s, -1); len(stellen) > 0 {
 		var b strings.Builder
 		vorher := 0
@@ -414,8 +407,8 @@ func entschaerfenRoh(s string) string {
 		case '\\', '*', '`', '[', ']':
 			b.WriteRune('\\')
 		case '_':
-			// Nur am Wortrand. davor/danach ein Buchstabe oder eine Ziffer
-			// heißt: mitten im Wort, dort wirkt der Unterstrich nicht.
+			// Only at word boundaries. A letter or digit before or after means
+			// mid-word, and there the underscore has no effect.
 			vorher := i == 0 || !wortzeichen(laeufer[i-1])
 			nachher := i == len(laeufer)-1 || !wortzeichen(laeufer[i+1])
 			if vorher || nachher {
@@ -431,9 +424,9 @@ func wortzeichen(r rune) bool {
 	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r > 127
 }
 
-// zeilenanfaengeEntschaerfen kümmert sich um die Zeichen, die nur am
-// Zeilenanfang etwas bedeuten: Raute, Strich, Größerzeichen, Ziffer mit Punkt.
-// Mitten im Satz sind sie harmlos und bleiben unangetastet.
+// zeilenanfaengeEntschaerfen deals with the characters that only mean something
+// at the start of a line: hash, dash, greater-than, digit with a dot.
+// Mid-sentence they are harmless and stay untouched.
 func zeilenanfaengeEntschaerfen(s string) string {
 	zeilen := strings.Split(s, "\n")
 	for i, z := range zeilen {
@@ -460,16 +453,16 @@ func zeilenanfaengeEntschaerfen(s string) string {
 	return strings.Join(zeilen, "\n")
 }
 
-// klammersicher schützt den sichtbaren Teil eines Verweises. Eine eckige
-// Klammer darin beendet ihn sonst an der falschen Stelle.
+// klammersicher protects the visible part of a link. A closing bracket inside
+// it would otherwise end the label in the wrong place.
 func klammersicher(s string) string {
 	s = strings.ReplaceAll(s, "[", "\\[")
 	return strings.ReplaceAll(s, "]", "\\]")
 }
 
-// adressSicher macht eine Adresse verweistauglich. Runde Klammern und
-// Leerzeichen beenden eine Markdown-Adresse; spitze Klammern drumherum sind der
-// vorgesehene Ausweg.
+// adressSicher makes an address usable inside a link. Round brackets and spaces
+// end a Markdown address; angle brackets around it are the way out the standard
+// provides.
 func adressSicher(s string) string {
 	if s == "" {
 		return s
@@ -480,10 +473,10 @@ func adressSicher(s string) string {
 	return s
 }
 
-// auszeichnen legt die Markdown-Zeichen um ein Textstück.
+// auszeichnen wraps the Markdown characters around a run of text.
 //
-// Die Reihenfolge ist nicht beliebig: Code ganz innen, weil innerhalb von
-// Backticks kein Stern mehr wirkt. Alles andere wäre kaputtes Markdown.
+// The order is not arbitrary: code innermost, because inside backticks an
+// asterisk no longer has any effect. Anything else would be broken Markdown.
 func auszeichnen(s string, styles map[string]any) string {
 	if s == "" {
 		return ""
@@ -492,8 +485,8 @@ func auszeichnen(s string, styles map[string]any) string {
 		v, ok := styles[name].(bool)
 		return ok && v
 	}
-	// Führende und folgende Leerzeichen müssen AUSSERHALB der Auszeichnung
-	// bleiben, "** fett **" wird von keinem Leser als fett dargestellt.
+	// Leading and trailing spaces have to stay OUTSIDE the formatting: no reader
+	// renders "** bold **" as bold.
 	links := s[:len(s)-len(strings.TrimLeft(s, " \t"))]
 	rechts := s[len(strings.TrimRight(s, " \t")):]
 	kern := strings.TrimSpace(s)
@@ -502,26 +495,23 @@ func auszeichnen(s string, styles map[string]any) string {
 	}
 
 	if an("code") {
-		// Im Code gilt die Regel von oben NICHT: Leerzeichen am Anfang sind
-		// dort kein Rand, sondern Einrückung, und Einrückung ist in Code
-		// Inhalt. Stünde sie außerhalb der Rückstriche, verlöre sie jeder,
-		// der die Datei wieder einliest.
+		// Inside code the rule above does NOT apply: spaces at the start are not
+		// padding there but indentation, and indentation is content in code.
+		// Outside the backticks everyone reading the file back in would lose it.
 		kern = s
 		links, rechts = "", ""
 
-		// Im Code bleibt jedes Zeichen, wie es ist, deshalb wird hier NICHT
-		// maskiert. Stattdessen wird der Zaun so lang gemacht, dass er länger
-		// ist als jede Backtick-Folge im Text: anders bekommt man einen
-		// Backtick nicht in eine Code-Spanne.
+		// Inside code every character stays as it is, so nothing is escaped
+		// here. Instead the fence is made longer than any run of backticks in the
+		// text: there is no other way to get a backtick into a code span.
 		zaun := "`"
 		for strings.Contains(kern, zaun) {
 			zaun += "`"
 		}
-		// Ein Füllzeichen an beiden Enden braucht es in zwei Fällen: wenn der
-		// Inhalt selbst mit einem Rückstrich anfängt oder aufhört, und wenn er
-		// an beiden Enden ein Leerzeichen hat, genau dann nimmt ein Leser
-		// nach der Regel je eines wieder weg, und ohne Füllung wäre das der
-		// Inhalt.
+		// A padding space at both ends is needed in two cases: when the content
+		// itself begins or ends with a backtick, and when it has a space at both
+		// ends, because then a reader strips one from each by the rule above, and
+		// without padding that would be the content.
 		fuellung := ""
 		if strings.HasPrefix(kern, "`") || strings.HasSuffix(kern, "`") ||
 			(strings.HasPrefix(kern, " ") && strings.HasSuffix(kern, " ")) {
@@ -529,9 +519,8 @@ func auszeichnen(s string, styles map[string]any) string {
 		}
 		kern = zaun + fuellung + kern + fuellung + zaun
 	} else {
-		// Alles, was kein Code ist, wird entschärft: was im Editor ein
-		// Sternchen war, soll in der Datei ein Sternchen bleiben und keine
-		// Auszeichnung werden.
+		// Everything that is not code gets escaped: what was an asterisk in the
+		// editor should stay an asterisk in the file and not become formatting.
 		kern = entschaerfen(kern)
 	}
 	if an("bold") {
@@ -544,15 +533,15 @@ func auszeichnen(s string, styles map[string]any) string {
 		kern = "~~" + kern + "~~"
 	}
 	if an("underline") {
-		// Markdown kennt keine Unterstreichung. HTML ist hier ehrlicher als
-		// sie stillschweigend fallen zu lassen.
+		// Markdown has no underline. HTML is more honest here than dropping the
+		// formatting silently.
 		kern = "<u>" + kern + "</u>"
 	}
 	return links + kern + rechts
 }
 
-// rohText liefert den Text ohne Auszeichnung, für Codeblöcke, in denen
-// Sternchen Sternchen bleiben müssen.
+// rohText returns the text without formatting, for code blocks where asterisks
+// have to stay asterisks.
 func rohText(roh json.RawMessage) string {
 	var teile []inline
 	if err := json.Unmarshal(roh, &teile); err != nil {
@@ -589,31 +578,31 @@ func (s *Server) ExportMarkdown(w http.ResponseWriter, r *http.Request) {
 	}
 
 	md := MarkdownAusInhalt(json.RawMessage(inhalt))
-	// Der Titel steht nicht im Dokument, sondern in einer eigenen Spalte. Ohne
-	// diese Zeile hätte die Datei keine Überschrift.
+	// The title is not part of the document but lives in a column of its own.
+	// Without this line the file would have no heading.
 	//
-	// Viele Seiten wiederholen ihren Titel aber als erste Überschrift im Text.
-	// Dann bliebe er zweimal stehen, was in der Datei nach einem Fehler
-	// aussieht, also nur voranstellen, wenn er nicht ohnehin schon dasteht.
+	// Many pages repeat their title as the first heading in the text, though.
+	// Then it would stand there twice, which looks like a mistake in the file, so
+	// it is only prepended when it is not already there.
 	if titel != "" && !beginntMitUeberschrift(md, titel) {
 		md = "# " + titel + "\n\n" + md
 	}
 
 	name := dateiname(titel)
 	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
-	// Zwei Angaben mit Absicht: filename für alte Klienten, die nur ASCII
-	// verstehen, filename* nach RFC 5987 für alle anderen. So bleibt "Übersicht"
-	// eine Übersicht, statt zu "Uebersicht" zu werden, Umlaute umzuschreiben
-	// wäre eine Notlösung aus einer Zeit, in der es filename* noch nicht gab.
+	// Two forms on purpose: filename for old clients that only understand ASCII,
+	// filename* per RFC 5987 for everyone else. That way "Übersicht" stays an
+	// Übersicht instead of becoming "Uebersicht"; transliterating umlauts was a
+	// workaround from a time before filename* existed.
 	w.Header().Set("Content-Disposition",
 		`attachment; filename="`+nurASCII(name)+`.md"; filename*=UTF-8''`+
 			url.PathEscape(name+".md"))
 	w.Write([]byte(md))
 }
 
-// beginntMitUeberschrift prüft, ob das Dokument bereits mit einer Überschrift
-// dieses Titels anfängt. Verglichen wird ohne Rücksicht auf Groß- und
-// Kleinschreibung: "Wake-on-LAN" und "Wake-On-LAN" meinen dasselbe.
+// beginntMitUeberschrift reports whether the document already starts with a
+// heading carrying this title. The comparison ignores case: "Wake-on-LAN" and
+// "Wake-On-LAN" mean the same thing.
 func beginntMitUeberschrift(md, titel string) bool {
 	erste := strings.TrimSpace(md)
 	if i := strings.Index(erste, "\n"); i >= 0 {
@@ -623,8 +612,8 @@ func beginntMitUeberschrift(md, titel string) bool {
 	return strings.EqualFold(erste, strings.TrimSpace(titel))
 }
 
-// dateiname macht aus einem Titel einen Dateinamen. Umlaute bleiben erhalten;
-// entfernt wird nur, was Dateisysteme oder der HTTP-Kopf nicht vertragen.
+// dateiname turns a title into a file name. Umlauts are kept; only what file
+// systems or the HTTP header cannot bear is removed.
 func dateiname(titel string) string {
 	if strings.TrimSpace(titel) == "" {
 		return "seite"
@@ -649,17 +638,17 @@ func dateiname(titel string) string {
 	if name == "" {
 		return "seite"
 	}
-	// Dateisysteme setzen bei 255 Bytes die Grenze; mit dem angehängten .md
-	// bleibt etwas Luft.
+	// File systems draw the line at 255 bytes; with the .md appended a little
+	// room has to be left.
 	if len(name) > 200 {
 		name = strings.ToValidUTF8(name[:200], "")
 	}
 	return name
 }
 
-// nurASCII ist die Rückfallschreibweise für den filename-Teil des Kopfes.
-// Nicht-ASCII wird durch _ ersetzt, nicht umgeschrieben, die richtige
-// Schreibweise steht ohnehin in filename*.
+// nurASCII is the fallback spelling for the filename part of the header.
+// Non-ASCII is replaced with _ rather than transliterated, since the correct
+// spelling is in filename* anyway.
 func nurASCII(s string) string {
 	var b strings.Builder
 	for _, r := range s {
