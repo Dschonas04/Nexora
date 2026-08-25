@@ -255,8 +255,23 @@ export interface Einstellung {
   geaendertAm?: string;
 }
 
+// Dienst ist ein Teil des Verbunds: die Dienste, mit denen das Backend redet.
+// Der Docker-Verbund selbst steht hier NICHT -- ihn zu sehen hieße, dem
+// Container den Steuerkanal zu geben, und das wäre die Anwendung nicht wert.
+export interface Dienst {
+  name: string;
+  rolle: string;
+  adresse: string;
+  zustand: string;
+  fassung?: string;
+  antwort?: string;
+  hinweis?: string;
+  notwendig: boolean;
+}
+
 // SystemZustand is the read-only half of the settings page.
 export interface SystemZustand {
+  verbund?: Dienst[];
   lizenz: {
     gueltig: boolean;
     inhaber: string;

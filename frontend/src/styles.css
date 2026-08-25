@@ -2731,3 +2731,13 @@ a {
   color: var(--lesen-text);
   line-height: 1.5;
 }
+
+/* Übersicht der Dienste. Die erste Spalte trägt Namen und Rolle, deshalb darf
+   sie breiter sein als der Rest. */
+.verbund-tabelle td:first-child {
+  min-width: 180px;
+}
+
+.verbund-tabelle td {
+  vertical-align: top;
+}
