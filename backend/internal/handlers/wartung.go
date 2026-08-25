@@ -1,9 +1,10 @@
-// Wartungsfunktionen für Administratoren: die Konfigurationsdatei ansehen und
-// ändern, den Dienst neu starten, den Papierkorb der ganzen Instanz leeren.
+// Maintenance functions for administrators: viewing and editing the
+// configuration file, restarting the service, emptying the trash of the whole
+// instance.
 //
-// Alle drei sind Eingriffe, die man sonst auf der Kommandozeile machen würde.
-// Sie hier anzubieten heisst nicht, dass sie harmlos wären, es heisst, dass
-// sie protokolliert stattfinden statt unbemerkt.
+// All three are interventions one would otherwise perform on the command line.
+// Offering them here does not mean they are harmless, it means they happen on
+// the record instead of unnoticed.
 package handlers
 
 import (
@@ -19,13 +20,12 @@ import (
 	"nexora/internal/middleware"
 )
 
-// Zeilen, deren Wert in der Antwort unkenntlich gemacht wird.
+// Lines whose value is masked in the response.
 //
-// Die Datei enthält Zugangsdaten. Sie ungefragt in ein Browserfenster zu
-// schicken hiesse, ein Geheimnis über eine zusätzliche Strecke zu tragen und in
-// den Verlauf einer Sitzung zu schreiben, die jemand offen stehen lässt. Wer
-// den Wert ändern will, schreibt den neuen hin; wer ihn lesen will, geht an die
-// Datei.
+// The file contains credentials. Sending them into a browser window unasked
+// would mean carrying a secret over an extra hop and writing it into the history
+// of a session somebody leaves open. Whoever wants to change a value writes the
+// new one; whoever wants to read it goes to the file.
 var geheimeSchluessel = []string{
 	"jwt_geheimnis", "datenbank_url", "s3_geheimnis", "s3_zugriffsschluessel",
 	"ldap_bind_passwort", "oidc_geheimnis", "lizenz",
@@ -57,12 +57,12 @@ func verstecken(inhalt string) string {
 	return strings.Join(zeilen, "\n")
 }
 
-// zurueckSetzen bringt die versteckten Werte wieder ein.
+// zurueckSetzen puts the masked values back in.
 //
-// Was der Browser als Sterne zurückschickt, war nie beim Browser, es steht
-// weiterhin in der Datei. Der Entwurf übernimmt an dieser Stelle also den alten
-// Wert. Ohne diesen Schritt würde jedes Speichern die Zugangsdaten durch das
-// Wort "********" ersetzen, und beim nächsten Start käme keine Datenbank mehr.
+// What the browser sends back as asterisks was never at the browser; it still
+// stands in the file. At this point the draft therefore takes over the old
+// value. Without this step every save would replace the credentials with the
+// word "********", and the next start would find no database.
 func zurueckSetzen(entwurf, alt string) string {
 	alteWerte := map[string]string{}
 	for _, z := range strings.Split(alt, "\n") {
@@ -117,9 +117,9 @@ func (s *Server) KonfigLesen(w http.ResponseWriter, r *http.Request) {
 		Geheimnisse: geheimeSchluessel,
 	}
 	if pfad == "" {
-		// Ohne Datei ist das kein Fehler: die Instanz läuft dann aus
-		// Umgebungsvariablen und Vorgaben. Die Seite soll das sagen, statt
-		// eine leere Fläche zu zeigen.
+		// A missing file is not an error: the instance then runs from
+		// environment variables and defaults. The page should say so rather
+		// than show an empty area.
 		antwort.Hinweise = append(antwort.Hinweise,
 			"Es wurde keine config.conf gefunden. Diese Instanz läuft aus Umgebungsvariablen und Vorgaben.")
 		writeJSON(w, http.StatusOK, antwort)
@@ -160,10 +160,10 @@ type konfigSchreibReq struct {
 
 // KonfigSchreiben speichert einen Entwurf.
 //
-// Vor dem Schreiben wird geprüft, danach eine Sicherung der alten Fassung
-// angelegt. Beides, weil diese Datei bestimmt, ob der Dienst beim nächsten Mal
-// überhaupt hochkommt: eine kaputte Konfiguration merkt man erst beim Start,
-// und dann ist die alte Fassung weg.
+// The draft is checked before writing and the old version is backed up
+// afterwards. Both, because this file decides whether the service comes up at
+// all next time: a broken configuration only shows on the next start, and by
+// then the old version is gone.
 func (s *Server) KonfigSchreiben(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {
@@ -199,9 +199,8 @@ func (s *Server) KonfigSchreiben(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Sicherung mit Zeitstempel. Ein Fehler dabei hält das Speichern auf: ohne
-	// Sicherung zu überschreiben nimmt genau den Ausweg weg, für den sie da
-	// ist.
+	// A timestamped backup. A failure here stops the save: overwriting without
+	// a backup removes exactly the way out the backup exists for.
 	sicherung, err := sichern(pfad, alt)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError,
@@ -221,24 +220,23 @@ func (s *Server) KonfigSchreiben(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"hinweise":  hinweise,
 		"sicherung": filepath.Base(sicherung),
-		// Gelesen wird die Datei nur beim Start. Das ist kein Mangel, den man
-		// wegprogrammieren sollte: die Datenbankadresse und das
-		// Sitzungsgeheimnis im laufenden Betrieb zu wechseln hiesse, jeden
-		// offenen Vorgang unter der Hand umzuhängen.
+		// The file is only read at startup. That is not a shortcoming to be
+		// programmed away: the database address and the session secret are
+		// values one must not swap under a running operation.
 		"neustartNoetig": true,
 	})
 }
 
-// sichern legt eine Kopie der bisherigen Fassung an und liefert ihren Pfad.
+// sichern makes a copy of the previous version and returns its path.
 //
-// Zuerst ins Datenverzeichnis, nicht neben die Datei. Das ist kein
-// Ordnungsgeschmack: die Konfiguration liegt im Container üblicherweise unter
-// /etc/nexora, und dieses Verzeichnis gehört root, während der Dienst als
-// eigener Benutzer läuft, daneben schreiben kann er dort gar nicht. Das
-// Datenverzeichnis ist der eine Ort, an dem er sicher schreiben darf.
+// Into the data directory first, not next to the file. That is not a matter of
+// taste: inside a container the configuration usually lives under /etc/nexora,
+// that directory belongs to root, and the service runs as its own user, so it
+// cannot write beside the file at all. The data directory is the one place it
+// may reliably write to.
 //
-// Der Rückfall neben die Datei ist für den Betrieb ohne Container gedacht, wo
-// beides zusammenliegt und die Sicherung dort erwartet wird.
+// The fallback next to the file is meant for running without a container, where
+// both live together and the backup is expected there.
 func sichern(pfad string, inhalt []byte) (string, error) {
 	name := fmt.Sprintf("%s.%s.bak", filepath.Base(pfad), time.Now().Format("2006-01-02-1504"))
 
@@ -262,18 +260,17 @@ func sichern(pfad string, inhalt []byte) (string, error) {
 	return ziel, nil
 }
 
-// ersetzen schreibt den neuen Inhalt an die Stelle der alten Datei.
+// ersetzen writes the new content in place of the old file.
 //
-// Zuerst der saubere Weg: daneben schreiben, dann umbenennen. Ein Absturz
-// mitten im Schreiben hinterlässt so keine halbe Datei, und eine halbe
-// Konfiguration ist schlimmer als eine veraltete.
+// The clean way first: write beside it, then rename. A crash mid-write then
+// leaves no half file behind, and half a configuration is worse than an
+// outdated one.
 //
-// Der Weg scheitert aber genau dort, wo diese Anwendung meistens läuft: hängt
-// die Datei einzeln in den Container (docker-compose mit
-// ./config.conf:/etc/nexora/config.conf), dann IST der Pfad der Einhängepunkt,
-// und über einen Einhängepunkt lässt sich nicht umbenennen. Dann bleibt nur,
-// die vorhandene Datei zu überschreiben. Das ist einen Wimpernschlag lang
-// unsicher, deshalb wurde vorher eine Sicherung angelegt.
+// The fallback is for the common case in a container: if the file is mounted
+// individually (docker compose with ./config.conf:/etc/nexora/config.conf) the
+// path IS the mount point, and a mount point cannot be renamed over. Then the
+// only option left is overwriting the existing file. That is unsafe for the
+// blink of an eye, which is why a backup was taken beforehand.
 func ersetzen(pfad, inhalt string) error {
 	vorlaeufig := filepath.Join(filepath.Dir(pfad), "."+filepath.Base(pfad)+".neu")
 	if err := os.WriteFile(vorlaeufig, []byte(inhalt), 0o600); err == nil {
@@ -287,17 +284,17 @@ func ersetzen(pfad, inhalt string) error {
 }
 
 type neustartReq struct {
-	// Bestaetigung muss wörtlich "neustart" sein. Ein versehentlicher Klick
-	// soll den Dienst nicht abschalten.
+	// Bestaetigung has to be the literal word "neustart". An accidental click
+	// must not switch the service off.
 	Bestaetigung string `json:"bestaetigung"`
 }
 
-// Neustart beendet den Prozess.
+// Neustart ends the process.
 //
-// Neu gestartet wird er nicht von hier, sondern von dem, was ihn betreibt,
-// Docker mit restart: unless-stopped, systemd, Kubernetes. Ohne so etwas bleibt
-// der Dienst aus. Deshalb sagt die Oberfläche das ausdrücklich dazu, statt
-// einen Knopf anzubieten, der im schlechtesten Fall der letzte war.
+// Starting it again is not done here but by whatever runs it: Docker with
+// restart: unless-stopped, systemd, Kubernetes. Without something like that the
+// service stays down. The interface says so explicitly rather than offer a
+// button that might turn out to have been the last one.
 func (s *Server) Neustart(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {
@@ -315,9 +312,9 @@ func (s *Server) Neustart(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 
-	// Kurz warten, damit die Antwort noch hinausgeht. Danach beenden,
-	// geordnet genug: offene Anfragen laufen in Millisekunden, und die
-	// Datenbank hält keinen Zustand, der hier abgeschlossen werden müsste.
+	// Wait a moment so the answer still goes out. Then exit, orderly enough:
+	// open requests finish in milliseconds, and the database holds no state
+	// that would have to be wound down here.
 	go func() {
 		time.Sleep(400 * time.Millisecond)
 		log.Printf("beende Prozess für Neustart")
@@ -325,20 +322,20 @@ func (s *Server) Neustart(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-// PapierkorbLeeren entfernt gelöschte Seiten der ganzen Instanz endgültig.
+// PapierkorbLeeren permanently removes deleted pages across the whole instance.
 //
-// Das ist etwas anderes als der Papierkorb eines Kontos: hier verschwinden auch
-// fremde Seiten. Deshalb Admin, deshalb Prüfspur, und deshalb steht die Anzahl
-// in der Antwort, damit hinterher feststeht, was weg ist.
+// This is a different thing from one account's trash: other people's pages
+// disappear here too. Hence administrators only, hence the audit trail, and
+// hence the count in the response, so afterwards it is clear what is gone.
 func (s *Server) PapierkorbLeeren(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
 		return
 	}
-	// Derselbe Weg wie bei der Frist, sonst räumt der Knopf eines Tages
-	// anders auf als die Uhr, und die Anhänge blieben bei einem der beiden
-	// liegen.
+	// The same route as the deadline takes, otherwise the button would one day
+	// clean up differently from the clock, and the attachments would be left
+	// behind by one of the two.
 	anzahl, err := s.PapierkorbAufraeumen(r.Context(), 0)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "Löschen fehlgeschlagen")
