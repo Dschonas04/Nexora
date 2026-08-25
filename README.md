@@ -139,6 +139,9 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml
 
 # plus a bundled MinIO for attachments
 COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.minio.yml
+
+# plus Redis as a cache in front of the database
+COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.redis.yml
 ```
 
 An existing MinIO or S3 is wired up through the `NEXORA_S3_*` settings instead
@@ -500,6 +503,7 @@ frontend/                      React SPA (Vite + TypeScript)
 docker-compose.yml             backend + frontend
 docker-compose.db.yml          optional: bundled PostgreSQL
 docker-compose.minio.yml       optional: bundled MinIO for attachments
+docker-compose.redis.yml       optional: Redis as a cache (never the source of truth)
 ```
 
 
