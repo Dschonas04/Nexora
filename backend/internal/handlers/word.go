@@ -1,10 +1,11 @@
-// Word-Anhänge im Browser lesen und schreiben.
+// Reading and writing Word attachments in the browser.
 //
-// Zwei Aufrufe: einer liefert die Datei als Editorblöcke, der andere nimmt
-// Blöcke entgegen und legt daraus wieder eine .docx an derselben Stelle ab.
+// Two endpoints: one returns the file as editor blocks, the other takes blocks
+// and writes a .docx back to the same place.
 //
-// Was dabei verloren geht, steht in internal/dok/word_lesen.go und wird der
-// Nutzerin vorher gesagt. Kurz: Inhalt bleibt, Aufmachung nicht.
+// What is lost on the way is documented in internal/dok/word_lesen.go, and the
+// interface says so before anyone starts editing. In short: the content
+// survives, the styling does not.
 package handlers
 
 import (
@@ -91,8 +92,8 @@ type wordSchreibenReq struct {
 
 // WordSchreiben stores the edited blocks as a .docx again.
 func (s *Server) WordSchreiben(w http.ResponseWriter, r *http.Request) {
-	// Schreiben in eine Datei ist Bearbeiten eines Anhangs, dieselbe Lizenz
-	// wie das Hochladen.
+	// Writing into a file is editing an attachment, so the same license applies
+	// as for uploading one.
 	if !lizenz.Frei(lizenz.Anhaenge) {
 		writeErr(w, http.StatusPaymentRequired, "Anhänge gehören zum Zusatzumfang")
 		return
@@ -134,10 +135,9 @@ func (s *Server) WordSchreiben(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Unter derselben Kennung ablegen: der Anhang behält seine Adresse, alle
-	// Verweise darauf bleiben gültig. Erst schreiben, dann die Größe
-	// nachführen, andersherum stünde in der Zeile eine Zahl, die nicht zur
-	// Datei gehört.
+	// Stored under the same id: the attachment keeps its address and every link
+	// to it stays valid. Write first, then update the size; the other way round
+	// the row would carry a number that does not belong to the file.
 	if _, err := s.Ablage.Schreiben(r.Context(), attID, bytes.NewReader(roh),
 		int64(len(roh)), mime); err != nil {
 		writeErr(w, http.StatusInternalServerError, "Ablage nicht erreichbar")
@@ -145,8 +145,8 @@ func (s *Server) WordSchreiben(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Pool.Exec(r.Context(), `UPDATE attachments SET size=$2 WHERE id=$1`, attID, len(roh))
 
-	// Der Volltext wird nachgezogen, sonst fände die Suche noch den alten
-	// Stand, und das ist die Art Fehler, die man erst Wochen später bemerkt.
+	// The full text is refreshed, otherwise search would still find the old
+	// version, and that is the kind of bug noticed weeks later.
 	if lizenz.Frei(lizenz.Anhangsuche) {
 		if txt := textAusAnhang(r.Context(), roh, mime, name); txt != "" {
 			s.Pool.Exec(r.Context(),
@@ -154,9 +154,8 @@ func (s *Server) WordSchreiben(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Eigene Aktion statt "hochgeladen": eine Datei zu ersetzen ist etwas
-	// anderes als eine hinzuzufügen, und in der Spur muss man das
-	// unterscheiden können.
+	// Its own audit action rather than "uploaded": replacing a file is a
+	// different act from adding one, and the trail has to tell them apart.
 	s.spurAusRequest(r, AktAnhangBearbeitet, "anhang", attID, name,
 		map[string]any{"bytes": len(roh)})
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "bytes": len(roh)})

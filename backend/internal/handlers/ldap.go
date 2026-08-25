@@ -1,13 +1,13 @@
-// Anmeldung gegen ein Verzeichnis (LDAP oder Active Directory).
+// Signing in against a directory (LDAP or Active Directory).
 //
-// Der Ablauf ist derselbe wie bei jedem Verzeichnisdienst: mit einem
-// Dienstkonto anmelden, den Benutzer suchen, dann versuchen, sich als dieser
-// Benutzer mit dem eingegebenen Passwort anzumelden. Gelingt das, stimmt das
-// Passwort, geprüft hat es das Verzeichnis, nicht Nexora.
+// The sequence is the same as with any directory service: bind with a service
+// account, search for the user, then try to bind as that user with the password
+// they typed. If that succeeds the password is correct, and it was the
+// directory that checked it, not Nexora.
 //
-// Das Passwort wird hier nie gespeichert, auch nicht als Prüfsumme. Wer im
-// Verzeichnis gesperrt wird, kommt beim nächsten Versuch nicht mehr herein; die
-// laufende Sitzung endet mit ihrer Frist oder wenn jemand sie beendet.
+// The password is never stored here, not even as a hash. Someone locked out in
+// the directory cannot get back in on their next attempt; a session already
+// running ends with its deadline or when somebody revokes it.
 package handlers
 
 import (
@@ -55,8 +55,8 @@ func (s *Server) LDAPAnmeldung(w http.ResponseWriter, r *http.Request) {
 
 	name, email, admin, err := s.ldapPruefen(req.Benutzer, req.Passwort)
 	if err != nil {
-		// Dieselbe Meldung für "gibt es nicht" und "falsches Passwort": sonst
-		// ließe sich das Verzeichnis über diese Schnittstelle durchprobieren.
+		// The same message for "does not exist" and "wrong password": otherwise
+		// the directory could be enumerated through this endpoint.
 		log.Printf("LDAP-Anmeldung für %q gescheitert: %v", req.Benutzer, err)
 		s.spur(r.Context(), models.Spureintrag{
 			Aktion: AktAnmeldungFehl, AkteurEmail: req.Benutzer,
@@ -85,8 +85,8 @@ func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, e
 	k := s.SSO.Konf
 
 	verbindung, err := ldap.DialURL(k.LDAPServer, ldap.DialWithTLSConfig(&tls.Config{
-		// Nur abschaltbar, weil ein Verzeichnis im eigenen Haus oft ein selbst
-		// ausgestelltes Zertifikat trägt. Die Vorgabe prüft.
+		// Only switchable because an in-house directory often carries a
+		// self-issued certificate. The default verifies.
 		InsecureSkipVerify: !k.LDAPTLSPruefen,
 	}))
 	if err != nil {
@@ -95,16 +95,16 @@ func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, e
 	defer verbindung.Close()
 	verbindung.SetTimeout(10 * time.Second)
 
-	// StartTLS auf einer bereits verschlüsselten Verbindung (ldaps://) wäre ein
-	// Fehler, deshalb nur bei ldap://.
+	// StartTLS on an already encrypted connection (ldaps://) would be an error,
+	// hence only for ldap://.
 	if k.LDAPStartTLS && strings.HasPrefix(strings.ToLower(k.LDAPServer), "ldap://") {
 		if err := verbindung.StartTLS(&tls.Config{InsecureSkipVerify: !k.LDAPTLSPruefen}); err != nil {
 			return "", "", false, fmt.Errorf("StartTLS: %w", err)
 		}
 	}
 
-	// Erst das Dienstkonto: ohne es darf man in vielen Verzeichnissen gar nicht
-	// suchen. Fehlt es, wird anonym gesucht, manche erlauben das.
+	// The service account first: many directories do not allow searching without
+	// one. If none is configured the search is anonymous, which some allow.
 	if k.LDAPBindDN != "" {
 		if err := verbindung.Bind(k.LDAPBindDN, k.LDAPBindPasswort); err != nil {
 			return "", "", false, fmt.Errorf("Dienstkonto: %w", err)
@@ -115,8 +115,8 @@ func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, e
 	if filter == "" {
 		filter = "(&(objectClass=person)(|(uid=%s)(sAMAccountName=%s)(mail=%s)))"
 	}
-	// Der eingegebene Name geht maskiert in den Filter. Ohne das ließe sich mit
-	// ")(|(uid=*" der Filter umschreiben und jedes Konto treffen.
+	// The typed name goes into the filter escaped. Without that, ")(|(uid=*"
+	// would rewrite the filter and match every account.
 	sicher := ldap.EscapeFilter(benutzer)
 	filter = strings.ReplaceAll(filter, "%s", sicher)
 
@@ -129,9 +129,9 @@ func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, e
 		return "", "", false, fmt.Errorf("Suche: %w", err)
 	}
 	if len(antwort.Entries) != 1 {
-		// Auch bei mehr als einem Treffer abbrechen: welcher gemeint war, ist
-		// dann nicht entscheidbar, und zu raten hieße, jemanden als jemand
-		// anderen anzumelden.
+		// Abort on more than one hit as well: which one was meant cannot be
+		// decided, and guessing would mean signing somebody in as somebody
+		// else.
 		return "", "", false, errors.New("kein eindeutiger Eintrag")
 	}
 	eintrag := antwort.Entries[0]

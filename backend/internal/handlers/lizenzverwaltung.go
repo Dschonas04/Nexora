@@ -1,13 +1,13 @@
-// Lizenzschlüssel einlesen und ausstellen, beides aus der Verwaltung heraus.
+// Importing and issuing license keys, both from the administration pages.
 //
-// Einlesen kann jede Installation: der Schlüssel wird geprüft, in der Datenbank
-// abgelegt und sofort wirksam. Ohne das müsste man an die Konfigurationsdatei
-// und den Dienst neu starten, um eine verlängerte Lizenz einzuspielen.
+// Importing works on any installation: the key is verified, stored in the
+// database and takes effect at once. Without that, renewing a license would
+// mean editing the configuration file and restarting the service.
 //
-// Ausstellen kann nur, wer den privaten Schlüssel hat. Das ist der Herausgeber
-// und sonst niemand: geprüft wird offline, also ist der private Schlüssel die
-// einzige Grenze zwischen "hat bezahlt" und "hat sich einen Schlüssel gebaut".
-// Er kommt aus der Umgebung und steht nirgends im Verzeichnis.
+// Issuing works only where the private key is present. That is the licensor and
+// nobody else: verification happens offline, so the private key is the only
+// thing separating "has paid" from "has written a key". It comes from the
+// environment and lives nowhere in the repository.
 package handlers
 
 import (
@@ -22,10 +22,9 @@ import (
 	"nexora/internal/middleware"
 )
 
-// lizenzSchluessel ist der Name, unter dem der eingelesene Schlüssel liegt.
-// Bewusst nicht in der Liste der gewöhnlichen Einstellungen: er gehört nicht in
-// eine Maske neben Farben und Fristen, und er soll nicht versehentlich in einer
-// Übersicht auftauchen.
+// lizenzSchluessel is the name the imported key is stored under. Deliberately
+// not part of the ordinary settings list: it does not belong in a form next to
+// colours and deadlines, and it must not turn up in an overview by accident.
 const lizenzSchluessel = "lizenz"
 
 type lizenzEinlesenReq struct {
@@ -46,8 +45,8 @@ func (s *Server) LizenzEinlesen(w http.ResponseWriter, r *http.Request) {
 	}
 	schluessel := strings.TrimSpace(req.Schluessel)
 
-	// Ein leerer Schlüssel nimmt die Lizenz zurück. Das ist kein Versehen,
-	// sondern der Weg zurück auf den freien Umfang.
+	// An empty key withdraws the license. That is not an oversight, it is the
+	// way back to the free feature set.
 	if schluessel == "" {
 		if _, err := s.Pool.Exec(r.Context(),
 			`DELETE FROM einstellungen WHERE schluessel=$1`, lizenzSchluessel); err != nil {
@@ -60,9 +59,9 @@ func (s *Server) LizenzEinlesen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Erst prüfen, dann speichern. Ein ungültiger Schlüssel in der Datenbank
-	// hieße: beim nächsten Start meldet der Dienst einen Fehler, den niemand
-	// mehr mit diesem Klick in Verbindung bringt.
+	// Verify first, store second. An invalid key in the database would mean the
+	// service reports an error on its next start that nobody connects with this
+	// click any more.
 	z, err := lizenz.Pruefe(schluessel)
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
@@ -92,7 +91,7 @@ type lizenzAusstellenReq struct {
 	Ablauf     string   `json:"ablauf"`     // YYYY-MM-DD, empty means one year
 }
 
-// LizenzAusstellen signiert einen neuen Schlüssel.
+// LizenzAusstellen signs a new key.
 func (s *Server) LizenzAusstellen(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {
@@ -146,22 +145,22 @@ func (s *Server) LizenzAusstellen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Der ausgestellte Schlüssel steht in der Prüfspur mit Inhaber und Stufe,
-	// aber ohne den Schlüssel selbst: wer die Spur lesen darf, soll nicht
-	// nebenbei fremde Lizenzen einsammeln können.
+	// The audit trail records holder and tier of the issued key, but never the
+	// key itself: whoever may read the trail should not be able to collect
+	// other people's licenses along the way.
 	s.spurAusRequest(r, AktLizenzAusgestellt, "system", "", req.Inhaber,
 		map[string]any{"stufe": req.Stufe, "ablauf": req.Ablauf})
 
 	writeJSON(w, http.StatusOK, map[string]string{"schluessel": schluessel})
 }
 
-// LizenzAusDatenbank holt einen eingelesenen Schlüssel beim Start. Er hat
-// Vorrang vor der Konfigurationsdatei: was zuletzt über die Verwaltung
-// eingespielt wurde, ist der jüngere Wille.
+// LizenzAusDatenbank fetches an imported key at startup. It takes precedence
+// over the configuration file: whatever was imported through the administration
+// pages last is the more recent intent.
 //
-// Fehler werden verschluckt und als "kein Schlüssel" behandelt. Beim Start ist
-// die Tabelle unter Umständen gerade erst angelegt worden, und eine Lizenz ist
-// kein Grund, den Dienst nicht hochkommen zu lassen.
+// Errors are swallowed and treated as "no key". At startup the table may have
+// been created moments ago, and a license is no reason to keep the service from
+// coming up.
 func LizenzAusDatenbank(ctx context.Context, pool *pgxpool.Pool) string {
 	var wert string
 	if err := pool.QueryRow(ctx,

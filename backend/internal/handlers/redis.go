@@ -1,14 +1,13 @@
-// Redis als geteilter Zwischenspeicher.
+// Redis as a shared cache.
 //
-// Die Rollenverteilung ist ausdrücklich: PostgreSQL hält die Wahrheit, Redis
-// hält eine schnelle Kopie. Alles, was hier liegt, lässt sich jederzeit aus der
-// Datenbank neu herstellen, deshalb ist ein Ausfall von Redis kein Ausfall
-// der Anwendung, sondern nur eine langsamere.
+// The division of labour is deliberate: PostgreSQL holds the truth, Redis holds
+// a fast copy. Everything kept here can be rebuilt from the database at any
+// time, which is why a Redis outage is not an outage of the application, only a
+// slower one.
 //
-// Genau darin liegt der Unterschied zu der verbreiteten Bauweise, Sitzungen
-// ausschließlich in Redis zu legen: dort bedeutet ein Neustart des Speichers,
-// dass alle abgemeldet sind, und ein Verlust bedeutet, dass niemand mehr sagen
-// kann, wer angemeldet war.
+// That is exactly the difference from the common design of keeping sessions in
+// Redis alone: there a restart of the cache signs everyone out, and losing it
+// means nobody can say who was signed in.
 package handlers
 
 import (
@@ -23,13 +22,13 @@ import (
 // RedisSpeicher bundles the connection and the namespace.
 type RedisSpeicher struct {
 	client *redis.Client
-	// Vorsilbe vor jedem Schlüssel, damit sich zwei Nexora-Instanzen eine
-	// Redis teilen können, ohne sich die Einträge gegenseitig zu überschreiben.
+	// A prefix in front of every key, so two Nexora instances can share one
+	// Redis without overwriting each other's entries.
 	vorsilbe string
 }
 
-// NeuRedis verbindet sich. Ein Fehler ist keiner, mit dem der Dienst stehen
-// bleiben darf: die Anwendung läuft ohne Redis vollständig.
+// NeuRedis connects. A failure here must never stop the service: the
+// application runs perfectly well without Redis.
 func NeuRedis(ctx context.Context, adresse, passwort string, datenbank int, vorsilbe string) *RedisSpeicher {
 	adresse = strings.TrimSpace(adresse)
 	if adresse == "" {
@@ -39,8 +38,8 @@ func NeuRedis(ctx context.Context, adresse, passwort string, datenbank int, vors
 		Addr:     adresse,
 		Password: passwort,
 		DB:       datenbank,
-		// Kurze Fristen: ein hängender Zwischenspeicher darf keine Anfrage
-		// aufhalten. Lieber ohne ihn antworten als mit ihm warten.
+		// Short deadlines: a hanging cache must not hold up a request. Better
+		// to answer without it than to wait for it.
 		DialTimeout:  2 * time.Second,
 		ReadTimeout:  time.Second,
 		WriteTimeout: time.Second,
@@ -90,19 +89,19 @@ func (s *Server) redisSitzungMerken(sid string, gilt bool) {
 	if gilt {
 		wert = "1"
 	} else {
-		// Ein Widerruf wird länger festgehalten als eine Gültigkeit: er ist
-		// die Aussage, auf die es ankommt, und er ändert sich nicht mehr.
+		// A revocation is remembered longer than a validity: it is the
+		// statement that matters, and it will not change again.
 		dauer = 10 * time.Minute
 	}
 	s.Redis.client.Set(ctx, s.Redis.schluessel("sitzung", sid), wert, dauer)
 }
 
-// ZaehlerHoch zählt ein Ereignis und liefert den Stand innerhalb des Fensters.
+// ZaehlerHoch counts an event and returns the tally inside the window.
 //
-// Damit lassen sich Anmeldeversuche begrenzen, ohne dafür eine Tabelle zu
-// führen. Ohne Redis liefert es 0, der Aufrufer behandelt das als "keine
-// Begrenzung", denn eine Sperre, die ohne Zwischenspeicher zufällig zuschlägt,
-// wäre schlimmer als keine.
+// It allows sign-in attempts to be rate limited without keeping a table for it.
+// Without Redis it returns 0, which the caller treats as "no limit": a lockout
+// that fires at random depending on whether a cache happens to be there would
+// be worse than none at all.
 func (s *Server) ZaehlerHoch(art, id string, fenster time.Duration) int64 {
 	if s.Redis == nil {
 		return 0
