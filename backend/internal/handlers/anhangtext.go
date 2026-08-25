@@ -90,7 +90,7 @@ func kuerzen(s string) string {
 //
 // Der Anhang muss ohnehin durch den Server laufen, um in der Ablage zu landen.
 // Ihn danach zum Auslesen ein zweites Mal zu holen wäre eine vermeidbare Runde
-// -- gerade beim Objektspeicher, wo das über das Netz ginge.
+// gerade beim Objektspeicher, wo das über das Netz ginge.
 //
 // Gepuffert wird nur bis zur Indexgrenze; alles darüber fließt durch, ohne
 // gemerkt zu werden. Sonst läge eine 200-MB-Datei komplett im Arbeitsspeicher.

@@ -307,7 +307,7 @@ func (l *htmlLeser) liste(n *html.Node, nummeriert bool, stile map[string]bool) 
 }
 
 // tabelle liest eine HTML-Tabelle. Verbundene Zellen werden nicht aufgelöst,
-// der Editor kennt sie nicht --, aber alle Zeilen bekommen dieselbe Breite,
+// der Editor kennt sie nicht, aber alle Zeilen bekommen dieselbe Breite,
 // damit keine unvollständige Tabelle entsteht.
 func (l *htmlLeser) tabelle(n *html.Node, stile map[string]bool) (Block, bool) {
 	var zeilen [][][]Inline

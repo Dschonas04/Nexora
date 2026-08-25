@@ -268,7 +268,7 @@ pruefe "Zähler antwortet" "0" "$(hole "$BASIS/api/postfach/anzahl" | feld "['un
 echo
 if [ "$fehler" -gt 0 ]; then
     echo "$fehler Prüfungen sind gefallen." >&2
-    echo "--- Protokoll des Dienstes ---" >&2
+    echo "Protokoll des Dienstes:" >&2
     tail -40 "$ARBEIT/dienst.log" >&2
     exit 1
 fi

@@ -340,7 +340,7 @@ func einfuhrName(dateien []einfuhrDatei) string {
 //
 // Einträge mit ".." im Pfad werden verworfen. Sie könnten hier zwar nichts
 // anrichten, geschrieben wird nichts auf die Platte, die Pfade dienen nur dem
-// Wiederfinden von Verweisen --, aber ein Archiv, das so etwas enthält, hat es
+// Wiederfinden von Verweisen, aber ein Archiv, das so etwas enthält, hat es
 // nicht gut gemeint, und der Rest davon verdient dasselbe Misstrauen.
 func archivLesen(datei io.ReaderAt, groesse int64) ([]einfuhrDatei, map[string]einfuhrDatei, []string) {
 	var md []einfuhrDatei
@@ -404,7 +404,7 @@ var notionMuster = regexp.MustCompile(`^(.*[^ -])[ -]+([0-9a-f]{32})$`)
 // sauberterTitel macht aus einem Datei- oder Ordnernamen einen Titel.
 //
 // Notion-Ausfuhren tragen ihre innere Kennung im Namen, "Wochenplan
-// 8f3a...c1" --, und wer das nicht abschneidet, bekommt hundert Seiten mit
+// 8f3a...c1", und wer das nicht abschneidet, bekommt hundert Seiten mit
 // Kauderwelsch im Titel. Am Pfad ändert das nichts: Verweise werden über den
 // Pfad aufgelöst, nicht über den Titel.
 func sauberterTitel(name string) string {
@@ -658,7 +658,7 @@ func findeDatei(dateien []einfuhrDatei, kleinPfad string) *einfuhrDatei {
 // der dabei angelegten Anhänge.
 //
 // Drei Fälle. Ein Verweis auf eine andere eingeführte Datei wird zu
-// [[Titel]] -- der Verweisform, die Nexora selbst schreibt und die Rückverweise
+// [[Titel]], der Verweisform, die Nexora selbst schreibt und die Rückverweise
 // und Wissensnetz speist. Ein Verweis auf eine Beilage wird zum Anhang dieser
 // Seite. Alles andere bleibt, wie es war: eine Adresse ins Netz ist nach dem
 // Import so gültig wie davor.

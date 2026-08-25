@@ -210,7 +210,7 @@ func WordMehrere(docs []Dokument) ([]byte, error) {
 			// Als Überschrift der ersten Ebene, nicht als fetter Absatz: Word
 			// zeigt sie dann im Navigationsbereich, und beim Wiedereinlesen
 			// ist sie als Titel zu erkennen. Vorher war sie nur groß und fett
-			// -- für das Auge dasselbe, für jedes Programm nichts.
+			// für das Auge dasselbe, für jedes Programm nichts.
 			koerper.WriteString(`<w:p><w:pPr><w:pStyle w:val="Heading1"/>` +
 				`<w:spacing w:after="240"/></w:pPr>` +
 				lauf(Stueck{Text: d.Titel, Fett: true}, 24, false) + `</w:p>`)

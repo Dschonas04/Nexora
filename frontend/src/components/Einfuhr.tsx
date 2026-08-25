@@ -2,7 +2,7 @@
 //
 // The dialog does three things and says which one it is doing: pick files, wait
 // while they are read, show what came of it. The report at the end is the point
-// -- an import that silently skipped eleven files looks exactly like one that
+// an import that silently skipped eleven files looks exactly like one that
 // worked, and the difference only surfaces weeks later when something is
 // missing.
 import { useEffect, useRef, useState } from "react";
@@ -26,7 +26,7 @@ export default function Einfuhr({
   const [laeuft, setLaeuft] = useState(false);
   const [vorschau, setVorschau] = useState<EinfuhrVorschau | null>(null);
   // Die gewählten Dateien werden festgehalten, bis die Vorschau bestätigt ist
-  // -- sonst müsste man sie zum Einführen ein zweites Mal auswählen.
+  // sonst müsste man sie zum Einführen ein zweites Mal auswählen.
   const [dateien, setDateien] = useState<File[]>([]);
   const [bericht, setBericht] = useState<EinfuhrBericht | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);

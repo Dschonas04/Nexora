@@ -8,7 +8,7 @@
 // Three things land here, and deliberately only three: a comment on a page you
 // own, a reply to a comment you wrote, and your name in somebody's comment.
 // Everything else, a page changed, a tag added, somebody looked at your work
-// -- is noise, and an inbox that carries noise is an inbox people stop opening.
+// is noise, and an inbox that carries noise is an inbox people stop opening.
 package handlers
 
 import (
@@ -151,7 +151,7 @@ func (s *Server) PostfachGelesen(w http.ResponseWriter, r *http.Request) {
 }
 
 // PostfachLeeren wirft die gelesenen Nachrichten weg. Die ungelesenen bleiben
-// -- sonst wäre der Knopf ein Weg, etwas zu übersehen, das man nie gesehen hat.
+// sonst wäre der Knopf ein Weg, etwas zu übersehen, das man nie gesehen hat.
 func (s *Server) PostfachLeeren(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	tag, err := s.Pool.Exec(r.Context(),

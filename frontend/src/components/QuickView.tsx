@@ -126,7 +126,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   }, [datei?.id]);
 
   // Word-Anhang holen. Nicht die Bytes, die kann der Browser nicht anzeigen
-  // --, sondern den Inhalt als Blöcke, den der Server aus der Datei liest.
+  //, sondern den Inhalt als Blöcke, den der Server aus der Datei liest.
   useEffect(() => {
     if (!datei || !istWord(typ) || !datei.seiteId) return;
     let weg = false;
@@ -293,7 +293,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             // nachzubauen wäre viel Code für ein schlechteres Ergebnis.
             //
             // <object> statt <iframe>: Browser, die PDF nicht selbst anzeigen
-            // können, und mobile Browser können es meist nicht --, zeigen
+            // können, und mobile Browser können es meist nicht, zeigen
             // dann den Inhalt zwischen den Marken statt einer leeren weißen
             // Fläche, vor der man ratlos sitzt.
             <object className="qv-frame" data={datei.url} type="application/pdf" aria-label={datei.filename}>

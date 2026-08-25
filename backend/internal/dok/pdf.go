@@ -8,7 +8,7 @@
 // benannter Verweis.
 //
 // Kodiert wird nach WinAnsi. Umlaute kommen damit an; was darin nicht vorkommt
-// -- etwa Zeichen aus anderen Schriftsystemen, wird zu einem Fragezeichen.
+// etwa Zeichen aus anderen Schriftsystemen, wird zu einem Fragezeichen.
 // Das ist die Grenze der Grundschriften, nicht ein Versehen.
 package dok
 
@@ -198,7 +198,7 @@ func (s *setzer) zeileSetzen(woerter []wort, x, zeilenHoehe float64) {
 // umbrechen verteilt Textstücke auf Zeilen, die in breite passen.
 //
 // Umbrochen wird an Leerzeichen. Ein einzelnes Wort, das länger ist als die
-// Zeile, eine lange Adresse etwa --, wird hart getrennt, sonst liefe es über
+// Zeile, eine lange Adresse etwa, wird hart getrennt, sonst liefe es über
 // den Rand hinaus und wäre halb weg.
 func umbrechen(stuecke []wort, breite float64) [][]wort {
 	var zeilen [][]wort

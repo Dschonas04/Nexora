@@ -62,7 +62,7 @@ type Dokument struct {
 	Absatz []Absatz
 }
 
-// -- Einlesen des Editor-Dokuments -----------------------------------------
+// Einlesen des Editor-Dokuments
 
 type knoten struct {
 	Type     string          `json:"type"`

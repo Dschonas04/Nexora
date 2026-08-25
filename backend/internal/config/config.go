@@ -35,37 +35,37 @@ type Konfig struct {
 	// ohne den Pfad müsste sie raten, und raten hiesse: die falsche ändern.
 	Pfad string
 
-	// --- Server ---
+	// Server
 	Port            string
 	DatenVerzeich   string
 	OeffentlicheURL string
 
-	// --- Datenbank ---
+	// Datenbank
 	DatenbankURL string
 
-	// --- Sitzungen ---
+	// Sitzungen
 	JWTGeheimnis string
 	SitzungTage  int
 
-	// --- Lizenz ---
+	// Lizenz
 	Lizenz string
 
-	// --- Registrierung ---
+	// Registrierung
 	RegistrierungOffen bool
 	ErlaubteDomaenen   []string
 
-	// --- Suche ---
+	// Suche
 	SuchWoerterbuch string
 
-	// --- Anhänge ---
+	// Anhänge
 	MaxAnhangMB int
 
-	// --- Papierkorb ---
+	// Papierkorb
 	// Nach wie vielen Tagen im Papierkorb eine Seite endgültig verschwindet.
 	// 0 heißt: nie von selbst, dann bleibt sie liegen, bis jemand sie löscht.
 	PapierkorbTage int
 
-	// --- Objektspeicher (S3) ---
+	// Objektspeicher (S3)
 	S3Aktiv     bool
 	S3Endpunkt  string
 	S3Bucket    string
@@ -75,7 +75,7 @@ type Konfig struct {
 	S3TLS       bool
 	S3Pfadstil  bool
 
-	// --- Redis ---
+	// Redis
 	//
 	// Freiwillig. Redis ist hier ein Zwischenspeicher, keine Ablage: alles,
 	// was darin liegt, steht auch in der Datenbank. Fehlt Redis, läuft die
@@ -85,7 +85,7 @@ type Konfig struct {
 	RedisDatenbank int
 	RedisVorsilbe  string
 
-	// --- LDAP / Active Directory ---
+	// LDAP / Active Directory
 	LDAPAktiv          bool
 	LDAPServer         string
 	LDAPStartTLS       bool
@@ -98,7 +98,7 @@ type Konfig struct {
 	LDAPFeldEmail      string
 	LDAPGruppeAdmin    string
 
-	// --- OIDC / Keycloak ---
+	// OIDC / Keycloak
 	OIDCAktiv       bool
 	OIDCAussteller  string
 	OIDCClientID    string
@@ -308,7 +308,7 @@ func datei(pfad string) (map[string]string, error) {
 // sie kaputt ist, hiesse: beim nächsten Start startet nichts mehr.
 //
 // Die zweite Rückgabe sind Beanstandungen: Zeilen ohne '=' und doppelte
-// Schlüssel. Sie sind keine Fehler, die Datei bleibt lesbar --, aber fast
+// Schlüssel. Sie sind keine Fehler, die Datei bleibt lesbar, aber fast
 // immer ein Versehen.
 func lesen(r io.Reader, name string) (map[string]string, []string, error) {
 	werte := map[string]string{}

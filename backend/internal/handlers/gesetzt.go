@@ -34,7 +34,7 @@ func (s *Server) seiteAlsDokument(r *http.Request, id string) (dok.Dokument, boo
 
 // dateiKopf setzt Typ und Dateiname. Zwei Angaben mit Absicht: filename für
 // Klienten, die nur ASCII verstehen, filename* nach RFC 5987 für alle anderen
-// -- damit "Übersicht" eine Übersicht bleibt.
+// damit "Übersicht" eine Übersicht bleibt.
 func dateiKopf(w http.ResponseWriter, typ, name, endung string) {
 	w.Header().Set("Content-Type", typ)
 	w.Header().Set("Content-Disposition",

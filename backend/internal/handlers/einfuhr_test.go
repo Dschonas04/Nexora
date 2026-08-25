@@ -85,7 +85,7 @@ func TestZielPfadRelativ(t *testing.T) {
 
 func TestZielPfadBleibtImArchiv(t *testing.T) {
 	// Ein Verweis darf nicht aus dem Archiv herausführen. Er kann hier zwar
-	// nichts anrichten, es wird nichts auf die Platte geschrieben --, aber
+	// nichts anrichten, es wird nichts auf die Platte geschrieben, aber
 	// er soll auch nichts treffen.
 	if p := zielPfad("../../etc/passwd", "a/b"); strings.HasPrefix(p, "..") {
 		t.Fatalf("Pfad führt aus dem Archiv: %q", p)
