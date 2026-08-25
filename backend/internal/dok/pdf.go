@@ -30,7 +30,7 @@ const (
 	satzBreite  = seiteBreite - randLinks - randRechts
 )
 
-// Schriftkennungen im PDF. Die Namen tauchen im Inhaltsstrom auf.
+// Font identifiers inside the PDF. The names show up in the content stream.
 const (
 	fNormal     = "F1"
 	fFett       = "F2"
@@ -57,14 +57,14 @@ func breitenTabelle(f string) *[256]int16 {
 	}
 }
 
-// textBreite misst eine Zeichenkette in Punkt.
+// textBreite measures a string in points.
 func textBreite(s string, schrift string, groesse float64) float64 {
 	tab := breitenTabelle(schrift)
 	summe := 0
 	for _, b := range nachWinAnsi(s) {
 		w := tab[b]
 		if w == 0 {
-			w = 500 // unbekanntes Zeichen: mittlere Breite, damit nichts überläuft
+			w = 500 // unknown character: average width, so nothing overflows
 		}
 		summe += int(w)
 	}
@@ -92,7 +92,7 @@ func nachWinAnsi(s string) []byte {
 	return out
 }
 
-// Zeichen zwischen 128 und 159, die WinAnsi anders belegt als Unicode.
+// Characters between 128 and 159, where WinAnsi differs from Unicode.
 var winAnsiSonder = map[rune]byte{
 	'€': 128, '‚': 130, 'ƒ': 131, '„': 132, '…': 133,
 	'†': 134, '‡': 135, 'ˆ': 136, '‰': 137, 'Š': 138,
@@ -105,7 +105,7 @@ var winAnsiSonder = map[rune]byte{
 	' ': 32, '​': 32,
 }
 
-// pdfZeichenkette maskiert, was in einer PDF-Zeichenkette eine Bedeutung hat.
+// pdfZeichenkette escapes what carries meaning inside a PDF string.
 func pdfZeichenkette(s string) string {
 	var b strings.Builder
 	b.WriteByte('(')
@@ -126,21 +126,21 @@ func pdfZeichenkette(s string) string {
 	return b.String()
 }
 
-// wort ist ein Stück Text mit Schrift und Farbe, wie es gesetzt wird.
+// wort is a piece of text with its font and colour, ready to be set.
 type wort struct {
 	text    string
 	schrift string
 	groesse float64
-	verweis bool // wird farbig und unterstrichen gesetzt
+	verweis bool // set in colour and underlined
 	durch   bool
 	unter   bool
 }
 
-// setzer baut den Inhaltsstrom Seite für Seite auf.
+// setzer builds the content stream page by page.
 type setzer struct {
 	seiten []*bytes.Buffer
 	akt    *bytes.Buffer
-	y      float64 // aktuelle Grundlinie, von oben gemessen
+	y      float64 // current baseline, measured from the top
 	titel  string
 	fuss   string
 }
@@ -157,14 +157,14 @@ func (s *setzer) neueSeite() {
 	s.y = seiteHoehe - randOben
 }
 
-// platzPruefen sorgt dafür, dass hoehe Punkte noch auf die Seite passen.
+// platzPruefen makes sure hoehe points still fit on the page.
 func (s *setzer) platzPruefen(hoehe float64) {
 	if s.y-hoehe < randUnten {
 		s.neueSeite()
 	}
 }
 
-// zeileSetzen schreibt eine fertig umbrochene Zeile.
+// zeileSetzen writes one line that has already been wrapped.
 func (s *setzer) zeileSetzen(woerter []wort, x, zeilenHoehe float64) {
 	s.platzPruefen(zeilenHoehe)
 	s.y -= zeilenHoehe
@@ -175,7 +175,7 @@ func (s *setzer) zeileSetzen(woerter []wort, x, zeilenHoehe float64) {
 		}
 		breite := textBreite(w.text, w.schrift, w.groesse)
 		if w.verweis {
-			// 0.10 0.35 0.65: dasselbe gedeckte Blau wie in der Oberfläche.
+			// 0.10 0.35 0.65: the same muted blue the interface uses.
 			fmt.Fprintf(s.akt, "0.10 0.35 0.65 rg\n")
 		}
 		fmt.Fprintf(s.akt, "BT /%s %.1f Tf %.2f %.2f Td %s Tj ET\n",
@@ -220,7 +220,7 @@ func umbrechen(stuecke []wort, breite float64) [][]wort {
 			if lauf+w > breite && len(zeile) > 0 && strings.TrimSpace(t) != "" {
 				neueZeile()
 			}
-			// Immer noch zu lang: hart trennen.
+			// Still too long: break it hard.
 			for textBreite(t, st.schrift, st.groesse) > breite {
 				schnitt := len(t)
 				for schnitt > 1 && textBreite(t[:schnitt], st.schrift, st.groesse) > breite {
@@ -234,7 +234,7 @@ func umbrechen(stuecke []wort, breite float64) [][]wort {
 				continue
 			}
 			if lauf == 0 && strings.TrimSpace(t) == "" {
-				// Kein Zeilenanfang mit Leerzeichen.
+				// No line may start with a space.
 				continue
 			}
 			zeile = append(zeile, wort{t, st.schrift, st.groesse, st.verweis, st.durch, st.unter})
@@ -275,7 +275,7 @@ func zerlegeMitLeerzeichen(s string) []string {
 	return out
 }
 
-// schriftFuer wählt die Schnittform zu einem Textstück.
+// schriftFuer picks the face for a run of text.
 func schriftFuer(s Stueck) string {
 	switch {
 	case s.Fest && s.Fett:
@@ -310,10 +310,10 @@ func alsWoerter(st []Stueck, groesse float64, immerFett bool) []wort {
 	return out
 }
 
-// Schriftgrößen der Überschriftstufen.
+// Font sizes of the heading levels.
 var ueberschriftGroesse = map[int]float64{1: 20, 2: 16, 3: 14, 4: 12.5, 5: 11.5, 6: 11}
 
-// PDF setzt ein Dokument und liefert die fertige Datei.
+// PDF typesets a document and returns the finished file.
 func PDF(d Dokument) []byte {
 	return PDFMehrere([]Dokument{d}, d.Titel)
 }
@@ -405,7 +405,7 @@ func (s *setzer) absatzSetzen(a Absatz) {
 				}
 				s.platzPruefen(13)
 				s.y -= 13
-				// Hinterlegung, damit der Block als Block zu erkennen ist.
+				// A tint behind it, so the block reads as a block.
 				fmt.Fprintf(s.akt, "0.95 0.95 0.95 rg %.2f %.2f %.2f %.2f re f 0 0 0 rg\n",
 					einzug, s.y-3.5, breite, 13.0)
 				fmt.Fprintf(s.akt, "BT /%s 9.5 Tf %.2f %.2f Td %s Tj ET\n",
@@ -482,7 +482,7 @@ func (s *setzer) tabelleSetzen(zeilen [][]string, x, breite float64) {
 		if zi == 0 {
 			schrift = fFett
 		}
-		// Höchste Zelle bestimmt die Zeilenhöhe.
+		// The tallest cell decides the row height.
 		umbrochen := make([][][]wort, spalten)
 		hoch := 1
 		for i := 0; i < spalten; i++ {
@@ -514,7 +514,7 @@ func (s *setzer) tabelleSetzen(zeilen [][]string, x, breite float64) {
 					lauf += textBreite(w.text, w.schrift, w.groesse)
 				}
 			}
-			// Rahmen der Zelle.
+			// The cell border.
 			fmt.Fprintf(s.akt, "0.8 0.8 0.8 RG %.2f %.2f %.2f %.2f re S 0 0 0 RG\n",
 				zx, obenY-zellHoehe, spaltenBreite, zellHoehe)
 		}
@@ -523,9 +523,9 @@ func (s *setzer) tabelleSetzen(zeilen [][]string, x, breite float64) {
 	s.y -= 10
 }
 
-// fertig baut die PDF-Datei aus den gesetzten Seiten.
+// fertig assembles the PDF file from the pages that were set.
 func (s *setzer) fertig() []byte {
-	// Fußzeile auf jede Seite: Titel links, Seitenzahl rechts.
+	// A footer on every page: title on the left, page number on the right.
 	for i, seite := range s.seiten {
 		text := fmt.Sprintf("%d von %d", i+1, len(s.seiten))
 		b := textBreite(text, fNormal, 8.5)
@@ -560,7 +560,7 @@ func (s *setzer) fertig() []byte {
 	out.WriteString("%\xe2\xe3\xcf\xd3\n")
 
 	anzahl := len(s.seiten)
-	// 1: Katalog, 2: Seitenbaum, 3..: Schriften, dann je Seite Seite+Inhalt.
+	// 1: catalog, 2: page tree, 3..: fonts, then page plus content per page.
 	ersteSchrift := 3
 	ersteSeite := ersteSchrift + 6
 

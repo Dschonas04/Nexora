@@ -28,7 +28,7 @@ import (
 	"nexora/internal/middleware"
 )
 
-// sitzungsTakt ist der Abstand zwischen zwei Aufräumdurchgängen.
+// sitzungsTakt is the interval between two sweeps.
 const sitzungsTakt = 6 * time.Hour
 
 // aufgefrischtAb: erst wenn eine Sitzung so weit fortgeschritten ist, wird sie
@@ -40,7 +40,7 @@ const aufgefrischtAb = 0.5
 // schriebe jede einzelne Anfrage in die Zeile.
 const benutztSpanne = 5 * time.Minute
 
-// Sitzung ist eine Zeile, wie die Oberfläche sie zeigt.
+// Sitzung is one row as the interface shows it.
 type Sitzung struct {
 	ID         string    `json:"id"`
 	AngelegtAm time.Time `json:"angelegtAm"`
@@ -53,7 +53,7 @@ type Sitzung struct {
 	Diese bool `json:"diese"`
 }
 
-// sitzungAnlegen schreibt die Zeile und gibt ihre Kennung zurück.
+// sitzungAnlegen writes the row and returns its id.
 func (s *Server) sitzungAnlegen(ctx context.Context, r *http.Request, userID string) (string, error) {
 	var id string
 	err := s.Pool.QueryRow(ctx,
@@ -118,7 +118,7 @@ func (s *Server) SitzungGilt(r *http.Request, w http.ResponseWriter, uid, sid st
 	return true
 }
 
-// ListSitzungen zeigt die eigenen Sitzungen.
+// ListSitzungen shows the account's own sessions.
 func (s *Server) ListSitzungen(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	diese := middleware.SitzungID(r)
@@ -146,7 +146,7 @@ func (s *Server) ListSitzungen(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, liste)
 }
 
-// SitzungBeenden widerruft eine einzelne Sitzung.
+// SitzungBeenden revokes a single session.
 func (s *Server) SitzungBeenden(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -175,7 +175,7 @@ func (s *Server) SitzungBeenden(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// SitzungenBeenden widerruft alle außer der gerade benutzten.
+// SitzungenBeenden revokes every session except the one in use.
 func (s *Server) SitzungenBeenden(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	diese := middleware.SitzungID(r)

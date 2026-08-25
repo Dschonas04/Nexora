@@ -102,7 +102,7 @@ func (s *Server) CreateGruppe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, g)
 }
 
-// DeleteGruppe entfernt eine Gruppe samt Mitgliedschaften und Rechten.
+// DeleteGruppe removes a group along with its memberships and rights.
 func (s *Server) DeleteGruppe(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")

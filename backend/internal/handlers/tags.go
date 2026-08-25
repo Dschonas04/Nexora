@@ -249,7 +249,7 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 
 	switch space := strings.TrimSpace(r.URL.Query().Get("space")); space {
 	case "":
-		// keine Einschränkung
+		// no restriction
 	case "ohne":
 		filter += "AND p.space_id IS NULL\n"
 	default:

@@ -33,7 +33,7 @@ var geheimeSchluessel = []string{
 
 const versteckt = "********"
 
-// verstecken ersetzt die Werte der Geheimniszeilen durch Sterne.
+// verstecken replaces the values of secret lines with asterisks.
 func verstecken(inhalt string) string {
 	zeilen := strings.Split(inhalt, "\n")
 	for i, z := range zeilen {
@@ -100,7 +100,7 @@ type konfigAntwort struct {
 	Geheimnisse []string `json:"geheimnisse"`
 }
 
-// KonfigLesen liefert die geladene Konfigurationsdatei.
+// KonfigLesen returns the configuration file as it was loaded.
 func (s *Server) KonfigLesen(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
@@ -142,7 +142,7 @@ func (s *Server) KonfigLesen(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, antwort)
 }
 
-// schreibbar prüft, ob sich die Datei öffnen lässt, ohne sie zu verändern.
+// schreibbar checks whether the file can be opened without changing it.
 func schreibbar(pfad string) bool {
 	f, err := os.OpenFile(pfad, os.O_WRONLY, 0)
 	if err != nil {
@@ -154,7 +154,7 @@ func schreibbar(pfad string) bool {
 
 type konfigSchreibReq struct {
 	Inhalt string `json:"inhalt"`
-	// NurPruefen: Entwurf beurteilen, ohne ihn zu schreiben.
+	// NurPruefen: judge a draft without writing it.
 	NurPruefen bool `json:"nurPruefen"`
 }
 
@@ -282,7 +282,7 @@ func ersetzen(pfad, inhalt string) error {
 		}
 		os.Remove(vorlaeufig)
 	}
-	// Rückfall: an Ort und Stelle überschreiben.
+	// Fallback: overwrite in place.
 	return os.WriteFile(pfad, []byte(inhalt), 0o600)
 }
 

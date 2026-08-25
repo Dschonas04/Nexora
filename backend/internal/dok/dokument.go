@@ -33,7 +33,7 @@ const (
 	ArtTrenner
 )
 
-// Stueck ist ein Textstück mit gleichbleibendem Aussehen.
+// Stueck is a run of text with one consistent appearance.
 type Stueck struct {
 	Text    string
 	Fett    bool
@@ -41,10 +41,10 @@ type Stueck struct {
 	Fest    bool // Code im Fließtext
 	Durch   bool
 	Unter   bool
-	Verweis string // Adresse, falls das Stück ein Verweis ist
+	Verweis string // the address, when the run is a link
 }
 
-// Absatz ist eine Zeile oder ein Block des Dokuments.
+// Absatz is one line or block of the document.
 type Absatz struct {
 	Art      Art
 	Stufe    int    // Überschrift: 1..6. Listen: Verschachtelungstiefe ab 0.
@@ -53,10 +53,10 @@ type Absatz struct {
 	Sprache  string // Codeblock
 	Text     []Stueck
 	Zeilen   []string   // Codeblock, zeilenweise
-	Tabelle  [][]string // Tabelle, Zeilen mit Zellen
+	Tabelle  [][]string // a table, rows of cells
 }
 
-// Dokument ist eine Seite in Formatiererform.
+// Dokument is one page in typesetter form.
 type Dokument struct {
 	Titel  string
 	Absatz []Absatz
@@ -197,7 +197,7 @@ func lies(knoten []knoten, tiefe int) []Absatz {
 	return out
 }
 
-// stuecke zerlegt den Inhalt eines Blocks in Textstücke mit ihrem Aussehen.
+// stuecke splits a block's content into runs with their appearance.
 func stuecke(roh json.RawMessage) []Stueck {
 	if len(roh) == 0 {
 		return nil
@@ -305,7 +305,7 @@ func tabelle(roh json.RawMessage) [][]string {
 	return out
 }
 
-// NurText liefert den Text eines Absatzes ohne Auszeichnung.
+// NurText returns a paragraph's text without any formatting.
 func NurText(st []Stueck) string {
 	var b strings.Builder
 	for _, s := range st {

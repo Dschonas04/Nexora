@@ -334,7 +334,7 @@ func lesen(r io.Reader, name string) (map[string]string, []string, error) {
 			continue
 		}
 		if strings.HasPrefix(zeile, "[") {
-			continue // Abschnitt, nur zur Gliederung
+			continue // a section header, purely for grouping
 		}
 		i := strings.Index(zeile, "=")
 		if i < 0 {

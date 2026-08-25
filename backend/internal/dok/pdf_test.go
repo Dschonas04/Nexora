@@ -100,7 +100,7 @@ func TestUmbruchBleibtInDerBreite(t *testing.T) {
 		for _, w := range z {
 			b += textBreite(w.text, w.schrift, w.groesse)
 		}
-		// Ein Leerzeichen am Zeilenende darf überstehen, mehr nicht.
+		// One trailing space may stay, no more than that.
 		if b > satzBreite+6 {
 			t.Errorf("Zeile %d ist %.1f breit, erlaubt sind %.1f", i, b, satzBreite)
 		}
@@ -214,7 +214,7 @@ func TestWordIstEinZipMitDokument(t *testing.T) {
 	}
 }
 
-// Ein spitzes Klammerzeichen im Text darf die Datei nicht zerlegen.
+// An angle bracket in the text must not tear the file apart.
 func TestSonderzeichenBrechenDasDokumentNicht(t *testing.T) {
 	d := AusInhalt(json.RawMessage(
 		`[{"type":"paragraph","content":[{"type":"text","text":"a < b & c > d \"e\""}]}]`), "T & <U>")

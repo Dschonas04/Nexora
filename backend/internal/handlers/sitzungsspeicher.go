@@ -30,7 +30,7 @@ type sitzungsSpeicher struct {
 	eintraege map[string]speicherEintrag
 }
 
-// NeuerSitzungsSpeicher wird von main aufgerufen.
+// NeuerSitzungsSpeicher is called from main.
 func NeuerSitzungsSpeicher() *sitzungsSpeicher {
 	return &sitzungsSpeicher{eintraege: map[string]speicherEintrag{}}
 }
@@ -54,7 +54,7 @@ func (s *Server) sitzungAusSpeicher(sid string) (bool, bool) {
 	return e.gilt, true
 }
 
-// sitzungMerken hält das Ergebnis kurz fest.
+// sitzungMerken records the result for a short while.
 func (s *Server) sitzungMerken(sid string, gilt bool) {
 	if s.Sitzungen == nil {
 		return

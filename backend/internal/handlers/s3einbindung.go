@@ -113,7 +113,7 @@ func (s *Server) S3Testen(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "ablage": a.Name()})
 }
 
-// AblageZustand sagt, wo die Anhänge gerade liegen.
+// AblageZustand says where attachments currently live.
 func (s *Server) AblageZustand(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")

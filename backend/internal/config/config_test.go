@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// schreibe legt eine Testkonfiguration an und gibt ihren Pfad zurück.
+// schreibe writes a test configuration and returns its path.
 func schreibe(t *testing.T, inhalt string) string {
 	t.Helper()
 	p := filepath.Join(t.TempDir(), "config.conf")

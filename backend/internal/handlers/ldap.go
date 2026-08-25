@@ -30,7 +30,7 @@ type ldapAnmeldeReq struct {
 	Passwort string `json:"passwort"`
 }
 
-// LDAPAnmeldung meldet über das Verzeichnis an.
+// LDAPAnmeldung signs in through the directory.
 func (s *Server) LDAPAnmeldung(w http.ResponseWriter, r *http.Request) {
 	if !lizenz.Frei(lizenz.LDAP) {
 		writeErr(w, http.StatusPaymentRequired, "LDAP gehört zum Zusatzumfang")
@@ -80,7 +80,7 @@ func (s *Server) LDAPAnmeldung(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
-// ldapPruefen fragt das Verzeichnis. Rückgabe: Name, E-Mail, ob Administrator.
+// ldapPruefen asks the directory. Returns name, email and whether admin.
 func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, error) {
 	k := s.SSO.Konf
 
@@ -136,7 +136,7 @@ func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, e
 	}
 	eintrag := antwort.Entries[0]
 
-	// Die eigentliche Prüfung: als der gefundene Benutzer anmelden.
+	// The actual check: bind as the user that was found.
 	if err := verbindung.Bind(eintrag.DN, passwort); err != nil {
 		return "", "", false, errors.New("Passwort abgelehnt")
 	}

@@ -45,13 +45,13 @@ type einfuhrSeite struct {
 	id      string
 	titel   string
 	pfad    string // Quellpfad im Archiv, "" bei einem Sammelknoten
-	verz    string // Verzeichnis, in dem die Quelle lag
+	verz    string // the directory the source file came from
 	kopf    einlesen.Kopf
 	bloecke []einlesen.Block
-	eltern  *einfuhrSeite // nil heißt: hängt am Ziel der Einfuhr
+	eltern  *einfuhrSeite // nil means: hangs off the import target
 }
 
-// einfuhrVorschau ist derselbe Plan, nur ohne Folgen.
+// einfuhrVorschau is the same plan, only without consequences.
 type einfuhrVorschau struct {
 	Seiten    int          `json:"seiten"`
 	Beilagen  int          `json:"beilagen"`
@@ -328,7 +328,7 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// einfuhrName beschreibt die Einfuhr für die Prüfspur.
+// einfuhrName describes the import for the audit trail.
 func einfuhrName(dateien []einfuhrDatei) string {
 	if len(dateien) == 1 {
 		return dateien[0].pfad
@@ -499,7 +499,7 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 	for v := range verzeichnisse {
 		sortiert = append(sortiert, v)
 	}
-	// Nach Tiefe, dann nach Namen: ein Elternteil entsteht vor seinem Kind.
+	// By depth, then by name: a parent comes into being before its child.
 	sort.Slice(sortiert, func(i, j int) bool {
 		ti, tj := strings.Count(sortiert[i], "/"), strings.Count(sortiert[j], "/")
 		if len(sortiert[i]) == 0 || len(sortiert[j]) == 0 {
@@ -511,7 +511,7 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 		return sortiert[i] < sortiert[j]
 	})
 
-	// Welche Datei die Seite ihres Verzeichnisses ist.
+	// Which file is the page of its directory.
 	indexVon := map[string]string{}
 	vorhanden := map[string]bool{}
 	for _, d := range dateien {
@@ -527,7 +527,7 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 			kandidaten = append(kandidaten, path.Join(v, n))
 		}
 		if v != "" {
-			// Obsidian legt die Notiz zum Ordner IN den Ordner, gleichnamig.
+			// Obsidian keeps the folder note INSIDE the folder, under the same name.
 			kandidaten = append(kandidaten, path.Join(v, path.Base(v)+".md"), path.Join(v, path.Base(v)+".html"))
 			// Notion legt sie DANEBEN, gleicher Name wie der Ordner, eine
 			// Ebene höher. Beide Sitten sind verbreitet, und beide meinen
@@ -544,10 +544,10 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 		}
 	}
 
-	// Für jedes Verzeichnis die Seite, unter der sein Inhalt hängt.
+	// For every directory the page its content hangs below.
 	verzSeite := map[string]*einfuhrSeite{}
 
-	// Erst die Verzeichnisseiten, von oben nach unten.
+	// The directory pages first, from the top down.
 	for _, v := range sortiert {
 		idx, hatIndex := indexVon[v]
 		if v == "" && !hatIndex {
@@ -575,7 +575,7 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 		verzSeite[v] = sp
 	}
 
-	// Dann alle übrigen Dateien.
+	// Then all the remaining files.
 	for i := range dateien {
 		d := dateien[i]
 		v := path.Dir(d.pfad)
@@ -583,7 +583,7 @@ func planen(dateien []einfuhrDatei) []*einfuhrSeite {
 			v = ""
 		}
 		if istIndex[strings.ToLower(d.pfad)] {
-			continue // steckt schon in einer Verzeichnisseite
+			continue // already part of a directory page
 		}
 		titel, kopf, bloecke := dateiLesen(d)
 		if titel == "" {
@@ -607,7 +607,7 @@ func dateiLesen(d einfuhrDatei) (string, einlesen.Kopf, []einlesen.Block) {
 	return einlesen.Lies(string(d.inhalt))
 }
 
-// anlegen schreibt den Plan in die Datenbank und trägt die Kennungen nach.
+// anlegen writes the plan to the database and fills in the ids.
 func (s *Server) anlegen(ctx context.Context, uid, elternID, spaceID string, plan []*einfuhrSeite) ([]string, error) {
 	var wurzeln []string
 	for i, sp := range plan {
@@ -670,10 +670,10 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 	// Dieselbe Beilage kann in einer Seite mehrfach vorkommen; sie soll
 	// trotzdem nur einmal hochgeladen werden.
 	angehaengt := map[string]string{}
-	// Ein Hinweis, der bei jeder Datei erschiene, wäre kein Hinweis mehr.
+	// A warning that appeared for every file would stop being a warning.
 	gemeldet := map[string]bool{}
 
-	// seiteZu liefert die eingeführte Seite, auf die eine Adresse zeigt.
+	// seiteZu returns the imported page an address points to.
 	seiteZu := func(adresse string) *einfuhrSeite {
 		ziel := zielPfad(adresse, sp.verz)
 		if ziel == "" {
@@ -682,7 +682,7 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 		if z, ok := nachPfad[ziel]; ok {
 			return z
 		}
-		// Obsidian verlinkt gern ohne Endung.
+		// Obsidian likes to link without the file extension.
 		if z, ok := nachPfad[ziel+".md"]; ok {
 			return z
 		}
@@ -774,14 +774,14 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 				bloecke[i].Content = inhalt
 			}
 
-			// Bilder tragen ihre Adresse in den Eigenschaften, nicht im Text.
+			// Images carry their address in the properties, not in the text.
 			if adresse, ok := bloecke[i].Props["url"].(string); ok && adresse != "" {
 				if b := beilageZu(adresse); b != nil {
 					if neu := anhaengen(b); neu != "" {
 						bloecke[i].Props["url"] = neu
 					}
 				} else if ziel := seiteZu(adresse); ziel != nil {
-					// Ein Bild, das auf ein Dokument zeigt, ist kein Bild.
+					// An image pointing at a document is not an image.
 					bloecke[i] = einlesen.Block{
 						Type:    "paragraph",
 						Content: []einlesen.Inline{{Type: "text", Text: "[[" + ziel.titel + "]]"}},
@@ -851,7 +851,7 @@ func (s *Server) verweisMerken(ctx context.Context, quelle, ziel string) {
 	}
 }
 
-// inhaltSchreiben legt den fertigen Inhalt in der Seite ab.
+// inhaltSchreiben stores the finished content on the page.
 func (s *Server) inhaltSchreiben(ctx context.Context, sp *einfuhrSeite) error {
 	bloecke := sp.bloecke
 	if len(bloecke) == 0 {

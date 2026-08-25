@@ -66,19 +66,19 @@ func ausPDF(ctx context.Context, roh []byte) string {
 	cmd.Stderr = &fehler
 
 	if err := cmd.Run(); err != nil {
-		// Nur vermerken, nicht weiterreichen: der Upload ist längst gelungen.
+		// Only note it, do not pass it on: the upload succeeded long ago.
 		log.Printf("PDF-Text: %v (%s)", err, strings.TrimSpace(fehler.String()))
-		return aus.String() // was bis dahin kam, ist besser als nichts
+		return aus.String() // whatever arrived until then beats nothing
 	}
 	return aus.String()
 }
 
-// kuerzen normalisiert Weißraum und schneidet auf die Indexgrenze.
+// kuerzen normalises whitespace and cuts to the index limit.
 func kuerzen(s string) string {
 	s = strings.Join(strings.Fields(s), " ")
 	if len(s) > maxAnhangText {
 		s = s[:maxAnhangText]
-		// Nach dem Schnitt kann ein mehrbyte-Zeichen zerteilt sein.
+		// After the cut a multi-byte character may be split in half.
 		for len(s) > 0 && !utf8.ValidString(s) {
 			s = s[:len(s)-1]
 		}

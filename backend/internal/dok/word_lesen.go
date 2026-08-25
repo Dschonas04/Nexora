@@ -25,10 +25,10 @@ import (
 	"strings"
 )
 
-// wordDatei ist der Teil einer .docx, der den Text trägt.
+// wordHauptteil is the part of a .docx that carries the text.
 const wordHauptteil = "word/document.xml"
 
-// AusWord liest eine .docx und gibt sie als Dokument zurück.
+// AusWord reads a .docx and returns it as a Dokument.
 func AusWord(roh []byte) (Dokument, error) {
 	leser, err := zip.NewReader(bytes.NewReader(roh), int64(len(roh)))
 	if err != nil {
@@ -58,7 +58,7 @@ func AusWord(roh []byte) (Dokument, error) {
 	return wordZuDokument(xmlRoh)
 }
 
-// Die Struktur von document.xml, soweit sie hier zählt.
+// The shape of document.xml, as far as it matters here.
 type wDokument struct {
 	Body wBody `xml:"body"`
 }
@@ -180,7 +180,7 @@ func wordAbsatz(p wInhalt) (Absatz, bool) {
 		strings.HasPrefix(stil, "überschrift"):
 		a.Art = ArtUeberschrift
 		a.Stufe = 1
-		// Die Ziffer am Ende des Stilnamens ist die Ebene: "heading2".
+		// The digit at the end of the style name is the level: "heading2".
 		for _, z := range stil {
 			if z >= '1' && z <= '6' {
 				a.Stufe = int(z - '0')
@@ -234,7 +234,7 @@ func wordStuecke(laeufe []wLauf) []Stueck {
 			Fett:   l.Eigenschaften.Fett != nil,
 			Kursiv: l.Eigenschaften.Kursiv != nil,
 			Durch:  l.Eigenschaften.Durch != nil,
-			// <w:u w:val="none"/> heißt ausdrücklich NICHT unterstrichen.
+			// <w:u w:val="none"/> means explicitly NOT underlined.
 			Unter: l.Eigenschaften.Unter != nil && l.Eigenschaften.Unter.Wert != "none",
 		})
 	}
@@ -314,7 +314,7 @@ func NachBloecken(d Dokument) []map[string]any {
 		}
 	}
 	if len(bloecke) == 0 {
-		// Ein leeres Dokument: der Editor verlangt mindestens einen Block.
+		// An empty document: the editor insists on at least one block.
 		bloecke = append(bloecke, map[string]any{"type": "paragraph", "content": []any{}})
 	}
 	return bloecke

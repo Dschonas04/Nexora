@@ -20,7 +20,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// RedisSpeicher bündelt Verbindung und Namensraum.
+// RedisSpeicher bundles the connection and the namespace.
 type RedisSpeicher struct {
 	client *redis.Client
 	// Vorsilbe vor jedem Schlüssel, damit sich zwei Nexora-Instanzen eine
@@ -63,14 +63,14 @@ func (r *RedisSpeicher) schluessel(art, id string) string {
 	return r.vorsilbe + ":" + art + ":" + id
 }
 
-// Schliessen gibt die Verbindung zurück.
+// Schliessen hands the connection back.
 func (r *RedisSpeicher) Schliessen() {
 	if r != nil && r.client != nil {
 		r.client.Close()
 	}
 }
 
-// redisSitzung liest den gemerkten Zustand einer Sitzung.
+// redisSitzung reads the remembered state of a session.
 func (s *Server) redisSitzung(sid string) (bool, bool) {
 	ctx, abbruch := context.WithTimeout(context.Background(), time.Second)
 	defer abbruch()
@@ -81,7 +81,7 @@ func (s *Server) redisSitzung(sid string) (bool, bool) {
 	return wert == "1", true
 }
 
-// redisSitzungMerken hält den Zustand fest.
+// redisSitzungMerken records the state.
 func (s *Server) redisSitzungMerken(sid string, gilt bool) {
 	ctx, abbruch := context.WithTimeout(context.Background(), time.Second)
 	defer abbruch()

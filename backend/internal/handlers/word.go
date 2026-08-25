@@ -21,7 +21,7 @@ import (
 	"nexora/internal/middleware"
 )
 
-// wordTypen sind die Kennungen, unter denen eine .docx ankommen kann.
+// wordTypen are the media types a .docx can arrive under.
 var wordTypen = []string{
 	"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
@@ -89,7 +89,7 @@ type wordSchreibenReq struct {
 	Bloecke json.RawMessage `json:"bloecke"`
 }
 
-// WordSchreiben legt die geänderten Blöcke wieder als .docx ab.
+// WordSchreiben stores the edited blocks as a .docx again.
 func (s *Server) WordSchreiben(w http.ResponseWriter, r *http.Request) {
 	// Schreiben in eine Datei ist Bearbeiten eines Anhangs, dieselbe Lizenz
 	// wie das Hochladen.
