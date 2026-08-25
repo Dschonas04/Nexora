@@ -10,14 +10,13 @@ import (
 	"time"
 )
 
-// Der Zwischenstand einer begonnenen OIDC-Anmeldung reist in einem eigenen
-// Plätzchen mit, unterschrieben mit demselben Geheimnis wie die Sitzung.
+// The half-finished state of an OIDC sign-in travels in a cookie of its own,
+// signed with the same secret as the session.
 //
-// Warum nicht im Speicher des Dienstes: eine begonnene Anmeldung überlebte dann
-// keinen Neustart, und zwei Instanzen hinter einem Verteiler könnten sich nicht
-// abwechseln. Warum unterschrieben: der Zustand ist genau das, was eine
-// untergeschobene Anmeldung verhindern soll, ein Wert, den der Browser frei
-// setzen könnte, wäre wertlos.
+// Why not in the service's memory: a sign-in already under way would then not
+// survive a restart, and two instances behind a load balancer could not take
+// turns. Why signed: the state parameter is precisely what stops a smuggled-in
+// sign-in, and a value the browser could set freely would be worthless.
 
 func (s *Server) oidcKeksSetzen(w http.ResponseWriter, r *http.Request, st oidcSitzung) {
 	roh, err := json.Marshal(st)
@@ -31,9 +30,8 @@ func (s *Server) oidcKeksSetzen(w http.ResponseWriter, r *http.Request, st oidcS
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   ueberTLS(r),
-		// Lax reicht nicht: der Rücksprung kommt als Weiterleitung von einer
-		// fremden Seite, und bei Strict schickte der Browser das Plätzchen
-		// dann nicht mit.
+		// Lax is required here: the callback arrives as a redirect from another
+		// site, and under Strict the browser would not send the cookie along.
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   600,
 	})
@@ -86,9 +84,9 @@ func splitZwei(s string) []string {
 	return []string{s}
 }
 
-// unterschrift ist ein HMAC über die Daten, gekürzt auf die üblichen 32 Zeichen.
-// Dasselbe Geheimnis wie bei der Sitzung: ein zweites einzuführen hieße, einen
-// zweiten Wert zu verwalten, der genauso geheim bleiben muss.
+// unterschrift is an HMAC over the data. It uses the same secret as the
+// session: introducing a second one would mean keeping a second value that has
+// to stay just as secret.
 func (s *Server) unterschrift(daten []byte) string {
 	m := hmac.New(sha256.New, s.Secret)
 	m.Write(daten)

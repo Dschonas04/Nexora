@@ -1,15 +1,15 @@
-// Was zum Verbund gehört: die Dienste, mit denen dieser hier redet.
+// The stack around this service: the other services it talks to.
 //
-// Eine Bemerkung vorweg, weil sie die Form dieser Datei erklärt: Nexora sieht
-// den Docker-Verbund NICHT. Der Dienst läuft in einem Container ohne Zugang zum
-// Docker-Steuerkanal, und das ist Absicht, wer diesen Kanal hat, ist auf dem
-// Wirt allmächtig. Ihn hereinzureichen, damit eine Seite eine Liste von
-// Containern zeigen kann, wäre ein schlechtes Geschäft.
+// One remark up front, because it explains the shape of this file: Nexora does
+// NOT see the Docker stack. The service runs in a container with no access to
+// the Docker control socket, and that is on purpose, because whoever holds that
+// socket is all-powerful on the host. Handing it in so that a page can list
+// containers would be a bad bargain.
 //
-// Also steht hier, was sich ohne ihn feststellen lässt, und das ist mehr, als
-// es klingt: mit welchen Diensten dieser hier spricht, ob sie antworten, wie
-// schnell, welche Fassung sie haben und wie viel sie halten. Das beantwortet
-// die Fragen, die man tatsächlich stellt, wenn etwas klemmt.
+// So what stands here is what can be established without it, and that is more
+// than it sounds: which services this one speaks to, whether they answer, how
+// fast, which version they run and how much they hold. Those are the questions
+// people actually ask when something is stuck.
 package handlers
 
 import (
@@ -42,9 +42,9 @@ type Dienst struct {
 	Notwendig bool   `json:"notwendig"`
 }
 
-// verbund stellt die Dienste zusammen. Jede Prüfung hat eine kurze Frist: die
-// Übersicht soll auch dann erscheinen, wenn einer der Dienste hängt, gerade
-// dann.
+// verbund assembles the list of services. Every check has a short deadline: the
+// overview has to appear even when one of the services is hanging, and
+// especially then.
 func (s *Server) verbund(ctx context.Context) []Dienst {
 	ctx, abbruch := context.WithTimeout(ctx, 5*time.Second)
 	defer abbruch()
@@ -55,7 +55,7 @@ func (s *Server) verbund(ctx context.Context) []Dienst {
 
 	dienste := []Dienst{s.dienstSelbst()}
 
-	// Datenbank
+	// The database.
 	d := Dienst{Name: "PostgreSQL", Rolle: "Datenbank",
 		Adresse: ohneGeheimnis(k.DatenbankURL), Notwendig: true}
 	beginn := time.Now()
@@ -199,9 +199,9 @@ func dienstLDAP(ctx context.Context, k config.Konfig) *Dienst {
 	return &d
 }
 
-// erreichbar öffnet kurz eine Verbindung. Bewusst kein HTTP-Aufruf: eine
-// Antwort mit 401 oder 404 ist für diese Frage genauso gut wie eine mit 200,
-// gefragt ist, ob überhaupt jemand da ist.
+// erreichbar opens a connection briefly. Deliberately not an HTTP request: for
+// this question a 401 or a 404 answers just as well as a 200, because all that
+// is being asked is whether anybody is there at all.
 func erreichbar(ctx context.Context, adresse string) bool {
 	ziel := adresse
 	if u, err := url.Parse(adresse); err == nil && u.Host != "" {
@@ -226,8 +226,8 @@ func erreichbar(ctx context.Context, adresse string) bool {
 	return true
 }
 
-// ohneGeheimnis nimmt das Passwort aus einer Verbindungsadresse. Die Adresse
-// gehört in die Übersicht, das Passwort nicht.
+// ohneGeheimnis strips the password from a connection string. The address
+// belongs in the overview, the password does not.
 func ohneGeheimnis(adresse string) string {
 	u, err := url.Parse(adresse)
 	if err != nil || u.User == nil {
@@ -246,9 +246,9 @@ func ausInfo(info, feld string) string {
 	return ""
 }
 
-// dauer schreibt eine Zeitspanne so, wie man sie vorliest. Der Sprung von
-// Millisekunden auf Sekunden fehlte zuerst, eine Laufzeit stand dann als
-// "48023 ms" da, und das liest niemand.
+// dauer writes a duration the way a person would read it aloud. The step from
+// milliseconds to seconds was missing at first, so an uptime showed up as
+// "48023 ms", and nobody reads that.
 func dauer(d time.Duration) string {
 	switch {
 	case d < time.Millisecond:
@@ -274,8 +274,8 @@ func kurz(s string) string {
 	return s
 }
 
-// mehrzahl wählt die Form. Ein "1 Einträge" in einer Übersicht sieht aus wie
-// ein Fehler im Programm, auch wenn es keiner ist.
+// mehrzahl picks singular or plural. A "1 Einträge" in an overview looks like a
+// bug in the program even when it is not one.
 func mehrzahl(n int, eins, viele string) string {
 	if n == 1 {
 		return eins

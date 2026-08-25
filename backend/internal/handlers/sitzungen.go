@@ -1,18 +1,16 @@
-// Gespeicherte Sitzungen.
+// Stored sessions.
 //
-// Vorher war eine Sitzung nichts als ein unterschriebenes Token: gültig, bis
-// die Zeit ablief, und durch nichts aufzuhalten. Abmelden löschte nur das
-// Plätzchen im Browser, wer das Token vorher kopiert hatte, blieb angemeldet.
-// Ein verlorenes Notebook konnte man nicht aussperren, ohne allen anderen den
-// Zugang zu nehmen.
+// A session used to be nothing but a signed token: valid until its time ran
+// out, and stoppable by nothing. Signing out only dropped the cookie in the
+// browser, so whoever had copied the token beforehand stayed signed in. A lost
+// laptop could not be locked out without taking everybody else's access away.
 //
-// Jetzt steht jede Sitzung als Zeile in der Datenbank, und das Token verweist
-// nur darauf. Damit lässt sich eine einzelne beenden, und die Liste beantwortet
-// die Frage, wer gerade angemeldet ist.
+// Now every session is a row in the database and the token merely points at it.
+// Three things follow: a single session can be ended, the list answers who is
+// currently signed in, and a session that is in use renews itself.
 //
-// Der Preis ist eine Abfrage je Anfrage. Sie ist billig, ein Zugriff über den
-// Primärschlüssel, und wird zusätzlich zwischengespeichert, siehe
-// sitzungsspeicher.go.
+// The price is one query per request. It is cheap, a primary key lookup, and it
+// is cached on top of that, see sitzungsspeicher.go.
 package handlers
 
 import (
@@ -31,13 +29,13 @@ import (
 // sitzungsTakt is the interval between two sweeps.
 const sitzungsTakt = 6 * time.Hour
 
-// aufgefrischtAb: erst wenn eine Sitzung so weit fortgeschritten ist, wird sie
-// verlängert. Bei jeder Anfrage zu verlängern hieße, bei jeder Anfrage zu
-// schreiben, viel Last für nichts.
+// aufgefrischtAb: a session is only extended once it is this far along.
+// Extending on every request would mean writing on every request, a lot of load
+// for nothing.
 const aufgefrischtAb = 0.5
 
-// benutztSpanne begrenzt, wie oft "zuletzt benutzt" nachgeführt wird. Ohne das
-// schriebe jede einzelne Anfrage in die Zeile.
+// benutztSpanne limits how often "last used" is written back. Without it every
+// single request would write to the row.
 const benutztSpanne = 5 * time.Minute
 
 // Sitzung is one row as the interface shows it.
@@ -48,8 +46,8 @@ type Sitzung struct {
 	LaeuftAb   time.Time `json:"laeuftAb"`
 	IP         string    `json:"ip"`
 	Browser    string    `json:"browser"`
-	// Wahr für die Sitzung, mit der gerade gefragt wird, damit die Liste
-	// sagen kann "dieses Gerät" und nicht versehentlich das eigene beendet.
+	// True for the session the request came in on, so the list can say "this
+	// device" and nobody ends their own by accident.
 	Diese bool `json:"diese"`
 }
 
@@ -64,12 +62,12 @@ func (s *Server) sitzungAnlegen(ctx context.Context, r *http.Request, userID str
 	return id, err
 }
 
-// SitzungGilt prüft eine Sitzung und frischt sie bei Bedarf auf. Diese Funktion
-// hängt in der Middleware.
+// SitzungGilt checks a session and renews it when due. This function is what
+// the middleware calls.
 func (s *Server) SitzungGilt(r *http.Request, w http.ResponseWriter, uid, sid string) bool {
-	// Ein Token ohne Sitzungskennung stammt aus der Zeit davor. Es gilt bis zum
-	// Ablauf weiter, alle auf einmal abzumelden wäre eine unnötige Härte für
-	// eine Änderung, von der niemand etwas mitbekommen soll.
+	// A token without a session id predates this change. It stays valid until it
+	// expires: signing everyone out at once would be needless harshness for a
+	// change nobody is meant to notice.
 	if sid == "" {
 		return true
 	}
@@ -78,8 +76,8 @@ func (s *Server) SitzungGilt(r *http.Request, w http.ResponseWriter, uid, sid st
 		if !gilt {
 			return false
 		}
-		// Aus dem Zwischenspeicher heraus wird nicht aufgefrischt: das
-		// passiert beim nächsten Durchgang durch die Datenbank.
+		// No renewal from the cache: that happens on the next pass through the
+		// database.
 		return true
 	}
 
@@ -97,9 +95,9 @@ func (s *Server) SitzungGilt(r *http.Request, w http.ResponseWriter, uid, sid st
 
 	jetzt := time.Now()
 
-	// Auffrischen: hat die Sitzung mehr als die Hälfte ihrer Zeit hinter sich,
-	// bekommt sie neue, samt neuem Plätzchen. Wer täglich arbeitet, wird so
-	// nie abgemeldet; wer wochenlang nicht kommt, schon.
+	// Renewal: once a session has more than half of its time behind it, it gets
+	// a fresh span and a fresh cookie. Someone working daily is never signed
+	// out; someone away for weeks is.
 	gesamt := laeuftAb.Sub(angelegt)
 	if gesamt > 0 && jetzt.Sub(angelegt) > time.Duration(float64(gesamt)*aufgefrischtAb) {
 		neuAb := jetzt.Add(SitzungDauer())
@@ -151,8 +149,8 @@ func (s *Server) SitzungBeenden(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
 
-	// user_id in der Bedingung: sonst könnte man mit einer fremden Kennung
-	// jemand anderen abmelden.
+	// user_id is part of the condition: otherwise a stranger's id would sign
+	// somebody else out.
 	tag, err := s.Pool.Exec(r.Context(),
 		`UPDATE sitzungen SET widerrufen_am=now()
 		 WHERE id=$1 AND user_id=$2 AND widerrufen_am IS NULL`, id, uid)
@@ -167,8 +165,8 @@ func (s *Server) SitzungBeenden(w http.ResponseWriter, r *http.Request) {
 	s.sitzungMerken(id, false)
 	s.spurAusRequest(r, AktSitzungBeendet, "sitzung", id, "", nil)
 
-	// Die eigene zu beenden ist erlaubt, dann muss auch das Plätzchen weg,
-	// sonst schickt der Browser weiter ein Token, das nirgends mehr gilt.
+	// Ending your own session is allowed, and then the cookie has to go too,
+	// or the browser keeps sending a token that is valid nowhere.
 	if id == middleware.SitzungID(r) {
 		s.clearAuthCookie(w)
 	}
@@ -202,11 +200,11 @@ func (s *Server) SitzungenBeenden(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]int{"beendet": anzahl})
 }
 
-// SitzungenUhr räumt abgelaufene und widerrufene Sitzungen weg.
+// SitzungenUhr sweeps away expired and revoked sessions.
 //
-// Nicht sofort nach dem Ablauf: eine Zeile, die noch ein paar Tage steht,
-// beantwortet die Frage "wann war ich zuletzt von wo angemeldet", und genau
-// die stellt man nach einem Vorfall.
+// Not right after they expire: a row that stays for a few more days answers the
+// question "when was I last signed in, and from where", and that is exactly
+// what gets asked after an incident.
 func (s *Server) SitzungenUhr(ctx context.Context) {
 	uhr := time.NewTicker(sitzungsTakt)
 	defer uhr.Stop()
@@ -228,8 +226,8 @@ func (s *Server) SitzungenUhr(ctx context.Context) {
 	}
 }
 
-// SitzungenEinesKontos widerruft alles, was einem Konto gehört. Gebraucht beim
-// Passwortwechsel und wenn ein Administrator jemanden aussperrt.
+// SitzungenEinesKontos revokes everything belonging to one account. Needed when
+// a password changes and when an administrator locks somebody out.
 func (s *Server) SitzungenEinesKontos(ctx context.Context, uid string) {
 	rows, err := s.Pool.Query(ctx,
 		`UPDATE sitzungen SET widerrufen_am=now()
@@ -246,11 +244,11 @@ func (s *Server) SitzungenEinesKontos(ctx context.Context, uid string) {
 	}
 }
 
-// kurzerBrowser macht aus einer User-Agent-Zeile etwas Lesbares.
+// kurzerBrowser turns a user agent string into something readable.
 //
-// Die vollständige Zeile ist ein Absatz voller Altlasten ("Mozilla/5.0" steht
-// in jedem Browser, auch in denen, die nie Mozilla waren). Für die Frage "war
-// ich das?" reichen Programm und Betriebssystem.
+// The full string is a paragraph of historical baggage ("Mozilla/5.0" appears in
+// every browser, including those that never were Mozilla). For the question "was
+// that me?" the program and the operating system are enough.
 func kurzerBrowser(ua string) string {
 	if ua == "" {
 		return "unbekannt"

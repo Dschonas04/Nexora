@@ -1,15 +1,14 @@
-// Anmeldung über einen fremden Ausweis: OIDC und LDAP.
+// Signing in with an outside identity: OIDC and LDAP.
 //
-// Beide beantworten dieselbe Frage, "wer ist das", auf verschiedenen Wegen,
-// und beide enden an derselben Stelle: einem Konto in dieser Instanz und einer
-// Sitzung darauf. Was danach kommt, weiß nichts mehr von SSO.
+// Both answer the same question, "who is this", by different routes, and both
+// end in the same place: an account in this instance and a session on it.
+// Everything downstream knows nothing about SSO.
 //
-// Verknüpft wird über die E-Mail-Adresse. Das ist eine Entscheidung mit einer
-// Kehrseite, die man kennen muss: wer im Verzeichnis eine Adresse ändern kann,
-// kann damit auf ein bestehendes Konto zeigen. Deshalb gilt die Verknüpfung nur
-// für Adressen, die der Anbieter als bestätigt meldet, und nur, wenn das Konto
-// nicht selbst ein Passwort trägt, sonst wäre SSO ein Weg, die Passwortprüfung
-// zu umgehen.
+// Accounts are matched by email address. That decision has a downside worth
+// knowing: whoever can change an address in the directory can point it at an
+// existing account. So the match only counts for addresses the provider reports
+// as verified, and only when the account carries no password of its own, or SSO
+// would be a way around the password check.
 package handlers
 
 import (
@@ -33,13 +32,13 @@ import (
 	"nexora/internal/models"
 )
 
-// SSOEinstellungen sind die Werte aus der Konfiguration, die hier gebraucht
-// werden. Der Server bekommt sie beim Start gereicht, statt config selbst zu
-// lesen, so bleibt der Handler prüfbar.
+// SSOEinstellungen are the configuration values needed here. The server is
+// handed them at startup instead of reading config itself, which keeps the
+// handler testable.
 type SSOEinstellungen struct {
 	Konf config.Konfig
-	// OeffentlicheURL ist die Adresse, unter der die Instanz von außen zu
-	// erreichen ist. Ohne sie lässt sich keine Rücksprungadresse bilden.
+	// OeffentlicheURL is the address the instance can be reached at from
+	// outside. Without it no callback address can be formed.
 	OeffentlicheURL string
 }
 
@@ -57,8 +56,8 @@ const oidcKeksName = "nexora_oidc"
 func (s *Server) SSOZustand(w http.ResponseWriter, r *http.Request) {
 	k := s.SSO.Konf
 	writeJSON(w, http.StatusOK, map[string]any{
-		// Beides nur, wenn eingerichtet UND lizenziert. Einen Knopf zu zeigen,
-		// der danach mit 402 antwortet, wäre ein Versprechen ohne Deckung.
+		// Both only when configured AND licensed. Showing a button that then
+		// answers with 402 would be a promise without cover.
 		"oidc":     k.OIDCAktiv && k.OIDCAussteller != "" && lizenz.Frei(lizenz.SSO),
 		"oidcText": k.OIDCKnopfText,
 		"ldap":     k.LDAPAktiv && k.LDAPServer != "" && lizenz.Frei(lizenz.LDAP),
@@ -67,8 +66,8 @@ func (s *Server) SSOZustand(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// kurzerAussteller macht aus einer Aussteller-URL etwas, das auf einen Knopf
-// passt: aus "https://10.0.2.43:8180/realms/homelab" wird "homelab".
+// kurzerAussteller turns an issuer URL into something that fits on a button:
+// "https://10.0.2.43:8180/realms/homelab" becomes "homelab".
 func kurzerAussteller(url string) string {
 	url = strings.TrimSuffix(strings.TrimSpace(url), "/")
 	if url == "" {
@@ -78,11 +77,11 @@ func kurzerAussteller(url string) string {
 	return teile[len(teile)-1]
 }
 
-// oidcAnbieter baut die Verbindung zum Aussteller auf.
+// oidcAnbieter builds the connection to the issuer.
 //
-// Bei jedem Aufruf neu: die Erkennung ist ein einzelner Aufruf, sie passiert
-// zweimal je Anmeldung, und dafür einen Zwischenspeicher zu pflegen, der bei
-// einer Änderung am Aussteller veraltet, lohnt nicht.
+// Rebuilt on every call: discovery is a single request, it happens twice per
+// sign-in, and keeping a cache that goes stale whenever the issuer changes is
+// not worth it.
 func (s *Server) oidcAnbieter(ctx context.Context) (*oidc.Provider, *oauth2.Config, error) {
 	k := s.SSO.Konf
 	if !k.OIDCAktiv || k.OIDCAussteller == "" || k.OIDCClientID == "" {
@@ -105,10 +104,10 @@ func (s *Server) oidcAnbieter(ctx context.Context) (*oidc.Provider, *oauth2.Conf
 	}, nil
 }
 
-// rueckAdresse ist die Adresse, an die der Aussteller zurückschickt. Sie muss
-// beim Aussteller hinterlegt sein, deshalb wird sie aus der öffentlichen URL
-// gebildet und nicht aus dem Kopf der Anfrage: ein Angreifer, der den Host-Kopf
-// setzt, könnte sonst den Rücksprung umlenken.
+// rueckAdresse is the address the issuer sends the browser back to. It has to
+// be registered with the issuer, which is why it is built from the configured
+// public URL and not from the request header: an attacker who sets the Host
+// header could otherwise redirect the callback.
 func (s *Server) rueckAdresse() string {
 	basis := strings.TrimSuffix(s.SSO.OeffentlicheURL, "/")
 	return basis + "/api/auth/oidc/zurueck"
@@ -132,10 +131,9 @@ func (s *Server) OIDCStart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	zustand, nonce := zufall(), zufall()
-	// Zustand und Nonce reisen in einem eigenen Plätzchen mit, nicht im
-	// Speicher des Dienstes: sonst überlebte eine begonnene Anmeldung keinen
-	// Neustart, und zwei Instanzen hinter einem Verteiler könnten sich nicht
-	// abwechseln.
+	// State and nonce travel in a cookie of their own rather than in the
+	// service's memory: otherwise a sign-in under way would not survive a
+	// restart, and two instances behind a load balancer could not take turns.
 	s.oidcKeksSetzen(w, r, oidcSitzung{
 		Zustand: zustand,
 		Nonce:   nonce,
@@ -158,9 +156,9 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 	}
 	s.oidcKeksLoeschen(w, r)
 
-	// Der Zustand ist der Schutz gegen untergeschobene Anmeldungen: ohne
-	// Vergleich könnte jemand einen fremden Code in den Browser des Opfers
-	// schieben und es damit an sein Konto anmelden.
+	// The state parameter is the protection against smuggled-in sign-ins:
+	// without comparing it, somebody could push a foreign code into a victim's
+	// browser and sign them into the attacker's account.
 	if r.URL.Query().Get("state") != mit.Zustand || mit.Zustand == "" {
 		s.ssoFehler(w, r, "Die Antwort gehört nicht zu dieser Anmeldung.")
 		return
@@ -209,8 +207,9 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 		s.ssoFehler(w, r, "Der Anbieter hat keine E-Mail-Adresse mitgeschickt.")
 		return
 	}
-	// Eine unbestätigte Adresse verknüpft nicht: sonst genügte es, sich beim
-	// Anbieter mit fremder Adresse einzutragen, um hier fremde Seiten zu lesen.
+	// An unverified address does not match an account: otherwise registering at
+	// the provider with somebody else's address would be enough to read their
+	// pages here.
 	if bestaetigt, da := behauptung["email_verified"].(bool); da && !bestaetigt {
 		s.ssoFehler(w, r, "Der Anbieter hat diese Adresse nicht bestätigt.")
 		return
@@ -231,12 +230,12 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 	})
 
 	ziel := mit.Ziel
-	// Nur Ziele innerhalb dieser Anwendung. Alles andere wäre eine offene
-	// Weiterleitung, ein beliebter Baustein für Täuschungsseiten.
+	// Only targets inside this application. Anything else would be an open
+	// redirect, a favourite building block for phishing pages.
 	//
-	// Geprüft wird auf beide Schrägstriche: "//fremd.example" ist eine Adresse
-	// mit dem Protokoll der aktuellen Seite, und "/\fremd.example" behandeln
-	// manche Browser genauso.
+	// Both slashes are checked: "//other.example" is an address using the
+	// current page's protocol, and some browsers treat "/\other.example" the
+	// same way.
 	if !strings.HasPrefix(ziel, "/") ||
 		strings.HasPrefix(ziel, "//") || strings.HasPrefix(ziel, `/\`) {
 		ziel = "/"
@@ -253,20 +252,20 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 		email).Scan(&u.ID, &u.Email, &u.Name, &hash, &u.Role, &u.CreatedAt)
 
 	if err == nil {
-		// Übernommen wird nur ein Konto, das AUSDRÜCKLICH über SSO entstanden
-		// ist. Jedes andere, mit Passwort oder mit leerem Passwortfeld,
-		// bleibt unangetastet.
+		// Only an account that was EXPLICITLY created through SSO is taken
+		// over. Every other one, with a password or with an empty password
+		// field, is left alone.
 		//
-		// Die frühere Fassung ließ ein leeres Passwortfeld durchgehen. Das war
-		// eine Lücke: wer im Verzeichnis eine Adresse setzen kann, hätte sich
-		// damit an ein fremdes Konto gehängt, sobald dessen Feld aus
-		// irgendeinem Grund leer war.
+		// The earlier version let an empty password field pass. That was a
+		// hole: whoever can set an address in the directory would have attached
+		// themselves to a stranger's account as soon as its field was empty for
+		// whatever reason.
 		if !strings.HasPrefix(hash, "sso:") {
 			return u, errors.New("Für diese Adresse gibt es bereits ein Konto. " +
 				"Ein Administrator muss es freigeben, bevor SSO darauf zugreift.")
 		}
-		// Höherstufen nur bei einem SSO-Konto, und mit Eintrag in der
-		// Prüfspur: eine Rolle, die sich still ändert, fällt niemandem auf.
+		// Promote only an SSO account, and write it to the audit trail: a role
+		// that changes quietly is a role nobody notices changing.
 		if admin && u.Role != "admin" {
 			if _, err := s.Pool.Exec(ctx, `UPDATE users SET role='admin' WHERE id=$1`, u.ID); err == nil {
 				u.Role = "admin"
@@ -280,9 +279,9 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 		return u, nil
 	}
 
-	// Neues Konto. Der Passwort-Platzhalter beginnt mit "sso:" und ist kein
-	// gültiger bcrypt-Wert, eine Anmeldung mit Passwort scheitert daran
-	// zuverlässig, ohne dass es dafür eine eigene Spalte braucht.
+	// A new account. The password placeholder starts with "sso:" and is not a
+	// valid bcrypt hash, so a password sign-in fails on it reliably without
+	// needing a column of its own.
 	if name == "" {
 		name = strings.SplitN(email, "@", 2)[0]
 	}
@@ -290,8 +289,8 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 	if admin {
 		rolle = "admin"
 	}
-	// Das erste Konto einer leeren Instanz wird Administrator, dieselbe Regel
-	// wie bei der Registrierung mit Passwort.
+	// The first account on an empty instance becomes an administrator, the same
+	// rule as for registering with a password.
 	var vorhanden int
 	s.Pool.QueryRow(ctx, `SELECT count(*) FROM users`).Scan(&vorhanden)
 	if vorhanden == 0 {
@@ -310,15 +309,15 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 	return u, nil
 }
 
-// ssoFehler schickt den Browser mit einer Meldung zurück zur Anmeldeseite.
+// ssoFehler sends the browser back to the sign-in page with a message.
 //
-// Kein JSON: an dieser Stelle steht der Browser mitten in einer Weiterleitung,
-// und eine JSON-Antwort wäre eine weiße Seite mit geschweiften Klammern.
+// Not JSON: at this point the browser is in the middle of a redirect, and a
+// JSON answer would be a white page full of curly braces.
 func (s *Server) ssoFehler(w http.ResponseWriter, r *http.Request, meldung string) {
 	log.Printf("SSO abgebrochen: %s", meldung)
-	// QueryEscape statt einer eigenen Ersetzungsliste: eine handgeschriebene
-	// Liste vergisst immer ein Zeichen, und dieses eine ist dann das, mit dem
-	// sich die Adresse aufbrechen lässt.
+	// QueryEscape rather than a hand-written replacement list: such a list
+	// always forgets one character, and that one turns out to be the one that
+	// breaks the address open.
 	http.Redirect(w, r, "/login?sso="+url.QueryEscape(meldung), http.StatusFound)
 }
 
