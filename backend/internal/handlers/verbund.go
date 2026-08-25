@@ -242,12 +242,17 @@ func ausInfo(info, feld string) string {
 	return ""
 }
 
+// dauer schreibt eine Zeitspanne so, wie man sie vorliest. Der Sprung von
+// Millisekunden auf Sekunden fehlte zuerst -- eine Laufzeit stand dann als
+// "48023 ms" da, und das liest niemand.
 func dauer(d time.Duration) string {
 	switch {
 	case d < time.Millisecond:
 		return fmt.Sprintf("%.1f ms", float64(d.Microseconds())/1000)
-	case d < time.Minute:
+	case d < 2*time.Second:
 		return fmt.Sprintf("%d ms", d.Milliseconds())
+	case d < 90*time.Second:
+		return fmt.Sprintf("%d s", int(d.Seconds()))
 	case d < time.Hour:
 		return fmt.Sprintf("%d min", int(d.Minutes()))
 	case d < 48*time.Hour:
