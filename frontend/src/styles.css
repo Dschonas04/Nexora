@@ -95,7 +95,7 @@ a {
   text-decoration: none;
 }
 
-/* ---------- Layout ---------- */
+/* Layout */
 .app {
   display: flex;
   height: 100vh;
@@ -176,7 +176,7 @@ a {
   border-color: var(--accent);
 }
 
-/* ---------- Tree rows ---------- */
+/* Tree rows */
 .tree-row {
   display: flex;
   align-items: center;
@@ -255,7 +255,7 @@ a {
   color: var(--text);
 }
 
-/* ---------- Main / editor ---------- */
+/* Main / editor */
 .main {
   flex: 1;
   display: flex;
@@ -389,7 +389,7 @@ a {
   background: transparent;
 }
 
-/* ---------- Auth ---------- */
+/* Auth */
 .auth {
   height: 100vh;
   display: flex;
@@ -485,7 +485,7 @@ a {
   background: transparent !important;
 }
 
-/* ---------- Added: spaces, sharing, versions, trash, graph ---------- */
+/* Added: spaces, sharing, versions, trash, graph */
 .text-btn {
   border: none;
   background: transparent;
@@ -1398,7 +1398,7 @@ a {
    lange Seite alles, was nicht ganz oben steht. */
 .einstellungen-manager {
   display: flex;
-  /* flex statt height: 100% -- .main ist eine Flex-Spalte, dort löst eine
+  /* flex statt height: 100%, denn .main ist eine Flex-Spalte, dort löst eine
      Prozenthöhe nicht auf und die Seite bliebe ohne eigenes Scrollen.
      min-height: 0 erlaubt den Kindern, kleiner als ihr Inhalt zu werden,
      sonst wächst der Kasten über den Bildschirm hinaus. */
@@ -2012,7 +2012,7 @@ a {
   font-style: italic;
 }
 
-/* ---- Einklappen der Leistenabschnitte ------------------------------------ */
+/* Einklappen der Leistenabschnitte */
 
 /* Der Pfeil trägt keine eigene Fläche und keinen Rahmen: er soll Teil der
    Überschrift sein, nicht ein Knopf davor. Die Breite ist fest, damit die
@@ -2107,7 +2107,7 @@ a {
   color: var(--text);
 }
 
-/* ---- Dateien auf die Seite ziehen ---------------------------------------- */
+/* Dateien auf die Seite ziehen */
 
 .page-layout {
   position: relative;
@@ -2157,7 +2157,7 @@ a {
   display: inline-flex;
 }
 
-/* ---- Wartung: Konfigurationsdatei --------------------------------------- */
+/* Wartung: Konfigurationsdatei */
 
 /* Feste Schrift, weil eine Konfigurationsdatei spaltenweise gelesen wird:
    ausgerichtete Gleichheitszeichen sind der halbe Überblick. */
@@ -2204,7 +2204,7 @@ a {
   background: var(--hover);
 }
 
-/* ---- Einfuhr ------------------------------------------------------------- */
+/* Einfuhr */
 
 .einfuhr-box {
   width: 620px;
@@ -2298,7 +2298,7 @@ a {
   color: var(--fehler-text);
 }
 
-/* ---- Suchfilter ---------------------------------------------------------- */
+/* Suchfilter */
 
 .suchfilter {
   display: flex;
@@ -2325,7 +2325,7 @@ a {
   color: var(--accent);
 }
 
-/* ---- Postfach ------------------------------------------------------------ */
+/* Postfach */
 
 .postfach-zaehler {
   margin-left: auto;

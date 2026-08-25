@@ -53,7 +53,7 @@ func inlineAus(s string, stile map[string]bool) []Inline {
 		}
 
 		// [[Seitentitel]] ist in Nexora ein Verweis und bleibt als Text stehen
-		// -- der Editor erkennt ihn am Muster, und die Rückverweise ebenso.
+		// der Editor erkennt ihn am Muster, und die Rückverweise ebenso.
 		if c == '[' && i+1 < len(s) && s[i+1] == '[' {
 			if schluss := strings.Index(s[i:], "]]"); schluss > 0 {
 				b.WriteString(s[i : i+schluss+2])
@@ -94,7 +94,7 @@ func inlineAus(s string, stile map[string]bool) []Inline {
 			}
 		}
 
-		// <https://…> -- der kurze Verweis, der Adresse und Beschriftung ist.
+		// <https://…>, der kurze Verweis, der Adresse und Beschriftung ist.
 		if c == '<' {
 			if ende := strings.IndexByte(s[i:], '>'); ende > 1 {
 				innen := s[i+1 : i+ende]

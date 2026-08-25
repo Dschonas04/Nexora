@@ -61,7 +61,7 @@ type PageMeta struct {
 
 // PapierkorbSeite is a trashed page. It carries the date it will disappear on,
 // so the view can say how long is left instead of leaving the reader to guess
-// -- a trash with an expiry that nobody can see is a trap.
+// a trash with an expiry that nobody can see is a trap.
 type PapierkorbSeite struct {
 	PageMeta
 	VerfaelltAm *time.Time `json:"verfaelltAm"`
