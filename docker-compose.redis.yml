@@ -1,0 +1,43 @@
+# Beilage: ein Redis als Zwischenspeicher.
+#
+# Freiwillig, und zwar wirklich: ohne ihn läuft Nexora vollständig, nur mit
+# einer Datenbankabfrage mehr je Anfrage. Er lohnt, sobald mehrere Instanzen
+# nebeneinander laufen -- dann teilen sie sich, was sie über Sitzungen wissen --
+# oder wenn die Datenbank ohnehin knapp ist.
+#
+#     docker compose -f docker-compose.yml -f docker-compose.db.yml \
+#                    -f docker-compose.redis.yml up -d
+#
+# Was drin liegt, steht auch in der Datenbank. Deshalb hat dieser Dienst
+# absichtlich KEINEN Datenträger: ein Redis, das seinen Inhalt verliert, ist
+# hier kein Schaden, sondern ein kalter Start.
+services:
+  redis:
+    image: redis:7-alpine
+    # Kein Speichern auf Platte (--save "" schaltet die Momentaufnahmen ab) und
+    # eine Obergrenze für den Speicher: läuft er voll, fliegen die ältesten
+    # Einträge raus, statt dass der Dienst aussteigt.
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --maxmemory
+      - ${REDIS_SPEICHER:-128mb}
+      - --maxmemory-policy
+      - allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    environment:
+      NEXORA_REDIS_ADRESSE: ${NEXORA_REDIS_ADRESSE:-redis:6379}
+      NEXORA_REDIS_VORSILBE: ${NEXORA_REDIS_VORSILBE:-nexora}
+    depends_on:
+      redis:
+        condition: service_healthy
