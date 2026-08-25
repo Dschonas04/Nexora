@@ -172,7 +172,7 @@ func (s *Server) postfachAusKommentar(ctx context.Context, uid, name, pageID, ko
 		s.zustellen(ctx, id, PostErwaehnt, pageID, kommentarID, uid, name, titel, text)
 	}
 
-	// Antwort: der Verfasser des Bezugskommentars.
+	// A reply: the author of the comment being answered.
 	if elternID != nil {
 		var autor *string
 		if err := s.Pool.QueryRow(ctx,
@@ -183,7 +183,7 @@ func (s *Server) postfachAusKommentar(ctx context.Context, uid, name, pageID, ko
 		}
 	}
 
-	// Und der Eigentümer der Seite, er ist der, den eine Rückfrage angeht.
+	// And the owner of the page, the person a question is aimed at.
 	var eigner string
 	if err := s.Pool.QueryRow(ctx,
 		`SELECT owner_id::text FROM pages WHERE id=$1`, pageID).Scan(&eigner); err == nil && !bedient[eigner] {

@@ -56,7 +56,7 @@ func TestJedeFunktionGehoertZuGenauEinerStufe(t *testing.T) {
 	}
 }
 
-// Business ist die oberste Stufe und muss deshalb alles enthalten.
+// Business is the top tier and therefore has to contain everything.
 func TestBusinessEnthaeltAlles(t *testing.T) {
 	if len(FunktionenDerStufe(StufeBusiness)) != len(Alle) {
 		t.Errorf("Business enthält %d von %d Funktionen",
@@ -64,7 +64,7 @@ func TestBusinessEnthaeltAlles(t *testing.T) {
 	}
 }
 
-// Ein Tippfehler im Schlüssel darf nicht zufällig etwas freischalten.
+// A typo in a key must not unlock anything by accident.
 func TestUnbekannteStufeSchaltetNichtsFrei(t *testing.T) {
 	if got := FunktionenDerStufe("gold"); len(got) != 0 {
 		t.Errorf("unbekannte Stufe liefert %v", got)

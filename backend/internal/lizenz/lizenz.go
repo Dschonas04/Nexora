@@ -58,7 +58,7 @@ const (
 	StufeBusiness Stufe = "business"
 )
 
-// StufenReihe ist die Ordnung vom kleinsten zum größten Umfang.
+// StufenReihe is the order from the smallest tier to the largest.
 var StufenReihe = []Stufe{StufeFrei, StufeAdvanced, StufePro, StufeBusiness}
 
 // stufenZusatz nennt, was eine Stufe GEGENÜBER DER VORIGEN hinzufügt. Kumulativ
@@ -86,7 +86,7 @@ func FunktionenDerStufe(st Stufe) []Funktion {
 	return nil
 }
 
-// StufeGueltig sagt, ob der Name eine bekannte Stufe ist.
+// StufeGueltig reports whether the name is a known tier.
 func StufeGueltig(st Stufe) bool {
 	for _, s := range StufenReihe {
 		if s == st {
@@ -120,7 +120,7 @@ type Pruefer interface {
 // minus the key itself.
 type Zustand struct {
 	Inhaber    string     `json:"inhaber"`             // who the key was issued to
-	Stufe      Stufe      `json:"stufe,omitempty"`     // das verkaufte Bündel, falls der Schlüssel eines nennt
+	Stufe      Stufe      `json:"stufe,omitempty"`     // the bundle that was sold, when the key names one
 	Funktionen []Funktion `json:"funktionen"`          // what it unlocks
 	LaeuftAb   string     `json:"laeuft_ab,omitempty"` // ISO date, empty means perpetual
 	Gueltig    bool       `json:"gueltig"`
@@ -142,7 +142,7 @@ func Registriere(p Pruefer) {
 	pruefer = p
 }
 
-// RegistriereAussteller installiert den Aussteller.
+// RegistriereAussteller installs the issuer.
 func RegistriereAussteller(a Aussteller) {
 	mu.Lock()
 	defer mu.Unlock()
@@ -156,7 +156,7 @@ func Ausstellbar() bool {
 	return aussteller != nil && aussteller.Moeglich()
 }
 
-// Ausstellen erzeugt einen Schlüssel, sofern diese Installation das darf.
+// Ausstellen creates a key, provided this installation is allowed to.
 func Ausstellen(inhaber string, stufe Stufe, zusaetzlich []Funktion, ablauf time.Time) (string, error) {
 	mu.RLock()
 	a := aussteller

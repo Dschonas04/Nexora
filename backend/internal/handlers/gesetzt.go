@@ -17,7 +17,7 @@ import (
 	"nexora/internal/middleware"
 )
 
-// seiteAlsDokument holt eine Seite und bringt sie in die Formatiererform.
+// seiteAlsDokument fetches a page and brings it into typesetter form.
 func (s *Server) seiteAlsDokument(r *http.Request, id string) (dok.Dokument, bool) {
 	uid := middleware.UserID(r)
 	if canRead, _, _, ok := s.pagePerm(r.Context(), uid, id); !ok || !canRead {
@@ -42,7 +42,7 @@ func dateiKopf(w http.ResponseWriter, typ, name, endung string) {
 			url.PathEscape(name+endung))
 }
 
-// ExportPDF liefert eine Seite als PDF.
+// ExportPDF returns a page as a PDF.
 func (s *Server) ExportPDF(w http.ResponseWriter, r *http.Request) {
 	d, ok := s.seiteAlsDokument(r, chi.URLParam(r, "id"))
 	if !ok {
@@ -53,7 +53,7 @@ func (s *Server) ExportPDF(w http.ResponseWriter, r *http.Request) {
 	w.Write(dok.PDF(d))
 }
 
-// ExportWord liefert eine Seite als Word-Dokument.
+// ExportWord returns a page as a Word document.
 func (s *Server) ExportWord(w http.ResponseWriter, r *http.Request) {
 	d, ok := s.seiteAlsDokument(r, chi.URLParam(r, "id"))
 	if !ok {

@@ -61,7 +61,7 @@ func TestJedeStufeLaesstSichAktivieren(t *testing.T) {
 	}
 }
 
-// Eine Stufe plus einzeln dazugekaufte Zusätze.
+// A tier plus extras bought on top of it.
 func TestStufePlusZusatz(t *testing.T) {
 	oeff, priv := paar(t)
 	schluessel, err := Ausstellen(priv, "Kundin", kern.StufeAdvanced,
@@ -153,7 +153,7 @@ func TestVeraenderterSchluesselFaelltAuf(t *testing.T) {
 		t.Fatalf("ausstellen: %v", err)
 	}
 	teile := strings.SplitN(schluessel, ".", 2)
-	// Ein Zeichen im Datenteil kippen.
+	// Flip one character in the data half.
 	daten := []byte(teile[0])
 	if daten[3] == 'A' {
 		daten[3] = 'B'
@@ -164,7 +164,7 @@ func TestVeraenderterSchluesselFaelltAuf(t *testing.T) {
 		t.Error("ein verändertes Datenpaket wurde angenommen")
 	}
 
-	// Und ein Schlüssel von einem fremden Paar.
+	// And a key from a foreign pair.
 	_, fremdPriv := paar(t)
 	fremd, _ := Ausstellen(fremdPriv, "Fremde", kern.StufeBusiness, nil, time.Time{})
 	if _, err := NeuerPruefer(oeff).Pruefe(fremd); err == nil {

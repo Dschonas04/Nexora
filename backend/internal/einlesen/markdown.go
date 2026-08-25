@@ -44,7 +44,7 @@ type Block struct {
 	Children []Block        `json:"children,omitempty"`
 }
 
-// TabellenInhalt ist die Gestalt, die BlockNote für Tabellen erwartet.
+// TabellenInhalt is the shape BlockNote expects for tables.
 type TabellenInhalt struct {
 	Type string          `json:"type"`
 	Rows []TabellenZeile `json:"rows"`
@@ -81,7 +81,7 @@ func (k *knoten) bauen() Block {
 
 var (
 	ueberschriftMuster = regexp.MustCompile(`^ {0,3}(#{1,6})\s+(.*?)\s*#*\s*$`)
-	// Ohne Rückverweis, den Go nicht kennt: drei gleiche Zeichen, je Sorte einmal.
+	// No backreference, which Go does not have: three equal characters, one per kind.
 	trennerMuster     = regexp.MustCompile(`^ {0,3}(?:(?:-\s*){3,}|(?:\*\s*){3,}|(?:_\s*){3,})$`)
 	aufzaehlungMuster = regexp.MustCompile(`^(\s*)([-*+])\s+(.*)$`)
 	nummerMuster      = regexp.MustCompile(`^(\s*)(\d{1,9})[.)]\s+(.*)$`)
@@ -136,7 +136,7 @@ func Vorspann(md string) (Kopf, string) {
 	}
 	block := s[4 : 4+ende]
 	rest := s[4+ende:]
-	// Hinter dem schließenden --- den Rest der Zeile abschneiden.
+	// Cut off the rest of the line after the closing fence.
 	if i := strings.Index(rest[1:], "\n"); i >= 0 {
 		rest = rest[i+2:]
 	} else {
@@ -145,7 +145,7 @@ func Vorspann(md string) (Kopf, string) {
 
 	letzterSchluessel := ""
 	for _, z := range strings.Split(block, "\n") {
-		// Ein Listeneintrag gehört zum Schlüssel darüber: tags:\n  - eins
+		// A list entry belongs to the key above it: tags:\n  - one
 		if eintrag := strings.TrimSpace(z); strings.HasPrefix(eintrag, "- ") && letzterSchluessel == "tags" {
 			k.Tags = append(k.Tags, saubereMarke(eintrag[2:]))
 			continue

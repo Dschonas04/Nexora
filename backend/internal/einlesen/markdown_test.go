@@ -22,7 +22,7 @@ func TestTitelAusErsterUeberschrift(t *testing.T) {
 	if titel != "Mein Bericht" {
 		t.Fatalf("Titel = %q", titel)
 	}
-	// Die Überschrift darf nicht zusätzlich im Text stehen.
+	// The heading must not appear in the body a second time.
 	if s := alsJSON(t, bloecke); strings.Contains(s, "Mein Bericht") {
 		t.Fatalf("Titel steht doppelt: %s", s)
 	}
@@ -123,7 +123,7 @@ func TestUnterstrichImWortBleibt(t *testing.T) {
 }
 
 func TestMaskierungWirdZurueckgenommen(t *testing.T) {
-	// Genau so schreibt der Export ein Sternchen heraus, das keines sein soll.
+	// This is exactly how the export writes an asterisk that is not one.
 	_, _, b := Lies(`2 \* 3 und \[Klammer\]` + "\n")
 	teile := b[0].Content.([]Inline)
 	if teile[0].Text != "2 * 3 und [Klammer]" {
@@ -156,7 +156,7 @@ func TestCodezaunWirdFesteSchrift(t *testing.T) {
 	if !strings.Contains(s, "func a() {}") || !strings.Contains(s, "func b() {}") {
 		t.Fatalf("Codezeilen verloren: %s", s)
 	}
-	// Die Leerzeile mitten im Code ist Inhalt und muss bleiben.
+	// The blank line inside the code block is content and has to stay.
 	if len(b) != 4 {
 		t.Fatalf("erwartet Sprache + drei Zeilen, bekam %d: %s", len(b), s)
 	}
@@ -174,7 +174,7 @@ func TestVerweis(t *testing.T) {
 }
 
 func TestVerweisMitLeerzeichenInSpitzenKlammern(t *testing.T) {
-	// So schreibt der Export Dateinamen mit Leerzeichen.
+	// This is how the export writes file names containing spaces.
 	_, _, b := Lies("[Bericht](<mein bericht.md>)\n")
 	teile := b[0].Content.([]Inline)
 	if teile[0].Href != "mein bericht.md" {
@@ -265,7 +265,7 @@ func TestZitatWirdKursiv(t *testing.T) {
 }
 
 func TestListeDirektNachAbsatz(t *testing.T) {
-	// Ohne Leerzeile dazwischen, das kommt in echten Notizen dauernd vor.
+	// Without a blank line between them, which happens all the time in real notes.
 	_, _, b := Lies("Text darüber\n- Punkt\n")
 	if len(b) != 2 || b[1].Type != "bulletListItem" {
 		t.Fatalf("Liste im Absatz verschluckt: %s", alsJSON(t, b))
@@ -273,7 +273,7 @@ func TestListeDirektNachAbsatz(t *testing.T) {
 }
 
 func TestLeeresDokumentBleibtOeffenbar(t *testing.T) {
-	// Der Editor lehnt eine leere Liste als Anfangsinhalt ab.
+	// The editor refuses an empty list as initial content.
 	_, _, b := Lies("")
 	if len(b) != 1 || b[0].Type != "paragraph" {
 		t.Fatalf("leeres Dokument = %s", alsJSON(t, b))

@@ -32,7 +32,7 @@ type lizenzEinlesenReq struct {
 	Schluessel string `json:"schluessel"`
 }
 
-// LizenzEinlesen nimmt einen Schlüssel entgegen, prüft ihn und macht ihn gültig.
+// LizenzEinlesen takes a key, verifies it and puts it into effect.
 func (s *Server) LizenzEinlesen(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {
@@ -88,8 +88,8 @@ func (s *Server) LizenzEinlesen(w http.ResponseWriter, r *http.Request) {
 type lizenzAusstellenReq struct {
 	Inhaber    string   `json:"inhaber"`
 	Stufe      string   `json:"stufe"`
-	Funktionen []string `json:"funktionen"` // einzelne Zusätze über die Stufe hinaus
-	Ablauf     string   `json:"ablauf"`     // JJJJ-MM-TT, leer heißt ein Jahr
+	Funktionen []string `json:"funktionen"` // single extras on top of the tier
+	Ablauf     string   `json:"ablauf"`     // YYYY-MM-DD, empty means one year
 }
 
 // LizenzAusstellen signiert einen neuen Schlüssel.

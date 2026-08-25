@@ -216,7 +216,7 @@ func TestPlanBautDenBaum(t *testing.T) {
 	if len(baum) != 1 || baum[0].Titel != "Deckblatt" {
 		t.Fatalf("Deckblatt nicht oben: %+v", baum)
 	}
-	// Unter dem Deckblatt: die beiden Ordner.
+	// Below the cover page: the two folders.
 	namen := map[string]bool{}
 	for _, k := range baum[0].Kinder {
 		namen[k.Titel] = true

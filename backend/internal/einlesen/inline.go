@@ -94,7 +94,7 @@ func inlineAus(s string, stile map[string]bool) []Inline {
 			}
 		}
 
-		// <https://…>, der kurze Verweis, der Adresse und Beschriftung ist.
+		// <https://…>, the short link that is address and label in one.
 		if c == '<' {
 			if ende := strings.IndexByte(s[i:], '>'); ende > 1 {
 				innen := s[i+1 : i+ende]
@@ -230,7 +230,7 @@ func verweisLesen(s string, i int) (text, adresse string, ende int, ok bool) {
 		return "", "", 0, false
 	}
 	adresse = strings.TrimSpace(s[anfang:k])
-	// Ein Titel hinter der Adresse gehört nicht zur Adresse.
+	// A title behind the address is not part of the address.
 	if leer := strings.IndexAny(adresse, " \t"); leer > 0 {
 		adresse = adresse[:leer]
 	}
@@ -254,7 +254,7 @@ func findeAuszeichnungsEnde(s string, ab int, zeichen byte, n int) int {
 			continue
 		}
 		if i == ab {
-			// Leerer Inhalt: "**" direkt hinter "**" zeichnet nichts aus.
+			// Empty content: "**" right after "**" formats nothing.
 			continue
 		}
 		if s[i-1] == ' ' || s[i-1] == '\t' {
@@ -307,7 +307,7 @@ func istAdresse(s string) bool {
 	return false
 }
 
-// kopie gibt den Stilsatz weiter, ohne ihn zu teilen.
+// kopie passes the style set on without sharing it.
 func kopie(stile map[string]bool) map[string]bool {
 	if len(stile) == 0 {
 		return nil

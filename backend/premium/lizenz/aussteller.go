@@ -48,7 +48,7 @@ func Ausstellen(privat ed25519.PrivateKey, inhaber string, stufe kern.Stufe,
 		return "", fmt.Errorf("unbekannte Stufe %q", stufe)
 	}
 
-	// Ohne Angabe: ein Jahr. Das ist die Regel, nicht die Ausnahme.
+	// Without a date: one year. That is the rule, not the exception.
 	if ablauf.IsZero() {
 		ablauf = time.Now().Add(HoechsteLaufzeit)
 	}

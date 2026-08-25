@@ -319,7 +319,7 @@ func main() {
 			r.Post("/spaces", h.CreateSpace)
 			r.Put("/spaces/{id}", h.RenameSpace)
 			r.Delete("/spaces/{id}", h.DeleteSpace)
-			// Ablage für alle angemeldeten Konten öffnen (nicht fürs Internet).
+			// Open a space to every signed-in account (not to the internet).
 			r.Put("/spaces/{id}/oeffentlich", h.SetSpaceOeffentlich)
 
 			// Backlinks (pages linking here via [[wiki-link]] or manual links)
@@ -375,7 +375,7 @@ func main() {
 	// Starts: der läuft nach dreißig Sekunden ab, die Uhr soll laufen, solange
 	// der Dienst läuft.
 	go h.PapierkorbUhr(context.Background())
-	// Abgelaufene und widerrufene Sitzungen verschwinden nach einer Schonzeit.
+	// Expired and revoked sessions disappear after a grace period.
 	go h.SitzungenUhr(context.Background())
 
 	srv := &http.Server{

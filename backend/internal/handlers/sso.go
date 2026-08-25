@@ -43,7 +43,7 @@ type SSOEinstellungen struct {
 	OeffentlicheURL string
 }
 
-// oidcSitzung merkt sich, was zwischen Hin- und Rückweg gebraucht wird.
+// oidcSitzung remembers what is needed between the outbound and return leg.
 type oidcSitzung struct {
 	Zustand string
 	Nonce   string
@@ -53,7 +53,7 @@ type oidcSitzung struct {
 
 const oidcKeksName = "nexora_oidc"
 
-// SSOZustand sagt der Anmeldeseite, was angeboten werden darf.
+// SSOZustand tells the sign-in page what may be offered.
 func (s *Server) SSOZustand(w http.ResponseWriter, r *http.Request) {
 	k := s.SSO.Konf
 	writeJSON(w, http.StatusOK, map[string]any{
@@ -114,7 +114,7 @@ func (s *Server) rueckAdresse() string {
 	return basis + "/api/auth/oidc/zurueck"
 }
 
-// OIDCStart schickt den Browser zum Aussteller.
+// OIDCStart sends the browser to the provider.
 func (s *Server) OIDCStart(w http.ResponseWriter, r *http.Request) {
 	if !lizenz.Frei(lizenz.SSO) {
 		writeErr(w, http.StatusPaymentRequired, "SSO gehört zum Zusatzumfang")
@@ -145,7 +145,7 @@ func (s *Server) OIDCStart(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, oauthKonf.AuthCodeURL(zustand, oidc.Nonce(nonce)), http.StatusFound)
 }
 
-// OIDCZurueck nimmt den Code entgegen und meldet an.
+// OIDCZurueck takes the code and signs the person in.
 func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 	if !lizenz.Frei(lizenz.SSO) {
 		writeErr(w, http.StatusPaymentRequired, "SSO gehört zum Zusatzumfang")
@@ -244,7 +244,7 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, ziel, http.StatusFound)
 }
 
-// kontoAusSSO findet oder legt das Konto an.
+// kontoAusSSO finds or creates the account.
 func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool, herkunft string) (models.User, error) {
 	var u models.User
 	var hash string
@@ -328,7 +328,7 @@ func zufall() string {
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 
-// behauptungText liest ein Feld aus den Angaben, mit Rückfall auf den üblichen Namen.
+// behauptungText reads a claim, falling back to the usual field name.
 func behauptungText(m map[string]any, feld, vorgabe string) string {
 	if feld == "" {
 		feld = vorgabe
@@ -342,7 +342,7 @@ func behauptungText(m map[string]any, feld, vorgabe string) string {
 	return ""
 }
 
-// gruppeEnthaelt sucht einen Gruppennamen in den üblichen Feldern.
+// gruppeEnthaelt looks for a group name in the usual claims.
 func gruppeEnthaelt(m map[string]any, gesucht string) bool {
 	if strings.TrimSpace(gesucht) == "" {
 		return false
@@ -356,7 +356,7 @@ func gruppeEnthaelt(m map[string]any, gesucht string) bool {
 				}
 			}
 		case map[string]any:
-			// Keycloak legt die Rollen unter realm_access.roles ab.
+			// Keycloak keeps the roles under realm_access.roles.
 			if rollen, ok := v["roles"].([]any); ok {
 				for _, e := range rollen {
 					if s, ok := e.(string); ok && s == gesucht {

@@ -423,7 +423,7 @@ func hatAttribut(n *html.Node, name string) bool {
 	return false
 }
 
-// suche findet das erste Element dieses Namens im Teilbaum.
+// suche finds the first element of that name in the subtree.
 func suche(n *html.Node, name string) *html.Node {
 	if n.Type == html.ElementNode && n.Data == name {
 		return n

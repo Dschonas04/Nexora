@@ -75,7 +75,7 @@ func TestNummerierungZaehltUndSetztZurueck(t *testing.T) {
 	 {"type":"numberedListItem","content":[{"type":"text","text":"c"}]}]`)
 	enthaelt(t, md, "1. a")
 	enthaelt(t, md, "2. b")
-	// Nach dem Absatz beginnt eine neue Liste, sie muss wieder bei 1 anfangen.
+	// After the paragraph a new list begins, and it has to start at 1 again.
 	if !strings.Contains(md, "1. c") {
 		t.Fatalf("Zähler wurde nicht zurückgesetzt:\n%s", md)
 	}
@@ -159,7 +159,7 @@ func TestTitelWirdNichtVerdoppelt(t *testing.T) {
 	if !beginntMitUeberschrift(md, "Wake-on-LAN") {
 		t.Fatal("gleiche Überschrift nicht erkannt")
 	}
-	// Auch bei abweichender Schreibweise, sonst stünde der Titel doppelt.
+	// Even when spelled differently, otherwise the title would appear twice.
 	if !beginntMitUeberschrift(md, "wake-on-lan") {
 		t.Fatal("Groß- und Kleinschreibung wurde nicht ignoriert")
 	}

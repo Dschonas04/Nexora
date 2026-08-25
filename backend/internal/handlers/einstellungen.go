@@ -100,11 +100,11 @@ var bekannt = map[string]struct {
 // unbekannter Name ergäbe eine Oberfläche ohne Farben.
 var grundtoene = map[string]bool{"weiss": true, "grau": true, "dunkel": true}
 
-// speicher hält die Werte im Arbeitsspeicher.
+// speicher keeps the values in memory.
 var speicher struct {
 	sync.RWMutex
 	werte map[string]string
-	basis config.Konfig // was aus der Datei kam, als Rückfall
+	basis config.Konfig // what came from the file, as a fallback
 }
 
 // EinstellungenLaden fills the cache at startup. Rows in the database win over

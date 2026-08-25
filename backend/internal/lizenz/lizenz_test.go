@@ -30,7 +30,7 @@ func einrichten(t *testing.T) ed25519.PrivateKey {
 	return priv
 }
 
-// schluessel signiert eine Nutzlast und baut daraus den fertigen Schlüssel.
+// schluessel signs a payload and assembles the finished key from it.
 func schluessel(t *testing.T, priv ed25519.PrivateKey, n plizenz.Nutzlast) string {
 	t.Helper()
 	daten, err := json.Marshal(n)

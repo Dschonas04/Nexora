@@ -38,7 +38,7 @@ func bloeckeAus(zeilen []string) []Block {
 		}
 		stapel = append(stapel, stapelEintrag{einzug: einzug, k: k})
 	}
-	// gerade beendet die Liste: der nächste Block steht wieder ganz links.
+	// gerade ends the list: the next block sits at the far left again.
 	gerade := func(k *knoten) {
 		stapel = stapel[:0]
 		wurzel = append(wurzel, k)
@@ -258,12 +258,12 @@ func einzugVon(z string) int {
 	return len(z) - len(strings.TrimLeft(z, " \t"))
 }
 
-// listenEintrag erkennt Aufzählung, Nummerierung und Kästchen.
+// listenEintrag recognises bullets, numbers and checkboxes.
 func listenEintrag(z string) (*knoten, int, bool) {
 	if m := aufzaehlungMuster.FindStringSubmatch(z); m != nil {
 		einzug := len(strings.ReplaceAll(m[1], "\t", "    "))
 		rest := m[3]
-		// "- [x] Text" ist kein Aufzählungspunkt, sondern ein Kästchen.
+		// "- [x] Text" is a checkbox, not a bullet.
 		if h := hakenMuster.FindStringSubmatch(rest); h != nil {
 			return &knoten{blk: Block{
 				Type:    "checkListItem",

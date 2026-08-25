@@ -21,14 +21,14 @@ func TestHTMLTitelAusUeberschrift(t *testing.T) {
 	if titel != "Der richtige Titel" {
 		t.Fatalf("Titel = %q", titel)
 	}
-	// Die Überschrift darf nicht zusätzlich im Text stehen.
+	// The heading must not appear in the body a second time.
 	if s := htmlJSON(t, b); strings.Contains(s, "Der richtige Titel") {
 		t.Fatalf("Titel steht doppelt: %s", s)
 	}
 }
 
 func TestHTMLTitelAusKopfOhneAblage(t *testing.T) {
-	// Confluence schreibt "Ablagenname : Seitenname" in den Kopf.
+	// Confluence writes "Space name : Page name" into the header.
 	titel, _ := LiesHTML(`<html><head><title>Technik : Netzplan</title></head><body><p>x</p></body></html>`)
 	if titel != "Netzplan" {
 		t.Fatalf("Titel = %q", titel)
@@ -46,7 +46,7 @@ func TestHTMLAuszeichnungen(t *testing.T) {
 }
 
 func TestHTMLLeerzeichenZwischenStuecken(t *testing.T) {
-	// Ohne Rücksicht auf den Leerraum klebte hier "fetterund" zusammen.
+	// Without respecting whitespace this glued "boldand" together.
 	_, b := LiesHTML(`<p>Ein <b>fetter</b> und normaler Text.</p>`)
 	if got := NurText(inhaltVon(b[0])); got != "Ein fetter und normaler Text." {
 		t.Fatalf("Text = %q", got)
@@ -90,7 +90,7 @@ func TestHTMLTabelleMitKopfzeile(t *testing.T) {
 	if len(inhalt.Rows) != 2 || NurText(inhalt.Rows[1].Cells[1]) != "1" {
 		t.Fatalf("Tabelleninhalt falsch: %s", htmlJSON(t, b))
 	}
-	// Kopfzellen sind fett, sonst sieht eine eingeführte Tabelle kopflos aus.
+	// Header cells are bold, otherwise an imported table looks headless.
 	if !inhalt.Rows[0].Cells[0][0].Styles["bold"] {
 		t.Fatalf("Kopfzelle nicht ausgezeichnet: %s", htmlJSON(t, b))
 	}

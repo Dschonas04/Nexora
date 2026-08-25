@@ -38,7 +38,7 @@ const (
 
 	AktSeiteAngelegt     = "seite.angelegt"
 	AktSeiteGeaendert    = "seite.geaendert"
-	AktSeiteGeloescht    = "seite.geloescht" // in den Papierkorb
+	AktSeiteGeloescht    = "seite.geloescht" // moved to the trash
 	AktSeiteEntfernt     = "seite.entfernt"  // endgültig
 	AktSeiteWieder       = "seite.wiederhergestellt"
 	AktVersionZurueck    = "version.zurueckgeholt"

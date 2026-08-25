@@ -33,7 +33,7 @@ const (
 	PostFreigabe  = "freigabe"
 )
 
-// Nachricht ist ein Eintrag im Postfach.
+// Nachricht is one entry in the inbox.
 type Nachricht struct {
 	ID            string     `json:"id"`
 	Art           string     `json:"art"`
@@ -79,7 +79,7 @@ func (s *Server) zustellen(ctx context.Context, empfaenger, art, pageID, komment
 	}
 }
 
-// ListPostfach liefert die Nachrichten eines Kontos, neueste zuerst.
+// ListPostfach returns an account's messages, newest first.
 func (s *Server) ListPostfach(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 

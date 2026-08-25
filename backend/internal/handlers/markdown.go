@@ -33,13 +33,13 @@ type block struct {
 	Children []block         `json:"children"`
 }
 
-// inline ist ein Textstück innerhalb eines Blocks.
+// inline is a run of text inside a block.
 type inline struct {
 	Type    string          `json:"type"`
 	Text    string          `json:"text"`
 	Styles  map[string]any  `json:"styles"`
 	Href    string          `json:"href"`
-	Content json.RawMessage `json:"content"` // bei type=link liegt der Text hier
+	Content json.RawMessage `json:"content"` // for type=link the text lives here
 	Props   map[string]any  `json:"props"`   // bei Erwähnungen
 }
 
@@ -141,7 +141,7 @@ func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 
 		case "numberedListItem":
 			nummer++
-			// Eine Liste, die bei 5 anfängt, soll auch bei 5 anfangen.
+			// A list that starts at 5 should still start at 5.
 			if v, ok := bl.Props["start"].(float64); ok && nummer == 1 && v >= 1 {
 				nummer = int(v)
 			}
@@ -220,7 +220,7 @@ func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 			nummer = 0
 
 		default:
-			// Unbekannter Typ: den Text retten statt den Block zu verlieren.
+			// Unknown type: save the text rather than lose the block.
 			if t := zeile(bl.Content, einzug); strings.TrimSpace(t) != "" {
 				fmt.Fprintf(b, "%s%s\n\n", einzug, t)
 			}
@@ -244,7 +244,7 @@ func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 }
 
 func schreibeTabelle(b *strings.Builder, bl block, einzug string) {
-	// BlockNote legt die Tabelle unter content.rows ab, nicht als Liste.
+	// BlockNote keeps the table under content.rows, not as a list.
 	var inhalt struct {
 		Rows []struct {
 			Cells []json.RawMessage `json:"cells"`
@@ -317,7 +317,7 @@ func zeile(roh json.RawMessage, fortsetzung string) string {
 	return strings.Join(teile, "  \n")
 }
 
-// text wandelt den Inhalt eines Blocks in Markdown um, mit Auszeichnungen.
+// text turns a block's content into Markdown, formatting included.
 func text(roh json.RawMessage) string {
 	if len(roh) == 0 {
 		return ""
@@ -400,7 +400,7 @@ func entschaerfen(s string) string {
 	return entschaerfenRoh(s)
 }
 
-// wikiMuster ist dasselbe Muster, das die Oberfläche für [[Verweise]] benutzt.
+// wikiMuster is the same pattern the interface uses for [[links]].
 var wikiMuster = regexp.MustCompile(`\[\[[^\[\]]+\]\]`)
 
 func entschaerfenRoh(s string) string {
@@ -447,7 +447,7 @@ func zeilenanfaengeEntschaerfen(s string) string {
 		case strings.HasPrefix(rest, "- "), strings.HasPrefix(rest, "+ "), rest == "-", rest == "+":
 			zeilen[i] = vorne + "\\" + rest
 		default:
-			// "1. " oder "12) " am Anfang macht eine nummerierte Liste.
+			// "1. " or "12) " at the start makes a numbered list.
 			ziffern := 0
 			for ziffern < len(rest) && rest[ziffern] >= '0' && rest[ziffern] <= '9' {
 				ziffern++
@@ -569,7 +569,7 @@ func rohText(roh json.RawMessage) string {
 	return b.String()
 }
 
-// ExportMarkdown liefert eine Seite als Markdown-Datei.
+// ExportMarkdown returns a page as a Markdown file.
 func (s *Server) ExportMarkdown(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")

@@ -25,15 +25,17 @@ import (
 	"nexora/internal/config"
 )
 
-// startZeit merkt sich, wann dieser Prozess hochgekommen ist.
+// startZeit remembers when this process came up.
 var startZeit = time.Now()
 
-// Dienst ist ein Teil des Verbunds, wie die Oberfläche ihn zeigt.
+// Dienst is one part of the stack as the interface shows it.
 type Dienst struct {
-	Name      string `json:"name"`
-	Rolle     string `json:"rolle"`
-	Adresse   string `json:"adresse"`
-	Zustand   string `json:"zustand"` // "läuft", "fehlt", "nicht eingerichtet"
+	Name    string `json:"name"`
+	Rolle   string `json:"rolle"`
+	Adresse string `json:"adresse"`
+	// One of "läuft", "fehlt", "nicht eingerichtet". The values stay German
+	// because they are shown as they are.
+	Zustand   string `json:"zustand"`
 	Fassung   string `json:"fassung,omitempty"`
 	Antwort   string `json:"antwort,omitempty"` // gemessene Zeit
 	Hinweis   string `json:"hinweis,omitempty"`

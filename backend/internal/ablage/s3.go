@@ -24,9 +24,9 @@ type S3 struct {
 	anzeige string
 }
 
-// Einstellungen sind die Werte aus config.conf.
+// Einstellungen are the values from config.conf.
 type Einstellungen struct {
-	Endpunkt  string // host:port, ohne Schema
+	Endpunkt  string // host:port, without a scheme
 	Bucket    string
 	Zugriff   string
 	Geheimnis string

@@ -145,7 +145,7 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 // Endung nicht unterscheidet.
 func typAusAngabeUndName(angabe, dateiname string) string {
 	angabe = strings.TrimSpace(strings.ToLower(angabe))
-	// Ein Parameter wie "; charset=utf-8" gehört nicht in die Spalte.
+	// A parameter such as "; charset=utf-8" does not belong in the column.
 	if i := strings.IndexByte(angabe, ';'); i >= 0 {
 		angabe = strings.TrimSpace(angabe[:i])
 	}
@@ -166,7 +166,7 @@ func typAusAngabeUndName(angabe, dateiname string) string {
 		case ".log", ".conf", ".ini", ".yml", ".yaml", ".toml", ".env":
 			return "text/plain"
 		}
-		// Alles Übrige darf die Tabelle entscheiden.
+		// Everything else is left to the table.
 		if t := mime.TypeByExtension(endung); t != "" {
 			if i := strings.IndexByte(t, ';'); i >= 0 {
 				t = strings.TrimSpace(t[:i])

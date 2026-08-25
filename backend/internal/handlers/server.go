@@ -36,7 +36,7 @@ type Server struct {
 	// Redis ist der gemeinsame Zwischenspeicher über mehrere Instanzen hinweg.
 	// Darf nil sein: ohne ihn läuft alles weiter, nur ohne geteilten Speicher.
 	Redis *RedisSpeicher
-	// SSO trägt die Werte für die Anmeldung über einen fremden Ausweis.
+	// SSO carries the values for signing in through an outside identity.
 	SSO SSOEinstellungen
 	// Ablage entscheidet, wo die Bytes eines Anhangs liegen: auf der Platte
 	// oder in einem S3-Eimer. Die Handler kennen den Unterschied nicht.

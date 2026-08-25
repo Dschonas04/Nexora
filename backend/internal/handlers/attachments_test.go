@@ -19,9 +19,9 @@ func TestTypAusAngabeUndName(t *testing.T) {
 		{"", "nexora.conf", "text/plain"},
 		{"", "werte.yaml", "text/plain"},
 		{"text/plain; charset=utf-8", "a.txt", "text/plain"},
-		// Sagt der Browser etwas Genaueres als die Endung, gilt seine Angabe.
+		// When the browser knows better than the extension, its claim wins.
 		{"image/svg+xml", "zeichnung.svg", "image/svg+xml"},
-		// Ohne Endung und ohne Angabe bleibt nur das Eingeständnis.
+		// With neither extension nor claim, only the admission is left.
 		{"", "readme", "application/octet-stream"},
 	}
 	for _, f := range faelle {

@@ -19,7 +19,7 @@ import (
 	"strings"
 )
 
-// wxml maskiert Text für XML.
+// wxml escapes text for XML.
 func wxml(s string) string {
 	r := strings.NewReplacer(
 		"&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;",
@@ -36,7 +36,7 @@ func wxml(s string) string {
 	return r.Replace(b.String())
 }
 
-// lauf schreibt ein Textstück als w:r.
+// lauf writes one run of text as w:r.
 func lauf(s Stueck, groesse int, immerFett bool) string {
 	var eig strings.Builder
 	if s.Fett || immerFett {
@@ -81,7 +81,7 @@ func absatzXML(a Absatz) string {
 		return b.String()
 	}
 	einzug := func(stufe int, zusatz int) string {
-		// Word rechnet in Twips: 1/20 Punkt, 1440 auf ein Zoll.
+		// Word counts in twips: 1/20 point, 1440 to an inch.
 		return fmt.Sprintf(`<w:ind w:left="%d" w:hanging="%d"/>`, stufe*360+zusatz, zusatz)
 	}
 
@@ -193,7 +193,7 @@ func tabelleXML(zeilen [][]string) string {
 	return b.String()
 }
 
-// Word schreibt ein Dokument als .docx.
+// Word writes a document as .docx.
 func Word(d Dokument) ([]byte, error) {
 	return WordMehrere([]Dokument{d})
 }
@@ -219,7 +219,7 @@ func WordMehrere(docs []Dokument) ([]byte, error) {
 			koerper.WriteString(absatzXML(a))
 		}
 	}
-	// Seitenformat: A4 hoch mit 2 cm Rand ringsum (in Twips).
+	// Page setup: A4 portrait with a 2 cm margin all round (in twips).
 	koerper.WriteString(`<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>` +
 		`<w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"` +
 		` w:header="708" w:footer="708" w:gutter="0"/></w:sectPr>`)

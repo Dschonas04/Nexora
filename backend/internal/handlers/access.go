@@ -42,7 +42,7 @@ func (s *Server) pagePerm(ctx context.Context, uid, pageID string) (canRead, can
 
 	var ownerID string
 	var admin bool
-	var freigabe *string   // 'read' | 'edit', wenn die Seite direkt geteilt ist
+	var freigabe *string   // 'read' | 'edit' when the page is shared directly
 	var spaceRecht *string // 'lesen' | 'schreiben' | 'verwalten', bestes Recht am Space
 
 	err := s.Pool.QueryRow(ctx, `
