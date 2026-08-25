@@ -31,8 +31,8 @@ func TestUmgebungSchlaegtDatei(t *testing.T) {
 
 func TestVorgabeBleibtOhneEintrag(t *testing.T) {
 	k := Laden(schreibe(t, "# nur ein Kommentar\n"))
-	if k.SitzungTage != 7 || k.Port != "8080" {
-		t.Fatalf("Vorgaben verloren: %d Tage, Port %q", k.SitzungTage, k.Port)
+	if k.SitzungStunden != 12 || k.Port != "8080" {
+		t.Fatalf("Vorgaben verloren: %d Stunden, Port %q", k.SitzungStunden, k.Port)
 	}
 }
 
@@ -42,13 +42,13 @@ func TestKaputteZeilenKippenNichts(t *testing.T) {
 	// den Server nicht am Starten hindern.
 	k := Laden(schreibe(t, `
 [Abschnitt]
-sitzung_tage = keine-zahl
+sitzung_stunden = keine-zahl
 kaputte zeile ohne gleichheitszeichen
 ; Strichpunkt-Kommentar
 such_woerterbuch = simple
 `))
-	if k.SitzungTage != 7 {
-		t.Fatalf("unlesbare Zahl hätte die Vorgabe behalten müssen, bekam %d", k.SitzungTage)
+	if k.SitzungStunden != 12 {
+		t.Fatalf("unlesbare Zahl hätte die Vorgabe behalten müssen, bekam %d", k.SitzungStunden)
 	}
 	if k.SuchWoerterbuch != "simple" {
 		t.Fatalf("Wert nach der kaputten Zeile verloren: %q", k.SuchWoerterbuch)
@@ -101,5 +101,24 @@ ldap_tls_pruefen = nein
 	w := k.Warnungen()
 	if len(w) < 3 {
 		t.Fatalf("erwartete Warnungen zu Vorgabegeheimnis, TLS und Zertifikat, bekam %v", w)
+	}
+}
+
+// Eine bestehende Datei nennt die Frist noch in Tagen. Sie muss weiter gelten,
+// sonst fiele eine Woche stillschweigend auf zwölf Stunden, sobald jemand die
+// neue Fassung einspielt.
+func TestAlteAngabeInTagenGiltWeiter(t *testing.T) {
+	k := Laden(schreibe(t, "sitzung_tage = 7\n"))
+	if k.SitzungStunden != 168 {
+		t.Fatalf("sieben Tage sind 168 Stunden, bekam %d", k.SitzungStunden)
+	}
+}
+
+// Steht beides da, gewinnt die Angabe in Tagen: sie ist die ausdrücklich
+// gesetzte, die neue steht womöglich nur als Vorgabe in einer frischen Datei.
+func TestNeueAngabeAlleinReicht(t *testing.T) {
+	k := Laden(schreibe(t, "sitzung_stunden = 4\n"))
+	if k.SitzungStunden != 4 {
+		t.Fatalf("vier Stunden erwartet, bekam %d", k.SitzungStunden)
 	}
 }

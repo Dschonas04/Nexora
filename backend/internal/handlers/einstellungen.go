@@ -65,11 +65,11 @@ var bekannt = map[string]struct {
 		Titel:      "Größte Datei je Anhang (MB)",
 		Erklaerung: "Die eigentliche Grenze ist der Platz auf der Platte hinter dem Datenverzeichnis.",
 	},
-	"sitzung_tage": {
+	"sitzung_stunden": {
 		Art:        "zahl",
-		Titel:      "Gültigkeit einer Anmeldung (Tage)",
-		Erklaerung: "Es gibt keine Verlängerung und keine Liste offener Sitzungen: ein Token bleibt bis zum Ablauf brauchbar, auch nach einer Passwortänderung.",
-		Warnung:    "Wirkt erst auf NEUE Anmeldungen. Bereits ausgegebene Token behalten ihre alte Laufzeit.",
+		Titel:      "Gültigkeit einer Anmeldung (Stunden)",
+		Erklaerung: "Eine Sitzung, die benutzt wird, verlängert sich selbst, sobald die Hälfte der Zeit verstrichen ist. Wer täglich arbeitet, wird also nicht abgemeldet; wer wegbleibt, schon.",
+		Warnung:    "Wirkt auf neue und auf verlängerte Sitzungen. Bereits offene behalten ihre Frist bis zur nächsten Verlängerung.",
 	},
 	"papierkorb_tage": {
 		Art:        "zahl",
@@ -155,8 +155,8 @@ func ausDatei(schluessel string, k config.Konfig) string {
 		return strconv.Itoa(k.MaxAnhangMB)
 	case "papierkorb_tage":
 		return strconv.Itoa(k.PapierkorbTage)
-	case "sitzung_tage":
-		return strconv.Itoa(k.SitzungTage)
+	case "sitzung_stunden":
+		return strconv.Itoa(k.SitzungStunden)
 	case "such_woerterbuch":
 		return k.SuchWoerterbuch
 	case "design_grundton":
@@ -222,15 +222,15 @@ func EinfuhrGrenze() int64 {
 // are affected: a token already handed out carries its own expiry and cannot be
 // shortened afterwards.
 func SitzungDauer() time.Duration {
-	return time.Duration(SitzungTage()) * 24 * time.Hour
+	return time.Duration(SitzungStunden()) * time.Hour
 }
 
-// SitzungTage ist dieselbe Angabe in Tagen, die Datenbank rechnet mit
-// Tagen, nicht mit Nanosekunden.
-func SitzungTage() int {
-	n, err := strconv.Atoi(wert("sitzung_tage"))
+// SitzungStunden ist dieselbe Angabe in Stunden. Die Datenbank rechnet mit
+// Stunden, nicht mit Nanosekunden.
+func SitzungStunden() int {
+	n, err := strconv.Atoi(wert("sitzung_stunden"))
 	if err != nil || n <= 0 {
-		return 7
+		return 12
 	}
 	return n
 }
@@ -299,7 +299,7 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 	// Felder bei jedem Laden die Plätze tauschen, ist unbenutzbar.
 	reihenfolge := []string{
 		"registrierung_offen", "erlaubte_domaenen",
-		"max_anhang_mb", "sitzung_tage", "papierkorb_tage", "such_woerterbuch",
+		"max_anhang_mb", "sitzung_stunden", "papierkorb_tage", "such_woerterbuch",
 		"design_grundton", "design_akzent",
 	}
 
@@ -374,8 +374,11 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, http.StatusBadRequest, "höchstens 2048 MB")
 			return
 		}
-		if req.Schluessel == "sitzung_tage" && n > 365 {
-			writeErr(w, http.StatusBadRequest, "höchstens 365 Tage")
+		// Eine Obergrenze, damit niemand versehentlich eine Sitzung auf Jahre
+		// stellt: 8760 Stunden sind ein Jahr, und darüber ist die Angabe
+		// erfahrungsgemäß ein Tippfehler.
+		if req.Schluessel == "sitzung_stunden" && n > 8760 {
+			writeErr(w, http.StatusBadRequest, "höchstens 8760 Stunden, das ist ein Jahr")
 			return
 		}
 	case "auswahl":
@@ -597,7 +600,7 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 			"fehlversuche24h":    fehlversuche24,
 			"registrierungOffen": RegistrierungOffen(),
 			"erlaubteDomaenen":   ErlaubteDomaenen(),
-			"sitzungTage":        int(SitzungDauer().Hours() / 24),
+			"sitzungStunden":     SitzungStunden(),
 		},
 		"warnungen": k.Warnungen(),
 		// Die Dienste, mit denen dieser hier redet. Nicht der Docker-Verbund

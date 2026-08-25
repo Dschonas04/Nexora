@@ -58,9 +58,9 @@ func (s *Server) sitzungAnlegen(ctx context.Context, r *http.Request, userID str
 	var id string
 	err := s.Pool.QueryRow(ctx,
 		`INSERT INTO sitzungen (user_id, laeuft_ab, ip, browser)
-		 VALUES ($1, now() + make_interval(days => $2), $3, $4)
+		 VALUES ($1, now() + make_interval(hours => $2), $3, $4)
 		 RETURNING id`,
-		userID, SitzungTage(), absenderIP(r), kurzerBrowser(r.UserAgent())).Scan(&id)
+		userID, SitzungStunden(), absenderIP(r), kurzerBrowser(r.UserAgent())).Scan(&id)
 	return id, err
 }
 

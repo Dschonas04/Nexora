@@ -44,8 +44,8 @@ type Konfig struct {
 	DatenbankURL string
 
 	// Sitzungen
-	JWTGeheimnis string
-	SitzungTage  int
+	JWTGeheimnis   string
+	SitzungStunden int
 
 	// Lizenz
 	Lizenz string
@@ -119,7 +119,7 @@ func Standard() Konfig {
 		OeffentlicheURL: "",
 		DatenbankURL:    "postgres://nexora:nexora@localhost:5432/nexora?sslmode=disable",
 		JWTGeheimnis:    "change-me-in-production",
-		SitzungTage:     7,
+		SitzungStunden:  12,
 		Lizenz:          "",
 
 		RegistrierungOffen: true,
@@ -239,7 +239,15 @@ func Laden(pfad string) Konfig {
 	text(&k.OeffentlicheURL, "oeffentliche_url", "NEXORA_PUBLIC_URL")
 	text(&k.DatenbankURL, "datenbank_url", "DATABASE_URL")
 	text(&k.JWTGeheimnis, "jwt_geheimnis", "JWT_SECRET")
-	zahl(&k.SitzungTage, "sitzung_tage", "NEXORA_SESSION_DAYS")
+	zahl(&k.SitzungStunden, "sitzung_stunden", "NEXORA_SESSION_HOURS")
+	// Der alte Schlüssel in Tagen wird weiter gelesen und umgerechnet. Eine
+	// bestehende Datei soll nicht stillschweigend von sieben Tagen auf zwölf
+	// Stunden fallen, nur weil die Einheit gewechselt hat.
+	var alteTage int
+	zahl(&alteTage, "sitzung_tage", "NEXORA_SESSION_DAYS")
+	if alteTage > 0 {
+		k.SitzungStunden = alteTage * 24
+	}
 	text(&k.Lizenz, "lizenz", "NEXORA_LIZENZ")
 
 	jaNein(&k.RegistrierungOffen, "registrierung_offen", "NEXORA_REGISTRIERUNG_OFFEN")
