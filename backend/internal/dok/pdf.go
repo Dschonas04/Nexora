@@ -3,12 +3,12 @@
 // Kein Fremdpaket: ein PDF mit den vierzehn Grundschriften ist ein
 // überschaubares Format, und die Alternative wäre eine Abhängigkeit, die für
 // einen Textexport mehr mitbringt, als hier je gebraucht wird. Was fehlt, fehlt
-// bewusst -- eingebettete Schriften und eingebettete Bilder. Beides würde die
+// bewusst, eingebettete Schriften und eingebettete Bilder. Beides würde die
 // Datei um ein Vielfaches aufblähen; Bilder erscheinen stattdessen als
 // benannter Verweis.
 //
 // Kodiert wird nach WinAnsi. Umlaute kommen damit an; was darin nicht vorkommt
-// -- etwa Zeichen aus anderen Schriftsystemen -- wird zu einem Fragezeichen.
+// -- etwa Zeichen aus anderen Schriftsystemen, wird zu einem Fragezeichen.
 // Das ist die Grenze der Grundschriften, nicht ein Versehen.
 package dok
 
@@ -198,7 +198,7 @@ func (s *setzer) zeileSetzen(woerter []wort, x, zeilenHoehe float64) {
 // umbrechen verteilt Textstücke auf Zeilen, die in breite passen.
 //
 // Umbrochen wird an Leerzeichen. Ein einzelnes Wort, das länger ist als die
-// Zeile -- eine lange Adresse etwa --, wird hart getrennt, sonst liefe es über
+// Zeile, eine lange Adresse etwa --, wird hart getrennt, sonst liefe es über
 // den Rand hinaus und wäre halb weg.
 func umbrechen(stuecke []wort, breite float64) [][]wort {
 	var zeilen [][]wort
@@ -360,7 +360,7 @@ func (s *setzer) absatzSetzen(a Absatz) {
 		}
 		s.y -= 10
 		// Eine Überschrift allein am Seitenfuß ist ein Versprechen, das die
-		// Seite nicht mehr einlöst -- dann lieber gleich umbrechen.
+		// Seite nicht mehr einlöst, dann lieber gleich umbrechen.
 		s.platzPruefen(groesse*1.5 + 24)
 		for _, z := range umbrechen(alsWoerter(a.Text, groesse, true), satzBreite) {
 			s.zeileSetzen(z, randLinks, groesse*1.35)
@@ -386,7 +386,7 @@ func (s *setzer) absatzSetzen(a Absatz) {
 				s.zeileSetzen(z, einzug, zeilenHoehe)
 			} else {
 				// Folgezeilen richten sich an der Textspalte aus, nicht an der
-				// Marke -- sonst steht der Text unter dem Punkt statt daneben.
+				// Marke, sonst steht der Text unter dem Punkt statt daneben.
 				s.zeileSetzen(z, einzug+markenBreite, zeilenHoehe)
 			}
 		}

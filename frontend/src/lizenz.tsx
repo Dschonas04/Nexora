@@ -47,7 +47,7 @@ export function LizenzProvider({ children }: { children: ReactNode }) {
 
   // Neu geholt, sobald sich das angemeldete Konto ändert.
   //
-  // Vorher lief der Abruf genau einmal, beim Aufbau der Anwendung -- also vor
+  // Vorher lief der Abruf genau einmal, beim Aufbau der Anwendung, also vor
   // der Anmeldung. Die Auskunft braucht aber eine Sitzung und antwortete mit
   // 401; danach galt für den Rest der Sitzung "nichts freigeschaltet". Wer
   // sich frisch anmeldete, sah gekaufte Funktionen als nicht enthalten, bis er
@@ -80,7 +80,7 @@ export function LizenzProvider({ children }: { children: ReactNode }) {
           if (abgebrochen) return;
           versuch += 1;
           // Drei Anläufe mit wachsendem Abstand, dann bleibt es beim
-          // gesperrten Umfang -- irgendwann muss die Oberfläche etwas zeigen.
+          // gesperrten Umfang, irgendwann muss die Oberfläche etwas zeigen.
           if (versuch <= 3) {
             window.setTimeout(holen, 600 * versuch);
           } else {

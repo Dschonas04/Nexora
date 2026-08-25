@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// Die Zugangsdaten sollen nicht in den Browser wandern -- aber ein Speichern
+// Die Zugangsdaten sollen nicht in den Browser wandern, aber ein Speichern
 // darf sie auch nicht durch Sterne ersetzen. Beides zusammen ergibt einen
 // Rundlauf, der genau dann stimmt, wenn hinterher wieder das Ursprüngliche
 // dasteht.
@@ -27,7 +27,7 @@ oidc_geheimnis =
 	if !strings.Contains(gezeigt, "port = 8080") {
 		t.Error("harmlose Zeile wurde mit versteckt")
 	}
-	// Ein leerer Wert bleibt leer -- sonst stünden dort Sterne, die man beim
+	// Ein leerer Wert bleibt leer, sonst stünden dort Sterne, die man beim
 	// Speichern für einen echten Wert hielte.
 	if !strings.Contains(gezeigt, "oidc_geheimnis =\n") {
 		t.Error("leerer Wert wurde zu Sternen")
@@ -39,7 +39,7 @@ oidc_geheimnis =
 	}
 }
 
-// Wer einen Wert wirklich ändert, dessen Eingabe muss ankommen -- die
+// Wer einen Wert wirklich ändert, dessen Eingabe muss ankommen, die
 // Rückführung darf nur die Sterne ersetzen.
 func TestGeaendertesGeheimnisWirdUebernommen(t *testing.T) {
 	alt := "jwt_geheimnis = altwert\nport = 8080\n"

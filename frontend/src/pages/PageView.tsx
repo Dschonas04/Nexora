@@ -33,7 +33,7 @@ const randomColor = () => PALETTE[Math.floor(Math.random() * PALETTE.length)];
 //
 // Vorher stand hier ein blankes "Lädt…". Damit verschwand beim Blättern von
 // einer Seite zur nächsten die ganze Oberfläche rechts der Leiste und baute
-// sich einen Wimpernschlag später wieder auf -- im Heimnetz ein Flackern, über
+// sich einen Wimpernschlag später wieder auf, im Heimnetz ein Flackern, über
 // eine träge Leitung ein Sprung, bei dem man den Platz seines Textes verliert.
 //
 // Die Balken blenden sich verzögert ein. Eine Seite, die in wenigen
@@ -93,7 +93,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   // unten hin, stehen aber hier oben, weil React die Zustände einer Ansicht in
   // jedem Durchgang in derselben Zahl und Reihenfolge sehen muss. Weiter unten
   // standen sie hinter den frühen Rückgaben für "wird geladen" und "nicht
-  // gefunden" -- der erste Durchgang zählte drei Zustände weniger als der
+  // gefunden", der erste Durchgang zählte drei Zustände weniger als der
   // zweite, und React brach die Ansicht mit Fehler 310 ab: die Seite blieb leer.
   //
   // Der Zähler statt eines Schalters: dragleave feuert auch beim Wechsel von
@@ -147,7 +147,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   // Autosave, debounced by half a second. Every change resets the timer, so
   // continuous typing produces one request when the user pauses.
   //
-  // A failed save stays silent -- the next keystroke retries anyway, and an
+  // A failed save stays silent, the next keystroke retries anyway, and an
   // error banner during typing would be more disruptive than useful. One
   // failure is the exception: a 409 means somebody else saved in between, and
   // swallowing that is exactly how their work disappears. It stops the autosave
@@ -183,7 +183,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   };
 
   // Force the local version through. basis is left out, so the backend does not
-  // check -- the user has been told and decided.
+  // check, the user has been told and decided.
   const trotzdemSpeichern = async () => {
     if (!id || !page) return;
     try {
@@ -357,7 +357,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   };
 
   // Dateien, die irgendwo auf der Seite abgelegt wurden. Sie werden an die
-  // Anhangliste weitergereicht, die sie hochlädt -- der Wurf muss nicht die
+  // Anhangliste weitergereicht, die sie hochlädt, der Wurf muss nicht die
   // schmale Liste ganz unten treffen.
   const dateiAbwurfMoeglich = canEdit && frei("anhaenge");
   const sindDateien = (e: React.DragEvent) =>
@@ -438,7 +438,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
             </div>
             {/* Nur der Eigentümer entscheidet. Eine fremde Seite zur Vorlage zu
                 erklären würde sie in jedem Neu-Menü der Kollegen auftauchen
-                lassen -- das wäre eine Änderung an fremdem Eigentum. */}
+                lassen, das wäre eine Änderung an fremdem Eigentum. */}
             {page.isOwner && frei("vorlagen") && (
               <button
                 className={"btn" + (page.istVorlage ? " active" : "")}

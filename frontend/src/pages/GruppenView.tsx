@@ -57,7 +57,7 @@ export default function GruppenView() {
 
   const loeschen = async (g: Gruppe) => {
     // Rückfrage, weil mit der Gruppe auch alle Rechte fallen, die über sie
-    // vergeben wurden -- das trifft womöglich Leute, die gerade arbeiten.
+    // vergeben wurden, das trifft womöglich Leute, die gerade arbeiten.
     if (
       !(await frage({
         titel: "Gruppe löschen",

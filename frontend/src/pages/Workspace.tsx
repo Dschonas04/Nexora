@@ -17,7 +17,7 @@ import { useEingabe, useRueckfrage } from "../components/Rueckfrage";
 // Aufruf der Anwendung mit übertragen und ausgewertet werden. Der Graph bringt
 // dabei seine eigene Rechnerei mit, die Einstellungen ihre langen Formulare.
 //
-// Wer sie öffnet, wartet einmal kurz auf das Nachladen -- dafür startet die
+// Wer sie öffnet, wartet einmal kurz auf das Nachladen, dafür startet die
 // Anwendung für alle anderen schneller.
 const TrashView = lazy(() => import("./TrashView"));
 const GraphView = lazy(() => import("./GraphView"));
@@ -44,7 +44,7 @@ export default function Workspace() {
   // the previous list in place, which beats emptying the sidebar on a hiccup.
   const refreshPages = useCallback(() => api.listPages().then(setPages).catch(() => {}), []);
   // Sharing is a paid extra: without a license the call answers 402. The empty
-  // list that follows is the wanted outcome -- the sidebar hides its "shared"
+  // list that follows is the wanted outcome, the sidebar hides its "shared"
   // section when there is nothing in it, so the interface stays coherent
   // instead of showing an error for a feature this installation does not have.
   const refreshShared = useCallback(() => api.listShared().then(setShared).catch(() => setShared([])), []);
@@ -146,7 +146,7 @@ export default function Workspace() {
 
   // Sichtbarkeit einer Ablage umstellen. Danach wird auch die Seitenliste neu
   // geholt: eine geöffnete Ablage bringt fremde Seiten mit, eine geschlossene
-  // nimmt sie wieder mit -- die Leiste wäre sonst so lange falsch, bis jemand
+  // nimmt sie wieder mit, die Leiste wäre sonst so lange falsch, bis jemand
   // die Seite neu lädt.
   const setSpaceOeffentlich = async (id: string, wert: "nein" | "lesen" | "schreiben") => {
     await api.spaceOeffentlich(id, wert);
@@ -196,7 +196,7 @@ export default function Workspace() {
         }}
       />
       <div className="main">
-        {/* Bis ein nachgeladener Teil da ist, steht hier der Wartetext --
+        {/* Bis ein nachgeladener Teil da ist, steht hier der Wartetext,
             verzögert eingeblendet, damit ein schneller Wechsel nichts zeigt. */}
         <Suspense fallback={<div className="empty-state spaet">Lädt…</div>}>
           <Routes>
@@ -230,7 +230,7 @@ export default function Workspace() {
             />
             <Route path="graph" element={<GraphView />} />
             {/* Konten und Gruppen liegen jetzt in den Einstellungen. Die alten
-                Adressen bleiben gültig und führen dorthin -- ein Lesezeichen
+                Adressen bleiben gültig und führen dorthin, ein Lesezeichen
                 soll nicht ins Leere laufen. */}
             <Route path="admin" element={<Navigate to="/einstellungen/nutzer" replace />} />
             <Route path="pruefspur" element={<PruefspurView />} />

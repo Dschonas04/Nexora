@@ -3,7 +3,7 @@ package lizenz
 import "testing"
 
 // Die Stufen bauen aufeinander auf. Wer Business kauft, bekommt alles aus Pro
-// mit -- eine Stufe, die etwas Kleineres nicht enthält, wäre eine Falle beim
+// mit, eine Stufe, die etwas Kleineres nicht enthält, wäre eine Falle beim
 // Wechsel.
 func TestStufenBauenAufeinanderAuf(t *testing.T) {
 	enthalten := func(st Stufe) map[Funktion]bool {

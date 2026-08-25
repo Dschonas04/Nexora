@@ -35,7 +35,7 @@ function caretInfo(x: number, y: number): { node: Node; offset: number } | null 
 
 // Hebt [[Verweise]] im Text hervor.
 //
-// Ein Verweis ist gewöhnlicher Text -- gerade das macht ihn haltbar, denn er
+// Ein Verweis ist gewöhnlicher Text, gerade das macht ihn haltbar, denn er
 // überlebt jede Umbenennung der Zielseite. Nur sah er dadurch auch aus wie
 // gewöhnlicher Text: die Klammern standen roh da, und dass man darauf klicken
 // kann, sah man ihm nicht an.
@@ -43,7 +43,7 @@ function caretInfo(x: number, y: number): { node: Node; offset: number } | null 
 // Also legt diese Erweiterung eine Auszeichnung über die Fundstellen, ohne den
 // Text selbst anzurühren. Wer den Verweis auflöst, entscheidet die Seite: gibt
 // es das Ziel, wird der Titel als Verweis gezeichnet, sonst bleibt er blass und
-// unterstrichen -- ein Hinweis auf einen Titel, den es (noch) nicht gibt.
+// unterstrichen, ein Hinweis auf einen Titel, den es (noch) nicht gibt.
 function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) | undefined) {
   return Extension.create({
     name: "nexoraVerweise",
@@ -89,7 +89,7 @@ function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) 
 // Die Frage ist nötig, weil die Antwort nicht immer ja ist: wer eine Zeile aus
 // einem Protokoll einfügt, will sie so, wie sie ist. Deshalb wird nicht nach
 // einzelnen Zeichen gesucht, sondern nach den Formen, die niemand versehentlich
-// tippt -- eine Überschrift am Zeilenanfang, eine Aufzählung, ein Zitat, ein
+// tippt, eine Überschrift am Zeilenanfang, eine Aufzählung, ein Zitat, ein
 // Code-Zaun, ein Verweis in Klammern oder ein Wort zwischen zwei Sternenpaaren.
 const MARKDOWN_MUSTER = [
   /^#{1,6}\s+\S/m,
@@ -182,7 +182,7 @@ export default function Editor({
 
     // Der schnelle Weg: die Auszeichnung oben hat den Titel bereits in eine
     // eigene Umhüllung gelegt, ihr Text ist der Titel. Er muss zuerst kommen,
-    // denn genau diese Umhüllung teilt den Text im Dokument in drei Stücke --
+    // denn genau diese Umhüllung teilt den Text im Dokument in drei Stücke,
     // die Suche unten fände in "Ziel" keine Klammern mehr.
     const umhuellung = (e.target as HTMLElement | null)?.closest?.(".verweis");
     if (umhuellung) {
@@ -219,7 +219,7 @@ export default function Editor({
 
   // Eingefügtes Markdown als Markdown übernehmen.
   //
-  // Ohne das landete "## Titel" als die vier Zeichen, die dort stehen -- und
+  // Ohne das landete "## Titel" als die vier Zeichen, die dort stehen, und
   // das ist der übliche Weg, auf dem Text hier ankommt: aus einer Notizen-App,
   // einer Antwort, einem README. Der Editor kennt die Umwandlung bereits, sie
   // wurde nur nie an die Zwischenablage gehängt.

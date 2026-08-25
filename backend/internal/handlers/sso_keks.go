@@ -11,12 +11,12 @@ import (
 )
 
 // Der Zwischenstand einer begonnenen OIDC-Anmeldung reist in einem eigenen
-// Plätzchen mit -- unterschrieben mit demselben Geheimnis wie die Sitzung.
+// Plätzchen mit, unterschrieben mit demselben Geheimnis wie die Sitzung.
 //
 // Warum nicht im Speicher des Dienstes: eine begonnene Anmeldung überlebte dann
 // keinen Neustart, und zwei Instanzen hinter einem Verteiler könnten sich nicht
 // abwechseln. Warum unterschrieben: der Zustand ist genau das, was eine
-// untergeschobene Anmeldung verhindern soll -- ein Wert, den der Browser frei
+// untergeschobene Anmeldung verhindern soll, ein Wert, den der Browser frei
 // setzen könnte, wäre wertlos.
 
 func (s *Server) oidcKeksSetzen(w http.ResponseWriter, r *http.Request, st oidcSitzung) {

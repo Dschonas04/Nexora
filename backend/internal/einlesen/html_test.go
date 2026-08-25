@@ -109,7 +109,7 @@ func TestHTMLCodeBlockBehaeltZeilen(t *testing.T) {
 	if len(b) != 3 {
 		t.Fatalf("erwartet drei Zeilen, bekam %d: %s", len(b), htmlJSON(t, b))
 	}
-	// Nicht über NurText prüfen -- das schneidet Ränder ab, weil es Titel
+	// Nicht über NurText prüfen, das schneidet Ränder ab, weil es Titel
 	// liefert. Im Codeblock ist die Einrückung der Punkt.
 	if got := inhaltVon(b[1])[0].Text; got != "    b()" {
 		t.Fatalf("Einrückung verloren: %q", got)

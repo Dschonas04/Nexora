@@ -44,7 +44,7 @@ export interface Space {
   /**
    * Sichtbarkeit der Ablage für die übrigen angemeldeten Konten der Instanz.
    * "nein" heißt: nur Eigentümer und ausdrücklich Berechtigte. Mit dem
-   * Freigabelink einer einzelnen Seite hat das nichts zu tun -- öffentlich
+   * Freigabelink einer einzelnen Seite hat das nichts zu tun, öffentlich
    * meint hier die Instanz, nicht das Internet.
    */
   oeffentlich: "nein" | "lesen" | "schreiben";
@@ -187,14 +187,14 @@ export interface Lizenz {
   grund: string;
   alle_extras: string[];
   freigeschaltet: string[];
-  /** Was jede Stufe enthält -- damit die Oberfläche keine zweite Tabelle führt. */
+  /** Was jede Stufe enthält, damit die Oberfläche keine zweite Tabelle führt. */
   stufen?: { name: string; funktionen: string[] }[];
   /** Nur beim Herausgeber wahr: dort liegt der private Signierschlüssel. */
   ausstellbar?: boolean;
 }
 
 // Sitzung ist eine gespeicherte Anmeldung. "diese" markiert die, mit der
-// gerade gearbeitet wird -- ohne sie beendet man leicht sich selbst.
+// gerade gearbeitet wird, ohne sie beendet man leicht sich selbst.
 export interface Sitzung {
   id: string;
   angelegtAm: string;
@@ -256,7 +256,7 @@ export interface Einstellung {
 }
 
 // Dienst ist ein Teil des Verbunds: die Dienste, mit denen das Backend redet.
-// Der Docker-Verbund selbst steht hier NICHT -- ihn zu sehen hieße, dem
+// Der Docker-Verbund selbst steht hier NICHT, ihn zu sehen hieße, dem
 // Container den Steuerkanal zu geben, und das wäre die Anwendung nicht wert.
 export interface Dienst {
   name: string;
@@ -352,7 +352,7 @@ export interface EinfuhrBericht {
   ablage?: { id: string; name: string };
 }
 
-// EinfuhrAst ist ein Knoten der Vorschau -- der Baum, wie er entstehen würde.
+// EinfuhrAst ist ein Knoten der Vorschau, der Baum, wie er entstehen würde.
 // PapierkorbSeite trägt zusätzlich den Tag, an dem sie von selbst verschwindet.
 // null heißt: die Instanz löscht nichts von selbst.
 export interface PapierkorbSeite extends PageMeta {
@@ -407,7 +407,7 @@ export interface SearchHit {
   /**
    * The snippet, with <b> around the matched words. Everything else is already
    * escaped by the database, but it is still rendered as text and marked up by
-   * the component -- never fed to dangerouslySetInnerHTML.
+   * the component, never fed to dangerouslySetInnerHTML.
    */
   ausschnitt: string;
   /** false means the page was reached through a share or as an admin. */
@@ -631,7 +631,7 @@ export const api = {
       x.withCredentials = true;
       x.upload.onprogress = (e) => {
         // lengthComputable ist falsch, solange der Browser die Gesamtgröße
-        // nicht kennt -- dann ist jeder Anteil geraten, und geraten ist
+        // nicht kennt, dann ist jeder Anteil geraten, und geraten ist
         // schlechter als unbestimmt.
         if (e.lengthComputable && e.total > 0) fortschritt?.(e.loaded / e.total);
       };
@@ -666,7 +666,7 @@ export const api = {
     req<void>(`/pages/${id}/attachments/${attId}`, { method: "DELETE" }),
 
   // Einfuhr: eine oder mehrere Markdown-Dateien, oder ein ZIP mit Struktur.
-  // Wie beim Anhang an req vorbei, aus demselben Grund -- FormData setzt der
+  // Wie beim Anhang an req vorbei, aus demselben Grund, FormData setzt der
   // Browser samt Grenzmarke selbst.
   importieren: async (
     dateien: File[],
@@ -680,7 +680,7 @@ export const api = {
     if (ziel.parentId) body.append("parentId", ziel.parentId);
     if (ziel.spaceId) body.append("spaceId", ziel.spaceId);
     if (ziel.neueAblage) body.append("neueAblage", ziel.neueAblage);
-    // Derselbe Aufruf mit demselben Inhalt, nur ohne Folgen -- der Server
+    // Derselbe Aufruf mit demselben Inhalt, nur ohne Folgen, der Server
     // rechnet denselben Plan und legt nichts an.
     if (vorschau) body.append("vorschau", "1");
     const res = await fetch(`/api/import`, { method: "POST", credentials: "include", body });

@@ -3,7 +3,7 @@
 // Der Ablauf ist derselbe wie bei jedem Verzeichnisdienst: mit einem
 // Dienstkonto anmelden, den Benutzer suchen, dann versuchen, sich als dieser
 // Benutzer mit dem eingegebenen Passwort anzumelden. Gelingt das, stimmt das
-// Passwort -- geprüft hat es das Verzeichnis, nicht Nexora.
+// Passwort, geprüft hat es das Verzeichnis, nicht Nexora.
 //
 // Das Passwort wird hier nie gespeichert, auch nicht als Prüfsumme. Wer im
 // Verzeichnis gesperrt wird, kommt beim nächsten Versuch nicht mehr herein; die
@@ -104,7 +104,7 @@ func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, e
 	}
 
 	// Erst das Dienstkonto: ohne es darf man in vielen Verzeichnissen gar nicht
-	// suchen. Fehlt es, wird anonym gesucht -- manche erlauben das.
+	// suchen. Fehlt es, wird anonym gesucht, manche erlauben das.
 	if k.LDAPBindDN != "" {
 		if err := verbindung.Bind(k.LDAPBindDN, k.LDAPBindPasswort); err != nil {
 			return "", "", false, fmt.Errorf("Dienstkonto: %w", err)
@@ -144,7 +144,7 @@ func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, e
 	name := eintrag.GetAttributeValue(k.LDAPFeldName)
 	email := strings.ToLower(strings.TrimSpace(eintrag.GetAttributeValue(k.LDAPFeldEmail)))
 	if email == "" {
-		return "", "", false, errors.New("kein E-Mail-Feld im Eintrag -- ohne Adresse kein Konto")
+		return "", "", false, errors.New("kein E-Mail-Feld im Eintrag. Ohne Adresse lässt sich kein Konto anlegen.")
 	}
 
 	admin := false

@@ -3,7 +3,7 @@
 #
 # Selbst ausgestellt, mit Absicht: Nexora läuft im eigenen Netz unter einer
 # IP-Adresse, und dafür stellt keine Zertifizierungsstelle etwas aus. Der Browser
-# wird also warnen -- das ist der Preis. Verschlüsselt ist die Verbindung
+# wird also warnen, das ist der Preis. Verschlüsselt ist die Verbindung
 # trotzdem, und darum geht es hier: das Sitzungsplätzchen und die Passwörter
 # sollen nicht im Klartext über das Netz gehen.
 #
@@ -22,7 +22,7 @@ if [ ! -f "$ZERT" ] || [ ! -f "$SCHLUESSEL" ]; then
     # Der Name steht in NEXORA_TLS_NAME, sonst der Rechnername. Zusätzlich
     # kommen die üblichen lokalen Namen und Adressen als Alternativnamen
     # hinein: ohne sie meckert der Browser nicht nur über den Aussteller,
-    # sondern zusätzlich über den Namen -- zwei Warnungen statt einer.
+    # sondern zusätzlich über den Namen, zwei Warnungen statt einer.
     NAME="${NEXORA_TLS_NAME:-$(hostname)}"
     openssl req -x509 -newkey rsa:2048 -sha256 -days 825 -nodes \
         -keyout "$SCHLUESSEL" -out "$ZERT" \

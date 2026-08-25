@@ -1,4 +1,4 @@
-// Lizenzschlüssel einlesen und ausstellen -- beides aus der Verwaltung heraus.
+// Lizenzschlüssel einlesen und ausstellen, beides aus der Verwaltung heraus.
 //
 // Einlesen kann jede Installation: der Schlüssel wird geprüft, in der Datenbank
 // abgelegt und sofort wirksam. Ohne das müsste man an die Konfigurationsdatei
@@ -101,7 +101,7 @@ func (s *Server) LizenzAusstellen(w http.ResponseWriter, r *http.Request) {
 	}
 	if !lizenz.Ausstellbar() {
 		writeErr(w, http.StatusNotImplemented,
-			"diese Installation kann keine Schlüssel ausstellen -- dafür braucht es den privaten Signierschlüssel")
+			"diese Installation kann keine Schlüssel ausstellen. Dafür braucht es den privaten Signierschlüssel.")
 		return
 	}
 	var req lizenzAusstellenReq

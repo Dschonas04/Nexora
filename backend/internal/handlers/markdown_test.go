@@ -75,7 +75,7 @@ func TestNummerierungZaehltUndSetztZurueck(t *testing.T) {
 	 {"type":"numberedListItem","content":[{"type":"text","text":"c"}]}]`)
 	enthaelt(t, md, "1. a")
 	enthaelt(t, md, "2. b")
-	// Nach dem Absatz beginnt eine neue Liste -- sie muss wieder bei 1 anfangen.
+	// Nach dem Absatz beginnt eine neue Liste, sie muss wieder bei 1 anfangen.
 	if !strings.Contains(md, "1. c") {
 		t.Fatalf("Zähler wurde nicht zurückgesetzt:\n%s", md)
 	}
@@ -131,7 +131,7 @@ func TestBild(t *testing.T) {
 
 func TestUnbekannterBlockVerliertKeinenText(t *testing.T) {
 	// Ein Typ, den diese Fassung nicht kennt, darf seinen Text nicht
-	// verschlucken -- unvollständig exportieren ist besser als verlieren.
+	// verschlucken, unvollständig exportieren ist besser als verlieren.
 	md := um(t, `[{"type":"gibtEsNochNicht","content":[{"type":"text","text":"wichtig"}]}]`)
 	enthaelt(t, md, "wichtig")
 }
@@ -159,7 +159,7 @@ func TestTitelWirdNichtVerdoppelt(t *testing.T) {
 	if !beginntMitUeberschrift(md, "Wake-on-LAN") {
 		t.Fatal("gleiche Überschrift nicht erkannt")
 	}
-	// Auch bei abweichender Schreibweise -- sonst stünde der Titel doppelt.
+	// Auch bei abweichender Schreibweise, sonst stünde der Titel doppelt.
 	if !beginntMitUeberschrift(md, "wake-on-lan") {
 		t.Fatal("Groß- und Kleinschreibung wurde nicht ignoriert")
 	}
@@ -179,7 +179,7 @@ func nichtEnthaelt(t *testing.T, got, darfNicht string) {
 }
 
 // Ein Absatz direkt hinter einem Listeneintrag, ohne Leerzeile dazwischen, ist
-// für jeden Markdown-Leser die Fortsetzung dieses Eintrags -- der Absatz
+// für jeden Markdown-Leser die Fortsetzung dieses Eintrags, der Absatz
 // verschwindet dann in der Liste.
 func TestAbsatzNachListeBekommtLeerzeile(t *testing.T) {
 	md := um(t, `[

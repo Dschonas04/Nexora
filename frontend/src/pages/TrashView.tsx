@@ -82,7 +82,7 @@ export default function TrashView({ onChange }: { onChange: () => void }) {
   );
 }
 
-// restTage sagt, wie viele Tage noch bleiben -- aufgerundet, weil "noch 0 Tage"
+// restTage sagt, wie viele Tage noch bleiben, aufgerundet, weil "noch 0 Tage"
 // bei einer Seite, die es morgen früh noch gibt, schlicht falsch wäre.
 function restTage(verfaelltAm: string): number {
   const ms = new Date(verfaelltAm).getTime() - Date.now();

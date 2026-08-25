@@ -51,7 +51,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Domänenfilter. Greift nur hier, nicht auf Konten, die ein Administrator
-	// anlegt -- der weiß, was er tut.
+	// anlegt, der weiß, was er tut.
 	if erlaubt := ErlaubteDomaenen(); len(erlaubt) > 0 {
 		domaene := req.Email[strings.LastIndex(req.Email, "@")+1:]
 		passt := false
@@ -139,7 +139,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	// One message for an unknown address and for a wrong password, so the
 	// response cannot be used to find out which addresses are registered.
 	if err != nil || !auth.CheckPassword(hash, req.Password) {
-		// Der Fehlversuch wird festgehalten -- ohne ihn hätte die Prüfspur
+		// Der Fehlversuch wird festgehalten, ohne ihn hätte die Prüfspur
 		// genau die Vorgänge nicht, für die man sie am ehesten aufschlägt.
 		// Die eingegebene Adresse steht dabei im Klartext, das Passwort nie.
 		s.spur(r.Context(), models.Spureintrag{
@@ -164,12 +164,12 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 // Logout beendet die Sitzung und löscht das Plätzchen.
 //
 // Das Widerrufen ist der eigentliche Teil: früher blieb das Token gültig, weil
-// es unterschrieben war -- abgemeldet war nur der Browser, der es wegwarf.
+// es unterschrieben war, abgemeldet war nur der Browser, der es wegwarf.
 func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
 	// Die Kennung kommt aus dem Plätzchen, nicht aus dem Zusammenhang: das
 	// Abmelden liegt bewusst vor der Anmeldeprüfung, damit es auch mit einem
 	// abgelaufenen Token noch geht. Ohne diese Zeile bliebe die Sitzung
-	// bestehen und das Token weiter brauchbar -- genau das, was Abmelden
+	// bestehen und das Token weiter brauchbar, genau das, was Abmelden
 	// verhindern soll.
 	sid := middleware.SitzungID(r)
 	if sid == "" {
@@ -207,7 +207,7 @@ func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 }
 
 // issueSession legt die Sitzung an, unterschreibt ein Token darauf und setzt
-// das Plätzchen. Scheitert das Anlegen, wird trotzdem ein Token ausgestellt --
+// das Plätzchen. Scheitert das Anlegen, wird trotzdem ein Token ausgestellt,
 // nur eben ohne Sitzungskennung: lieber angemeldet ohne Liste als gar nicht
 // angemeldet, weil eine Nebensache klemmt.
 func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID string) {

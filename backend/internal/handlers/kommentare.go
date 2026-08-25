@@ -114,7 +114,7 @@ func (s *Server) CreateKommentar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Nur eine Antwortebene. Wird auf eine Antwort geantwortet, hängt der neue
-	// Beitrag an deren Elternteil -- der Faden bleibt flach statt sich immer
+	// Beitrag an deren Elternteil, der Faden bleibt flach statt sich immer
 	// weiter einzurücken.
 	if req.ElternID != nil {
 		var grosseltern *string
@@ -183,7 +183,7 @@ func (s *Server) postfachAusKommentar(ctx context.Context, uid, name, pageID, ko
 		}
 	}
 
-	// Und der Eigentümer der Seite -- er ist der, den eine Rückfrage angeht.
+	// Und der Eigentümer der Seite, er ist der, den eine Rückfrage angeht.
 	var eigner string
 	if err := s.Pool.QueryRow(ctx,
 		`SELECT owner_id::text FROM pages WHERE id=$1`, pageID).Scan(&eigner); err == nil && !bedient[eigner] {

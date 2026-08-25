@@ -2,7 +2,7 @@
 //
 // Only what can be read cheaply and reliably: plain text straight from the
 // stream, PDFs through pdftotext. Everything else contributes its filename and
-// nothing more, which is honest -- a search that pretends to look inside a ZIP
+// nothing more, which is honest, a search that pretends to look inside a ZIP
 // and finds nothing is worse than one that never claimed to.
 //
 // Extraction never fails an upload. A file that cannot be read is still a file;
@@ -44,7 +44,7 @@ func textAusAnhang(ctx context.Context, roh []byte, mime, dateiname string) stri
 // ausPDF ruft pdftotext auf.
 //
 // Ein eigener Auslesecode in Go wäre ohne fremde Abhängigkeit ausgekommen,
-// scheitert aber an vielen echten PDFs -- Schriftkodierungen, Spalten,
+// scheitert aber an vielen echten PDFs, Schriftkodierungen, Spalten,
 // eingebettete Bilder. pdftotext ist der Maßstab, an dem sich solche Werkzeuge
 // messen, und liegt als poppler-utils im Abbild.
 //

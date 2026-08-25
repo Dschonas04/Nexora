@@ -25,7 +25,7 @@ func (s *Server) ListPages(w http.ResponseWriter, r *http.Request) {
 	// Ablage erreichbar sind.
 	//
 	// Ohne den zweiten Teil könnte man eine Seite per Adresse öffnen, sie aber
-	// nirgends finden -- ein Recht, das man nur kennt, wenn einem jemand den
+	// nirgends finden, ein Recht, das man nur kennt, wenn einem jemand den
 	// Verweis schickt, ist praktisch keines.
 	rows, err := s.Pool.Query(r.Context(),
 		`SELECT p.id, p.parent_id, p.space_id, p.title, p.icon, p.updated_at,
@@ -107,7 +107,7 @@ func (s *Server) CreatePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Inhalt aus der Vorlage, falls eine angegeben wurde. Ist sie nicht
-	// lesbar oder gar keine Vorlage, entsteht die Seite leer -- das ist
+	// lesbar oder gar keine Vorlage, entsteht die Seite leer, das ist
 	// harmloser, als den Aufruf scheitern zu lassen.
 	inhalt, icon := s.inhaltAusVorlage(r, uid, req.VorlageID)
 	if len(inhalt) == 0 {
@@ -198,12 +198,12 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Konflikterkennung. Ohne sie überschreibt der Autosave stillschweigend,
-	// was jemand anderes in der Zwischenzeit geschrieben hat -- der Verlust
+	// was jemand anderes in der Zwischenzeit geschrieben hat, der Verlust
 	// fällt erst auf, wenn der Text fehlt.
 	//
 	// Verglichen wird auf die Mikrosekunde. Das ist die Auflösung, die
 	// PostgreSQL für timestamptz führt, und dieselbe kommt über JSON wieder
-	// zurück -- der Wert ist also exakt derselbe, nicht nur ungefähr.
+	// zurück, der Wert ist also exakt derselbe, nicht nur ungefähr.
 	//
 	// Auf ganze Sekunden zu runden wäre bequemer, macht die Prüfung aber blind
 	// für zwei Speichervorgänge innerhalb derselben Sekunde. Genau so schnell
@@ -266,7 +266,7 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 
 	// content_text wird hier mitgeschrieben, nicht in einem Trigger: der
 	// Fließtext lässt sich aus dem BlockNote-JSON nur in Go herausziehen. Wer
-	// den Inhalt schreibt, muss ihn deshalb mitschreiben -- sonst zeigt die
+	// den Inhalt schreibt, muss ihn deshalb mitschreiben, sonst zeigt die
 	// Suche stillschweigend einen alten Stand.
 	_, err = s.Pool.Exec(r.Context(),
 		`UPDATE pages SET title=$2, content=$3::jsonb, icon=$4, parent_id=$5, space_id=$6,
@@ -334,7 +334,7 @@ func (s *Server) ListTrash(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var p models.PapierkorbSeite
 		if err := rows.Scan(&p.ID, &p.ParentID, &p.SpaceID, &p.Title, &p.Icon, &p.UpdatedAt); err == nil {
-			// UpdatedAt trägt hier das Löschdatum -- die Spalte heißt so, weil
+			// UpdatedAt trägt hier das Löschdatum, die Spalte heißt so, weil
 			// die Leiste dieselbe Gestalt liest.
 			if tage > 0 {
 				verfaellt := p.UpdatedAt.AddDate(0, 0, tage)

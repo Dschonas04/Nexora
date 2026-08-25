@@ -3,7 +3,7 @@ package handlers
 import "testing"
 
 // Das Inhaltsverzeichnis der eigenen Ausfuhr muss beim Einlesen einer ganzen
-// Ablage wegfallen -- ein selbst geschriebenes INHALT.md aber nicht.
+// Ablage wegfallen, ein selbst geschriebenes INHALT.md aber nicht.
 func TestIstAusfuhrVerzeichnis(t *testing.T) {
 	unser := "# Reise\n\n3 Seiten, ausgegeben am 24.08.2026 09:12.\n\n" +
 		"- [Hinfahrt](<hinfahrt.md>)\n- [Unterwegs](<unterwegs.md>)\n"

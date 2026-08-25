@@ -40,7 +40,7 @@ type Mitglied struct {
 // Readable by every signed-in account, not just admins: without it nobody could
 // tell which group to ask to be added to, and a space owner could not hand out
 // a right without knowing the groups exist. Membership itself is only visible
-// to admins -- see ListMitglieder.
+// to admins, see ListMitglieder.
 func (s *Server) ListGruppen(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.Pool.Query(r.Context(),
 		`SELECT g.id, g.name, g.beschreibung, g.erstellt_am,
@@ -110,7 +110,7 @@ func (s *Server) DeleteGruppe(w http.ResponseWriter, r *http.Request) {
 	}
 	id := chi.URLParam(r, "id")
 
-	// Name vor dem Löschen lesen -- danach steht in der Prüfspur sonst nur
+	// Name vor dem Löschen lesen, danach steht in der Prüfspur sonst nur
 	// eine Kennung, mit der niemand mehr etwas anfangen kann.
 	var name string
 	_ = s.Pool.QueryRow(r.Context(), `SELECT name FROM gruppen WHERE id=$1`, id).Scan(&name)

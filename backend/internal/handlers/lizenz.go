@@ -10,7 +10,7 @@ import (
 )
 
 // VerlangeFunktion wraps the routes of one paid extra. Without a valid key the
-// request ends in 402 -- the status that exists for exactly this case and that
+// request ends in 402, the status that exists for exactly this case and that
 // the browser can tell apart from "not allowed" (403).
 func VerlangeFunktion(f lizenz.Funktion) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -40,7 +40,7 @@ func (s *Server) LizenzStatus(w http.ResponseWriter, r *http.Request) {
 	z := lizenz.Aktuell()
 
 	// The full list travels along so the browser does not have to carry its own
-	// copy of what extras exist -- that copy would drift.
+	// copy of what extras exist, that copy would drift.
 	alle := make([]string, 0, len(lizenz.Alle))
 	for _, f := range lizenz.Alle {
 		alle = append(alle, string(f))
@@ -73,7 +73,7 @@ func (s *Server) LizenzStatus(w http.ResponseWriter, r *http.Request) {
 		"alle_extras":    alle,
 		"freigeschaltet": frei,
 		"stufen":         stufen,
-		// Nur dort wahr, wo ein privater Schlüssel hinterlegt ist -- also beim
+		// Nur dort wahr, wo ein privater Schlüssel hinterlegt ist, also beim
 		// Herausgeber, nicht beim Kunden.
 		"ausstellbar": lizenz.Ausstellbar(),
 	})

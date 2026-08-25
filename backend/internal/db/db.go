@@ -103,14 +103,14 @@ CREATE INDEX IF NOT EXISTS spaces_owner_idx ON spaces(owner_id);
 
 -- Eine öffentliche Ablage ist für jedes angemeldete Konto der Instanz
 -- sichtbar, ohne dass ihr jemand einzeln ein Recht erteilen muss.
---   'nein'      -- nur Eigentümer und ausdrücklich Berechtigte
---   'lesen'     -- alle Angemeldeten dürfen lesen
---   'schreiben' -- alle Angemeldeten dürfen lesen und bearbeiten
+--   'nein', nur Eigentümer und ausdrücklich Berechtigte
+--   'lesen', alle Angemeldeten dürfen lesen
+--   'schreiben', alle Angemeldeten dürfen lesen und bearbeiten
 -- Absichtlich nicht "öffentlich im Internet": anonymer Zugriff läuft
 -- weiterhin ausschließlich über den Freigabelink einer einzelnen Seite.
 -- Ohne CHECK, weil ALTER TABLE ... ADD CONSTRAINT kein IF NOT EXISTS kennt und
 -- dieses Skript bei jedem Start durchläuft. Erlaubte Werte setzt der Handler:
--- was er nicht kennt, wird zu 'nein' -- ein Tippfehler kann also nichts öffnen.
+-- was er nicht kennt, wird zu 'nein', ein Tippfehler kann also nichts öffnen.
 ALTER TABLE spaces ADD COLUMN IF NOT EXISTS oeffentlich text NOT NULL DEFAULT 'nein';
 CREATE INDEX IF NOT EXISTS spaces_oeffentlich_idx ON spaces(oeffentlich) WHERE oeffentlich <> 'nein';
 
@@ -193,7 +193,7 @@ CREATE INDEX IF NOT EXISTS pages_such_idx ON pages USING GIN (such_tsv);
 -- Prüfspur: wer hat wann was getan.
 --
 -- Bewusst eine eigene Tabelle statt Spalten an den Objekten: ein Eintrag muss
--- auch dann bestehen bleiben, wenn die Seite gelöscht wird -- gerade das
+-- auch dann bestehen bleiben, wenn die Seite gelöscht wird, gerade das
 -- Löschen ist der Vorgang, den eine Revision sehen will. Deshalb gibt es hier
 -- KEINEN Fremdschlüssel mit ON DELETE CASCADE; objekt_id ist eine lose
 -- Referenz, und objekt_titel hält fest, wie das Objekt damals hieß.
@@ -222,7 +222,7 @@ CREATE INDEX IF NOT EXISTS pruefspur_aktion_idx ON pruefspur(aktion, zeitpunkt D
 --
 -- Antworten hängen über eltern_id am Elternkommentar, aber nur eine Ebene tief:
 -- ein Faden mit beliebig tiefer Verschachtelung wird unlesbar, und die zweite
--- Ebene deckt ab, was Leute tatsächlich tun -- auf einen Beitrag antworten.
+-- Ebene deckt ab, was Leute tatsächlich tun, auf einen Beitrag antworten.
 -- Die Beschränkung erzwingt der Handler, nicht das Schema.
 --
 -- geloescht_am statt DELETE: ein gelöschter Kommentar, an dem Antworten hängen,
@@ -246,7 +246,7 @@ CREATE INDEX IF NOT EXISTS kommentare_eltern_idx ON kommentare(eltern_id);
 -- Das Postfach: was an ein Konto gerichtet war, seit es zuletzt hingesehen hat.
 --
 -- Ohne diese Tabelle erreichte ein Kommentar niemanden. Er stand unter einer
--- Seite und wartete darauf, dass jemand sie zufällig wieder öffnet -- eine
+-- Seite und wartete darauf, dass jemand sie zufällig wieder öffnet, eine
 -- Rückfrage, die eine Woche unbeantwortet bleibt, ist keine Rückfrage mehr.
 --
 -- Die Angaben zum Auslöser sind Kopien und keine Verknüpfungen. Ein Eintrag
@@ -283,7 +283,7 @@ CREATE INDEX IF NOT EXISTS postfach_ungelesen_idx ON postfach(empfaenger_id) WHE
 -- Die Trennung ist also nicht willkürlich: hier steht, was sich im Betrieb
 -- ändern darf, in config.conf steht, was beim Start feststehen muss.
 --
--- geaendert_von hält fest, wer zuletzt geschrieben hat -- dieselbe Angabe
+-- geaendert_von hält fest, wer zuletzt geschrieben hat, dieselbe Angabe
 -- steht auch in der Prüfspur, hier nur griffbereit für die Anzeige.
 -- Volltext in Anhängen.
 --
@@ -293,7 +293,7 @@ CREATE INDEX IF NOT EXISTS postfach_ungelesen_idx ON postfach(empfaenger_id) WHE
 --
 -- Gleiches Verfahren wie bei den Seiten: eine GENERATED-Spalte, die nicht
 -- veralten kann, plus GIN-Index. Der Dateiname wiegt mit A schwerer als der
--- Inhalt mit B -- wer "Angebot" sucht, meint meist die Datei, die so heißt.
+-- Inhalt mit B, wer "Angebot" sucht, meint meist die Datei, die so heißt.
 ALTER TABLE attachments ADD COLUMN IF NOT EXISTS inhalt_text text NOT NULL DEFAULT '';
 ALTER TABLE attachments ADD COLUMN IF NOT EXISTS such_tsv tsvector
 	GENERATED ALWAYS AS (
@@ -343,7 +343,7 @@ CREATE INDEX IF NOT EXISTS gruppen_mitglieder_user_idx ON gruppen_mitglieder(use
 -- ist der einzige Ort, an dem sie garantiert nie entsteht.
 --
 -- recht ist eine Stufenleiter: lesen < schreiben < verwalten. Wer verwalten
--- darf, vergibt Rechte für diesen Space -- das ist der Space-Verantwortliche,
+-- darf, vergibt Rechte für diesen Space, das ist der Space-Verantwortliche,
 -- ohne dass es dafür eine globale Rolle braucht.
 CREATE TABLE IF NOT EXISTS space_rechte (
 	space_id  uuid NOT NULL REFERENCES spaces(id)  ON DELETE CASCADE,

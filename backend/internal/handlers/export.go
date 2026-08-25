@@ -6,7 +6,7 @@
 //
 // The archive is written straight to the response instead of being assembled in
 // memory first. A space with a few hundred pages and their attachments would
-// otherwise sit in RAM twice -- once as the buffer, once as the response.
+// otherwise sit in RAM twice, once as the buffer, once as the response.
 package handlers
 
 import (
@@ -38,7 +38,7 @@ type exportSeite struct {
 //
 // spaceID darf "ohne" sein: dann kommen die Seiten, die keinem Space angehören.
 // Sonst blieben sie beim Export außen vor, obwohl sie genauso zum Bestand
-// gehören -- und niemand würde es merken.
+// gehören, und niemand würde es merken.
 func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	spaceID := chi.URLParam(r, "id")
@@ -48,7 +48,7 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 	if spaceID == "ohne" {
 		spaceName = "Ohne Space"
 	} else {
-		// Ein Admin darf jede Seite lesen -- dann muss er auch den Space
+		// Ein Admin darf jede Seite lesen, dann muss er auch den Space
 		// exportieren dürfen, in dem sie liegt. Sonst widerspräche sich die
 		// Regel: die Inhalte wären einzeln zugänglich, gebündelt aber nicht.
 		//
@@ -111,7 +111,7 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 
 	// Ein Space als EIN gesetztes Dokument statt als Archiv voller Einzelteile:
 	// zum Durchblättern, Drucken und Weiterreichen ist das die brauchbarere
-	// Form. Das Archiv aus Markdown-Dateien bleibt die Vorgabe -- es ist der
+	// Form. Das Archiv aus Markdown-Dateien bleibt die Vorgabe, es ist der
 	// Ausweg aus dem System, und der soll maschinenlesbar sein.
 	switch r.URL.Query().Get("format") {
 	case "pdf", "word", "docx":
@@ -189,7 +189,7 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 
 		// Spitze Klammern um das Ziel: ein Dateiname mit Leerzeichen bricht
 		// den Verweis sonst nach dem ersten Wort ab. Prozentkodierung täte es
-		// auch, wäre aber unlesbar -- und diese Datei soll man lesen können.
+		// auch, wäre aber unlesbar, und diese Datei soll man lesen können.
 		verzeichnis.WriteString(fmt.Sprintf("- [%s](<%s>)\n", p.Titel, datei))
 	}
 
@@ -212,7 +212,7 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 }
 
 // spaceBedingung liefert die passende WHERE-Zeile. Getrennt, weil "ohne Space"
-// ein IS NULL braucht und keinen Parameter -- die Bedingung im String zu bauen
+// ein IS NULL braucht und keinen Parameter, die Bedingung im String zu bauen
 // ist hier ungefährlich, weil sie aus einem festen Vergleich stammt und nicht
 // aus einer Eingabe.
 func spaceBedingung(spaceID string) string {

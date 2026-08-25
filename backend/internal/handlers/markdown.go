@@ -3,7 +3,7 @@
 // The editor ships a converter of its own, but it is called
 // blocksToMarkdownLossy for a reason: it drops what it cannot express, and it
 // only works while the editor is loaded in a browser. This one reads the stored
-// document directly, so it also serves the cases where no editor is involved --
+// document directly, so it also serves the cases where no editor is involved,
 // an export of a whole space, a scheduled backup, an API caller.
 //
 // The conversion is deliberately tolerant. An unknown block type becomes a
@@ -25,7 +25,7 @@ import (
 )
 
 // block ist ein Knoten des Editor-Dokuments. Nur die Felder, die für Markdown
-// zählen -- Farben und Ausrichtung haben in Markdown kein Gegenstück.
+// zählen, Farben und Ausrichtung haben in Markdown kein Gegenstück.
 type block struct {
 	Type     string          `json:"type"`
 	Props    map[string]any  `json:"props"`
@@ -57,7 +57,7 @@ func MarkdownAusInhalt(roh json.RawMessage) string {
 	return strings.TrimSpace(mehrfacheLeerzeilen(b.String())) + "\n"
 }
 
-// mehrfacheLeerzeilen dünnt Leerzeilen aus -- aber nur außerhalb von
+// mehrfacheLeerzeilen dünnt Leerzeilen aus, aber nur außerhalb von
 // Codeblöcken.
 //
 // Der Unterschied ist kein Feinschliff: in einem Codeblock sind zwei
@@ -97,7 +97,7 @@ func istListe(typ string) bool {
 }
 
 // schreibeBloecke geht die Liste durch. einzug ist die Einrückung, die dieser
-// Ebene vorausgeht -- eine Zeichenkette und keine Tiefenzahl, weil
+// Ebene vorausgeht, eine Zeichenkette und keine Tiefenzahl, weil
 // verschachtelte Einträge sich nicht an einer festen Schrittweite ausrichten,
 // sondern an der Breite der Marke ihres Elternteils: unter "1. " beginnt der
 // Inhalt in Spalte 3, unter "- " in Spalte 2. Mit einer festen Schrittweite von
@@ -195,7 +195,7 @@ func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 				fmt.Fprintf(b, "\n%s![%s](%s)\n", einzug, klammersicher(name), adressSicher(adresse))
 			} else {
 				// Für Video, Ton und Dateien gibt es in Markdown kein
-				// Einbetten -- ein Verweis ist das Ehrlichste.
+				// Einbetten, ein Verweis ist das Ehrlichste.
 				fmt.Fprintf(b, "\n%s[%s](%s)\n", einzug, klammersicher(name), adressSicher(adresse))
 			}
 			if bildunterschrift != "" && bildunterschrift != name {
@@ -229,7 +229,7 @@ func schreibeBloecke(b *strings.Builder, bloecke []block, einzug string) {
 
 		if len(bl.Children) > 0 {
 			// Verschachtelte Listen rücken um die Breite der eigenen Marke
-			// ein, alles andere bleibt auf der Ebene -- eine eingerückte
+			// ein, alles andere bleibt auf der Ebene, eine eingerückte
 			// Überschrift wäre in Markdown ein Codeblock.
 			kindEinzug := einzug
 			if markenBreite > 0 {
@@ -299,8 +299,8 @@ func zellSicher(s string) string {
 // Umbrüche.
 //
 // Ein Umbruch innerhalb eines Absatzes ist im Editor ein Umbruch und kein neuer
-// Absatz. Roh übernommen wäre er in Markdown gar nichts -- der Text liefe
-// zusammen -- oder, in einem Listeneintrag, das Ende der Liste. Zwei
+// Absatz. Roh übernommen wäre er in Markdown gar nichts, der Text liefe
+// zusammen, oder, in einem Listeneintrag, das Ende der Liste. Zwei
 // Leerzeichen vor dem Umbruch machen daraus den harten Umbruch, und die
 // Folgezeile bekommt die Einrückung der Fortsetzungsspalte.
 func zeile(roh json.RawMessage, fortsetzung string) string {
@@ -325,7 +325,7 @@ func text(roh json.RawMessage) string {
 	var teile []inline
 	if err := json.Unmarshal(roh, &teile); err != nil {
 		// Zwei andere Gestalten kommen vor. Erstens eine einzelne
-		// Zeichenkette. Zweitens ein Objekt mit einem content-Feld -- so
+		// Zeichenkette. Zweitens ein Objekt mit einem content-Feld, so
 		// liefert der Editor seit einiger Zeit die Zellen einer Tabelle. Ohne
 		// diesen zweiten Fall blieben alle Zellen leer: die Tabelle stünde da,
 		// aber ohne Inhalt.
@@ -374,7 +374,7 @@ func text(roh json.RawMessage) string {
 // ist genau die Art Abweichung, die beim Wiedereinlesen sichtbar wird.
 //
 // Maskiert wird sparsam. Ein Unterstrich mitten im Wort bleibt stehen, weil
-// CommonMark ihn dort ohnehin nicht als Auszeichnung liest -- ihn zu maskieren
+// CommonMark ihn dort ohnehin nicht als Auszeichnung liest, ihn zu maskieren
 // würde jeden Dateinamen und jeden Bezeichner mit Rückstrichen übersäen, ohne
 // dass sich am Ergebnis etwas ändert.
 func entschaerfen(s string) string {
@@ -382,7 +382,7 @@ func entschaerfen(s string) string {
 		return s
 	}
 	// [[Seitentitel]] ist in Nexora ein Verweis, auch wenn er als gewöhnlicher
-	// Text im Dokument steht -- der Editor erkennt ihn am Muster. Würden die
+	// Text im Dokument steht, der Editor erkennt ihn am Muster. Würden die
 	// Klammern maskiert, käme aus dem Export ein Text zurück, der einmal ein
 	// Verweis war und keiner mehr ist. Also bleiben diese Stellen unberührt
 	// und nur das dazwischen wird entschärft.
@@ -493,7 +493,7 @@ func auszeichnen(s string, styles map[string]any) string {
 		return ok && v
 	}
 	// Führende und folgende Leerzeichen müssen AUSSERHALB der Auszeichnung
-	// bleiben -- "** fett **" wird von keinem Leser als fett dargestellt.
+	// bleiben, "** fett **" wird von keinem Leser als fett dargestellt.
 	links := s[:len(s)-len(strings.TrimLeft(s, " \t"))]
 	rechts := s[len(strings.TrimRight(s, " \t")):]
 	kern := strings.TrimSpace(s)
@@ -509,7 +509,7 @@ func auszeichnen(s string, styles map[string]any) string {
 		kern = s
 		links, rechts = "", ""
 
-		// Im Code bleibt jedes Zeichen, wie es ist -- deshalb wird hier NICHT
+		// Im Code bleibt jedes Zeichen, wie es ist, deshalb wird hier NICHT
 		// maskiert. Stattdessen wird der Zaun so lang gemacht, dass er länger
 		// ist als jede Backtick-Folge im Text: anders bekommt man einen
 		// Backtick nicht in eine Code-Spanne.
@@ -519,7 +519,7 @@ func auszeichnen(s string, styles map[string]any) string {
 		}
 		// Ein Füllzeichen an beiden Enden braucht es in zwei Fällen: wenn der
 		// Inhalt selbst mit einem Rückstrich anfängt oder aufhört, und wenn er
-		// an beiden Enden ein Leerzeichen hat -- genau dann nimmt ein Leser
+		// an beiden Enden ein Leerzeichen hat, genau dann nimmt ein Leser
 		// nach der Regel je eines wieder weg, und ohne Füllung wäre das der
 		// Inhalt.
 		fuellung := ""
@@ -551,7 +551,7 @@ func auszeichnen(s string, styles map[string]any) string {
 	return links + kern + rechts
 }
 
-// rohText liefert den Text ohne Auszeichnung -- für Codeblöcke, in denen
+// rohText liefert den Text ohne Auszeichnung, für Codeblöcke, in denen
 // Sternchen Sternchen bleiben müssen.
 func rohText(roh json.RawMessage) string {
 	var teile []inline
@@ -594,7 +594,7 @@ func (s *Server) ExportMarkdown(w http.ResponseWriter, r *http.Request) {
 	//
 	// Viele Seiten wiederholen ihren Titel aber als erste Überschrift im Text.
 	// Dann bliebe er zweimal stehen, was in der Datei nach einem Fehler
-	// aussieht -- also nur voranstellen, wenn er nicht ohnehin schon dasteht.
+	// aussieht, also nur voranstellen, wenn er nicht ohnehin schon dasteht.
 	if titel != "" && !beginntMitUeberschrift(md, titel) {
 		md = "# " + titel + "\n\n" + md
 	}
@@ -603,7 +603,7 @@ func (s *Server) ExportMarkdown(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
 	// Zwei Angaben mit Absicht: filename für alte Klienten, die nur ASCII
 	// verstehen, filename* nach RFC 5987 für alle anderen. So bleibt "Übersicht"
-	// eine Übersicht, statt zu "Uebersicht" zu werden -- Umlaute umzuschreiben
+	// eine Übersicht, statt zu "Uebersicht" zu werden, Umlaute umzuschreiben
 	// wäre eine Notlösung aus einer Zeit, in der es filename* noch nicht gab.
 	w.Header().Set("Content-Disposition",
 		`attachment; filename="`+nurASCII(name)+`.md"; filename*=UTF-8''`+
@@ -658,7 +658,7 @@ func dateiname(titel string) string {
 }
 
 // nurASCII ist die Rückfallschreibweise für den filename-Teil des Kopfes.
-// Nicht-ASCII wird durch _ ersetzt, nicht umgeschrieben -- die richtige
+// Nicht-ASCII wird durch _ ersetzt, nicht umgeschrieben, die richtige
 // Schreibweise steht ohnehin in filename*.
 func nurASCII(s string) string {
 	var b strings.Builder

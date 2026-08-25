@@ -31,8 +31,8 @@ type s3TestReq struct {
 
 // S3Testen versucht eine Verbindung und schreibt testweise ein winziges Objekt.
 //
-// Nur zu verbinden würde zu wenig prüfen: die häufigsten Fehler -- falscher
-// Schlüssel, fehlendes Schreibrecht, Eimer in einer anderen Region -- zeigen
+// Nur zu verbinden würde zu wenig prüfen: die häufigsten Fehler, falscher
+// Schlüssel, fehlendes Schreibrecht, Eimer in einer anderen Region, zeigen
 // sich erst beim ersten Schreiben. Das Testobjekt wird sofort wieder entfernt.
 func (s *Server) S3Testen(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
@@ -99,7 +99,7 @@ func (s *Server) S3Testen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := a.Loeschen(ctx, schluessel); err != nil {
-		// Schreiben und Lesen gingen -- das reicht zum Betrieb. Dass das
+		// Schreiben und Lesen gingen, das reicht zum Betrieb. Dass das
 		// Aufräumen scheitert, ist eine Anmerkung, kein Fehlschlag.
 		writeJSON(w, http.StatusOK, map[string]any{
 			"ok":        true,

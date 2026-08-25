@@ -64,11 +64,11 @@ func schluesselpaar() {
 	if err != nil {
 		fatal("Schlüsselpaar konnte nicht erzeugt werden: %v", err)
 	}
-	fmt.Println("Öffentlicher Schlüssel -- gehört als Konstante nach premium/lizenz/pruefer.go:")
+	fmt.Println("Öffentlicher Schlüssel, gehört als Konstante nach premium/lizenz/pruefer.go:")
 	fmt.Println()
 	fmt.Println("  " + base64.RawURLEncoding.EncodeToString(oeff))
 	fmt.Println()
-	fmt.Println("Privater Schlüssel -- NIEMALS ins Repository, sicher verwahren:")
+	fmt.Println("Privater Schlüssel. NIEMALS ins Repository, sicher verwahren:")
 	fmt.Println()
 	fmt.Println("  " + base64.RawURLEncoding.EncodeToString(priv))
 	fmt.Println()
@@ -92,7 +92,7 @@ func ausstellen(inhaber, stufe, funktionen, ablauf string) {
 			continue
 		}
 		if !bekannt(teil) {
-			fatal("unbekannte Funktion %q -- bekannt sind: %s", teil, namen(kern.Alle))
+			fatal("unbekannte Funktion %q. Bekannt sind: %s", teil, namen(kern.Alle))
 		}
 		zusatz = append(zusatz, kern.Funktion(teil))
 	}

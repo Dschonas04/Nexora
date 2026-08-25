@@ -1,12 +1,12 @@
 // Zwischenspeicher für die Sitzungsprüfung.
 //
-// Ohne ihn läge bei jeder einzelnen Anfrage eine Abfrage auf der Datenbank --
+// Ohne ihn läge bei jeder einzelnen Anfrage eine Abfrage auf der Datenbank,
 // billig, aber eben bei jedem Tastendruck im Editor, der speichert. Der
 // Speicher hält für kurze Zeit fest, ob eine Sitzung gilt.
 //
 // Die Wahrheit steht weiterhin in der Datenbank. Der Speicher darf leer sein,
 // veraltet sein oder ganz fehlen: dann wird eben gefragt. Deshalb ist auch das
-// Widerrufen sofort wirksam -- es schreibt den Eintrag um, statt auf sein
+// Widerrufen sofort wirksam, es schreibt den Eintrag um, statt auf sein
 // Ablaufen zu warten.
 package handlers
 
@@ -16,7 +16,7 @@ import (
 )
 
 // speicherDauer ist kurz gewählt. Sie ist die Zeitspanne, in der ein anderswo
-// widerrufener Eintrag hier noch als gültig gelten könnte -- bei Redis über
+// widerrufener Eintrag hier noch als gültig gelten könnte, bei Redis über
 // mehrere Instanzen hinweg, im eigenen Speicher nur theoretisch.
 const speicherDauer = 30 * time.Second
 

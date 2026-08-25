@@ -22,7 +22,7 @@ const Ctx = createContext<{ design: Design; neuLaden: () => void }>({
 });
 
 // Der Grund, auf dem der Akzent landet, je Grundton. Muss zu den Werten in
-// styles.css passen -- sie hier zu wiederholen ist unschön, aber die Alternative
+// styles.css passen, sie hier zu wiederholen ist unschön, aber die Alternative
 // wäre, sie zur Laufzeit aus dem Stylesheet zu lesen, und das kostet mehr als
 // es einbringt.
 const GRUND: Record<string, string> = {

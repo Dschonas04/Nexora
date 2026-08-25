@@ -2,7 +2,7 @@
 // ändern, den Dienst neu starten, den Papierkorb der ganzen Instanz leeren.
 //
 // Alle drei sind Eingriffe, die man sonst auf der Kommandozeile machen würde.
-// Sie hier anzubieten heisst nicht, dass sie harmlos wären -- es heisst, dass
+// Sie hier anzubieten heisst nicht, dass sie harmlos wären, es heisst, dass
 // sie protokolliert stattfinden statt unbemerkt.
 package handlers
 
@@ -59,7 +59,7 @@ func verstecken(inhalt string) string {
 
 // zurueckSetzen bringt die versteckten Werte wieder ein.
 //
-// Was der Browser als Sterne zurückschickt, war nie beim Browser -- es steht
+// Was der Browser als Sterne zurückschickt, war nie beim Browser, es steht
 // weiterhin in der Datei. Der Entwurf übernimmt an dieser Stelle also den alten
 // Wert. Ohne diesen Schritt würde jedes Speichern die Zugangsdaten durch das
 // Wort "********" ersetzen, und beim nächsten Start käme keine Datenbank mehr.
@@ -136,7 +136,7 @@ func (s *Server) KonfigLesen(w http.ResponseWriter, r *http.Request) {
 	antwort.Schreibbar = schreibbar(pfad)
 	if !antwort.Schreibbar {
 		antwort.Hinweise = append(antwort.Hinweise,
-			"Die Datei ist für den Dienst nicht beschreibbar -- im Container ist sie meist nur lesend eingehängt.")
+			"Die Datei ist für den Dienst nicht beschreibbar. Im Container ist sie meist nur lesend eingehängt.")
 	}
 	antwort.Hinweise = append(antwort.Hinweise, config.Pruefen(string(roh))...)
 	writeJSON(w, http.StatusOK, antwort)
@@ -234,7 +234,7 @@ func (s *Server) KonfigSchreiben(w http.ResponseWriter, r *http.Request) {
 // Zuerst ins Datenverzeichnis, nicht neben die Datei. Das ist kein
 // Ordnungsgeschmack: die Konfiguration liegt im Container üblicherweise unter
 // /etc/nexora, und dieses Verzeichnis gehört root, während der Dienst als
-// eigener Benutzer läuft -- daneben schreiben kann er dort gar nicht. Das
+// eigener Benutzer läuft, daneben schreiben kann er dort gar nicht. Das
 // Datenverzeichnis ist der eine Ort, an dem er sicher schreiben darf.
 //
 // Der Rückfall neben die Datei ist für den Betrieb ohne Container gedacht, wo
@@ -265,7 +265,7 @@ func sichern(pfad string, inhalt []byte) (string, error) {
 // ersetzen schreibt den neuen Inhalt an die Stelle der alten Datei.
 //
 // Zuerst der saubere Weg: daneben schreiben, dann umbenennen. Ein Absturz
-// mitten im Schreiben hinterlässt so keine halbe Datei -- und eine halbe
+// mitten im Schreiben hinterlässt so keine halbe Datei, und eine halbe
 // Konfiguration ist schlimmer als eine veraltete.
 //
 // Der Weg scheitert aber genau dort, wo diese Anwendung meistens läuft: hängt
@@ -273,7 +273,7 @@ func sichern(pfad string, inhalt []byte) (string, error) {
 // ./config.conf:/etc/nexora/config.conf), dann IST der Pfad der Einhängepunkt,
 // und über einen Einhängepunkt lässt sich nicht umbenennen. Dann bleibt nur,
 // die vorhandene Datei zu überschreiben. Das ist einen Wimpernschlag lang
-// unsicher -- deshalb wurde vorher eine Sicherung angelegt.
+// unsicher, deshalb wurde vorher eine Sicherung angelegt.
 func ersetzen(pfad, inhalt string) error {
 	vorlaeufig := filepath.Join(filepath.Dir(pfad), "."+filepath.Base(pfad)+".neu")
 	if err := os.WriteFile(vorlaeufig, []byte(inhalt), 0o600); err == nil {
@@ -294,7 +294,7 @@ type neustartReq struct {
 
 // Neustart beendet den Prozess.
 //
-// Neu gestartet wird er nicht von hier, sondern von dem, was ihn betreibt --
+// Neu gestartet wird er nicht von hier, sondern von dem, was ihn betreibt,
 // Docker mit restart: unless-stopped, systemd, Kubernetes. Ohne so etwas bleibt
 // der Dienst aus. Deshalb sagt die Oberfläche das ausdrücklich dazu, statt
 // einen Knopf anzubieten, der im schlechtesten Fall der letzte war.
@@ -315,7 +315,7 @@ func (s *Server) Neustart(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 
-	// Kurz warten, damit die Antwort noch hinausgeht. Danach beenden --
+	// Kurz warten, damit die Antwort noch hinausgeht. Danach beenden,
 	// geordnet genug: offene Anfragen laufen in Millisekunden, und die
 	// Datenbank hält keinen Zustand, der hier abgeschlossen werden müsste.
 	go func() {
@@ -329,14 +329,14 @@ func (s *Server) Neustart(w http.ResponseWriter, r *http.Request) {
 //
 // Das ist etwas anderes als der Papierkorb eines Kontos: hier verschwinden auch
 // fremde Seiten. Deshalb Admin, deshalb Prüfspur, und deshalb steht die Anzahl
-// in der Antwort -- damit hinterher feststeht, was weg ist.
+// in der Antwort, damit hinterher feststeht, was weg ist.
 func (s *Server) PapierkorbLeeren(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
 		return
 	}
-	// Derselbe Weg wie bei der Frist -- sonst räumt der Knopf eines Tages
+	// Derselbe Weg wie bei der Frist, sonst räumt der Knopf eines Tages
 	// anders auf als die Uhr, und die Anhänge blieben bei einem der beiden
 	// liegen.
 	anzahl, err := s.PapierkorbAufraeumen(r.Context(), 0)

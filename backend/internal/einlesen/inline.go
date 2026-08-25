@@ -8,7 +8,7 @@ import (
 // inlineAus liest den Text innerhalb eines Blocks: Auszeichnungen, Verweise,
 // Code, Bilder.
 //
-// stile ist der Satz, der von außen schon gilt -- innerhalb von "**fett**"
+// stile ist der Satz, der von außen schon gilt, innerhalb von "**fett**"
 // erbt ein "*kursiv*" die Fettung. Die Karte wird nie verändert, sondern beim
 // Absteigen kopiert; sonst färbte eine Auszeichnung auf ihre Geschwister ab.
 func inlineAus(s string, stile map[string]bool) []Inline {
@@ -128,7 +128,7 @@ func inlineAus(s string, stile map[string]bool) []Inline {
 			if n > 3 {
 				n = 3
 			}
-			// Ein Unterstrich mitten im Wort zeichnet nichts aus -- so liest
+			// Ein Unterstrich mitten im Wort zeichnet nichts aus, so liest
 			// CommonMark ihn, und Dateinamen wie mein_datei_name bleiben heil.
 			if c == '_' && i > 0 && istWortzeichen(s[i-1]) {
 				b.WriteByte(c)
@@ -191,7 +191,7 @@ func verweisLesen(s string, i int) (text, adresse string, ende int, ok bool) {
 	text = s[i+1 : j]
 
 	// Die Adresse endet an der passenden runden Klammer. In spitzen Klammern
-	// darf sie Leerzeichen enthalten -- so schreibt der Export Dateinamen mit
+	// darf sie Leerzeichen enthalten, so schreibt der Export Dateinamen mit
 	// Leerzeichen heraus.
 	k := j + 2
 	if k < len(s) && s[k] == '<' {
@@ -268,7 +268,7 @@ func findeAuszeichnungsEnde(s string, ab int, zeichen byte, n int) int {
 	return -1
 }
 
-// findeLauf sucht einen Lauf von genau n gleichen Zeichen -- für Code, wo die
+// findeLauf sucht einen Lauf von genau n gleichen Zeichen, für Code, wo die
 // Zahl der Rückstriche den Zaun bestimmt.
 func findeLauf(s string, ab int, zeichen byte, n int) int {
 	for i := ab; i+n <= len(s); i++ {

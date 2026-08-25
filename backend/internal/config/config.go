@@ -30,7 +30,7 @@ import (
 // Konfig holds every setting. The comments in config.conf carry the same
 // explanations, so the file documents itself without needing this source.
 type Konfig struct {
-	// Pfad ist die Datei, aus der gelesen wurde -- leer, wenn keine gefunden
+	// Pfad ist die Datei, aus der gelesen wurde, leer, wenn keine gefunden
 	// wurde. Die Einstellungsseite zeigt und bearbeitet genau diese Datei;
 	// ohne den Pfad müsste sie raten, und raten hiesse: die falsche ändern.
 	Pfad string
@@ -62,7 +62,7 @@ type Konfig struct {
 
 	// --- Papierkorb ---
 	// Nach wie vielen Tagen im Papierkorb eine Seite endgültig verschwindet.
-	// 0 heißt: nie von selbst -- dann bleibt sie liegen, bis jemand sie löscht.
+	// 0 heißt: nie von selbst, dann bleibt sie liegen, bis jemand sie löscht.
 	PapierkorbTage int
 
 	// --- Objektspeicher (S3) ---
@@ -178,13 +178,13 @@ func Laden(pfad string) Konfig {
 	if gelesen != "" {
 		log.Printf("Konfiguration gelesen aus %s (%d Einträge)", gelesen, len(werte))
 	} else {
-		log.Printf("Keine config.conf gefunden -- Vorgaben und Umgebungsvariablen gelten")
+		log.Printf("Keine config.conf gefunden. Vorgaben und Umgebungsvariablen gelten.")
 	}
 
 	hol := func(schluessel, umgebung string) (string, bool) {
 		merkeSchluessel(schluessel)
 		// Umgebung schlägt Datei. Damit lässt sich ein einzelner Wert im
-		// Container überschreiben, ohne die Datei anzufassen -- und ein
+		// Container überschreiben, ohne die Datei anzufassen, und ein
 		// Geheimnis muss nie auf die Platte.
 		if v := os.Getenv(umgebung); v != "" {
 			return v, true
@@ -291,7 +291,7 @@ func Laden(pfad string) Konfig {
 // datei parses one config file. The format is deliberately dull: key = value,
 // one per line, # or ; starts a comment, blank lines ignored. Values may be
 // quoted to keep leading or trailing spaces, and [sections] are read and
-// discarded -- they exist to structure the file for a human, not for the parser.
+// discarded, they exist to structure the file for a human, not for the parser.
 func datei(pfad string) (map[string]string, error) {
 	f, err := os.Open(pfad)
 	if err != nil {
@@ -304,11 +304,11 @@ func datei(pfad string) (map[string]string, error) {
 
 // lesen ist der eigentliche Parser. Getrennt von datei, weil die
 // Einstellungsseite einen Entwurf prüfen können muss, BEVOR er auf der Platte
-// landet -- eine Konfiguration erst zu schreiben und dann festzustellen, dass
+// landet, eine Konfiguration erst zu schreiben und dann festzustellen, dass
 // sie kaputt ist, hiesse: beim nächsten Start startet nichts mehr.
 //
 // Die zweite Rückgabe sind Beanstandungen: Zeilen ohne '=' und doppelte
-// Schlüssel. Sie sind keine Fehler -- die Datei bleibt lesbar --, aber fast
+// Schlüssel. Sie sind keine Fehler, die Datei bleibt lesbar --, aber fast
 // immer ein Versehen.
 func lesen(r io.Reader, name string) (map[string]string, []string, error) {
 	werte := map[string]string{}
@@ -332,7 +332,7 @@ func lesen(r io.Reader, name string) (map[string]string, []string, error) {
 		if i < 0 {
 			log.Printf("Konfiguration %s Zeile %d: kein '=', übersprungen", name, zeilennr)
 			beanstandet = append(beanstandet,
-				fmt.Sprintf("Zeile %d: kein '=' -- wird übersprungen", zeilennr))
+				fmt.Sprintf("Zeile %d: kein '=', wird übersprungen", zeilennr))
 			continue
 		}
 		schluessel := strings.ToLower(strings.TrimSpace(zeile[:i]))
@@ -345,7 +345,7 @@ func lesen(r io.Reader, name string) (map[string]string, []string, error) {
 		if schluessel != "" {
 			if _, doppelt := werte[schluessel]; doppelt {
 				beanstandet = append(beanstandet,
-					fmt.Sprintf("Zeile %d: %s steht schon weiter oben -- der letzte Wert gilt",
+					fmt.Sprintf("Zeile %d: %s steht schon weiter oben, der letzte Wert gilt",
 						zeilennr, schluessel))
 			}
 			werte[schluessel] = wert
@@ -361,7 +361,7 @@ func lesen(r io.Reader, name string) (map[string]string, []string, error) {
 //
 // Die Liste wird nicht von Hand gepflegt, sondern beim Laden nebenbei
 // aufgeschrieben. Eine Liste, die man von Hand nachträgt, wäre spätestens beim
-// dritten neuen Schlüssel unvollständig -- und dann meldete die
+// dritten neuen Schlüssel unvollständig, und dann meldete die
 // Einstellungsseite einen richtig geschriebenen Eintrag als Tippfehler.
 var schluesselWacht struct {
 	sync.Mutex
@@ -382,7 +382,7 @@ func merkeSchluessel(k string) {
 }
 
 // BekannteSchluessel liefert alle Schlüssel, die Laden auswertet. Gefüllt ist
-// die Liste, sobald Laden einmal gelaufen ist -- und das ist beim Start immer
+// die Liste, sobald Laden einmal gelaufen ist, und das ist beim Start immer
 // der Fall.
 func BekannteSchluessel() []string {
 	schluesselWacht.Lock()
@@ -396,7 +396,7 @@ func BekannteSchluessel() []string {
 // Pruefen liest einen Entwurf und sagt, was daran auffällt: kaputte Zeilen,
 // doppelte Schlüssel und Namen, die das Programm nicht kennt.
 //
-// Ein unbekannter Schlüssel ist kein Fehler -- die Datei darf mehr enthalten,
+// Ein unbekannter Schlüssel ist kein Fehler, die Datei darf mehr enthalten,
 // als diese Fassung auswertet. Er ist aber fast immer ein Tippfehler, und ein
 // Tippfehler in einer Konfiguration wirkt genau wie eine Einstellung, die man
 // nie vorgenommen hat: er tut nichts und sagt nichts.
@@ -421,7 +421,7 @@ func Pruefen(inhalt string) []string {
 		sort.Strings(unbekannt)
 		for _, k := range unbekannt {
 			beanstandet = append(beanstandet,
-				fmt.Sprintf("%s kennt diese Fassung nicht -- Tippfehler?", k))
+				fmt.Sprintf("%s kennt diese Fassung nicht. Tippfehler?", k))
 		}
 	}
 	return beanstandet
@@ -436,28 +436,28 @@ func (k Konfig) Warnungen() []string {
 	// Einstellungsseite passiert, solange nichts zu bemängeln war.
 	w := []string{}
 	if k.JWTGeheimnis == "change-me-in-production" {
-		w = append(w, "jwt_geheimnis steht auf der Vorgabe -- jede Sitzung ist fälschbar")
+		w = append(w, "jwt_geheimnis steht auf der Vorgabe, jede Sitzung ist fälschbar")
 	}
 	if strings.Contains(k.DatenbankURL, "nexora:nexora@") {
 		w = append(w, "datenbank_url benutzt das Vorgabepasswort")
 	}
 	if k.OIDCAktiv && k.OeffentlicheURL == "" {
-		w = append(w, "oidc_aktiv ohne oeffentliche_url -- die Rücksprungadresse lässt sich nicht bilden")
+		w = append(w, "oidc_aktiv ohne oeffentliche_url, die Rücksprungadresse lässt sich nicht bilden")
 	}
 	if k.S3Aktiv && k.S3Endpunkt == "" {
-		w = append(w, "s3_aktiv ohne s3_endpunkt -- Anhänge landen weiter auf der Platte")
+		w = append(w, "s3_aktiv ohne s3_endpunkt, Anhänge landen weiter auf der Platte")
 	}
 	if k.S3Aktiv && !k.S3TLS {
-		w = append(w, "S3 ohne TLS -- Zugangsschlüssel und Dateien gehen unverschlüsselt über das Netz")
+		w = append(w, "S3 ohne TLS, Zugangsschlüssel und Dateien gehen unverschlüsselt über das Netz")
 	}
 	if k.LDAPAktiv && k.LDAPServer == "" {
-		w = append(w, "ldap_aktiv ohne ldap_server -- die Anmeldung fällt auf Passwörter zurück")
+		w = append(w, "ldap_aktiv ohne ldap_server, die Anmeldung fällt auf Passwörter zurück")
 	}
 	if k.LDAPAktiv && !k.LDAPStartTLS && !strings.HasPrefix(k.LDAPServer, "ldaps://") {
-		w = append(w, "LDAP ohne TLS -- Zugangsdaten gehen im Klartext über das Netz")
+		w = append(w, "LDAP ohne TLS, Zugangsdaten gehen im Klartext über das Netz")
 	}
 	if k.LDAPAktiv && !k.LDAPTLSPruefen {
-		w = append(w, "ldap_tls_pruefen=nein -- das Serverzertifikat wird nicht geprüft")
+		w = append(w, "ldap_tls_pruefen=nein, das Serverzertifikat wird nicht geprüft")
 	}
 	return w
 }

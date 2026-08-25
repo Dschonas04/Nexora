@@ -2,7 +2,7 @@
 //
 // Eine Bemerkung vorweg, weil sie die Form dieser Datei erklärt: Nexora sieht
 // den Docker-Verbund NICHT. Der Dienst läuft in einem Container ohne Zugang zum
-// Docker-Steuerkanal, und das ist Absicht -- wer diesen Kanal hat, ist auf dem
+// Docker-Steuerkanal, und das ist Absicht, wer diesen Kanal hat, ist auf dem
 // Wirt allmächtig. Ihn hereinzureichen, damit eine Seite eine Liste von
 // Containern zeigen kann, wäre ein schlechtes Geschäft.
 //
@@ -41,7 +41,7 @@ type Dienst struct {
 }
 
 // verbund stellt die Dienste zusammen. Jede Prüfung hat eine kurze Frist: die
-// Übersicht soll auch dann erscheinen, wenn einer der Dienste hängt -- gerade
+// Übersicht soll auch dann erscheinen, wenn einer der Dienste hängt, gerade
 // dann.
 func (s *Server) verbund(ctx context.Context) []Dienst {
 	ctx, abbruch := context.WithTimeout(ctx, 5*time.Second)
@@ -54,7 +54,7 @@ func (s *Server) verbund(ctx context.Context) []Dienst {
 	dienste := []Dienst{s.dienstSelbst()}
 
 	// Datenbank
-	d := Dienst{Name: "PostgreSQL", Rolle: "Datenbank -- hier steht alles, was zählt",
+	d := Dienst{Name: "PostgreSQL", Rolle: "Datenbank",
 		Adresse: ohneGeheimnis(k.DatenbankURL), Notwendig: true}
 	beginn := time.Now()
 	var version string
@@ -69,7 +69,8 @@ func (s *Server) verbund(ctx context.Context) []Dienst {
 		if err := s.Pool.QueryRow(ctx,
 			`SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()`).
 			Scan(&verbindungen); err == nil {
-			d.Hinweis = fmt.Sprintf("%d offene Verbindungen", verbindungen)
+			d.Hinweis = fmt.Sprintf("%d %s", verbindungen,
+				mehrzahl(verbindungen, "offene Verbindung", "offene Verbindungen"))
 		}
 	}
 	dienste = append(dienste, d)
@@ -88,18 +89,19 @@ func (s *Server) verbund(ctx context.Context) []Dienst {
 func (s *Server) dienstSelbst() Dienst {
 	rechner, _ := os.Hostname()
 	return Dienst{
-		Name:      "Nexora",
-		Rolle:     "dieser Dienst",
-		Adresse:   rechner,
-		Zustand:   "läuft",
-		Fassung:   runtime.Version(),
-		Hinweis:   fmt.Sprintf("seit %s, %d Fäden", dauer(time.Since(startZeit)), runtime.NumGoroutine()),
+		Name:    "Nexora",
+		Rolle:   "dieser Dienst",
+		Adresse: rechner,
+		Zustand: "läuft",
+		Fassung: runtime.Version(),
+		Hinweis: fmt.Sprintf("seit %s, %d %s", dauer(time.Since(startZeit)),
+			runtime.NumGoroutine(), mehrzahl(runtime.NumGoroutine(), "Faden", "Fäden")),
 		Notwendig: true,
 	}
 }
 
 func (s *Server) dienstRedis(ctx context.Context, adresse string) Dienst {
-	d := Dienst{Name: "Redis", Rolle: "Zwischenspeicher -- entbehrlich", Adresse: adresse}
+	d := Dienst{Name: "Redis", Rolle: "Zwischenspeicher", Adresse: adresse}
 	if strings.TrimSpace(adresse) == "" {
 		d.Zustand = "nicht eingerichtet"
 		d.Hinweis = "Ohne ihn wird jede Sitzung in der Datenbank nachgeschlagen."
@@ -128,7 +130,7 @@ func (s *Server) dienstRedis(ctx context.Context, adresse string) Dienst {
 		if d.Hinweis != "" {
 			d.Hinweis += ", "
 		}
-		d.Hinweis += fmt.Sprintf("%d Einträge", n)
+		d.Hinweis += fmt.Sprintf("%d %s", n, mehrzahl(int(n), "Eintrag", "Einträge"))
 	}
 	return d
 }
@@ -137,7 +139,7 @@ func (s *Server) dienstAblage(ctx context.Context, k config.Konfig) Dienst {
 	d := Dienst{Name: "Objektspeicher", Rolle: "Anhänge"}
 	if !k.S3Aktiv || k.S3Endpunkt == "" {
 		d.Name = "Platte"
-		d.Rolle = "Anhänge -- im Datenverzeichnis"
+		d.Rolle = "Anhänge auf der Platte"
 		d.Adresse = k.DatenVerzeich
 		d.Zustand = "läuft"
 		d.Hinweis = "Kein Objektspeicher eingerichtet."
@@ -152,7 +154,7 @@ func (s *Server) dienstAblage(ctx context.Context, k config.Konfig) Dienst {
 		d.Antwort = dauer(time.Since(beginn))
 	} else {
 		d.Zustand = "fehlt"
-		d.Hinweis = "Der Endpunkt antwortet nicht -- neue Anhänge scheitern."
+		d.Hinweis = "Der Endpunkt antwortet nicht. Neue Anhänge scheitern."
 	}
 	if !k.S3TLS {
 		if d.Hinweis != "" {
@@ -196,7 +198,7 @@ func dienstLDAP(ctx context.Context, k config.Konfig) *Dienst {
 }
 
 // erreichbar öffnet kurz eine Verbindung. Bewusst kein HTTP-Aufruf: eine
-// Antwort mit 401 oder 404 ist für diese Frage genauso gut wie eine mit 200 --
+// Antwort mit 401 oder 404 ist für diese Frage genauso gut wie eine mit 200,
 // gefragt ist, ob überhaupt jemand da ist.
 func erreichbar(ctx context.Context, adresse string) bool {
 	ziel := adresse
@@ -243,7 +245,7 @@ func ausInfo(info, feld string) string {
 }
 
 // dauer schreibt eine Zeitspanne so, wie man sie vorliest. Der Sprung von
-// Millisekunden auf Sekunden fehlte zuerst -- eine Laufzeit stand dann als
+// Millisekunden auf Sekunden fehlte zuerst, eine Laufzeit stand dann als
 // "48023 ms" da, und das liest niemand.
 func dauer(d time.Duration) string {
 	switch {
@@ -268,4 +270,13 @@ func kurz(s string) string {
 		return s[:157] + "..."
 	}
 	return s
+}
+
+// mehrzahl wählt die Form. Ein "1 Einträge" in einer Übersicht sieht aus wie
+// ein Fehler im Programm, auch wenn es keiner ist.
+func mehrzahl(n int, eins, viele string) string {
+	if n == 1 {
+		return eins
+	}
+	return viele
 }

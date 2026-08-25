@@ -2,7 +2,7 @@
 //
 // Deleting a page moves it aside; this is what finally removes it. Two ways in:
 // an admin who empties the whole trash by hand, and the clock. The clock is the
-// one that matters -- a trash nobody empties is not a safety net, it is a second
+// one that matters, a trash nobody empties is not a safety net, it is a second
 // copy of everything that was ever deleted, kept forever, including the things
 // that were deleted precisely because they should not be kept.
 //
@@ -64,11 +64,11 @@ func (s *Server) PapierkorbUhr(ctx context.Context) {
 }
 
 // PapierkorbAufraeumen löscht, was länger als tage im Papierkorb liegt. tage <= 0
-// löscht alles, was darin liegt -- das ist der Weg des Knopfes in der Wartung.
+// löscht alles, was darin liegt, das ist der Weg des Knopfes in der Wartung.
 //
 // Die Anhänge werden zuerst gelesen und danach aus der Ablage entfernt. Die
 // Reihenfolge ist Absicht: verschwindet die Zeile zuerst und die Datei bleibt
-// liegen, weiß niemand mehr, dass es sie gibt -- ein Objektspeicher füllt sich
+// liegen, weiß niemand mehr, dass es sie gibt, ein Objektspeicher füllt sich
 // dann jahrelang mit Dateien, zu denen es keine Seite mehr gibt.
 func (s *Server) PapierkorbAufraeumen(ctx context.Context, tage int) (int64, error) {
 	bedingung := `deleted_at IS NOT NULL`
@@ -112,7 +112,7 @@ func (s *Server) PapierkorbAufraeumen(ctx context.Context, tage int) (int64, err
 	}
 
 	// Erst jetzt die Bytes. Ein Fehler hier ist kein Grund, das Löschen
-	// zurückzunehmen -- die Seite ist weg, und eine verwaiste Datei ist ein
+	// zurückzunehmen, die Seite ist weg, und eine verwaiste Datei ist ein
 	// Platzproblem, kein Datenverlust.
 	for _, k := range schluessel {
 		if err := s.Ablage.Loeschen(ctx, k); err != nil {

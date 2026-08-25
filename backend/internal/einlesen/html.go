@@ -7,8 +7,8 @@
 // first is the same as telling them no.
 //
 // The same subset as the Markdown reader, for the same reason: what the editor
-// can hold. Everything else -- attributes, classes, styles, the div soup a page
-// builder leaves behind -- is walked through and dropped. That is deliberate:
+// can hold. Everything else, attributes, classes, styles, the div soup a page
+// builder leaves behind, is walked through and dropped. That is deliberate:
 // an import that carried the source formatting along would produce pages nobody
 // can edit afterwards.
 package einlesen
@@ -22,7 +22,7 @@ import (
 // LiesHTML wandelt ein HTML-Dokument in Blöcke um und liefert seinen Titel.
 //
 // Der Titel kommt aus der ersten Überschrift im Text, ersatzweise aus dem
-// <title>. Confluence schreibt dort "Ablage : Seitenname" -- der Teil hinter
+// <title>. Confluence schreibt dort "Ablage : Seitenname", der Teil hinter
 // dem Doppelpunkt ist der Name, den man sucht.
 func LiesHTML(quelle string) (string, []Block) {
 	wurzel, err := html.Parse(strings.NewReader(quelle))
@@ -255,7 +255,7 @@ func (l *htmlLeser) sammle(n *html.Node, stile map[string]bool) []Inline {
 }
 
 // liste liest ul und ol. Eine Liste innerhalb eines Eintrags wird zu dessen
-// Kindern -- dieselbe Verschachtelung wie im Markdown-Leser.
+// Kindern, dieselbe Verschachtelung wie im Markdown-Leser.
 func (l *htmlLeser) liste(n *html.Node, nummeriert bool, stile map[string]bool) {
 	nummer := 0
 	for k := n.FirstChild; k != nil; k = k.NextSibling {
@@ -264,7 +264,7 @@ func (l *htmlLeser) liste(n *html.Node, nummeriert bool, stile map[string]bool) 
 		}
 		nummer++
 
-		// Der Text des Eintrags ohne die Listen darin -- die kommen als
+		// Der Text des Eintrags ohne die Listen darin, die kommen als
 		// Kinder darunter und nicht in die Zeile.
 		eintrag := Block{Type: "bulletListItem"}
 		if nummeriert {
@@ -306,7 +306,7 @@ func (l *htmlLeser) liste(n *html.Node, nummeriert bool, stile map[string]bool) 
 	}
 }
 
-// tabelle liest eine HTML-Tabelle. Verbundene Zellen werden nicht aufgelöst --
+// tabelle liest eine HTML-Tabelle. Verbundene Zellen werden nicht aufgelöst,
 // der Editor kennt sie nicht --, aber alle Zeilen bekommen dieselbe Breite,
 // damit keine unvollständige Tabelle entsteht.
 func (l *htmlLeser) tabelle(n *html.Node, stile map[string]bool) (Block, bool) {
@@ -362,7 +362,7 @@ func (l *htmlLeser) tabelle(n *html.Node, stile map[string]bool) (Block, bool) {
 	return Block{Type: "table", Content: inhalt}, true
 }
 
-// rohText liefert den Text eines Teilbaums, wie er dasteht -- ohne Leerraum
+// rohText liefert den Text eines Teilbaums, wie er dasteht, ohne Leerraum
 // zusammenzuziehen. Für <pre>, wo genau das der Inhalt ist.
 func rohText(n *html.Node) string {
 	var b strings.Builder

@@ -2,7 +2,7 @@
 //
 // One list, newest first, unread marked. No folders, no filters, no bulk
 // selection: an inbox in a wiki is a list of things that happened while you
-// were not looking, and the only two questions are "what" and "where" -- both
+// were not looking, and the only two questions are "what" and "where", both
 // answered by a line and a click.
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";

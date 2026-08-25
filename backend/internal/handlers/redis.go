@@ -2,7 +2,7 @@
 //
 // Die Rollenverteilung ist ausdrücklich: PostgreSQL hält die Wahrheit, Redis
 // hält eine schnelle Kopie. Alles, was hier liegt, lässt sich jederzeit aus der
-// Datenbank neu herstellen -- deshalb ist ein Ausfall von Redis kein Ausfall
+// Datenbank neu herstellen, deshalb ist ein Ausfall von Redis kein Ausfall
 // der Anwendung, sondern nur eine langsamere.
 //
 // Genau darin liegt der Unterschied zu der verbreiteten Bauweise, Sitzungen
@@ -48,7 +48,7 @@ func NeuRedis(ctx context.Context, adresse, passwort string, datenbank int, vors
 	pruef, abbruch := context.WithTimeout(ctx, 3*time.Second)
 	defer abbruch()
 	if err := c.Ping(pruef).Err(); err != nil {
-		log.Printf("Redis unter %s nicht erreichbar (%v) -- läuft ohne", adresse, err)
+		log.Printf("Redis unter %s nicht erreichbar (%v). Nexora läuft ohne ihn weiter.", adresse, err)
 		c.Close()
 		return nil
 	}
@@ -100,7 +100,7 @@ func (s *Server) redisSitzungMerken(sid string, gilt bool) {
 // ZaehlerHoch zählt ein Ereignis und liefert den Stand innerhalb des Fensters.
 //
 // Damit lassen sich Anmeldeversuche begrenzen, ohne dafür eine Tabelle zu
-// führen. Ohne Redis liefert es 0 -- der Aufrufer behandelt das als "keine
+// führen. Ohne Redis liefert es 0, der Aufrufer behandelt das als "keine
 // Begrenzung", denn eine Sperre, die ohne Zwischenspeicher zufällig zuschlägt,
 // wäre schlimmer als keine.
 func (s *Server) ZaehlerHoch(art, id string, fenster time.Duration) int64 {

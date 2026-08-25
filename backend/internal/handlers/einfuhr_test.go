@@ -57,7 +57,7 @@ func TestRundlaufWikiVerweis(t *testing.T) {
 
 func TestRundlaufMaskierung(t *testing.T) {
 	// Der Export maskiert das Sternchen, der Import nimmt die Maskierung
-	// zurück, der Export maskiert wieder -- am Text darf sich nichts ändern.
+	// zurück, der Export maskiert wieder, am Text darf sich nichts ändern.
 	zurueck := hinUndZurueck(t, `2 \* 3 ist 6`+"\n")
 	if !strings.Contains(zurueck, `2 \* 3 ist 6`) {
 		t.Fatalf("Maskierung nicht stabil:\n%s", zurueck)
@@ -85,7 +85,7 @@ func TestZielPfadRelativ(t *testing.T) {
 
 func TestZielPfadBleibtImArchiv(t *testing.T) {
 	// Ein Verweis darf nicht aus dem Archiv herausführen. Er kann hier zwar
-	// nichts anrichten -- es wird nichts auf die Platte geschrieben --, aber
+	// nichts anrichten, es wird nichts auf die Platte geschrieben --, aber
 	// er soll auch nichts treffen.
 	if p := zielPfad("../../etc/passwd", "a/b"); strings.HasPrefix(p, "..") {
 		t.Fatalf("Pfad führt aus dem Archiv: %q", p)
@@ -164,7 +164,7 @@ func TestIstMarkdown(t *testing.T) {
 
 func TestRundlaufCodeBehaeltEinrueckung(t *testing.T) {
 	// Der Editor hat keinen Codeblock; der Export schreibt jede Zeile als
-	// Codestück. Die Einrückung darf dabei nicht verloren gehen -- in Code
+	// Codestück. Die Einrückung darf dabei nicht verloren gehen, in Code
 	// ist sie kein Schmuck.
 	md := "```go\nfunc a() {\n    b()\n}\n```\n"
 	einmal := hinUndZurueck(t, md)

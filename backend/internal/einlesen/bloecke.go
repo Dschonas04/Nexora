@@ -55,7 +55,7 @@ func bloeckeAus(zeilen []string) []Block {
 		}
 
 		// Codezaun. Zuerst geprüft, weil innerhalb des Zauns keine andere
-		// Regel gilt -- ein "# " dort ist eine Raute und keine Überschrift.
+		// Regel gilt, ein "# " dort ist eine Raute und keine Überschrift.
 		if m := zaunMuster.FindStringSubmatch(z); m != nil {
 			zaun := m[1][:1]
 			var code []string
@@ -77,7 +77,7 @@ func bloeckeAus(zeilen []string) []Block {
 			stufe := len(m[1])
 			// Der Editor kennt drei Stufen. Tiefere zusammenzulegen verliert
 			// Gliederung, sie zu Absätzen zu machen verlöre die Überschrift
-			// ganz -- und in einer dreistufigen Ansicht fällt eine vierte
+			// ganz, und in einer dreistufigen Ansicht fällt eine vierte
 			// Ebene ohnehin kaum auf.
 			if stufe > 3 {
 				stufe = 3
@@ -159,7 +159,7 @@ func bloeckeAus(zeilen []string) []Block {
 		// aus einem Codeblock. Der Editor hat keinen; der Export schreibt
 		// deshalb jede Zeile als `Text`, und die Einrückung steht davor statt
 		// darin. Wandert sie nicht in das Codestück hinein, verliert jeder
-		// eingerückte Codeblock beim Wiedereinlesen seine Stufen -- und
+		// eingerückte Codeblock beim Wiedereinlesen seine Stufen, und
 		// Einrückung ist in Code kein Schmuck.
 		if len(absatz) == 1 && len(stapel) == 0 {
 			if einzug := absatz[0][:einzugVon(absatz[0])]; einzug != "" {
@@ -170,7 +170,7 @@ func bloeckeAus(zeilen []string) []Block {
 		}
 
 		// Eine Zeile, die nur aus einem Bild besteht, wird ein Bildblock. In
-		// einen Absatz gepackt wäre sie ein Verweis, den man anklicken muss --
+		// einen Absatz gepackt wäre sie ein Verweis, den man anklicken muss,
 		// gemeint war ein Bild, das man sieht.
 		if m := bildAlleinMuster.FindStringSubmatch(text); m != nil {
 			gerade(&knoten{blk: bildBlock(m[1], m[2])})
@@ -206,7 +206,7 @@ func bloeckeAus(zeilen []string) []Block {
 //
 // BlockNote zählt eine Liste selbst durch und liest die Angabe nur am ersten
 // Eintrag. Stünde sie an jedem, finge nach dem Speichern jeder Eintrag eine
-// neue Liste an -- aus "5. 6. 7." würde "5. 5. 5.".
+// neue Liste an, aus "5. 6. 7." würde "5. 5. 5.".
 func ersterDerListe(k *knoten, geschwister []*knoten) {
 	if k.blk.Type != "numberedListItem" || len(geschwister) == 0 {
 		return
@@ -292,7 +292,7 @@ func listenEintrag(z string) (*knoten, int, bool) {
 
 // absatzText fügt die Zeilen eines Absatzes zusammen.
 //
-// Ein weicher Umbruch -- eine Zeile, die einfach zu Ende ist -- wird zum
+// Ein weicher Umbruch, eine Zeile, die einfach zu Ende ist, wird zum
 // Leerzeichen, so will es Markdown. Zwei Leerzeichen oder ein Rückstrich am
 // Ende sind ein harter Umbruch und bleiben einer: im Editor steht dann ein
 // Zeilenumbruch mitten im Absatz, und der Export schreibt ihn wieder als
@@ -322,7 +322,7 @@ func absatzText(zeilen []string) string {
 // Der Editor dieser Fassung hat keinen Codeblock. Ein Absatz je Zeile hält die
 // Umbrüche und die Reihenfolge; alles in einen Absatz zu legen sähe im Editor
 // zwar geschlossener aus, ließe sich aber nicht mehr zeilenweise bearbeiten.
-// Die Sprachangabe geht dabei verloren -- sie steht in keinem Feld, das der
+// Die Sprachangabe geht dabei verloren, sie steht in keinem Feld, das der
 // Editor kennt.
 func codeBloecke(zeilen []string, sprache string) []Block {
 	var out []Block
@@ -345,7 +345,7 @@ func codeBloecke(zeilen []string, sprache string) []Block {
 	return out
 }
 
-// kursivMachen zeichnet einen ganzen Block kursiv aus -- der Ersatz für den
+// kursivMachen zeichnet einen ganzen Block kursiv aus, der Ersatz für den
 // Zitatblock, den der Editor nicht hat.
 func kursivMachen(b Block) Block {
 	if teile, ok := b.Content.([]Inline); ok {

@@ -1,4 +1,4 @@
-# Go 1.25, weil minio-go das mindestens verlangt -- siehe go.mod.
+# Go 1.25, weil minio-go das mindestens verlangt, siehe go.mod.
 FROM golang:1.25-alpine AS build
 WORKDIR /app
 RUN apk add --no-cache git
@@ -9,7 +9,7 @@ RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -trimpath -o /nexora ./
 FROM alpine:3.19
 # poppler-utils liefert pdftotext für den Volltext in PDF-Anhängen. Ein
 # reiner Go-Auslesecode käme ohne diese Abhängigkeit aus, scheitert aber an
-# vielen echten PDFs -- Schriftkodierungen, Spalten, eingebettete Bilder.
+# vielen echten PDFs, Schriftkodierungen, Spalten, eingebettete Bilder.
 RUN apk add --no-cache poppler-utils \
  && adduser -D -u 10001 nexora \
  && mkdir -p /data/attachments \

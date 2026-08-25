@@ -52,7 +52,7 @@ export function kontrast(a: RGB, b: RGB): number {
  * Reines Schwarz wäre härter als nötig und passt zu keinem der Grundtöne.
  *
  * Weiß wird bevorzugt, solange Dunkel nicht deutlich besser abschneidet. Rein
- * nach der Zahl bekäme ein mittleres Blau dunkle Schrift -- rechnerisch
+ * nach der Zahl bekäme ein mittleres Blau dunkle Schrift, rechnerisch
  * richtig, aber ein blauer Knopf mit fast schwarzer Aufschrift sieht nach
  * Versehen aus. Der Faktor kippt erst bei wirklich hellen Farben wie Gelb, und
  * genau dort soll er kippen.
@@ -67,7 +67,7 @@ export function schriftAuf(flaeche: string): string {
 /**
  * Rückt eine Farbe so weit von der Fläche ab, bis sie darauf lesbar ist.
  *
- * Aufgehellt wird auf dunklem Grund, abgedunkelt auf hellem -- in kleinen
+ * Aufgehellt wird auf dunklem Grund, abgedunkelt auf hellem, in kleinen
  * Schritten, damit die gewählte Farbe erkennbar bleibt. Nach 24 Schritten wird
  * abgebrochen: bei einer Fläche mittlerer Helligkeit gibt es Farben, die das
  * Ziel nie erreichen, und eine Endlosschleife wäre die schlechtere Antwort.

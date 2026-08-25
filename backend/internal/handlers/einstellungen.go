@@ -75,13 +75,13 @@ var bekannt = map[string]struct {
 		Art:        "zahl",
 		Titel:      "Papierkorb leert sich nach (Tagen)",
 		Erklaerung: "0 heißt: nie von selbst. Gilt für die ganze Instanz und läuft stündlich; gelöschte Seiten verschwinden dann endgültig, samt ihrer Anhänge.",
-		Warnung:    "Endgültig heißt endgültig -- danach hilft nur noch eine Sicherung der Datenbank.",
+		Warnung:    "Endgültig heißt endgültig. Danach hilft nur noch eine Sicherung der Datenbank.",
 	},
 	"such_woerterbuch": {
 		Art:        "text",
 		Titel:      "Wörterbuch der Volltextsuche",
 		Erklaerung: "german, english oder simple. simple stemmt gar nicht und trifft dafür in keiner Sprache daneben.",
-		Warnung:    "Eine Änderung wirkt erst nach einem Neuaufbau des Suchindex -- die Spalte wurde mit dem alten Wörterbuch erzeugt.",
+		Warnung:    "Eine Änderung wirkt erst nach einem Neuaufbau des Suchindex. Die Spalte wurde mit dem alten Wörterbuch erzeugt.",
 	},
 	"design_grundton": {
 		Art:        "auswahl",
@@ -198,7 +198,7 @@ func MaxAnhangBytes() int64 {
 }
 
 // PapierkorbTage ist die Frist, nach der eine gelöschte Seite von selbst
-// verschwindet. 0 heißt: nie -- dann bleibt der Papierkorb, bis jemand ihn
+// verschwindet. 0 heißt: nie, dann bleibt der Papierkorb, bis jemand ihn
 // leert.
 func PapierkorbTage() int {
 	n, err := strconv.Atoi(wert("papierkorb_tage"))
@@ -225,7 +225,7 @@ func SitzungDauer() time.Duration {
 	return time.Duration(SitzungTage()) * 24 * time.Hour
 }
 
-// SitzungTage ist dieselbe Angabe in Tagen -- die Datenbank rechnet mit
+// SitzungTage ist dieselbe Angabe in Tagen, die Datenbank rechnet mit
 // Tagen, nicht mit Nanosekunden.
 func SitzungTage() int {
 	n, err := strconv.Atoi(wert("sitzung_tage"))
@@ -250,7 +250,7 @@ func istHexFarbe(s string) bool {
 }
 
 // Design liefert das Aussehen an jedes angemeldete Konto, nicht nur an Admins.
-// Ohne das könnte ein normaler Benutzer die eingestellten Farben nie sehen --
+// Ohne das könnte ein normaler Benutzer die eingestellten Farben nie sehen,
 // die Einstellungsseite selbst ist ihm ja verwehrt.
 func (s *Server) Design(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{
@@ -402,13 +402,13 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Die Selbstregistrierung darf nicht abgeschaltet werden, solange es noch
-	// gar kein Konto gibt -- sonst käme niemand mehr hinein, denn das erste
+	// gar kein Konto gibt, sonst käme niemand mehr hinein, denn das erste
 	// Konto wird zum Administrator.
 	if req.Schluessel == "registrierung_offen" && wertNeu == "nein" {
 		var anzahl int
 		_ = s.Pool.QueryRow(r.Context(), `SELECT count(*) FROM users`).Scan(&anzahl)
 		if anzahl == 0 {
-			writeErr(w, http.StatusBadRequest, "es existiert noch kein Konto -- das erste muss sich anlegen können")
+			writeErr(w, http.StatusBadRequest, "es existiert noch kein Konto. Das erste muss sich anlegen können.")
 			return
 		}
 	}
@@ -511,7 +511,7 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Anhänge belegen Platz auf der Platte, nicht in der Datenbank -- die Summe
+	// Anhänge belegen Platz auf der Platte, nicht in der Datenbank, die Summe
 	// gehört deshalb getrennt ausgewiesen.
 	var anhangBytes int64
 	_ = s.Pool.QueryRow(ctx, `SELECT coalesce(sum(size), 0) FROM attachments`).Scan(&anhangBytes)
@@ -601,7 +601,7 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 		},
 		"warnungen": k.Warnungen(),
 		// Die Dienste, mit denen dieser hier redet. Nicht der Docker-Verbund
-		// selbst -- den sieht Nexora nicht, siehe verbund.go.
+		// selbst, den sieht Nexora nicht, siehe verbund.go.
 		"verbund": s.verbund(ctx),
 	})
 }

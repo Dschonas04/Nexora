@@ -12,7 +12,7 @@ interface Props {
    * Dateien, die woanders auf der Seite abgelegt wurden. Die Anhangliste ist
    * ein schmaler Streifen ganz unten; wer eine Datei "auf die Seite" zieht,
    * trifft ihn meistens nicht. Deshalb nimmt die Seite den Wurf entgegen und
-   * reicht ihn hierher weiter -- hochgeladen wird nur an einer Stelle.
+   * reicht ihn hierher weiter, hochgeladen wird nur an einer Stelle.
    */
   eingeworfen?: FileList | null;
   onEingeworfenFertig?: () => void;
@@ -24,7 +24,7 @@ function humanSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-// Which types can be shown in place is decided by the viewer, not here -- one
+// Which types can be shown in place is decided by the viewer, not here, one
 // list, so the thumbnail and the overlay can never disagree about what is
 // previewable.
 
@@ -35,7 +35,7 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
   // fehlgeschlagener Upload nicht von einem aus, der nie stattfand.
   const [fehler, setFehler] = useState<string | null>(null);
   // Index statt Objekt: der Viewer blättert durch die ganze Liste, dafür muss
-  // er wissen, an welcher Stelle er steht -- nicht nur, welche Datei gemeint war.
+  // er wissen, an welcher Stelle er steht, nicht nur, welche Datei gemeint war.
   const [offenBei, setOffenBei] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   // Was gerade hochgeht: Name, Nummer in der Reihe und Anteil. Ohne Anzeige
@@ -61,7 +61,7 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
     setBusy(true);
     setFehler(null);
     // Jede Datei einzeln, damit eine, die zu groß ist oder abgewiesen wird,
-    // die anderen nicht mitreißt. Am Ende steht, was nicht ankam -- vorher
+    // die anderen nicht mitreißt. Am Ende steht, was nicht ankam, vorher
     // scheiterte ein Upload lautlos und die Datei war einfach nicht da.
     const gescheitert: string[] = [];
     const alle = Array.from(files);
@@ -172,7 +172,7 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
             </span>
           </div>
           {/* Der Balken zeigt den Anteil der SENDUNG. Bei 100 Prozent ist die
-              Datei beim Server, aber noch nicht abgelegt -- deshalb bleibt er
+              Datei beim Server, aber noch nicht abgelegt, deshalb bleibt er
               danach stehen, statt zu verschwinden, bis die Antwort da ist. */}
           <div className="hochlauf-bahn">
             <div className="hochlauf-fortschritt" style={{ width: `${lauf.anteil * 100}%` }} />
@@ -188,7 +188,7 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
         {items.map((a) => {
           const url = api.attachmentUrl(pageId, a.id);
           // Derselbe Schluss wie im Betrachter: sonst zeigt die Liste ein
-          // Vorschausymbol, das dann nichts vorzuweisen hat -- oder umgekehrt.
+          // Vorschausymbol, das dann nichts vorzuweisen hat, oder umgekehrt.
           const typ = echterTyp(a.mime, a.filename);
           const previewable = zeigbar(typ);
           return (

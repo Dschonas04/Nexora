@@ -26,7 +26,7 @@ func main() {
 	k := config.Laden("")
 
 	// Gefährliche Vorgaben werden benannt, aber nicht bestraft: eine
-	// Heimlabor-Installation mit dem Vorgabegeheimnis soll starten -- man soll
+	// Heimlabor-Installation mit dem Vorgabegeheimnis soll starten, man soll
 	// es nur nicht übersehen können.
 	for _, w := range k.Warnungen() {
 		log.Printf("ACHTUNG: %s", w)
@@ -56,7 +56,7 @@ func main() {
 	log.Println("database ready")
 
 	// Der Lizenzschlüssel schaltet die kostenpflichtigen Zusätze frei. Fehlt er
-	// oder taugt er nicht, läuft der Server mit dem freien Umfang weiter -- ein
+	// oder taugt er nicht, läuft der Server mit dem freien Umfang weiter, ein
 	// ungültiger Schlüssel darf den Start nie verhindern.
 	// Vorrang hat, was über die Verwaltung eingelesen wurde; die Datei ist der
 	// Rückfall. Andernfalls ließe sich eine Lizenz zwar im Browser einspielen,
@@ -69,7 +69,7 @@ func main() {
 	if z := lizenz.Aktuell(); z.Gueltig {
 		log.Printf("Lizenz für %s gültig, freigeschaltet: %v", z.Inhaber, z.Funktionen)
 	} else {
-		log.Printf("keine gültige Lizenz (%s) -- Zusatzfunktionen bleiben gesperrt", z.Grund)
+		log.Printf("keine gültige Lizenz (%s). Zusatzfunktionen bleiben gesperrt.", z.Grund)
 	}
 
 	// Ablage wählen. Der Objektspeicher ist die Ausnahme, die Platte die Regel:
@@ -77,7 +77,7 @@ func main() {
 	//
 	// Ein nicht erreichbarer Objektspeicher fällt bewusst auf die Platte zurück,
 	// statt den Start zu verhindern. Eine Instanz, die läuft und deren neue
-	// Anhänge lokal liegen, ist besser als eine, die gar nicht hochkommt --
+	// Anhänge lokal liegen, ist besser als eine, die gar nicht hochkommt,
 	// gemeldet wird es deutlich.
 	var speicher ablage.Ablage = ablage.NeuePlatte(dataDir)
 	if k.S3Aktiv && k.S3Endpunkt != "" {
@@ -91,7 +91,7 @@ func main() {
 			Pfadstil:  k.S3Pfadstil,
 		})
 		if err != nil {
-			log.Printf("ACHTUNG: Objektspeicher nicht erreichbar (%v) -- Anhänge liegen auf der Platte", err)
+			log.Printf("ACHTUNG: Objektspeicher nicht erreichbar (%v). Anhänge liegen auf der Platte.", err)
 		} else {
 			speicher = s3
 		}
@@ -122,7 +122,7 @@ func main() {
 	h.IndexNachziehen(ctx)
 
 	// Laufzeiteinstellungen aus der Datenbank in den Zwischenspeicher. Sie
-	// überschreiben, was in config.conf steht -- gesetzt wurden sie später und
+	// überschreiben, was in config.conf steht, gesetzt wurden sie später und
 	// mit Absicht.
 	h.EinstellungenLaden(ctx, k)
 
@@ -139,7 +139,7 @@ func main() {
 		r.Post("/auth/login", h.Login)
 		r.Post("/auth/logout", h.Logout)
 		// Anmeldung über einen fremden Ausweis. Öffentlich, weil hier noch
-		// niemand angemeldet ist -- das ist ja der Zweck.
+		// niemand angemeldet ist, das ist ja der Zweck.
 		r.Get("/auth/sso", h.SSOZustand)
 		r.Get("/auth/oidc/start", h.OIDCStart)
 		r.Get("/auth/oidc/zurueck", h.OIDCZurueck)
@@ -171,7 +171,7 @@ func main() {
 			r.Delete("/sitzungen/{id}", h.SitzungBeenden)
 			// Einlesen und Ausstellen: beides nur für Administratoren, geprüft
 			// im Handler. Ausstellen antwortet auf einer gewöhnlichen
-			// Installation mit 501 -- dort liegt kein privater Schlüssel.
+			// Installation mit 501, dort liegt kein privater Schlüssel.
 			r.Put("/system/lizenz", h.LizenzEinlesen)
 			r.Post("/system/lizenz/ausstellen", h.LizenzAusstellen)
 
@@ -196,7 +196,7 @@ func main() {
 			r.Post("/pages/{id}/tags", h.AttachTag)
 			r.Delete("/pages/{id}/tags/{tagId}", h.DetachTag)
 
-			// Version history -- Zusatz. Die Schnappschüsse selbst schreibt der
+			// Version history, Zusatz. Die Schnappschüsse selbst schreibt der
 			// Kern weiter mit; gesperrt ist nur das Ansehen und Zurückholen. Sonst
 			// klaffte nach dem Freischalten eine Lücke in der Geschichte.
 			r.Group(func(r chi.Router) {
@@ -206,7 +206,7 @@ func main() {
 				r.Post("/pages/{id}/versions/{versionId}/restore", h.RestoreVersion)
 			})
 
-			// Attachments -- Zusatz
+			// Attachments, Zusatz
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Anhaenge))
 				r.Get("/pages/{id}/attachments", h.ListAttachments)
@@ -215,7 +215,7 @@ func main() {
 				r.Delete("/pages/{id}/attachments/{attId}", h.DeleteAttachment)
 			})
 
-			// Per-user sharing -- Zusatz
+			// Per-user sharing, Zusatz
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Freigeben))
 				r.Get("/pages/{id}/shares", h.ListShares)
@@ -224,12 +224,12 @@ func main() {
 			})
 
 			// Einstellungen und Systemzustand. Ausschließlich für Admins, das
-			// prüfen die Handler selbst -- deshalb steht hier keine weitere
+			// prüfen die Handler selbst, deshalb steht hier keine weitere
 			// Hürde, sondern nur die Route.
-			// Das Aussehen darf jeder lesen -- sonst sähe ein normaler Benutzer
+			// Das Aussehen darf jeder lesen, sonst sähe ein normaler Benutzer
 			// die eingestellten Farben nie, denn die Einstellungsseite selbst ist
 			// ihm verwehrt.
-			// Postfach. Frei wie die Leiste selbst -- es zeigt nur, was
+			// Postfach. Frei wie die Leiste selbst, es zeigt nur, was
 			// anderswo ohnehin passiert ist, und ohne Kommentare und
 			// Freigaben bleibt es eben leer.
 			r.Get("/postfach", h.ListPostfach)
@@ -256,7 +256,7 @@ func main() {
 			r.Post("/system/neustart", h.Neustart)
 			r.Post("/system/papierkorb", h.PapierkorbLeeren)
 
-			// Kommentare -- Zusatz. Wer die Seite lesen darf, darf auch
+			// Kommentare, Zusatz. Wer die Seite lesen darf, darf auch
 			// mitreden; feiner wird es hier nicht, das prüfen die Handler.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Kommentare))
@@ -267,10 +267,10 @@ func main() {
 				r.Post("/kommentare/{kommentarId}/erledigt", h.ToggleErledigt)
 			})
 
-			// Gruppen und Space-Rechte -- Zusatz.
+			// Gruppen und Space-Rechte, Zusatz.
 			//
 			// Der Zusatz sperrt das VERWALTEN. Ob bestehende Rechte noch
-			// gelten, entscheidet pagePerm selbst -- ohne Lizenz greifen sie
+			// gelten, entscheidet pagePerm selbst, ohne Lizenz greifen sie
 			// nicht, gelöscht werden sie aber auch nicht. So kommt nach dem
 			// Wiederfreischalten alles unverändert zurück.
 			r.Group(func(r chi.Router) {
@@ -284,12 +284,12 @@ func main() {
 				r.Put("/spaces/{id}/rechte", h.SetzeSpaceRecht)
 			})
 
-			// Space-Export -- Zusatz. Die Antwort ist ein ZIP-Strom, deshalb
+			// Space-Export, Zusatz. Die Antwort ist ein ZIP-Strom, deshalb
 			// steht hier kein writeJSON dahinter.
 			r.With(handlers.VerlangeFunktion(lizenz.Export)).
 				Get("/spaces/{id}/export", h.ExportSpace)
 
-			// Vorlagen -- Zusatz. Eine Vorlage ist eine gewöhnliche Seite mit
+			// Vorlagen, Zusatz. Eine Vorlage ist eine gewöhnliche Seite mit
 			// einem Schalter; gesperrt ist nur das Anlegen und Auflisten.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Vorlagen))
@@ -297,7 +297,7 @@ func main() {
 				r.Post("/pages/{id}/vorlage", h.SetzeVorlage)
 			})
 
-			// Prüfspur -- Zusatz. GESCHRIEBEN wird sie immer, auch ohne
+			// Prüfspur, Zusatz. GESCHRIEBEN wird sie immer, auch ohne
 			// Lizenz: eine Spur mit einem Loch genau über dem unlizenzierten
 			// Zeitraum wäre wertlos. Nur das Lesen ist kostenpflichtig.
 			r.Group(func(r chi.Router) {
@@ -306,7 +306,7 @@ func main() {
 				r.Get("/pruefspur/aktionen", h.PruefspurAktionen)
 			})
 
-			// Kontenverwaltung bleibt frei -- ohne sie ließe sich eine
+			// Kontenverwaltung bleibt frei, ohne sie ließe sich eine
 			// Mehrbenutzer-Instanz gar nicht betreiben. Die /users-Routen sind
 			// Admins vorbehalten, das erzwingen die Handler selbst.
 			r.Get("/users", h.ListUsers)
@@ -324,11 +324,11 @@ func main() {
 
 			// Backlinks (pages linking here via [[wiki-link]] or manual links)
 			// Markdown-Ausgabe einer Seite. Serverseitig, damit sie auch ohne
-			// geladenen Editor funktioniert -- und weil die Umwandlung im Editor
+			// geladenen Editor funktioniert, und weil die Umwandlung im Editor
 			// ausdrücklich verlustbehaftet ist.
 			r.Get("/pages/{id}/markdown", h.ExportMarkdown)
 
-			// Gesetzte Dokumente -- Zusatz. Markdown bleibt frei: den eigenen
+			// Gesetzte Dokumente, Zusatz. Markdown bleibt frei: den eigenen
 			// Bestand aus dem System zu bekommen darf nie an einer Lizenz
 			// hängen. PDF und Word sind kein Ausweg, sondern Darstellung.
 			r.With(handlers.VerlangeFunktion(lizenz.Export)).Group(func(r chi.Router) {
@@ -337,7 +337,7 @@ func main() {
 			})
 
 			// Einfuhr: einzelne Markdown-Dateien oder ein ganzes Archiv.
-			// Frei wie die Markdown-Ausgabe und aus demselben Grund -- der Weg
+			// Frei wie die Markdown-Ausgabe und aus demselben Grund, der Weg
 			// in das System hinein darf so wenig an einer Lizenz hängen wie der
 			// Weg heraus.
 			r.Post("/import", h.Import)

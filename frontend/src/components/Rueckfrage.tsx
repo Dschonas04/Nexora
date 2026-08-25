@@ -1,7 +1,7 @@
 // Rückfragen vor folgenreichen Schritten.
 //
 // Vorher stellte der Browser sie: window.confirm. Das ist verlässlich, aber es
-// ist nicht diese Anwendung -- der Kasten sieht in jedem Browser anders aus,
+// ist nicht diese Anwendung, der Kasten sieht in jedem Browser anders aus,
 // nimmt keine Gestaltung an, nennt den Dienst beim Domainnamen und blockiert
 // nebenbei alles, was im Hintergrund läuft.
 //
@@ -137,7 +137,7 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{ frage, eingabe }}>
       {children}
       {offen && (
-        // Ein Klick daneben bricht ab -- wie das Kreuz, nur schneller. Bei einer
+        // Ein Klick daneben bricht ab, wie das Kreuz, nur schneller. Bei einer
         // Rückfrage ist das gefahrlos: Abbrechen ist die harmlose Antwort.
         <div className="modal-backdrop" onClick={() => schliessen(false)}>
           <div

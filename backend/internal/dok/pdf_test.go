@@ -93,7 +93,7 @@ func TestUmbruchBleibtInDerBreite(t *testing.T) {
 	lang := strings.Repeat("Wort ", 200)
 	zeilen := umbrechen([]wort{{lang, fNormal, 10.5, false, false, false}}, satzBreite)
 	if len(zeilen) < 5 {
-		t.Fatalf("nur %d Zeilen -- da wurde nicht umbrochen", len(zeilen))
+		t.Fatalf("nur %d Zeilen, da wurde nicht umbrochen", len(zeilen))
 	}
 	for i, z := range zeilen {
 		var b float64
@@ -108,7 +108,7 @@ func TestUmbruchBleibtInDerBreite(t *testing.T) {
 }
 
 // Ein einzelnes Wort, das breiter ist als die Zeile, muss hart getrennt
-// werden -- sonst läuft es über den Rand und ist zur Hälfte weg.
+// werden, sonst läuft es über den Rand und ist zur Hälfte weg.
 func TestUeberlangesWortWirdGetrennt(t *testing.T) {
 	zeilen := umbrechen([]wort{{strings.Repeat("A", 400), fNormal, 10.5, false, false, false}}, satzBreite)
 	if len(zeilen) < 2 {
@@ -134,7 +134,7 @@ func TestPDFIstEinPDF(t *testing.T) {
 		t.Fatal("kein Dateiende")
 	}
 	if !bytes.Contains(roh, []byte("/WinAnsiEncoding")) {
-		t.Error("Schriften ohne WinAnsi -- Umlaute kämen nicht an")
+		t.Error("Schriften ohne WinAnsi, Umlaute kämen nicht an")
 	}
 	// Die Querverweistabelle muss auf echte Objektanfänge zeigen, sonst
 	// öffnet kein Betrachter die Datei.
@@ -210,7 +210,7 @@ func TestWordIstEinZipMitDokument(t *testing.T) {
 	// Leerzeichen am Rand eines Laufs dürfen nicht wegfallen, sonst klebt
 	// "mit fett und" zusammen.
 	if !strings.Contains(dokument, `xml:space="preserve"`) {
-		t.Error("xml:space fehlt -- Word wirft Randleerzeichen weg")
+		t.Error("xml:space fehlt, Word wirft Randleerzeichen weg")
 	}
 }
 
