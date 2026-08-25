@@ -674,7 +674,7 @@ export default function EinstellungenView() {
             <h3>Zugang</h3>
             {feld("registrierung_offen")}
             {feld("erlaubte_domaenen")}
-            {feld("sitzung_tage")}
+            {feld("sitzung_stunden")}
 
             <h3>Administratoren</h3>
             <p className="muted small">

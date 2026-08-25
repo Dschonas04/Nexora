@@ -200,6 +200,15 @@ curl -s -c "$ARBEIT/kekse2.txt" -X POST "$BASIS/api/auth/login" -H 'Content-Type
      -d '{"email":"rauch@test.invalid","password":"rauchtest-passwort"}' >/dev/null
 pruefe "jetzt zwei Sitzungen" "2" \
        "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+pruefe "Frist steht in Stunden" "True" \
+       "$(hole "$BASIS/api/sitzungen" | python3 -c '
+import json, sys, datetime
+s = json.load(sys.stdin)[0]
+ab = datetime.datetime.fromisoformat(s["angelegtAm"].replace("Z", "+00:00"))
+bis = datetime.datetime.fromisoformat(s["laeuftAb"].replace("Z", "+00:00"))
+stunden = (bis - ab).total_seconds() / 3600
+# Vorgabe sind zwoelf Stunden. Frueher waren es sieben Tage, also 168.
+print(11.9 < stunden < 12.1)')"
 pruefe "das Geraet wird benannt" "Firefox auf Windows" \
        "$(hole "$BASIS/api/sitzungen" | python3 -c '
 import json,sys

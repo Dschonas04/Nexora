@@ -23,12 +23,20 @@ import (
 	kern "nexora/internal/lizenz"
 )
 
-// oeffentlicherSchluessel is the counterpart of the private key that signs
-// keys. Replacing it invalidates every key ever issued, so it is deliberately a
-// constant and not a setting.
+// oeffentlicheSchluessel sind die Gegenstücke der privaten Schlüssel, die
+// Lizenzen unterschreiben. Sie stehen als Konstanten hier und nicht in einer
+// Einstellung: wer sie ändern kann, kann sich seine eigene Lizenz ausstellen.
 //
-// Generated with premium/cmd/schluessel -neu.
-const oeffentlicherSchluessel = "dsY-UfRNTuGKqTGdjBlJtb5k1rR8FJOarJ-nD9JJRlo"
+// Eine Liste statt eines einzelnen Wertes, damit sich der Signierschlüssel
+// wechseln lässt, ohne dass bereits ausgegebene Lizenzen ungültig werden. Ein
+// Schlüssel wird aus der Liste genommen, wenn die damit ausgestellten Lizenzen
+// abgelaufen sind, oder sofort, wenn der private Teil abhandenkommt.
+//
+// Erzeugt mit premium/cmd/schluessel -neu.
+var oeffentlicheSchluessel = []string{
+	"SBReFHg3IMDCQAbHPZxpicPr31HiD1V6-yKHw0y63ZA",
+	"dsY-UfRNTuGKqTGdjBlJtb5k1rR8FJOarJ-nD9JJRlo",
+}
 
 // Nutzlast is what gets signed. Field names are short because the whole thing
 // ends up in a key the customer has to copy by hand.
@@ -44,7 +52,9 @@ type Nutzlast struct {
 
 // Pruefer implements kern.Pruefer.
 type Pruefer struct {
-	oeffentlich ed25519.PublicKey
+	// Mehrere gültige Schlüssel: siehe oeffentlicheSchluessel. Geprüft wird
+	// der Reihe nach, der erste, der passt, gewinnt.
+	oeffentlich []ed25519.PublicKey
 }
 
 // NeuerPruefer builds a verifier for a given public key.
@@ -53,20 +63,29 @@ type Pruefer struct {
 // working license key in the repository — a key committed once is a key handed
 // to everyone who clones it, and offline verification means it can never be
 // revoked.
-func NeuerPruefer(oeffentlich ed25519.PublicKey) *Pruefer {
+func NeuerPruefer(oeffentlich ...ed25519.PublicKey) *Pruefer {
 	return &Pruefer{oeffentlich: oeffentlich}
 }
 
 // init registers this package as the verifier. Importing it is what switches
 // the paid extras on, see backend/premium_an.go.
 func init() {
-	roh, err := base64.RawURLEncoding.DecodeString(oeffentlicherSchluessel)
-	if err != nil || len(roh) != ed25519.PublicKeySize {
-		// A build with a broken public key must not silently accept keys.
-		// Registering nothing leaves every extra locked.
+	var gueltige []ed25519.PublicKey
+	for _, s := range oeffentlicheSchluessel {
+		roh, err := base64.RawURLEncoding.DecodeString(s)
+		if err != nil || len(roh) != ed25519.PublicKeySize {
+			// Ein kaputter Schlüssel in der Liste darf die übrigen nicht
+			// mitnehmen, aber auch nicht stillschweigend alles freigeben.
+			continue
+		}
+		gueltige = append(gueltige, ed25519.PublicKey(roh))
+	}
+	if len(gueltige) == 0 {
+		// Ein Build ohne brauchbaren Schlüssel darf keine Lizenz annehmen.
+		// Nichts zu registrieren lässt jeden Zusatz gesperrt.
 		return
 	}
-	kern.Registriere(&Pruefer{oeffentlich: ed25519.PublicKey(roh)})
+	kern.Registriere(&Pruefer{oeffentlich: gueltige})
 }
 
 // Pruefe reads a key of the form <nutzlast>.<signatur>, both base64url without
@@ -89,7 +108,14 @@ func (p *Pruefer) Pruefe(schluessel string) (kern.Zustand, error) {
 
 	// Signature first. Everything below trusts the payload, so nothing may be
 	// read out of it before this check passed.
-	if !ed25519.Verify(p.oeffentlich, daten, sig) {
+	passt := false
+	for _, oeff := range p.oeffentlich {
+		if ed25519.Verify(oeff, daten, sig) {
+			passt = true
+			break
+		}
+	}
+	if !passt {
 		return kern.Zustand{}, errors.New("Signatur passt nicht. Schlüssel ungültig oder verändert.")
 	}
 

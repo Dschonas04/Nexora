@@ -294,7 +294,7 @@ export interface SystemZustand {
     fehlversuche24h: number;
     registrierungOffen: boolean;
     erlaubteDomaenen: string[] | null;
-    sitzungTage: number;
+    sitzungStunden: number;
   };
   nurInDerDatei: {
     port: string;
