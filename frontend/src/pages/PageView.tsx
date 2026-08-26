@@ -28,17 +28,16 @@ interface Props {
 const PALETTE = ["#e0507a", "#e08a2b", "#3aa675", "#2383e2", "#8b5cf6", "#6b7280"];
 const randomColor = () => PALETTE[Math.floor(Math.random() * PALETTE.length)];
 
-// Das Gerüst steht, solange eine Seite geholt wird: Leiste, Titel und ein paar
-// Textbalken an genau den Stellen, an denen gleich der Inhalt steht.
+// The skeleton stands while a page is being fetched: sidebar, title and a few
+// text bars at exactly the places where the content will be.
 //
-// Vorher stand hier ein blankes "Lädt…". Damit verschwand beim Blättern von
-// einer Seite zur nächsten die ganze Oberfläche rechts der Leiste und baute
-// sich einen Wimpernschlag später wieder auf, im Heimnetz ein Flackern, über
-// eine träge Leitung ein Sprung, bei dem man den Platz seines Textes verliert.
+// Before this a bare "Lädt…" stood here. With it the whole interface right of
+// the sidebar disappeared while paging from one page to the next and built
+// itself up again a blink later, a flicker in the home network, a jump over a
+// slow line where one loses the place of one's text.
 //
-// Die Balken blenden sich verzögert ein. Eine Seite, die in wenigen
-// Millisekunden da ist, zeigt deshalb gar kein Wartemuster, sondern nur den
-// ruhigen Rahmen, in den sie fällt.
+// The bars fade in with a delay. A page that is there within a few milliseconds
+// therefore shows no waiting pattern at all, only the calm frame it falls into.
 function Geruest() {
   return (
     <div className="page-layout">
@@ -79,8 +78,8 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   // anyway, so this is about the interface not lying, not about protection.
   const { frei } = useLizenz();
 
-  // Der Stand, von dem dieser Editor ausgeht. Als ref, nicht als state: er
-  // wird beim Speichern gelesen, soll aber kein neues Rendern auslösen.
+  // The state this editor starts from. As a ref, not as state: it is read while
+  // saving but shall not trigger a new render.
   const basisRef = useRef<string | undefined>(undefined);
   const [konflikt, setKonflikt] = useState(false);
 
@@ -89,15 +88,15 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const [linkQuery, setLinkQuery] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
   const [editorKey, setEditorKey] = useState(0);
-  // Zustand des Dateiabwurfs und der Ausfuhr. Sie gehören der Sache nach weiter
-  // unten hin, stehen aber hier oben, weil React die Zustände einer Ansicht in
-  // jedem Durchgang in derselben Zahl und Reihenfolge sehen muss. Weiter unten
-  // standen sie hinter den frühen Rückgaben für "wird geladen" und "nicht
-  // gefunden", der erste Durchgang zählte drei Zustände weniger als der
-  // zweite, und React brach die Ansicht mit Fehler 310 ab: die Seite blieb leer.
+  // State of the file drop and of the export. By subject matter they belong
+  // further down, but they stand up here because React has to see the states of
+  // a view in the same number and order in every pass. Further down they sat
+  // behind the early returns for "loading" and "not found", so the first pass
+  // counted three states fewer than the second, and React aborted the view with
+  // error 310: the page stayed empty.
   //
-  // Der Zähler statt eines Schalters: dragleave feuert auch beim Wechsel von
-  // einem Kindelement zum nächsten, sonst flackerte die Hervorhebung.
+  // A counter instead of a flag: dragleave also fires when moving from one child
+  // element to the next, otherwise the highlight would flicker.
   const [ueberSeite, setUeberSeite] = useState(0);
   const [eingeworfen, setEingeworfen] = useState<FileList | null>(null);
   const [exportOffen, setExportOffen] = useState(false);
@@ -123,8 +122,8 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
       .getPage(id)
       .then((p) => {
         setPage(p);
-        // Der Ausgangsstand für die Konflikterkennung. Ab hier gilt: was
-        // dieser Editor speichert, baut auf genau diesem Stand auf.
+        // The starting state for the conflict detection. From here on: whatever
+        // this editor saves builds on exactly this state.
         basisRef.current = p.updatedAt;
       })
       .catch(() => setPage(null))
@@ -160,8 +159,8 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
         // basis carries the state this editor started from. The backend
         // compares and refuses if the page moved on.
         const frisch = await api.updatePage(id, { ...patch, basis: basisRef.current });
-        // Die Basis wandert mit: sonst meldete der nächste Autosave einen
-        // Konflikt mit dem eigenen vorherigen Speichern.
+        // The base moves along: otherwise the next autosave would report a
+        // conflict with its own previous save.
         basisRef.current = frisch.updatedAt;
         onMetaChange();
       } catch (e) {
@@ -217,21 +216,17 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     onFavChange();
   };
 
-  // Export through the editor rather than the stored JSON, since only BlockNote
-  // knows how to render its own document. Lossy by name and by nature: anything
-  // markdown cannot express is dropped. The blob URL is revoked right after the
-  // click so it does not stay attached to the document.
-  // Der Export kommt vom Server, nicht aus dem Editor.
+  // The export comes from the server, not from the editor.
   //
-  // Dessen eigene Umwandlung heißt blocksToMarkdownLossy und macht ihrem Namen
-  // Ehre: verschachtelte Listen, Tabellen, Aufgabenhaken und Codeblöcke
-  // überleben sie nur teilweise. Serverseitig liegt das vollständige Dokument
-  // vor, und derselbe Weg trägt später auch den Export eines ganzen Space.
+  // The editor's own conversion is called blocksToMarkdownLossy and lives up to
+  // its name: nested lists, tables, task checkboxes and code blocks only
+  // partially survive it. On the server the complete document is at hand, and
+  // the same path later carries the export of a whole space as well.
   const exportieren = (form: "markdown" | "pdf" | "word") => {
     if (!id) return;
     setExportOffen(false);
-    // Ein normaler Verweis statt fetch: so setzt der Browser den Dateinamen
-    // aus dem Content-Disposition-Kopf, samt Umlauten.
+    // An ordinary link instead of fetch: that way the browser takes the file
+    // name from the Content-Disposition header, umlauts included.
     window.location.href = `/api/pages/${id}/${form}`;
   };
 
@@ -356,9 +351,9 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
     setLinkOpen(false);
   };
 
-  // Dateien, die irgendwo auf der Seite abgelegt wurden. Sie werden an die
-  // Anhangliste weitergereicht, die sie hochlädt, der Wurf muss nicht die
-  // schmale Liste ganz unten treffen.
+  // Files dropped anywhere on the page. They are passed on to the attachment
+  // list, which uploads them; the drop does not have to hit the narrow list at
+  // the very bottom.
   const dateiAbwurfMoeglich = canEdit && frei("anhaenge");
   const sindDateien = (e: React.DragEvent) =>
     Array.from(e.dataTransfer.types).includes("Files");
@@ -371,10 +366,10 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
       }}
       onDragOver={(e) => {
         if (!sindDateien(e)) return;
-        // Auch wenn hier nichts angenommen wird: ohne preventDefault verlässt
-        // der Browser die Anwendung und öffnet die Datei. Eine Datei
-        // danebenzulegen darf höchstens nichts tun, nicht die Arbeit
-        // wegwerfen.
+        // Even though nothing is accepted here: without preventDefault the
+        // browser leaves the application and opens the file. Dropping a file
+        // beside the target may at most do nothing, it must not throw the work
+        // away.
         e.preventDefault();
         e.dataTransfer.dropEffect = dateiAbwurfMoeglich ? "copy" : "none";
       }}
@@ -408,9 +403,9 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                 Verlauf
               </button>
             )}
-            {/* Ein Menü statt dreier Knöpfe: die Kopfzeile ist schon voll,
-                und drei Formate nebeneinander sagen nicht mehr als eines mit
-                Auswahl. */}
+            {/* A menu instead of three buttons: the header is full already, and
+                three formats side by side say no more than one with a
+                choice. */}
             <div className="exportmenue">
               <button className="btn" onClick={() => setExportOffen((v) => !v)}>
                 Export ▾
@@ -420,9 +415,9 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                   <button className="vorlageneintrag" onClick={() => exportieren("markdown")}>
                     Markdown (.md)
                   </button>
-                  {/* PDF und Word gehören zum Zusatzumfang. Markdown nicht:
-                      an den eigenen Bestand zu kommen darf nie an einer
-                      Lizenz hängen. */}
+                  {/* PDF and Word belong to the paid extras. Markdown does not:
+                      getting at one's own content must never depend on a
+                      licence. */}
                   {frei("export") && (
                     <>
                       <button className="vorlageneintrag" onClick={() => exportieren("pdf")}>
@@ -436,9 +431,9 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                 </div>
               )}
             </div>
-            {/* Nur der Eigentümer entscheidet. Eine fremde Seite zur Vorlage zu
-                erklären würde sie in jedem Neu-Menü der Kollegen auftauchen
-                lassen, das wäre eine Änderung an fremdem Eigentum. */}
+            {/* Only the owner decides. Declaring somebody else's page a template
+                would make it appear in every colleague's new menu, which would
+                be a change to another person's property. */}
             {page.isOwner && frei("vorlagen") && (
               <button
                 className={"btn" + (page.istVorlage ? " active" : "")}
@@ -483,8 +478,8 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                 <span
                   key={t.id}
                   className="tag"
-                  // Schriftfarbe aus der Schlagwortfarbe gerechnet: fest weiß war
-                  // auf den helleren Tönen der Palette kaum zu lesen.
+                  // Text colour computed from the tag colour: fixed white was
+                  // hard to read on the lighter tones of the palette.
                   style={{ background: t.color, color: schriftAuf(t.color) }}
                 >
                   {t.name}

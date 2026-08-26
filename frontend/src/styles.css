@@ -1,10 +1,10 @@
-/* Drei Grundtöne. Umgestellt wird über ein data-grundton am <html>, gesetzt
-   vom Design-Provider, so wechselt die ganze Oberfläche in einem Zug, ohne
-   dass ein einzelnes Bauteil davon wissen muss.
+/* Three base tones. Switching happens through a data-grundton on <html>, set
+   by the design provider, so the whole interface changes in one go without a
+   single component having to know about it.
 
-   Der Vorgabewert ist "grau": reines Weiß auf einem großen Bildschirm ist
-   anstrengender zu lesen, ein leicht gegrauter Grund nimmt die Härte heraus,
-   ohne dass es nach Dunkelmodus aussieht. */
+   The default is "grau": pure white on a large screen is more tiring to read, a
+   slightly greyed ground takes the harshness out without looking like dark
+   mode. */
 :root,
 :root[data-grundton="grau"] {
   --bg: #f7f7f6;
@@ -15,12 +15,12 @@
   --border: #e2e2df;
   --hover: #e7e7e4;
   --accent: #2383e2;
-  /* Von design.tsx berechnet und hier überschrieben. Die Vorgaben gelten nur
-     für den Augenblick vor dem ersten Rendern. */
+  /* Computed by design.tsx and overwritten here. The defaults only apply for
+     the moment before the first render. */
   --accent-text: #ffffff;
   --accent-lesbar: #1a6fbf;
-  /* Getönte Flächen. Sie waren vorher fest verdrahtet und wurden im
-     Dunkelmodus zu hellen Kästen mit heller Schrift. */
+  /* Tinted surfaces. They used to be hard wired and turned into light boxes
+     with light text in dark mode. */
   --fehler-bg: #fdecea;
   --fehler-rand: #f0c4bf;
   --fehler-text: #c0392b;
@@ -51,8 +51,8 @@
   --muted: #9a9892;
   --border: #3a3a37;
   --hover: #333330;
-  /* Im Dunkeln sind die getönten Flächen dunkle Einfärbungen, nicht helle
-     Pastelltöne, sonst leuchtet ein Fehlerkasten wie eine Lampe. */
+  /* In the dark the tinted surfaces are dark shadings, not light pastels,
+     otherwise an error box glows like a lamp. */
   --fehler-bg: rgba(207, 34, 46, 0.16);
   --fehler-rand: rgba(207, 34, 46, 0.45);
   --fehler-text: #f28b82;
@@ -89,8 +89,8 @@ button {
 }
 
 a {
-  /* Nicht --accent, sondern die auf dem Grund lesbare Fassung. Ein dunkler
-     Akzent auf dunklem Grund wäre sonst nicht zu entziffern. */
+  /* Not --accent but the version readable on the ground. A dark accent on a
+     dark ground could otherwise not be deciphered. */
   color: var(--accent-lesbar);
   text-decoration: none;
 }
@@ -302,8 +302,8 @@ a {
 
 .btn-primary {
   background: var(--accent);
-  /* Berechnet, nicht festgelegt: bei einem hellen Akzent muss die Schrift
-     dunkel werden, sonst steht Weiß auf Gelb. */
+  /* Computed, not fixed: with a light accent the text has to become dark,
+     otherwise it is white on yellow. */
   color: var(--accent-text);
   border-color: var(--accent);
 }
@@ -333,10 +333,10 @@ a {
 .page-title {
   border: none;
   outline: none;
-  /* Ohne diese Zeile nimmt das Eingabefeld die Vorgabe des Browsers: Weiß.
-     Auf dem leicht gegrauten Grund stand der Titel dadurch in einem hellen
-     Kasten, im Dunkelmodus in einem leuchtenden. Der Titel ist Text auf der
-     Seite, keine Fläche. */
+  /* Without this line the input field takes the browser's default: white. On
+     the slightly greyed ground the title therefore stood in a light box, in
+     dark mode in a glowing one. The title is text on the page, not a
+     surface. */
   background: transparent;
   width: 100%;
   font-size: 38px;
@@ -360,8 +360,8 @@ a {
   align-items: center;
 }
 
-/* Die Schriftfarbe setzt das Bauteil, berechnet aus der Schlagwortfarbe.
-   Fest weiß war auf den helleren Tönen der Palette kaum zu lesen. */
+/* The text colour is set by the component, computed from the tag colour.
+   Fixed white was hard to read on the lighter tones of the palette. */
 .tag {
   font-size: 12px;
   padding: 2px 8px;
@@ -788,9 +788,9 @@ a {
   width: 100%;
   height: 82vh;
   border: none;
-  /* Bleibt weiß, auch im Dunkelmodus: dahinter steckt der PDF-Betrachter des
-     Browsers, und ein PDF-Blatt ist nun einmal weiß. Ein dunkler Rahmen
-     darum sähe nach einem Ladefehler aus. */
+  /* Stays white, in dark mode too: behind it sits the browser's PDF viewer,
+     and a PDF sheet is simply white. A dark frame around it would look like a
+     loading error. */
   background: #ffffff;
 }
 .qv-text {
@@ -1162,9 +1162,9 @@ a {
   cursor: grab;
 }
 
-/* Quickviewer: Blättern, Zähler, Fußzeile.
-   Der Körper wird relativ positioniert, damit die Pfeile darin schweben statt
-   Platz wegzunehmen, sonst schrumpft das Bild um deren Breite. */
+/* Quick viewer: paging, counter, footer.
+   The body is positioned relatively so that the arrows float inside it instead
+   of taking space away, otherwise the image shrinks by their width. */
 .qv-body {
   position: relative;
 }
@@ -1239,7 +1239,7 @@ a {
   padding: 1px 5px;
 }
 
-/* Prüfspur */
+/* Audit trail */
 .page-pad {
   padding: 24px 32px;
   overflow: auto;
@@ -1274,8 +1274,8 @@ a {
   border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
-/* Löschungen, Rollenwechsel und Fehlanmeldungen sind das, wonach jemand in
-   einer Prüfspur zuerst sucht, die bekommen eine Kante. */
+/* Deletions, role changes and failed logins are what somebody looks for first
+   in an audit trail, so they get an edge. */
 .pruefspur-tabelle tr.auffaellig td:first-child {
   box-shadow: inset 3px 0 0 var(--muted);
 }
@@ -1290,8 +1290,8 @@ a {
   margin: 10px 0;
 }
 
-/* Konflikthinweis. Er sitzt bewusst über dem Text und nicht als flüchtige
-   Meldung am Rand, solange er steht, speichert der Editor nicht mehr. */
+/* Conflict notice. It sits above the text on purpose and not as a fleeting
+   message at the edge; as long as it stands, the editor stops saving. */
 .konflikt-banner {
   position: sticky;
   top: 0;
@@ -1351,8 +1351,8 @@ a {
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
 }
-/* Antworten rücken einmal ein und nie weiter, tiefer wird ein Faden
-   unlesbar, und das Backend flacht ohnehin ab. */
+/* Replies indent once and never further; deeper makes a thread unreadable, and
+   the backend flattens it anyway. */
 .kommentar.antwort {
   margin-left: 24px;
   border-left: 2px solid var(--border);
@@ -1393,15 +1393,15 @@ a {
 }
 
 /* Einstellungsseite */
-/* Einstellungsmanager: Kategorien links, ein Thema rechts. Bei einem Dutzend
-   Schaltern und dreimal so vielen Angaben zum System begräbt eine einzige
-   lange Seite alles, was nicht ganz oben steht. */
+/* Settings manager: categories on the left, one topic on the right. With a
+   dozen switches and three times as many facts about the system, a single long
+   page buries everything that is not right at the top. */
 .einstellungen-manager {
   display: flex;
-  /* flex statt height: 100%, denn .main ist eine Flex-Spalte, dort löst eine
-     Prozenthöhe nicht auf und die Seite bliebe ohne eigenes Scrollen.
-     min-height: 0 erlaubt den Kindern, kleiner als ihr Inhalt zu werden,
-     sonst wächst der Kasten über den Bildschirm hinaus. */
+  /* flex instead of height: 100%, because .main is a flex column, where a
+     percentage height does not resolve and the page would be left without
+     scrolling of its own. min-height: 0 lets the children become smaller than
+     their content, otherwise the box grows past the screen. */
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
@@ -1434,10 +1434,9 @@ a {
 .einstellungen-nav-eintrag:hover {
   background: var(--hover);
 }
-/* Der aktive Eintrag hebt sich nur durch die Fläche ab. Ein Balken in der
-   Akzentfarbe stand hier zuerst, wirkte aber wie ein Fremdkörper: auf einer
-   Seite, auf der man die Akzentfarbe gerade erst auswählt, ist sie das
-   Letzte, was noch zusätzlich blinken sollte. */
+/* The active entry stands out through its surface alone. A bar in the accent
+   colour stood here first but felt like a foreign body: on a page where one is
+   picking the accent colour, it is the last thing that should also blink. */
 .einstellungen-nav-eintrag.aktiv {
   background: var(--hover);
   font-weight: 500;
@@ -1489,8 +1488,8 @@ a {
   line-height: 1.5;
   margin-top: 3px;
 }
-/* Der Warnhinweis steht bewusst direkt unter der Erklärung und nicht als
-   Symbol daneben: was schiefgehen kann, gehört gelesen, nicht überflogen. */
+/* The warning stands directly under the explanation on purpose and not as an
+   icon beside it: what can go wrong belongs read, not skimmed. */
 .einstellung-warnung {
   font-size: 12.5px;
   line-height: 1.5;
@@ -1577,10 +1576,10 @@ a {
   text-decoration: line-through;
 }
 
-/* Bewusst neutral gehalten statt gelb: der Kasten steht dauerhaft auf der
-   Seite, solange etwas zu bemängeln ist. Eine Signalfarbe, die nie weggeht,
-   wird nach zwei Tagen überlesen, ein ruhiger Grund mit klarer Überschrift
-   nicht. */
+/* Deliberately kept neutral instead of yellow: the box stays on the page as
+   long as there is something to complain about. A signal colour that never goes
+   away is read over after two days, a calm ground with a clear heading is
+   not. */
 .warnkasten {
   border: 1px solid var(--border);
   background: var(--sidebar-bg);
@@ -1600,8 +1599,8 @@ a {
   margin: 10px 0;
 }
 
-/* Flächen heben sich vom Grundton ab, im gegrauten und im dunklen Ton macht
-   das den Unterschied zwischen "Kasten" und "irgendwo Text". */
+/* Surfaces stand out from the base tone; in the greyed and in the dark tone
+   that makes the difference between "a box" and "text somewhere". */
 .einstellung,
 .kachel,
 .warnkasten,
@@ -1629,9 +1628,9 @@ a {
 .tonkachel:hover {
   border-color: var(--muted);
 }
-/* Die getroffene Wahl wird durch einen kräftigeren Rahmen kenntlich, nicht
-   durch einen farbigen Ring, die Kachel zeigt ja bereits einen Farbton, und
-   zwei Farben nebeneinander sagen weniger als eine. */
+/* The choice made is marked by a stronger border, not by a coloured ring; the
+   tile already shows a colour, and two colours side by side say less than
+   one. */
 .tonkachel.gewaehlt {
   border-color: var(--text);
 }
@@ -1648,9 +1647,9 @@ a {
   line-height: 1.45;
   margin-top: 2px;
 }
-/* Die Probe zeigt den Ton, statt ihn zu beschreiben: zwei Streifen für Grund
-   und Fläche, damit auch der Unterschied zwischen Weiß und Gegraut sichtbar
-   wird, der ist in Worten kaum zu fassen. */
+/* The sample shows the tone instead of describing it: two stripes for ground
+   and surface, so that the difference between white and greyed becomes visible
+   too, which is hard to put into words. */
 .tonprobe {
   display: block;
   height: 34px;
@@ -1696,7 +1695,7 @@ a {
   cursor: pointer;
 }
 
-/* Formular für den Objektspeicher-Test */
+/* Form for the object storage test */
 .s3-felder {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -1731,14 +1730,14 @@ a {
   margin-top: 12px;
 }
 
-/* Schlagwörter */
+/* Tags */
 .tag-anzahl {
   margin-left: auto;
   padding-left: 8px;
   font-variant-numeric: tabular-nums;
 }
-/* Ein Schlagwort ohne Seiten ist meist ein Überbleibsel. Es wird nicht
-   versteckt, sonst könnte man es nie loswerden, aber es tritt zurück. */
+/* A tag without pages is usually a leftover. It is not hidden, otherwise one
+   could never get rid of it, but it steps back. */
 .tag-anzahl.leer {
   opacity: 0.45;
 }
@@ -1768,7 +1767,7 @@ a {
   cursor: pointer;
 }
 
-/* Vorlagen-Menü im Kopf der Seitenleiste */
+/* Template menu in the head of the sidebar */
 .vorlagenmenue {
   position: relative;
 }
@@ -1874,8 +1873,8 @@ a {
 .rechte-zeile:last-child {
   border-bottom: none;
 }
-/* Die Zeile für Eigentümer und Administratoren lässt sich nicht ändern; sie
-   trägt deshalb keine Bedienelemente und einen ruhigeren Grund. */
+/* The row for owners and administrators cannot be changed; it therefore
+   carries no controls and a calmer ground. */
 .rechte-zeile-fest {
   background: var(--flaeche);
 }
@@ -1908,9 +1907,8 @@ a {
   font: inherit;
   font-size: 13px;
 }
-/* Die Auswahl bekommt eine feste Höhe: bei drei Konten soll der Kasten nicht
-   in sich zusammenfallen, bei dreihundert nicht den Knopf aus dem Bild
-   schieben. */
+/* The selection gets a fixed height: with three accounts the box shall not
+   collapse, with three hundred it shall not push the button out of view. */
 .rechte-auswahl {
   margin-top: 8px;
   border: 1px solid var(--border);
@@ -1989,9 +1987,9 @@ a {
 .attachments.abwurf {
   outline-color: var(--accent);
 }
-/* Der Schleier liegt über der Liste, nicht darunter: solange er sichtbar ist,
-   soll klar sein, dass das Loslassen hier etwas bewirkt und nicht auf der
-   Seite darunter. */
+/* The veil lies above the list, not below it: as long as it is visible it
+   should be clear that letting go here has an effect and not on the page
+   underneath. */
 .abwurf-schleier {
   position: absolute;
   inset: 0;
@@ -2014,10 +2012,10 @@ a {
 
 /* Einklappen der Leistenabschnitte */
 
-/* Der Pfeil trägt keine eigene Fläche und keinen Rahmen: er soll Teil der
-   Überschrift sein, nicht ein Knopf davor. Die Breite ist fest, damit die
-   Beschriftungen aller Abschnitte auf derselben Kante beginnen, ein Pfeil,
-   der zwischen ▸ und ▾ die Zeile verschiebt, lässt die ganze Leiste zappeln. */
+/* The arrow carries no surface and no border of its own: it shall be part of
+   the heading, not a button in front of it. The width is fixed so that the
+   labels of all sections begin on the same edge; an arrow shifting the line
+   between the two glyphs makes the whole sidebar jitter. */
 .klapp-btn {
   border: none;
   background: none;
@@ -2034,8 +2032,8 @@ a {
   color: var(--text);
 }
 
-/* Der Name klappt mit. mr: auto schiebt alles Weitere, Zahl, Knöpfe, nach
-   rechts, wie es die Überschrift mit space-between ohnehin vorsieht. */
+/* The name folds along. mr: auto pushes everything else, the count and the
+   buttons, to the right, as the heading with space-between intends anyway. */
 .klapp-name {
   cursor: pointer;
   margin-right: auto;
@@ -2051,9 +2049,9 @@ a {
   letter-spacing: 0;
 }
 
-/* Sichtbarkeitsmenü einer Ablage. Sitzt im Fluss unter der Überschrift und
-   nicht schwebend darüber: die Leiste ist schmal, ein überlagerndes Menü würde
-   genau die Ablage verdecken, um die es geht. */
+/* Visibility menu of a space. Sits in the flow under the heading and not
+   floating above it: the sidebar is narrow, and an overlaying menu would cover
+   exactly the space it is about. */
 .sichtbarkeit-menue {
   margin: 2px 8px 6px;
   padding: 4px;
@@ -2079,9 +2077,9 @@ a {
 .sichtbarkeit-eintrag:hover {
   background: var(--hover);
 }
-/* Die gewählte Stufe wird durch den Balken links kenntlich gemacht, nicht durch
-   eine Einfärbung der ganzen Zeile: welcher der drei Einträge gilt, soll man
-   sehen, ohne die Beschriftung schlechter lesen zu können. */
+/* The chosen level is marked by the bar on the left, not by tinting the whole
+   row: which of the three entries applies shall be visible without making the
+   label harder to read. */
 .sichtbarkeit-eintrag.gewaehlt {
   background: var(--hover);
   box-shadow: inset 2px 0 0 var(--accent);
@@ -2096,8 +2094,8 @@ a {
   line-height: 1.4;
 }
 
-/* "n weitere …" unter einer gekürzten Liste. Bewusst schwächer gesetzt als ein
-   Eintrag: die Zeile ist ein Hinweis auf mehr, kein Ziel für sich. */
+/* "n more …" under a shortened list. Deliberately set weaker than an entry:
+   the line is a hint at more, not a target in itself. */
 .tree-row.mehr-zeile {
   color: var(--muted);
   font-size: 12px;
@@ -2112,9 +2110,9 @@ a {
 .page-layout {
   position: relative;
 }
-/* Der Schleier liegt über der ganzen Seite, nimmt aber keine Zeigerereignisse
-   an: sonst würde er selbst das Ziel des Wurfs und dragleave feuerte in dem
-   Moment, in dem er erscheint, die Hervorhebung ginge sofort wieder aus. */
+/* The veil lies over the whole page but accepts no pointer events: otherwise
+   it would become the target of the drop itself and dragleave would fire the
+   moment it appears, so the highlight would go out again right away. */
 .seiten-abwurf-schleier {
   position: absolute;
   inset: 0;
@@ -2131,8 +2129,8 @@ a {
   border-radius: var(--radius);
 }
 
-/* Fehler beim Hochladen. Ruhig gesetzt, aber nicht zu übersehen, vorher
-   scheiterte ein Upload lautlos und die Datei fehlte einfach. */
+/* Upload errors. Set calmly, but impossible to miss; before this an upload
+   failed silently and the file was simply absent. */
 .anhang-fehler {
   display: flex;
   align-items: center;
@@ -2150,8 +2148,8 @@ a {
   color: inherit;
 }
 
-/* Menü hinter einem Knopf (Export). Wie das Vorlagen-Menü, nur an anderer
-   Stelle, die Liste selbst teilt sich die Gestaltung mit jenem. */
+/* Menu behind a button (export). Like the template menu, only in another
+   place; the list itself shares its styling with that one. */
 .exportmenue {
   position: relative;
   display: inline-flex;
@@ -2159,8 +2157,8 @@ a {
 
 /* Wartung: Konfigurationsdatei */
 
-/* Feste Schrift, weil eine Konfigurationsdatei spaltenweise gelesen wird:
-   ausgerichtete Gleichheitszeichen sind der halbe Überblick. */
+/* Monospace, because a configuration file is read column by column: aligned
+   equals signs are half the overview. */
 .konfig-feld {
   width: 100%;
   min-height: 380px;
@@ -2213,8 +2211,8 @@ a {
   padding: 16px;
   overflow-y: auto;
 }
-/* Das Feld ist groß, weil es ein Ziel zum Zielen ist: eine schmale Zeile trifft
-   man mit einer gezogenen Datei nicht zuverlässig. */
+/* The field is large because it is a target to aim at: a narrow line is not
+   hit reliably with a dragged file. */
 .einfuhr-feld {
   display: flex;
   flex-direction: column;
@@ -2255,8 +2253,8 @@ a {
 .einfuhr-bericht {
   padding: 4px 0;
 }
-/* Die Warnungen bekommen eine eigene Fläche und eine Höhe: bei fünfzig
-   übergangenen Dateien soll der Kasten nicht über den Bildschirm hinauswachsen. */
+/* The warnings get a surface and a height of their own: with fifty skipped
+   files the box shall not grow past the screen. */
 .einfuhr-warnungen {
   margin: 0;
   padding: 8px 8px 8px 26px;
@@ -2282,8 +2280,8 @@ a {
   line-height: 1.7;
   list-style: none;
 }
-/* Ein Strich statt Punkten: bei fünf Ebenen sagt die Linie mehr über die
-   Zugehörigkeit als jede Aufzählungsmarke. */
+/* A line instead of dots: with five levels the line says more about belonging
+   than any bullet. */
 .einfuhr-aeste .einfuhr-aeste {
   border-left: 1px solid var(--border);
   margin-left: 3px;
@@ -2318,9 +2316,9 @@ a {
   font: inherit;
   font-size: 12px;
 }
-/* Ein gesetzter Filter muss auch dann sichtbar sein, wenn die Zeile
-   eingeklappt ist, sonst sucht man in einer Ecke und hält das Ergebnis für
-   den ganzen Bestand. */
+/* A filter that is set has to be visible even when the row is collapsed,
+   otherwise one searches in a corner and takes the result for the whole
+   stock. */
 .search-box .icon-btn.aktiv {
   color: var(--accent);
 }
@@ -2361,9 +2359,8 @@ a {
 .postfach-zeile:hover {
   background: var(--hover);
 }
-/* Der Punkt trägt die Unterscheidung gelesen/ungelesen, nicht die Schriftstärke
-   allein: bei zwanzig Zeilen sieht man einen Punkt schneller als ein etwas
-   dickeres Wort. */
+/* The dot carries the read/unread distinction, not the font weight alone: with
+   twenty rows one sees a dot faster than a slightly bolder word. */
 .postfach-punkt {
   flex: 0 0 auto;
   width: 8px;
@@ -2397,21 +2394,21 @@ a {
   white-space: nowrap;
 }
 
-/* Wartemuster beim Seitenwechsel. Die Balken sitzen dort, wo gleich Titel und
-   Text stehen, damit sich beim Eintreffen nichts verschiebt.
+/* Waiting pattern while changing pages. The bars sit where title and text will
+   stand, so that nothing shifts when they arrive.
 
-   Sie starten unsichtbar und blenden sich erst nach kurzer Verzögerung ein:
-   eine Seite aus dem Heimnetz ist meist vorher da, und ein Muster, das nur
-   aufblitzt, ist unruhiger als gar keines. */
+   They start invisible and only fade in after a short delay: a page from the
+   home network is usually there before that, and a pattern that merely flashes
+   is more restless than none at all. */
 .geruest-strich {
   display: block;
   height: 12px;
-  /* Rund statt eckig: ein Balken mit Kanten liest sich als Kasten, der zur
-     Seite gehört. Gemeint ist aber nur die Stelle, an der gleich Text steht. */
+  /* Round instead of square: a bar with edges reads as a box belonging to the
+     page. What is meant is only the place where text will stand. */
   border-radius: 999px;
-  /* Aus der Schriftfarbe gemischt statt aus der Randfarbe. Der Rand ist auf
-     hellem Grund fast weiß und im Dunkeln fast schwarz; die Mischung hält in
-     jedem Grundton denselben leichten Abstand zum Hintergrund. */
+  /* Mixed from the text colour instead of the border colour. The border is
+     almost white on a light ground and almost black in the dark; the mix keeps
+     the same slight distance to the background in every base tone. */
   background: color-mix(in srgb, var(--text) 9%, transparent);
   opacity: 0;
   animation: geruest-ein 0.25s ease 0.15s forwards;
@@ -2420,8 +2417,8 @@ a {
 .geruest-titel {
   height: 30px;
   width: 42%;
-  /* Etwas kräftiger als die Textbalken, so wie die Überschrift kräftiger ist
-     als der Absatz darunter. */
+  /* A little stronger than the text bars, the way the heading is stronger than
+     the paragraph below it. */
   background: color-mix(in srgb, var(--text) 13%, transparent);
   margin: 0 0 24px;
 }
@@ -2439,18 +2436,18 @@ a {
   }
 }
 
-/* Für Wartetexte, die eine schnelle Antwort gar nicht erst zeigen soll. */
+/* For waiting texts that a fast answer shall not show in the first place. */
 .empty-state.spaet {
   opacity: 0;
   animation: geruest-ein 0.25s ease 0.15s forwards;
 }
 
-/* [[Verweise]] im Text. Der Text bleibt, wie er ist, ausgezeichnet wird nur,
-   was man sieht: der Titel als Verweis, die Klammern zurückgenommen.
+/* [[Links]] in the text. The text stays as it is; styled is only what one
+   sees: the title as a link, the brackets taken back.
 
-   Ein Titel, den es nicht gibt, wird nicht versteckt, sondern blass und
-   gestrichelt gezeigt. Ein Verweis, der ins Leere geht, ist eine Information,
-   kein Fehler, oft ist es eine Seite, die noch geschrieben werden will. */
+   A title that does not exist is not hidden but shown pale and dashed. A link
+   leading nowhere is information, not an error; often it is a page still
+   waiting to be written. */
 .has-wikilinks .verweis {
   color: var(--accent-lesbar);
   cursor: pointer;
@@ -2474,9 +2471,9 @@ a {
   opacity: 0.45;
 }
 
-/* Sinnbild vor einer Abschnittsüberschrift. Es sitzt in der Zeile, nicht davor:
-   die Grundlinie des Namens soll bleiben, wo sie in den anderen Abschnitten
-   auch liegt. */
+/* Symbol before a section heading. It sits in the line, not in front of it:
+   the baseline of the name shall stay where it lies in the other sections
+   too. */
 .klapp-symbol {
   display: inline-flex;
   align-items: center;
@@ -2484,9 +2481,8 @@ a {
   vertical-align: -2px;
 }
 
-/* Als Schaltfläche: dieselbe Größe wie zuvor, nur mit einer Fläche, die auf
-   Zeigen anspringt, sonst sieht man dem Zahnrad nicht an, dass es mehr ist
-   als Beschriftung. */
+/* As a button: the same size as before, only with a surface that responds to
+   pointing, otherwise one cannot tell the gear is more than a label. */
 .klapp-symbol-btn {
   border: 0;
   padding: 2px;
@@ -2503,8 +2499,8 @@ a {
   color: var(--text);
 }
 
-/* Solange die Einstellungen offen sind, bleibt das Zahnrad hervorgehoben,
-   sonst sähe man der Leiste nicht mehr an, wo man steht. */
+/* As long as the settings are open the gear stays highlighted, otherwise one
+   could no longer tell from the sidebar where one is. */
 .klapp-symbol-btn.aktiv {
   background: var(--hover);
   color: var(--accent-lesbar);
@@ -2513,16 +2509,16 @@ a {
 .klapp-symbol svg {
   width: 13px;
   height: 13px;
-  /* Der Strich nimmt die Farbe der Überschrift an und geht damit jeden
-     Grundtonwechsel mit. */
+  /* The line takes the colour of the heading and thus follows every change of
+     base tone. */
   stroke: currentColor;
   stroke-width: 1.3;
   stroke-linecap: round;
   fill: none;
 }
 
-/* Werkzeugzeile über den Abschnitten. Sie gehört zu keiner Ablage, deshalb
-   steht sie auch in keiner Überschrift. */
+/* Tool row above the sections. It belongs to no space and therefore stands in
+   no heading. */
 .sidebar-werkzeuge {
   display: flex;
   align-items: center;
@@ -2530,8 +2526,7 @@ a {
   padding: 2px 12px 6px;
 }
 
-/* Erster Start: kein Baum, keine leeren Überschriften, nur der nächste
-   Schritt. */
+/* First start: no tree, no empty headings, only the next step. */
 .leerer-anfang {
   display: flex;
   flex-direction: column;
@@ -2545,9 +2540,9 @@ a {
   line-height: 1.5;
 }
 
-/* Rückfrage vor folgenreichen Schritten. Sie ersetzt den Kasten des Browsers:
-   derselbe Grundton, dieselben Knöpfe wie überall sonst, und der bestätigende
-   Knopf sagt, was er tut. */
+/* Confirmation before consequential steps. It replaces the browser's box: the
+   same base tone, the same buttons as everywhere else, and the confirming
+   button says what it does. */
 .modal.rueckfrage {
   max-width: 420px;
 }
@@ -2566,17 +2561,17 @@ a {
   padding: 4px 16px 16px;
 }
 
-/* Der Knopf, der weitermacht. Betont, weil er die Antwort ist, die man in den
-   meisten Fällen sucht, aber nur, solange nichts verloren geht. */
+/* The button that carries on. Emphasised because it is the answer one is
+   looking for in most cases, but only as long as nothing is lost. */
 .rueckfrage .btn.betont {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-text);
 }
 
-/* Geht etwas verloren, ist Rot ehrlicher als Blau. Die Fläche bleibt dezent,
-   die Schrift trägt die Warnung, ein knallroter Klotz drängt zum Klicken,
-   und genau das soll er hier nicht. */
+/* When something is lost, red is more honest than blue. The surface stays
+   discreet and the text carries the warning; a bright red block urges clicking,
+   and that is exactly what it shall not do here. */
 .rueckfrage .btn.warnend {
   background: var(--fehler-bg);
   border-color: var(--fehler-rand);
@@ -2587,7 +2582,7 @@ a {
   border-color: var(--fehler-text);
 }
 
-/* Feld im Rückfrage-Dialog: dort, wo früher window.prompt stand. */
+/* Field in the confirmation dialog: where window.prompt used to stand. */
 .rueckfrage-feld {
   width: 100%;
   padding: 8px 10px;
@@ -2749,8 +2744,8 @@ a {
   border-radius: var(--radius);
   padding: 14px 16px;
   background: var(--flaeche);
-  /* Der Streifen links trägt den Zustand. Farbe allein wäre für die Hälfte der
-     Leute keine Auskunft, deshalb steht er zusätzlich als Wort daneben. */
+  /* The stripe on the left carries the state. Colour alone would be no
+     information for half the people, so it also stands beside it as a word. */
   border-left: 3px solid var(--border);
 }
 

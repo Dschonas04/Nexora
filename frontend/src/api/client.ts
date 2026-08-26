@@ -28,9 +28,9 @@ export interface KonfigDatei {
   gefunden: boolean;
   schreibbar: boolean;
   hinweise: string[];
-  /** Alle Schlüssel, die diese Fassung auswertet. */
+  /** All keys this version evaluates. */
   schluessel: string[];
-  /** Schlüssel, deren Werte versteckt werden. */
+  /** Keys whose values are hidden. */
   geheimnisse: string[];
 }
 
@@ -42,10 +42,10 @@ export interface Space {
   /** True when the space belongs to someone else and is visible through a right. */
   fremd: boolean;
   /**
-   * Sichtbarkeit der Ablage für die übrigen angemeldeten Konten der Instanz.
-   * "nein" heißt: nur Eigentümer und ausdrücklich Berechtigte. Mit dem
-   * Freigabelink einer einzelnen Seite hat das nichts zu tun, öffentlich
-   * meint hier die Instanz, nicht das Internet.
+   * Visibility of the space to the remaining logged in accounts of the
+   * instance. "nein" means: only the owner and those explicitly entitled. This
+   * has nothing to do with the share link of a single page; public here means
+   * the instance, not the internet.
    */
   oeffentlich: "nein" | "lesen" | "schreiben";
   /** Ob dieses Konto die Ablage verwalten darf (Sichtbarkeit, Rechte). */
@@ -181,15 +181,15 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
 export interface Lizenz {
   gueltig: boolean;
   inhaber: string;
-  /** Die verkaufte Stufe, falls der Schlüssel eine nennt. */
+  /** The tier that was sold, if the key names one. */
   stufe?: string;
   laeuft_ab: string;
   grund: string;
   alle_extras: string[];
   freigeschaltet: string[];
-  /** Was jede Stufe enthält, damit die Oberfläche keine zweite Tabelle führt. */
+  /** What each tier contains, so the interface keeps no second table. */
   stufen?: { name: string; funktionen: string[] }[];
-  /** Nur beim Herausgeber wahr: dort liegt der private Signierschlüssel. */
+  /** True only at the issuer: that is where the private signing key lies. */
   ausstellbar?: boolean;
 }
 
@@ -255,9 +255,9 @@ export interface Einstellung {
   geaendertAm?: string;
 }
 
-// Dienst ist ein Teil des Verbunds: die Dienste, mit denen das Backend redet.
-// Der Docker-Verbund selbst steht hier NICHT, ihn zu sehen hieße, dem
-// Container den Steuerkanal zu geben, und das wäre die Anwendung nicht wert.
+// Dienst is one part of the compound: the services the backend talks to. The
+// Docker compound itself is NOT here; seeing it would mean giving the container
+// the control channel, and the application is not worth that.
 export interface Dienst {
   name: string;
   rolle: string;
@@ -338,11 +338,9 @@ export interface SpaceRecht {
   erteiltAm: string;
 }
 
-// SearchHit is one full text result. Unlike PageMeta it carries the snippet the
-// database produced, so the sidebar can show where the term actually sat.
-// EinfuhrBericht sagt, was aus einer Einfuhr geworden ist. Die Warnungen sind
-// der wichtigste Teil: was übergangen wurde, muss sichtbar sein, sonst hält man
-// eine halbe Einfuhr für eine ganze.
+// EinfuhrBericht says what became of an import. The warnings are the most
+// important part: what was skipped has to be visible, otherwise one takes half
+// an import for a whole one.
 export interface EinfuhrBericht {
   seiten: number;
   anhaenge: number;
@@ -352,9 +350,9 @@ export interface EinfuhrBericht {
   ablage?: { id: string; name: string };
 }
 
-// EinfuhrAst ist ein Knoten der Vorschau, der Baum, wie er entstehen würde.
-// PapierkorbSeite trägt zusätzlich den Tag, an dem sie von selbst verschwindet.
-// null heißt: die Instanz löscht nichts von selbst.
+// EinfuhrAst is a node of the preview, the tree as it would come into being.
+// PapierkorbSeite additionally carries the day on which it disappears by itself.
+// null means: the instance deletes nothing by itself.
 export interface PapierkorbSeite extends PageMeta {
   verfaelltAm: string | null;
 }
@@ -370,13 +368,13 @@ export interface EinfuhrVorschau {
   beilagen: number;
   baum: EinfuhrAst[];
   warnungen: string[];
-  /** Name der Ablage, die entstehen würde. */
+  /** Name of the space that would come into being. */
   ablage?: string;
 }
 
-// SuchFilter grenzt eine Suche ein. Alle Felder sind freiwillig; leer heißt
-// "keine Einschränkung".
-// Nachricht ist ein Eintrag im Postfach.
+// SuchFilter narrows a search. All fields are optional; empty means "no
+// restriction".
+// Nachricht is one entry in the inbox.
 export interface Nachricht {
   id: string;
   art: "kommentar" | "antwort" | "erwaehnung" | "freigabe";
@@ -390,15 +388,17 @@ export interface Nachricht {
 }
 
 export interface SuchFilter {
-  /** Kennung einer Ablage, oder "ohne" für Seiten ohne Ablage. */
+  /** Id of a space, or "ohne" for pages without a space. */
   space?: string;
   tag?: string;
-  /** Nur Seiten, die in den letzten n Tagen geändert wurden. */
+  /** Only pages changed within the last n days. */
   tage?: number;
-  /** "ich" beschränkt auf eigene Seiten. */
+  /** "ich" restricts to one's own pages. */
   wer?: string;
 }
 
+// SearchHit is one full text result. Unlike PageMeta it carries the snippet the
+// database produced, so the sidebar can show where the term actually sat.
 export interface SearchHit {
   id: string;
   parentId: string | null;
@@ -448,11 +448,8 @@ export const api = {
     req<User>("/auth/register", { method: "POST", body: JSON.stringify({ email, name, password }) }),
   logout: () => req<void>("/auth/logout", { method: "POST" }),
 
-  // Read once after sign-in. Hiding locked features is a courtesy to the
-  // reader, not a protection: the backend refuses the same calls with 402
-  // regardless of what the interface shows.
-  // Was die Anmeldeseite anbieten darf. Öffentlich, denn hier ist noch
-  // niemand angemeldet.
+  // What the login page may offer. Public, because nobody is signed in here
+  // yet.
   ssoZustand: () =>
     req<{
       oidc: boolean;
@@ -464,7 +461,7 @@ export const api = {
   ldapAnmelden: (benutzer: string, passwort: string) =>
     req<User>("/auth/ldap", { method: "POST", body: JSON.stringify({ benutzer, passwort }) }),
 
-  // Word-Anhänge: als Editorblöcke lesen und wieder als .docx zurückschreiben.
+  // Word attachments: read as editor blocks and write back as .docx.
   wordLesen: (seiteId: string, anhangId: string) =>
     req<{ titel: string; bloecke: unknown[] }>(`/pages/${seiteId}/attachments/${anhangId}/word`),
   wordSchreiben: (seiteId: string, anhangId: string, titel: string, bloecke: unknown) =>
@@ -477,6 +474,9 @@ export const api = {
   sitzungBeenden: (id: string) => req<void>(`/sitzungen/${id}`, { method: "DELETE" }),
   sitzungenBeenden: () => req<{ beendet: number }>("/sitzungen", { method: "DELETE" }),
 
+  // Read once after sign-in. Hiding locked features is a courtesy to the
+  // reader, not a protection: the backend refuses the same calls with 402
+  // regardless of what the interface shows.
   lizenz: () => req<Lizenz>("/lizenz"),
   lizenzEinlesen: (schluessel: string) =>
     req<Lizenz>("/system/lizenz", { method: "PUT", body: JSON.stringify({ schluessel }) }),
@@ -618,10 +618,9 @@ export const api = {
   // Uploads bypass req because they send FormData: setting Content-Type by hand
   // would omit the multipart boundary the browser has to generate.
   //
-  // Über XMLHttpRequest statt fetch, und zwar aus genau einem Grund: fetch
-  // meldet keinen Fortschritt beim Senden. Bei einer Datei von zwanzig
-  // Megabyte sieht ein Hochladen ohne Balken aus wie ein Hänger, und man
-  // klickt ein zweites Mal.
+  // Through XMLHttpRequest instead of fetch, for exactly one reason: fetch
+  // reports no progress while sending. With a file of twenty megabytes an upload
+  // without a bar looks like a hang, and one clicks a second time.
   uploadAttachment: (id: string, file: File, fortschritt?: (anteil: number) => void) =>
     new Promise<Attachment>((fertig, fehler) => {
       const body = new FormData();
@@ -630,9 +629,9 @@ export const api = {
       x.open("POST", `/api/pages/${id}/attachments`);
       x.withCredentials = true;
       x.upload.onprogress = (e) => {
-        // lengthComputable ist falsch, solange der Browser die Gesamtgröße
-        // nicht kennt, dann ist jeder Anteil geraten, und geraten ist
-        // schlechter als unbestimmt.
+        // lengthComputable is false as long as the browser does not know the
+        // total size; every fraction is then guessed, and guessed is worse than
+        // indefinite.
         if (e.lengthComputable && e.total > 0) fortschritt?.(e.loaded / e.total);
       };
       x.onload = () => {
@@ -670,8 +669,8 @@ export const api = {
   // Browser samt Grenzmarke selbst.
   importieren: async (
     dateien: File[],
-    // neueAblage schließt die beiden anderen aus: das Archiv bringt dann
-    // seine eigene Ablage mit, statt sich in eine vorhandene zu mischen.
+    // neueAblage excludes the other two: the archive then brings a space of its
+    // own instead of mixing into an existing one.
     ziel: { parentId?: string; spaceId?: string; neueAblage?: string },
     vorschau = false,
   ) => {
