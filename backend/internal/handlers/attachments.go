@@ -19,9 +19,9 @@ import (
 	"nexora/internal/models"
 )
 
-// Vorgabe, falls die Einstellung fehlt. Die tatsächliche Grenze kommt aus
-// MaxAnhangBytes und lässt sich im Betrieb ändern, der Wert muss aber zur
-// client_max_body_size im nginx davor passen, sonst bricht der schon vorher ab.
+// Default in case the setting is missing. The actual limit comes from
+// MaxAnhangBytes and can be changed while running, but the value has to match
+// client_max_body_size in the nginx in front, otherwise that one cuts off first.
 const maxUploadBytes = 25 << 20
 
 // ListAttachments returns the metadata of the files on a page. Read access to
@@ -93,26 +93,27 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ab hier entscheidet die Ablage, wo die Bytes landen, Platte oder
-	// Objektspeicher. Der Handler sieht keinen Unterschied.
+	// From here on the storage decides where the bytes land, disk or object
+	// store. The handler sees no difference.
 	//
-	// Der Mitschnitt hängt sich in den Strom: die Datei läuft ohnehin durch,
-	// und sie zum Auslesen ein zweites Mal zu holen wäre eine vermeidbare
-	// Runde, beim Objektspeicher sogar übers Netz.
+	// The text extraction hooks into the stream: the file passes through anyway,
+	// and fetching it a second time to read it would be an avoidable round trip,
+	// with an object store even one across the network.
 	strom := &mitschnitt{quelle: file}
 	written, err := s.Ablage.Schreiben(r.Context(), attID, strom, header.Size, mime)
 	if err != nil {
-		// Die Zeile wieder wegnehmen: eine Anhangzeile ohne Datei wäre ein
-		// Eintrag, der sich anklicken lässt und dann ins Leere führt.
+		// Remove the row again: an attachment row without a file would be an entry
+		// that can be clicked and then leads nowhere.
 		s.Pool.Exec(r.Context(), `DELETE FROM attachments WHERE id=$1`, attID)
 		writeErr(w, http.StatusInternalServerError, "Ablage nicht erreichbar")
 		return
 	}
-	// Volltext nachtragen. Erst jetzt, nach dem erfolgreichen Schreiben: ein
-	// Anhang ohne Suchtext ist brauchbar, ein Suchtext ohne Anhang nicht.
+	// Add the full text afterwards. Only now, after the write succeeded: an
+	// attachment without search text is usable, a search text without its
+	// attachment is not.
 	//
-	// Fehler werden geschluckt. Der Upload ist gelungen; dass die Datei nicht
-	// durchsuchbar wird, ist ein Verlust an Komfort, kein Grund zu scheitern.
+	// Errors are swallowed. The upload succeeded; that the file does not become
+	// searchable is a loss of convenience, not a reason to fail.
 	if lizenz.Frei(lizenz.Anhangsuche) {
 		if txt := textAusAnhang(r.Context(), strom.Bytes(), mime, filename); txt != "" {
 			if _, err := s.Pool.Exec(r.Context(),
@@ -131,18 +132,17 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// typAusAngabeUndName bestimmt den Dateityp.
+// typAusAngabeUndName determines the file type.
 //
-// Was der Browser beim Hochladen mitschickt, ist eine Behauptung, und bei
-// einer ihm unbekannten Endung schickt er gar nichts oder
-// "application/octet-stream". Der Typ entscheidet aber darüber, ob eine Datei
-// später eine Vorschau bekommt und ob ihr Text in die Suche wandert. Eine
-// PDF-Datei, die als octet-stream ankommt, ist danach eine Datei ohne
-// Eigenschaften.
+// What the browser sends along on upload is a claim, and for an extension it
+// does not know it sends nothing at all or "application/octet-stream". The type
+// however decides whether a file later gets a preview and whether its text goes
+// into the search. A PDF arriving as octet-stream is a file without properties
+// after that.
 //
-// Deshalb wird bei nichtssagender Angabe die Endung befragt. Die Angabe des
-// Browsers hat Vorrang, solange sie etwas aussagt: sie kennt Fälle, die eine
-// Endung nicht unterscheidet.
+// So when the claim says nothing, the extension is asked. The browser's claim
+// takes precedence as long as it says something: it knows cases an extension
+// cannot tell apart.
 func typAusAngabeUndName(angabe, dateiname string) string {
 	angabe = strings.TrimSpace(strings.ToLower(angabe))
 	// A parameter such as "; charset=utf-8" does not belong in the column.
@@ -154,12 +154,10 @@ func typAusAngabeUndName(angabe, dateiname string) string {
 	}
 	endung := strings.ToLower(filepath.Ext(dateiname))
 	if endung != "" {
-		// Die eigene Liste zuerst. mime.TypeByExtension liest die
-		// Typtabellen des Systems mit, und die fallen von Rechner zu
-		// Rechner verschieden aus, dieselbe Datei bekäme auf dem
-		// Arbeitsplatz und im Container zwei verschiedene Typen. Für die
-		// Endungen, an denen hier etwas hängt, wird der Typ deshalb fest
-		// vergeben.
+		// Our own list first. mime.TypeByExtension also reads the system's type
+		// tables, and those differ from machine to machine, so the same file would
+		// get two different types on a workstation and in a container. For the
+		// extensions something depends on here the type is therefore fixed.
 		switch endung {
 		case ".md", ".markdown":
 			return "text/markdown"
@@ -233,8 +231,8 @@ func (s *Server) DeleteAttachment(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "attachment not found")
 		return
 	}
-	// Erst die Datei, dann die Zeile. Andersherum bliebe bei einem Fehler eine
-	// Datei liegen, von der niemand mehr weiß.
+	// The file first, then the row. The other way round a failure would leave a
+	// file lying about that nobody knows of any more.
 	_ = s.Ablage.Loeschen(r.Context(), attID)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

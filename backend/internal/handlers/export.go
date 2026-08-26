@@ -34,11 +34,11 @@ type exportSeite struct {
 	Geaendert time.Time
 }
 
-// ExportSpace liefert einen Space als ZIP.
+// ExportSpace returns a space as a ZIP.
 //
-// spaceID darf "ohne" sein: dann kommen die Seiten, die keinem Space angehören.
-// Sonst blieben sie beim Export außen vor, obwohl sie genauso zum Bestand
-// gehören, und niemand würde es merken.
+// spaceID may be "ohne": then the pages belonging to no space are collected.
+// Otherwise they would be left out of every export even though they are just as
+// much part of the content, and nobody would notice.
 func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	spaceID := chi.URLParam(r, "id")
@@ -48,12 +48,12 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 	if spaceID == "ohne" {
 		spaceName = "Ohne Space"
 	} else {
-		// Ein Admin darf jede Seite lesen, dann muss er auch den Space
-		// exportieren dürfen, in dem sie liegt. Sonst widerspräche sich die
-		// Regel: die Inhalte wären einzeln zugänglich, gebündelt aber nicht.
+		// An admin may read every page, so they must also be allowed to export
+		// the space it sits in. The rule would otherwise contradict itself: the
+		// contents would be reachable one by one but not as a bundle.
 		//
-		// Welche Seiten am Ende im Archiv landen, entscheidet ohnehin die
-		// Abfrage weiter unten, nicht diese Zeile.
+		// Which pages actually end up in the archive is decided by the query
+		// below, not by this line.
 		if err := s.Pool.QueryRow(r.Context(),
 			`SELECT name FROM spaces WHERE id=$1 AND (owner_id=$2 OR $3)`,
 			spaceID, uid, admin).Scan(&spaceName); err != nil {
@@ -62,9 +62,9 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Gefiltert wird nach derselben Regel wie überall. Ein Export, der weiter
-	// reicht als das Öffnen einer Seite, wäre der bequemste Weg, an fremde
-	// Inhalte zu kommen.
+	// Filtered by the same rule as everywhere else. An export reaching further
+	// than opening a page would be the most convenient way to other people's
+	// content.
 	abfrage := `
 		SELECT p.id, p.parent_id, p.title, p.content, p.updated_at
 		FROM pages p
@@ -109,10 +109,10 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 
 	name := dateiname(spaceName)
 
-	// Ein Space als EIN gesetztes Dokument statt als Archiv voller Einzelteile:
-	// zum Durchblättern, Drucken und Weiterreichen ist das die brauchbarere
-	// Form. Das Archiv aus Markdown-Dateien bleibt die Vorgabe, es ist der
-	// Ausweg aus dem System, und der soll maschinenlesbar sein.
+	// A space as ONE typeset document rather than an archive full of separate
+	// parts: for leafing through, printing and passing on that is the more useful
+	// form. The archive of Markdown files stays the default, because it is the
+	// way out of the system and that should be machine readable.
 	switch r.URL.Query().Get("format") {
 	case "pdf", "word", "docx":
 		sort.Slice(seiten, func(i, j int) bool { return seiten[i].Titel < seiten[j].Titel })
@@ -145,12 +145,11 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 			url.PathEscape(name+".zip"))
 
 	zw := zip.NewWriter(w)
-	// Kein defer für Close: ein Fehler beim Abschließen muss protokolliert
-	// werden können, und nach dem Schreiben des Kopfes lässt sich ohnehin kein
-	// Fehlerstatus mehr senden.
+	// No defer for Close: a failure while finishing has to be loggable, and once
+	// the header is on the wire no error status can be sent anyway.
 
-	// Doppelte Titel sind erlaubt, doppelte Dateinamen nicht. Der Zähler hängt
-	// eine Nummer an, statt die zweite Seite stillschweigend zu überschreiben.
+	// Duplicate titles are allowed, duplicate file names are not. The counter
+	// appends a number instead of silently overwriting the second page.
 	vergeben := map[string]int{}
 	eindeutig := func(basis string) string {
 		vergeben[basis]++
@@ -187,17 +186,17 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Spitze Klammern um das Ziel: ein Dateiname mit Leerzeichen bricht
-		// den Verweis sonst nach dem ersten Wort ab. Prozentkodierung täte es
-		// auch, wäre aber unlesbar, und diese Datei soll man lesen können.
+		// Angle brackets around the target: a file name containing spaces would
+		// otherwise end the link after the first word. Percent encoding would work
+		// too but is unreadable, and this file is meant to be read.
 		verzeichnis.WriteString(fmt.Sprintf("- [%s](<%s>)\n", p.Titel, datei))
 	}
 
-	// Ein Inhaltsverzeichnis obendrauf. Ohne das ist ein Archiv mit hundert
-	// Dateien eine Ablage, kein Dokument.
-	// Mit eigenem Kopf statt zw.Create: ohne Modified trägt der Eintrag im
-	// Archiv das Jahr 1980, und ein Datum aus der Zeit vor der Datei sieht nach
-	// einem kaputten Archiv aus.
+	// A table of contents on top. Without it an archive of a hundred files is a
+	// pile, not a document.
+	// With a header of its own rather than zw.Create: without Modified the entry
+	// carries the year 1980, and a date from before the file existed looks like a
+	// broken archive.
 	if kopf, err := zw.CreateHeader(&zip.FileHeader{
 		Name:     "INHALT.md",
 		Method:   zip.Deflate,
@@ -211,10 +210,10 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 		map[string]any{"seiten": len(seiten)})
 }
 
-// spaceBedingung liefert die passende WHERE-Zeile. Getrennt, weil "ohne Space"
-// ein IS NULL braucht und keinen Parameter, die Bedingung im String zu bauen
-// ist hier ungefährlich, weil sie aus einem festen Vergleich stammt und nicht
-// aus einer Eingabe.
+// spaceBedingung returns the matching WHERE clause. Kept separate because
+// "without a space" needs an IS NULL and no parameter. Building the condition
+// inside the string is harmless here, since it comes from a fixed comparison and
+// not from any input.
 func spaceBedingung(spaceID string) string {
 	if spaceID == "ohne" {
 		return "p.space_id IS NULL"

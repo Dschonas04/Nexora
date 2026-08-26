@@ -23,9 +23,9 @@ import (
 	"nexora/internal/middleware"
 )
 
-// Die Arten. Sie stehen als Zeichenketten in der Zeile, weil die Oberfläche
-// sie zum Formulieren des Satzes braucht, "hat auf deinen Kommentar
-// geantwortet" liest sich anders als "hat dich erwähnt".
+// The kinds. They are stored as strings in the row because the interface needs
+// them to phrase the sentence; "replied to your comment" reads differently from
+// "mentioned you".
 const (
 	PostKommentar = "kommentar"
 	PostAntwort   = "antwort"
@@ -46,22 +46,22 @@ type Nachricht struct {
 	ErstelltAm    time.Time  `json:"erstelltAm"`
 }
 
-// maxAuszug ist die Länge des Ausschnitts, der mitgeschrieben wird. Genug, um
-// zu erkennen, worum es geht, ohne die Tabelle zu einer zweiten Kopie aller
-// Kommentare zu machen.
+// maxAuszug is the length of the excerpt that is stored along. Enough to see
+// what it is about, without turning the table into a second copy of all
+// comments.
 const maxAuszug = 280
 
-// zustellen legt eine Nachricht an.
+// zustellen creates a message.
 //
-// Alles wird geschluckt, was schiefgehen kann: ein Kommentar, der sich nicht
-// speichern lässt, weil die Benachrichtigung darüber scheitert, wäre die
-// falsche Rangfolge. Der Fehler geht ins Protokoll, der Kommentar steht.
+// Everything that can go wrong is swallowed: a comment that cannot be saved
+// because the notification about it fails would be the wrong order of
+// importance. The error goes into the log, the comment stands.
 func (s *Server) zustellen(ctx context.Context, empfaenger, art, pageID, kommentarID,
 	ausloeserID, ausloeserName, seitenTitel, text string) {
 
-	// Niemand bekommt Post von sich selbst. Das ist keine Feinheit: wer einen
-	// Kommentar auf der eigenen Seite schreibt, löste sonst mit jedem Satz eine
-	// Nachricht an sich aus.
+	// Nobody gets mail from themselves. That is not a nicety: whoever writes a
+	// comment on their own page would otherwise trigger a message to themselves
+	// with every sentence.
 	if empfaenger == "" || empfaenger == ausloeserID {
 		return
 	}
@@ -109,10 +109,11 @@ func (s *Server) ListPostfach(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, liste)
 }
 
-// PostfachAnzahl liefert nur die Zahl der ungelesenen Nachrichten.
+// PostfachAnzahl returns only the number of unread messages.
 //
-// Eigener Aufruf, weil die Leiste ihn regelmäßig wiederholt: eine Zahl zu
-// holen ist etwas anderes, als hundert Zeilen zu holen und sie wegzuwerfen.
+// A call of its own, because the sidebar repeats it regularly: fetching one
+// number is a different thing from fetching a hundred rows and throwing them
+// away.
 func (s *Server) PostfachAnzahl(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var n int
@@ -125,10 +126,10 @@ func (s *Server) PostfachAnzahl(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]int{"ungelesen": n})
 }
 
-// PostfachGelesen markiert eine Nachricht als gelesen, oder alle.
+// PostfachGelesen marks one message as read, or all of them.
 //
-// Der Empfänger steht in der Bedingung, nicht in einer vorherigen Prüfung: so
-// kann eine fremde Kennung nichts bewirken, egal woher sie kommt.
+// The recipient is part of the condition and not of an earlier check: that way
+// a foreign id can achieve nothing, no matter where it comes from.
 func (s *Server) PostfachGelesen(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -150,8 +151,8 @@ func (s *Server) PostfachGelesen(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// PostfachLeeren wirft die gelesenen Nachrichten weg. Die ungelesenen bleiben
-// sonst wäre der Knopf ein Weg, etwas zu übersehen, das man nie gesehen hat.
+// PostfachLeeren throws away the read messages. The unread ones stay, otherwise
+// the button would be a way to miss something one has never seen.
 func (s *Server) PostfachLeeren(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	tag, err := s.Pool.Exec(r.Context(),
@@ -163,15 +164,15 @@ func (s *Server) PostfachLeeren(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]int64{"geloescht": tag.RowsAffected()})
 }
 
-// erwaehnte findet die Konten, die in einem Text mit @ genannt werden.
+// erwaehnte finds the accounts named with an @ in a text.
 //
-// Verglichen wird gegen die Namensliste der Instanz und nicht gegen ein Muster:
-// Namen enthalten Leerzeichen, und "@Anna Schmidt" ließe sich sonst nicht von
-// "@Anna" gefolgt von einem Nachnamen unterscheiden. Für eine Instanz dieser
-// Größe ist die Liste billig; für zehntausend Konten wäre das der falsche Weg.
+// Compared against the instance's list of names rather than against a pattern:
+// names contain spaces, and "@Anna Schmidt" could otherwise not be told apart
+// from "@Anna" followed by a surname. For an instance of this size the list is
+// cheap; for ten thousand accounts this would be the wrong way.
 //
-// Nur wer die Seite lesen darf, bekommt Post. Sonst wäre die Erwähnung ein
-// Weg, jemandem den Ausschnitt einer Seite zuzustellen, die er nicht sehen darf.
+// Only somebody allowed to read the page gets mail. Otherwise the mention would
+// be a way to deliver an excerpt of a page to somebody not allowed to see it.
 func (s *Server) erwaehnte(ctx context.Context, text, pageID string) map[string]string {
 	treffer := map[string]string{}
 	if !strings.Contains(text, "@") {
@@ -200,9 +201,9 @@ func (s *Server) erwaehnte(ctx context.Context, text, pageID string) map[string]
 	return treffer
 }
 
-// seitenTitel liest den Titel einer Seite für die Nachricht. Er wird kopiert
-// und nicht verknüpft, damit die Zeile auch dann noch etwas sagt, wenn die
-// Seite inzwischen umbenannt wurde.
+// seitenTitel reads the title of a page for the message. It is copied and not
+// linked, so that the row still says something when the page has been renamed
+// in the meantime.
 func (s *Server) seitenTitel(ctx context.Context, pageID string) string {
 	var titel string
 	_ = s.Pool.QueryRow(ctx, `SELECT title FROM pages WHERE id = $1`, pageID).Scan(&titel)

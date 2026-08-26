@@ -19,11 +19,11 @@ import (
 	"golang.org/x/net/html"
 )
 
-// LiesHTML wandelt ein HTML-Dokument in Blöcke um und liefert seinen Titel.
+// LiesHTML turns an HTML document into blocks and returns its title.
 //
-// Der Titel kommt aus der ersten Überschrift im Text, ersatzweise aus dem
-// <title>. Confluence schreibt dort "Ablage : Seitenname", der Teil hinter
-// dem Doppelpunkt ist der Name, den man sucht.
+// The title comes from the first heading in the text, failing that from
+// <title>. Confluence writes "Space : Page name" there; the part behind the
+// colon is the name one is looking for.
 func LiesHTML(quelle string) (string, []Block) {
 	wurzel, err := html.Parse(strings.NewReader(quelle))
 	if err != nil {
@@ -38,8 +38,8 @@ func LiesHTML(quelle string) (string, []Block) {
 	if titel == "" {
 		titel = kopfTitel(wurzel)
 	}
-	// Steht die Überschrift auch im Text, würde sie auf der Seite doppelt
-	// erscheinen: einmal als Titel, einmal als erste Zeile.
+	// If the heading also stands in the text it would appear twice on the page:
+	// once as the title, once as the first line.
 	if len(l.bloecke) > 0 && l.bloecke[0].Type == "heading" && NurText(inhaltVon(l.bloecke[0])) == titel {
 		l.bloecke = l.bloecke[1:]
 	}
@@ -56,8 +56,8 @@ func inhaltVon(b Block) []Inline {
 	return nil
 }
 
-// kopfTitel liest <title> und schneidet den Namen der Ablage ab, den
-// Confluence davorsetzt.
+// kopfTitel reads <title> and cuts off the name of the space that Confluence
+// puts in front of it.
 func kopfTitel(wurzel *html.Node) string {
 	var gefunden string
 	var gehen func(*html.Node)
@@ -80,11 +80,11 @@ func kopfTitel(wurzel *html.Node) string {
 	return gefunden
 }
 
-// htmlLeser sammelt Blöcke, während er durch den Baum geht.
+// htmlLeser collects blocks while walking the tree.
 //
-// Ein offener Absatz wird mitgeführt statt sofort abgelegt: HTML kennt Text
-// zwischen den Elementen, der zu keinem Absatz gehört, und den in einen eigenen
-// Block zu legen zerrisse jeden Satz an jedem <a> und jedem <b>.
+// An open paragraph is carried along instead of being filed right away: HTML
+// has text between elements that belongs to no paragraph, and putting that into
+// a block of its own would tear every sentence apart at every <a> and every <b>.
 type htmlLeser struct {
 	bloecke []Block
 	offen   []Inline
@@ -108,14 +108,13 @@ func (l *htmlLeser) block(b Block) {
 	l.bloecke = append(l.bloecke, b)
 }
 
-// knoten geht einen Teilbaum ab. stile ist der Satz, der von den Vorfahren
-// gilt; er wird beim Absteigen kopiert und nie verändert.
+// knoten walks a subtree. stile is the set of styles inherited from the
+// ancestors; it is copied while descending and never modified.
 func (l *htmlLeser) knoten(n *html.Node, stile map[string]bool) {
 	switch n.Type {
 	case html.TextNode:
-		// Umbrüche und Einrückung der Quelldatei sind Formatierung des
-		// Dokuments, nicht des Textes: in HTML ist jede Folge von Leerraum ein
-		// Leerzeichen.
+		// Line breaks and indentation in the source file are formatting of the
+		// document, not of the text: in HTML any run of whitespace is one space.
 		text := leerraum(n.Data)
 		if text == "" {
 			return
@@ -142,9 +141,9 @@ func (l *htmlLeser) knoten(n *html.Node, stile map[string]bool) {
 			return
 
 		case "p", "div", "section", "article", "header", "dd", "dt":
-			// Ein div ist meist nur eine Hülle. Es schließt den Absatz, damit
-			// Text davor und dahinter nicht zusammenläuft, trägt aber selbst
-			// keinen Block bei.
+			// A div is usually just a wrapper. It closes the paragraph so that text
+			// before and after it does not run together, but contributes no block of
+			// its own.
 			l.absatzSchliessen()
 			l.kinder(n, stile)
 			l.absatzSchliessen()
@@ -243,8 +242,8 @@ func (l *htmlLeser) kinder(n *html.Node, stile map[string]bool) {
 	}
 }
 
-// sammle liest den Inhalt eines Elements als Inline-Stücke, ohne die Blöcke des
-// Aufrufers zu stören.
+// sammle reads the content of an element as inline pieces without disturbing
+// the caller's blocks.
 func (l *htmlLeser) sammle(n *html.Node, stile map[string]bool) []Inline {
 	gemerkt := l.offen
 	l.offen = nil
@@ -254,8 +253,8 @@ func (l *htmlLeser) sammle(n *html.Node, stile map[string]bool) []Inline {
 	return teile
 }
 
-// liste liest ul und ol. Eine Liste innerhalb eines Eintrags wird zu dessen
-// Kindern, dieselbe Verschachtelung wie im Markdown-Leser.
+// liste reads ul and ol. A list inside an item becomes that item's children,
+// the same nesting as in the Markdown reader.
 func (l *htmlLeser) liste(n *html.Node, nummeriert bool, stile map[string]bool) {
 	nummer := 0
 	for k := n.FirstChild; k != nil; k = k.NextSibling {
@@ -264,14 +263,14 @@ func (l *htmlLeser) liste(n *html.Node, nummeriert bool, stile map[string]bool) 
 		}
 		nummer++
 
-		// Der Text des Eintrags ohne die Listen darin, die kommen als
-		// Kinder darunter und nicht in die Zeile.
+		// The text of the item without the lists inside it; those come below as
+		// children and not into the line.
 		eintrag := Block{Type: "bulletListItem"}
 		if nummeriert {
 			eintrag.Type = "numberedListItem"
 		}
-		// Ein angehaktes Kästchen erkennt man am input davor; Confluence und
-		// GitHub schreiben Aufgabenlisten so.
+		// A ticked box is recognised by the input in front of it; Confluence and
+		// GitHub write task lists that way.
 		if kasten := suche(k, "input"); kasten != nil && attribut(kasten, "type") == "checkbox" {
 			eintrag.Type = "checkListItem"
 			eintrag.Props = map[string]any{"checked": hatAttribut(kasten, "checked")}
@@ -290,9 +289,9 @@ func (l *htmlLeser) liste(n *html.Node, nummeriert bool, stile map[string]bool) 
 
 		if len(innen.bloecke) > 0 {
 			eintrag.Content = inhaltVon(innen.bloecke[0])
-			// Was ein Eintrag außer seiner ersten Zeile noch enthält, wird zu
-			// seinen Kindern: ein zweiter Absatz unter einem Punkt gehört
-			// unter den Punkt und nicht daneben.
+			// Whatever an item contains besides its first line becomes its
+			// children: a second paragraph under a bullet belongs below the bullet
+			// and not beside it.
 			for _, b := range innen.bloecke[1:] {
 				eintrag.Children = append(eintrag.Children, b)
 			}
@@ -306,9 +305,9 @@ func (l *htmlLeser) liste(n *html.Node, nummeriert bool, stile map[string]bool) 
 	}
 }
 
-// tabelle liest eine HTML-Tabelle. Verbundene Zellen werden nicht aufgelöst,
-// der Editor kennt sie nicht, aber alle Zeilen bekommen dieselbe Breite,
-// damit keine unvollständige Tabelle entsteht.
+// tabelle reads an HTML table. Merged cells are not resolved, the editor does
+// not know them, but every row gets the same width so that no incomplete table
+// results.
 func (l *htmlLeser) tabelle(n *html.Node, stile map[string]bool) (Block, bool) {
 	var zeilen [][][]Inline
 	var lesen func(*html.Node)
@@ -362,8 +361,8 @@ func (l *htmlLeser) tabelle(n *html.Node, stile map[string]bool) (Block, bool) {
 	return Block{Type: "table", Content: inhalt}, true
 }
 
-// rohText liefert den Text eines Teilbaums, wie er dasteht, ohne Leerraum
-// zusammenzuziehen. Für <pre>, wo genau das der Inhalt ist.
+// rohText returns the text of a subtree exactly as it stands, without
+// collapsing whitespace. For <pre>, where that is precisely the content.
 func rohText(n *html.Node) string {
 	var b strings.Builder
 	var gehen func(*html.Node)
@@ -383,9 +382,9 @@ func rohText(n *html.Node) string {
 	return b.String()
 }
 
-// leerraum zieht Leerraum zusammen, wie es ein Browser täte, behält aber je ein
-// Leerzeichen am Rand: "<b>fett</b> und" braucht das Leerzeichen zwischen den
-// Stücken, sonst klebt der Text zusammen.
+// leerraum collapses whitespace the way a browser would, but keeps one space at
+// each edge: "<b>bold</b> and" needs the space between the pieces, otherwise the
+// text sticks together.
 func leerraum(s string) string {
 	if strings.TrimSpace(s) == "" {
 		if s == "" {
