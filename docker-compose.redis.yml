@@ -1,22 +1,22 @@
-# Beilage: ein Redis als Zwischenspeicher.
+# Side file: a Redis as a cache.
 #
-# Freiwillig, und zwar wirklich: ohne ihn läuft Nexora vollständig, nur mit
-# einer Datenbankabfrage mehr je Anfrage. Er lohnt, sobald mehrere Instanzen
-# nebeneinander laufen, dann teilen sie sich, was sie über Sitzungen wissen,
-# oder wenn die Datenbank ohnehin knapp ist.
+# Optional, and really so: without it Nexora runs completely, only with one
+# database query more per request. It pays off as soon as several instances run
+# side by side, because then they share what they know about sessions, or when
+# the database is short of breath anyway.
 #
 #     docker compose -f docker-compose.yml -f docker-compose.db.yml \
 #                    -f docker-compose.redis.yml up -d
 #
-# Was drin liegt, steht auch in der Datenbank. Deshalb hat dieser Dienst
-# absichtlich KEINEN Datenträger: ein Redis, das seinen Inhalt verliert, ist
-# hier kein Schaden, sondern ein kalter Start.
+# Whatever lies in it also stands in the database. This service therefore
+# deliberately has NO volume: a Redis losing its content is no damage here but a
+# cold start.
 services:
   redis:
     image: redis:7-alpine
-    # Kein Speichern auf Platte (--save "" schaltet die Momentaufnahmen ab) und
-    # eine Obergrenze für den Speicher: läuft er voll, fliegen die ältesten
-    # Einträge raus, statt dass der Dienst aussteigt.
+    # No saving to disk (--save "" switches the snapshots off) and an upper
+    # limit for the memory: when it fills up the oldest entries are thrown out
+    # instead of the service giving up.
     command:
       - redis-server
       - --save

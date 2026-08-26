@@ -1,21 +1,18 @@
-# Prüfen und, wenn alles grün ist, ausrollen.
+# Check and, when everything is green, roll out.
 #
-# Läuft auf dem selbst gehosteten Runner im Heimnetz -- der einzige, der an den
-# Docker-Host herankommt, auf dem diese Instanz läuft. GitHubs eigene Runner
-# haben dorthin keinen Weg.
+# Runs on the self hosted runner in the home network, the only one that reaches
+# the Docker host this instance runs on. GitHub's own runners have no way there.
 #
-# ACHTUNG, das ist der Grund für einiges hier: Dieses Repository ist
-# ÖFFENTLICH. Ein selbst gehosteter Runner führt aus, was im Arbeitsablauf
-# steht, und ein Beitrag von außen könnte den Arbeitsablauf mitbringen.
-# Deshalb:
+# ATTENTION, this is the reason for several things here: this repository is
+# PUBLIC. A self hosted runner executes what stands in the workflow, and a
+# contribution from outside could bring the workflow along. Therefore:
 #
-#   * KEIN pull_request-Auslöser. Gebaut wird nur, was schon im Repository
-#     liegt, und Zweige anlegen darf nur, wer schreiben darf.
-#   * Der Runner hat KEINEN Docker-Socket des Wirts (anders als die Runner der
-#     privaten Repositories). Gebaut und geprüft wird im Runner selbst.
-#   * Der Schlüssel fürs Ausrollen ist am Ziel auf genau einen Befehl
-#     festgenagelt -- er kann den Stand von origin/main ausrollen und sonst
-#     nichts.
+#   * NO pull_request trigger. Only what already lies in the repository is
+#     built, and only somebody with write access may create branches.
+#   * The runner has NO Docker socket of the host (unlike the runners of the
+#     private repositories). Building and checking happen in the runner itself.
+#   * The key for the rollout is pinned to exactly one command at the target: it
+#     can roll out the state of origin/main and nothing else.
 name: Prüfen und ausrollen
 
 on:
@@ -24,8 +21,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # Zwei Läufe auf derselben Instanz wären ein Wettlauf um denselben
-  # Docker-Verbund. Der neuere gewinnt.
+  # Two runs on the same instance would be a race for the same Docker compound.
+  # The newer one wins.
   group: nexora
   cancel-in-progress: true
 
@@ -47,9 +44,9 @@ jobs:
 
       - name: Satz prüfen
         run: |
-          # gofmt meldet Abweichungen nur, indem es Dateinamen ausgibt --
-          # ein leerer Ausgabestrom ist das Bestandene. metriken.go ist
-          # erzeugt und war nie formatiert; sie bleibt draußen.
+          # gofmt reports deviations only by printing file names, so an empty
+          # output stream is the pass. metriken.go is generated and was never
+          # formatted; it stays out.
           abweichend=$(gofmt -l . | grep -v 'internal/dok/metriken.go' || true)
           if [ -n "$abweichend" ]; then
             echo "Nicht mit gofmt gesetzt:"
@@ -68,8 +65,8 @@ jobs:
 
       - name: Rauchtest gegen eine echte Datenbank
         run: |
-          # Die Prüfungen oben fassen keine Datenbank an. Genau dort sitzen die
-          # Fehler, die man erst im Betrieb sieht.
+          # The checks above touch no database. That is exactly where the errors
+          # sit that one only sees in operation.
           ./test/rauchtest.sh
 
   frontend:
@@ -87,8 +84,8 @@ jobs:
         run: node --version && npm --version
 
       - name: Abhängigkeiten holen
-        # npm ci und nicht npm install: es soll genau das gebaut werden, was in
-        # package-lock.json steht, und nicht das, was heute gerade neu ist.
+        # npm ci and not npm install: exactly what stands in package-lock.json
+        # shall be built, and not whatever happens to be new today.
         run: npm ci
 
       - name: Typen prüfen
@@ -106,6 +103,6 @@ jobs:
     steps:
       - name: Auf den Docker-Host ausrollen
         run: |
-          # Der Schlüssel ist am Ziel auf /opt/ci/nexora-ausrollen.sh
-          # festgenagelt; was hier stünde, wäre ohnehin gleichgültig.
+          # The key is pinned to /opt/ci/nexora-ausrollen.sh at the target;
+          # whatever stood here would make no difference anyway.
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes debian@10.0.2.43 true

@@ -1,37 +1,37 @@
-# Nexora selbst: Backend und Oberfläche.
+# Nexora itself: backend and interface.
 #
-# Datenbank und Objektspeicher stehen absichtlich NICHT hier. Beides sind
-# Dienste, die man im Bestand oft schon hat, eine gepflegte Postgres, ein
-# MinIO für alles im Haus. Sie fest an Nexora zu ketten hieße, sie doppelt zu
-# betreiben oder Nexora nicht nehmen zu können.
+# The database and the object store are deliberately NOT here. Both are services
+# one often already has in place, a maintained Postgres, a MinIO for everything
+# in the house. Chaining them to Nexora would mean running them twice or not
+# being able to take Nexora at all.
 #
-# Wer sie nicht hat, legt die Beilagen dazu:
+# Whoever does not have them adds the side files:
 #
 #     docker compose -f docker-compose.yml -f docker-compose.db.yml up -d
 #     docker compose -f docker-compose.yml -f docker-compose.db.yml \
 #                    -f docker-compose.minio.yml up -d
 #
-# Damit man das nicht bei jedem Aufruf tippt, trägt man dieselbe Liste einmal
-# als COMPOSE_FILE in die .env ein, siehe .env.example.
+# So that this need not be typed on every call, the same list is entered once as
+# COMPOSE_FILE in the .env, see .env.example.
 #
 services:
   backend:
     build: ./backend
     environment:
-      # Die Datenbank kann mitgeliefert oder fremd sein. Die Vorgabe zeigt auf
-      # den Dienst aus docker-compose.db.yml; wer eine eigene betreibt, setzt
-      # DATABASE_URL in der .env und lässt die Beilage weg.
+      # The database can be the one shipped along or an outside one. The default
+      # points at the service from docker-compose.db.yml; whoever runs their own
+      # sets DATABASE_URL in the .env and leaves the side file out.
       DATABASE_URL: ${DATABASE_URL:-postgres://nexora:${POSTGRES_PASSWORD:-nexora}@db:5432/nexora?sslmode=disable}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       PORT: "8080"
       NEXORA_DATA_DIR: /data/attachments
-      # Schaltet die kostenpflichtigen Zusätze frei. Leer lassen heißt: Nexora
-      # läuft mit dem freien Umfang, gesperrte Aufrufe antworten mit 402.
+      # Unlocks the paid extras. Leaving it empty means: Nexora runs with the
+      # free scope, and locked calls answer with 402.
       NEXORA_LIZENZ: ${NEXORA_LIZENZ:-}
-      # Objektspeicher. Leer lassen heißt: Anhänge bleiben auf der Platte.
-      # Der Endpunkt muss aus Sicht DIESES Containers erreichbar sein, läuft
-      # MinIO in einem anderen Compose-Verbund, ist das die Adresse des Wirts
-      # mit dem veröffentlichten Port, nicht der Containername.
+      # Object store. Leaving it empty means: attachments stay on disk. The
+      # endpoint has to be reachable from THIS container's point of view; if
+      # MinIO runs in another compose project, that is the host's address with
+      # the published port, not the container name.
       NEXORA_S3_AKTIV: ${NEXORA_S3_AKTIV:-}
       NEXORA_S3_ENDPUNKT: ${NEXORA_S3_ENDPUNKT:-}
       NEXORA_S3_BUCKET: ${NEXORA_S3_BUCKET:-}
@@ -42,27 +42,27 @@ services:
       NEXORA_S3_PFADSTIL: ${NEXORA_S3_PFADSTIL:-}
     volumes:
       - nexora_files:/data/attachments
-      # Diese Datei liegt NICHT im Verzeichnis, sie wird einmal aus der
-      # Vorlage kopiert:
+      # This file does NOT lie in the directory, it is copied once from the
+      # template:
       #
       #     cp config.beispiel.conf config.conf
       #
-      # Grund: sie enthaelt Zugangsdaten und wird auf der Wartungsseite
-      # bearbeitet. Ein verfolgter Stand wuerde bei jedem Ausrollen darueber
-      # hinweggeschrieben, und weil eine Einbindung am Inode haengt, sahen
-      # Wirt und Container danach zwei verschiedene Dateien.
+      # Reason: it holds credentials and is edited on the maintenance page. A
+      # tracked version would be written over on every rollout, and because a
+      # bind mount hangs on the inode, host and container saw two different
+      # files afterwards.
       #
-      # Fehlt sie, startet Nexora trotzdem, dann gelten Vorgaben und die
-      # Umgebungsvariablen oben.
+      # If it is missing Nexora still starts, and then the defaults and the
+      # environment variables above apply.
       #
-      # Beschreibbar eingehängt, damit die Wartungsseite die Datei ändern kann.
-      # Damit das wirkt, muss die Datei auch dem Dienst gehören, er läuft im
-      # Container als uid/gid 10001:
+      # Mounted writable so that the maintenance page can change the file. For
+      # that to take effect the file also has to belong to the service, which
+      # runs in the container as uid/gid 10001:
       #
       #     sudo chgrp 10001 config.conf && sudo chmod 660 config.conf
       #
-      # Ohne diesen Schritt zeigt die Wartungsseite die Datei an und sagt, dass
-      # sie nur lesbar ist. Wer das so will, hängt zusätzlich ein :ro an.
+      # Without this step the maintenance page shows the file and says that it
+      # is read only. Whoever wants it that way appends a :ro as well.
       - ./config.conf:/etc/nexora/config.conf
     restart: unless-stopped
 
@@ -70,14 +70,14 @@ services:
     build: ./frontend
     ports:
       - "${PORT:-3000}:80"
-      # Derselbe Dienst verschlüsselt. Das Zertifikat stellt der Container beim
-      # ersten Start selbst aus und legt es in den Datenträger, damit es einen
-      # Neubau überlebt, ein Zertifikat, das sich bei jedem Ausrollen ändert,
-      # erzeugt jedes Mal eine neue Warnung.
+      # The same service, encrypted. The container issues the certificate itself
+      # on the first start and puts it into the volume so that it survives a
+      # rebuild; a certificate changing on every rollout produces a new warning
+      # every time.
       - "${PORT_TLS:-3443}:443"
     environment:
-      # Steht im Zertifikat als Name. Ohne Angabe der Rechnername des
-      # Containers, was im Browser zu einer zweiten Warnung führt.
+      # Stands in the certificate as its name. Without it, the container's host
+      # name is used, which leads to a second warning in the browser.
       NEXORA_TLS_NAME: ${NEXORA_TLS_NAME:-nexora}
       NEXORA_TLS_IP: ${NEXORA_TLS_IP:-}
     volumes:
@@ -88,6 +88,6 @@ services:
 
 volumes:
   nexora_tls:
-  # Nur die Anhänge auf der Platte. Der Datenträger der Datenbank gehört zur
-  # Beilage, die sie mitbringt.
+  # Only the attachments on disk. The database's volume belongs to the side file
+  # that brings it along.
   nexora_files:

@@ -1,9 +1,8 @@
-# Beilage: eine Postgres, die zu Nexora gehört.
+# Side file: a Postgres belonging to Nexora.
 #
-# Für alle, die keine eigene betreiben. Wer eine hat, lässt diese Datei weg und
-# setzt stattdessen DATABASE_URL in der .env, Nexora legt sein Schema beim
-# Start selbst an und braucht dafür nur ein Konto mit Rechten auf einer
-# leeren Datenbank.
+# For everybody who does not run their own. Whoever has one leaves this file out
+# and sets DATABASE_URL in the .env instead; Nexora creates its schema itself on
+# start and needs nothing but an account with rights on an empty database.
 #
 #     docker compose -f docker-compose.yml -f docker-compose.db.yml up -d
 services:
@@ -22,8 +21,8 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # Erst starten, wenn die Datenbank wirklich antwortet. Ohne das läuft das
-  # Backend beim ersten Hochfahren in eine geschlossene Tür und fällt um.
+  # Start only once the database really answers. Without that the backend runs
+  # into a closed door on the first boot and falls over.
   backend:
     depends_on:
       db:
