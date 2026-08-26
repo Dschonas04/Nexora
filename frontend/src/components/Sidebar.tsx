@@ -581,7 +581,7 @@ export default function Sidebar(props: Props) {
                       has to find out by clicking on. */}
                   {sichtbarkeitFuer === sp.id && (
                     <div className="sichtbarkeit-menue">
-                      <div className="vorlagenliste-titel">Wer sieht diese Ablage?</div>
+                      <div className="sichtbarkeit-kopf">Wer sieht diese Ablage?</div>
                       {(
                         [
                           ["nein", "Nur Berechtigte", "Eigentümer und wer ausdrücklich ein Recht hat"],
@@ -597,8 +597,16 @@ export default function Sidebar(props: Props) {
                             if (sp.oeffentlich !== wert) onSpaceOeffentlich(sp.id, wert);
                           }}
                         >
-                          <span className="sichtbarkeit-titel">{titel}</span>
-                          <span className="muted small">{erklaerung}</span>
+                          <span className="sichtbarkeit-text">
+                            <span className="sichtbarkeit-titel">{titel}</span>
+                            <span className="sichtbarkeit-erklaerung">{erklaerung}</span>
+                          </span>
+                          {/* The check marks what applies. A tick beside the
+                              entry is read as a state; a coloured row is read as
+                              a button one is about to press. */}
+                          <span className="sichtbarkeit-haken" aria-hidden="true">
+                            {sp.oeffentlich === wert ? "✓" : ""}
+                          </span>
                         </button>
                       ))}
                       {/* The sentence stands there on purpose: "public" does not

@@ -7,7 +7,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { locales } from "@blocknote/core";
 import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
-import { Extension } from "@tiptap/core";
+import { Extension, InputRule } from "@tiptap/core";
 import { Plugin } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
@@ -83,6 +83,57 @@ function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) 
 }
 
 
+// Bold AND italic in one go.
+//
+// The editor knows "**bold**" and "*italic*" on their own, each through an input
+// rule of its own. Both at once it does not know: the rules look for a run
+// without further asterisks in it, so "***both***" matches neither of them and
+// stays standing as the characters one typed. Written this way in every Markdown
+// file, and read back that way by the import, it was the one spot where the
+// editor understood less than its own export.
+//
+// So one rule per spelling, and each sets both marks. The stored marks are taken
+// back afterwards: what follows the closing asterisks is ordinary text again.
+const BEIDES_MUSTER = [
+  /(?:^|\s)(\*\*\*([^*\n]+)\*\*\*)$/,
+  /(?:^|\s)(___([^_\n]+)___)$/,
+  /(?:^|\s)(\*\*_([^_\n]+)_\*\*)$/,
+  /(?:^|\s)(_\*\*([^*\n]+)\*\*_)$/,
+];
+
+function beidesRegel(muster: RegExp) {
+  return new InputRule({
+    find: muster,
+    handler: ({ state, range, match }) => {
+      const text = match[2];
+      const fett = state.schema.marks.bold;
+      const kursiv = state.schema.marks.italic;
+      if (!text || !fett || !kursiv) return null;
+      // The pattern may have swallowed a leading space; it belongs to the text
+      // and not to the styling.
+      const von = range.from + (match[0].length - match[1].length);
+      const tr = state.tr;
+      tr.replaceWith(von, range.to, state.schema.text(text));
+      tr.addMark(von, von + text.length, fett.create());
+      tr.addMark(von, von + text.length, kursiv.create());
+      tr.removeStoredMark(fett);
+      tr.removeStoredMark(kursiv);
+      // No return value: a rule returning null counts as "did not apply", and
+      // the whole transaction would be dropped again.
+    },
+  });
+}
+
+const fettKursivErweiterung = Extension.create({
+  name: "fettKursiv",
+  // Ahead of the built in rules for bold and italic. Otherwise the bold rule
+  // grabs "**_both_**" first and what is left standing is a bold "_both_".
+  priority: 200,
+  addInputRules() {
+    return BEIDES_MUSTER.map(beidesRegel);
+  },
+});
+
 // siehtNachMarkdownAus decides whether a pasted text was meant as Markdown.
 //
 // The question is necessary because the answer is not always yes: whoever pastes
@@ -112,6 +163,7 @@ export default function Editor({
   linkResolver,
   onOpenLink,
   mentionTargets,
+  dateiHochladen,
 }: {
   initialContent: unknown;
   editable?: boolean;
@@ -124,6 +176,10 @@ export default function Editor({
   // Pages selectable via an "@" mention in running text. Picking one inserts a
   // [[Title]] wiki-link, so it feeds the graph/backlinks like any other link.
   mentionTargets?: { id: string; title: string }[];
+  // Puts a dropped or chosen file somewhere it can be reached from and returns
+  // its address. Without it the image block asks for a URL and nothing else,
+  // which means an image has to live somewhere before it can be used here.
+  dateiHochladen?: (datei: File) => Promise<string>;
 }) {
   // BlockNote rejects an empty array as initialContent — use undefined instead.
   const content =
@@ -141,10 +197,26 @@ export default function Editor({
   const loeserRef = useRef(linkResolver);
   loeserRef.current = linkResolver;
 
+  // Through a reference for the same reason as the link resolver: the editor is
+  // built once, the page around it keeps changing.
+  const ladenRef = useRef(dateiHochladen);
+  ladenRef.current = dateiHochladen;
+
   const editor = useCreateBlockNote({
     initialContent: content,
     dictionary: locales.de,
-    _tiptapOptions: { extensions: [verweisErweiterung(() => loeserRef.current)] },
+    // The image, video and file blocks get their own upload from this. It is
+    // the same path an attachment takes, so a picture in the text lies where
+    // every other file of this page lies: on the disk or in the bucket, and
+    // reachable only for whoever may read the page.
+    uploadFile: async (datei: File) => {
+      const laden = ladenRef.current;
+      if (!laden) throw new Error("Hochladen ist hier nicht eingerichtet");
+      return laden(datei);
+    },
+    _tiptapOptions: {
+      extensions: [verweisErweiterung(() => loeserRef.current), fettKursivErweiterung],
+    },
   });
   const wrapRef = useRef<HTMLDivElement>(null);
 

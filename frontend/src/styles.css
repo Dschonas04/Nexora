@@ -1841,33 +1841,67 @@ a {
 }
 
 .rechte-box {
-  width: 640px;
+  width: 620px;
 }
 .rechte-inhalt {
-  padding: 16px;
+  padding: 16px 18px 18px;
   overflow-y: auto;
 }
 .rechte-ueberschrift {
-  margin: 18px 0 8px;
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 8px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
+}
+/* A hairline carries the heading to its end instead of letting it break off in
+   the middle of the surface. It separates the two halves of the mask without a
+   box being needed for that. */
+.rechte-ueberschrift::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--border);
 }
 .rechte-inhalt > .rechte-ueberschrift:first-child {
   margin-top: 0;
 }
+
+/* The mark in front of a name. An account is round, a group square with soft
+   corners: in a list of both one sees the kind before reading the word below
+   it. */
+.rechte-zeichen {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--flaeche);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
+}
+.rechte-zeichen.gruppe {
+  border-radius: 8px;
+}
+
 .rechte-liste {
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
 }
 .rechte-zeile {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border-bottom: 1px solid var(--border);
 }
 .rechte-zeile:last-child {
@@ -1878,9 +1912,17 @@ a {
 .rechte-zeile-fest {
   background: var(--flaeche);
 }
+.rechte-fest-stufe {
+  font-size: 12px;
+  color: var(--muted);
+  padding-right: 4px;
+}
 .rechte-wer {
   flex: 1 1 auto;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 .rechte-name {
   font-size: 13px;
@@ -1888,41 +1930,54 @@ a {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.rechte-meta {
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .rechte-zeile select {
   padding: 5px 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 7px;
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+}
+
+.rechte-suche {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   background: var(--bg);
   color: inherit;
   font: inherit;
   font-size: 13px;
 }
-.rechte-suche {
-  width: 100%;
-  padding: 7px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: inherit;
-  font: inherit;
-  font-size: 13px;
+.rechte-suche:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 /* The selection gets a fixed height: with three accounts the box shall not
    collapse, with three hundred it shall not push the button out of view. */
 .rechte-auswahl {
   margin-top: 8px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  max-height: 190px;
+  border-radius: 10px;
+  max-height: 180px;
   overflow-y: auto;
 }
 .rechte-leer {
-  padding: 12px;
+  padding: 14px 12px;
+  text-align: center;
 }
 .rechte-kandidat {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   text-align: left;
   padding: 7px 12px;
@@ -1939,37 +1994,64 @@ a {
 .rechte-kandidat:hover {
   background: var(--hover);
 }
-.rechte-kandidat.gewaehlt {
-  background: var(--hover);
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-.rechte-stufen {
+
+/* The choice made stands in the place of the search, not below it: a field that
+   keeps inviting typing after the selection leaves it open whether the choice
+   arrived at all. */
+.rechte-ziel {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--flaeche);
 }
-.rechte-stufe {
-  flex: 1 1 150px;
+
+.rechte-fuss {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  text-align: left;
-  padding: 8px 10px;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+/* The three levels as one piece. They build on one another, and a strip with
+   three fields shows that where three separate boxes would have shown three
+   options of equal rank. */
+.rechte-leiter {
+  flex: 1 1 auto;
+  display: flex;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 9px;
+  overflow: hidden;
+}
+.rechte-sprosse {
+  flex: 1 1 0;
+  padding: 7px 4px;
+  border: none;
+  border-right: 1px solid var(--border);
   background: var(--bg);
-  color: inherit;
+  color: var(--muted);
   font: inherit;
+  font-size: 12px;
   cursor: pointer;
 }
-.rechte-stufe:hover {
+.rechte-sprosse:last-child {
+  border-right: none;
+}
+.rechte-sprosse:hover {
   background: var(--hover);
 }
-.rechte-stufe.gewaehlt {
-  border-color: var(--accent);
-  background: var(--hover);
+.rechte-sprosse.gewaehlt {
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
 }
+.rechte-erklaerung {
+  margin-top: 8px;
+  min-height: 16px;
+}
+/* Also used by the import report: a row that pushes its button to the right
+   edge. */
 .rechte-abschluss {
   display: flex;
   justify-content: flex-end;
@@ -2054,15 +2136,23 @@ a {
    exactly the space it is about. */
 .sichtbarkeit-menue {
   margin: 2px 8px 6px;
-  padding: 4px;
+  padding: 6px;
   background: var(--flaeche);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 9px;
+}
+.sichtbarkeit-kopf {
+  padding: 2px 8px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 .sichtbarkeit-eintrag {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  align-items: center;
+  gap: 8px;
   width: 100%;
   text-align: left;
   border: none;
@@ -2070,27 +2160,45 @@ a {
   color: inherit;
   font: inherit;
   font-size: 13px;
-  padding: 6px 8px;
-  border-radius: 5px;
+  padding: 5px 8px;
+  border-radius: 6px;
   cursor: pointer;
+}
+.sichtbarkeit-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 .sichtbarkeit-eintrag:hover {
   background: var(--hover);
 }
-/* The chosen level is marked by the bar on the left, not by tinting the whole
-   row: which of the three entries applies shall be visible without making the
-   label harder to read. */
-.sichtbarkeit-eintrag.gewaehlt {
-  background: var(--hover);
-  box-shadow: inset 2px 0 0 var(--accent);
+/* What applies carries the tick and a firmer label; the row keeps its ground.
+   A tinted row reads as a button about to be pressed, and here it is the
+   opposite: the state one is already in. */
+.sichtbarkeit-eintrag.gewaehlt .sichtbarkeit-titel {
+  font-weight: 600;
+}
+.sichtbarkeit-haken {
+  flex: 0 0 auto;
+  width: 12px;
+  color: var(--accent-lesbar, var(--accent));
+  font-size: 12px;
+  line-height: 1;
 }
 .sichtbarkeit-titel {
   font-weight: 500;
 }
+.sichtbarkeit-erklaerung {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.35;
+}
 .sichtbarkeit-hinweis {
-  padding: 6px 8px 4px;
+  padding: 7px 8px 3px;
   border-top: 1px solid var(--border);
-  margin-top: 4px;
+  margin-top: 5px;
   line-height: 1.4;
 }
 
