@@ -148,7 +148,7 @@ func RegistriereAussteller(a Aussteller) {
 	aussteller = a
 }
 
-// Ausstellbar sagt, ob diese Installation Schlüssel erzeugen kann.
+// Ausstellbar says whether this installation can generate keys.
 func Ausstellbar() bool {
 	mu.RLock()
 	defer mu.RUnlock()

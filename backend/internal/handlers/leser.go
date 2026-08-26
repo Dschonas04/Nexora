@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// stringLeser macht aus einer Zeichenkette einen Leser. strings.NewReader
-// täte es auch; die eigene Funktion existiert, damit der Aufruf im
-// Verbindungstest lesbar bleibt.
+// stringLeser turns a string into a reader. strings.NewReader would do as well;
+// the function of our own exists so that the call in the connection test stays
+// readable.
 func stringLeser(s string) io.Reader { return strings.NewReader(s) }

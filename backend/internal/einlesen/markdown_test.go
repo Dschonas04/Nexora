@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-// alsJSON macht aus Blöcken das, was in der Datenbank landet, die Tests
-// prüfen gegen diese Gestalt, weil genau sie der Editor zu sehen bekommt.
+// alsJSON turns blocks into what lands in the database; the tests check against
+// that shape because it is exactly what the editor gets to see.
 func alsJSON(t *testing.T, b []Block) string {
 	t.Helper()
 	roh, err := json.Marshal(b)
@@ -51,8 +51,8 @@ func TestVorspannAlsListe(t *testing.T) {
 func TestUeberschriftenStufeBegrenzt(t *testing.T) {
 	_, _, b := Lies("Text\n\n##### Tief\n")
 	s := alsJSON(t, b)
-	// Der Editor kennt nur drei Stufen; eine vierte würde die Seite
-	// unlesbar machen, statt sie nur flacher zu zeigen.
+	// The editor knows only three levels; a fourth would make the page unreadable
+	// instead of merely showing it flatter.
 	if !strings.Contains(s, `"level":3`) {
 		t.Fatalf("Stufe nicht begrenzt: %s", s)
 	}
@@ -73,8 +73,8 @@ func TestNummerierteListeMitAnfang(t *testing.T) {
 	if b[0].Props["start"] != 5 {
 		t.Fatalf("Anfang nicht übernommen: %s", alsJSON(t, b))
 	}
-	// Der Editor zählt selbst weiter; eine zweite Angabe wäre eine zweite
-	// Liste, die wieder bei sich anfängt.
+	// The editor counts on by itself; a second number would be a second list
+	// starting over again.
 	if _, da := b[1].Props["start"]; da {
 		t.Fatalf("zweiter Eintrag trägt einen Anfang: %s", alsJSON(t, b))
 	}

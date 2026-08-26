@@ -20,9 +20,9 @@ func NeuePlatte(verzeichnis string) *Platte { return &Platte{Verzeichnis: verzei
 func (p *Platte) Name() string { return "Platte (" + p.Verzeichnis + ")" }
 
 func (p *Platte) pfad(key string) string {
-	// filepath.Base kappt jeden Pfadanteil im Schlüssel. Die Schlüssel sind
-	// zwar selbst erzeugte UUIDs, aber diese Zeile ist billiger als die
-	// Gewissheit, dass das für immer so bleibt.
+	// filepath.Base cuts off any path part in the key. The keys are UUIDs we
+	// generate ourselves, but this line is cheaper than the certainty that it
+	// stays that way forever.
 	return filepath.Join(p.Verzeichnis, filepath.Base(key))
 }
 
@@ -41,8 +41,8 @@ func (p *Platte) Schreiben(ctx context.Context, key string, r io.Reader, _ int64
 		err = cerr
 	}
 	if err != nil {
-		// Bruchstück wegräumen. Sonst liegt eine halbe Datei da, an die eine
-		// Zeile in der Datenbank glaubt.
+		// Clear away the fragment. Otherwise half a file lies there that a row in
+		// the database believes in.
 		os.Remove(ziel)
 		return 0, err
 	}

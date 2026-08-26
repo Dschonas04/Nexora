@@ -55,8 +55,8 @@ func (s *Server) AnhangIndexNachziehen(w http.ResponseWriter, r *http.Request) {
 		}
 		txt := textAusAnhang(r.Context(), roh, a.mime, a.name)
 		if txt == "" {
-			// Ein Leerzeichen statt nichts: sonst läse dieselbe Abfrage die
-			// Datei beim nächsten Lauf wieder, obwohl sie nichts hergibt.
+			// A space instead of nothing: otherwise the same query would read the
+			// file again on the next run although it yields nothing.
 			txt = " "
 			leer++
 		} else {
@@ -77,8 +77,8 @@ func (s *Server) AnhangIndexNachziehen(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// lesePlusGrenze holt höchstens so viel, wie in den Index passt. Eine
-// 200-MB-Datei komplett zu laden, um 400 KB davon zu behalten, wäre Verschwendung.
+// lesePlusGrenze fetches at most as much as fits into the index. Loading a
+// 200 MB file in full to keep 400 KB of it would be a waste.
 func (s *Server) lesePlusGrenze(ctx context.Context, key string) ([]byte, error) {
 	f, err := s.Ablage.Lesen(ctx, key)
 	if err != nil {

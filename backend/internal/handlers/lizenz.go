@@ -52,9 +52,9 @@ func (s *Server) LizenzStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Die Stufen samt Inhalt kommen mit: die Oberfläche soll zeigen können,
-	// was eine höhere Stufe brächte, ohne dieselbe Tabelle ein zweites Mal zu
-	// führen.
+	// The tiers come along with their contents: the interface shall be able to
+	// show what a higher tier would bring, without keeping the same table a
+	// second time.
 	stufen := make([]map[string]any, 0, len(lizenz.StufenReihe))
 	for _, st := range lizenz.StufenReihe {
 		namen := make([]string, 0, 12)
@@ -73,8 +73,8 @@ func (s *Server) LizenzStatus(w http.ResponseWriter, r *http.Request) {
 		"alle_extras":    alle,
 		"freigeschaltet": frei,
 		"stufen":         stufen,
-		// Nur dort wahr, wo ein privater Schlüssel hinterlegt ist, also beim
-		// Herausgeber, nicht beim Kunden.
+		// Only true where a private key is stored, meaning at the issuer, not at
+		// the customer.
 		"ausstellbar": lizenz.Ausstellbar(),
 	})
 }

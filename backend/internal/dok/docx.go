@@ -56,7 +56,7 @@ func lauf(s Stueck, groesse int, immerFett bool) string {
 	if s.Verweis != "" {
 		eig.WriteString(`<w:color w:val="1A6FBF"/>`)
 	}
-	// Halbe Punkte: w:sz zählt in Halbpunkten.
+	// Half points: w:sz counts in half points.
 	fmt.Fprintf(&eig, `<w:sz w:val="%d"/><w:szCs w:val="%d"/>`, groesse*2, groesse*2)
 
 	// xml:space="preserve" is not cosmetic: without the attribute Word throws

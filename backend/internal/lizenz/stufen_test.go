@@ -2,9 +2,9 @@ package lizenz
 
 import "testing"
 
-// Die Stufen bauen aufeinander auf. Wer Business kauft, bekommt alles aus Pro
-// mit, eine Stufe, die etwas Kleineres nicht enthält, wäre eine Falle beim
-// Wechsel.
+// The tiers build on one another. Whoever buys Business gets everything from Pro
+// along with it; a tier not containing something smaller would be a trap when
+// switching.
 func TestStufenBauenAufeinanderAuf(t *testing.T) {
 	enthalten := func(st Stufe) map[Funktion]bool {
 		m := map[Funktion]bool{}
@@ -24,9 +24,9 @@ func TestStufenBauenAufeinanderAuf(t *testing.T) {
 	}
 }
 
-// Jede Funktion muss in genau einer Stufe zum ersten Mal auftauchen. Eine, die
-// in keiner steht, wäre unverkäuflich; eine, die in zweien neu ist, wäre ein
-// Kopierfehler.
+// Every feature has to appear for the first time in exactly one tier. One that
+// stands in none would be unsellable; one that is new in two would be a copying
+// mistake.
 func TestJedeFunktionGehoertZuGenauEinerStufe(t *testing.T) {
 	woher := map[Funktion][]Stufe{}
 	for _, st := range StufenReihe {

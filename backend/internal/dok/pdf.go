@@ -18,7 +18,7 @@ import (
 	"strings"
 )
 
-// Maße in Punkt (1/72 Zoll). A4 hoch.
+// Measurements in points (1/72 inch). A4 portrait.
 const (
 	seiteBreite = 595.28
 	seiteHoehe  = 841.89

@@ -54,10 +54,10 @@ type Konfig struct {
 	RegistrierungOffen bool
 	ErlaubteDomaenen   []string
 
-	// Suche
+	// Search
 	SuchWoerterbuch string
 
-	// Anhänge
+	// Attachments
 	MaxAnhangMB int
 
 	// Trash

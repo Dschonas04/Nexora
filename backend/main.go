@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-	// Einstellungen kommen aus config.conf, überschrieben von Umgebungsvariablen,
+	// Settings come from config.conf, overridden by environment variables,
 	// overridden by nothing. See internal/config and config.conf; every value
 	// has a default so the server starts without any configuration at all.
 	k := config.Laden("")

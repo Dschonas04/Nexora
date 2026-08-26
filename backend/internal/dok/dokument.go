@@ -38,7 +38,7 @@ type Stueck struct {
 	Text    string
 	Fett    bool
 	Kursiv  bool
-	Fest    bool // Code im Fließtext
+	Fest    bool // code inside running text
 	Durch   bool
 	Unter   bool
 	Verweis string // the address, when the run is a link
@@ -47,7 +47,7 @@ type Stueck struct {
 // Absatz is one line or block of the document.
 type Absatz struct {
 	Art      Art
-	Stufe    int    // Überschrift: 1..6. Listen: Verschachtelungstiefe ab 0.
+	Stufe    int    // heading: 1..6. Lists: nesting depth from 0.
 	Nummer   int    // laufende Nummer bei nummerierten Listen
 	Erledigt bool   // abgehakte Aufgabe
 	Sprache  string // Codeblock

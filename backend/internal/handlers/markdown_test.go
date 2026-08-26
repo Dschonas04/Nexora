@@ -90,7 +90,7 @@ func TestAufgabenliste(t *testing.T) {
 }
 
 func TestCodeblockOhneAuszeichnung(t *testing.T) {
-	// Im Codeblock müssen Sternchen Sternchen bleiben.
+	// Inside a code block asterisks have to stay asterisks.
 	md := um(t, `[{"type":"codeBlock","props":{"language":"go"},
 	 "content":[{"type":"text","text":"a := *b","styles":{"bold":true}}]}]`)
 	enthaelt(t, md, "```go")
