@@ -45,7 +45,7 @@ type Nutzlast struct {
 	// The tier that was sold. It is the usual form; the list below stays for
 	// special cases, a customer buying exactly one extra feature.
 	Stufe       string   `json:"s,omitempty"`
-	Funktionen  []string `json:"f,omitempty"` // einzeln freigeschaltete Zusätze
+	Funktionen  []string `json:"f,omitempty"` // extras unlocked one by one
 	Ablauf      string   `json:"a,omitempty"` // ISO date, empty means perpetual
 	Ausgestellt string   `json:"d"`           // issue date, for the record
 }

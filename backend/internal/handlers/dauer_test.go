@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// Zeitspannen sollen so dastehen, wie man sie vorliest. Der Fall, der den Test
-// ausgelöst hat: eine Laufzeit von 48 Sekunden stand als "48023 ms" da.
+// Durations shall stand there the way one reads them out. The case that
+// prompted the test: a runtime of 48 seconds stood there as "48023 ms".
 func TestDauerLiestSichVor(t *testing.T) {
 	faelle := []struct {
 		d    time.Duration

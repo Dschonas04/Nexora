@@ -97,9 +97,8 @@ func (s *Server) AddShare(w http.ResponseWriter, r *http.Request) {
 	s.spurAusRequest(r, AktFreigabe, "seite", id, "",
 		map[string]interface{}{"an": targetID, "recht": perm})
 
-	// Eine Freigabe, von der der Beschenkte nichts erfährt, ist eine Zeile in
-	// einer Tabelle. Sie erscheint zwar in seiner Leiste, aber nur, wenn er
-	// zufällig hinsieht.
+	// A share the recipient never hears about is a row in a table. It does appear
+	// in their sidebar, but only if they happen to look.
 	var name string
 	_ = s.Pool.QueryRow(r.Context(), `SELECT name FROM users WHERE id=$1`, uid).Scan(&name)
 	s.zustellen(r.Context(), targetID, PostFreigabe, id, "", uid, name,

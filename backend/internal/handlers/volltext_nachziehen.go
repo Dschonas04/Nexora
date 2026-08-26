@@ -51,9 +51,9 @@ func (s *Server) IndexNachziehen(ctx context.Context) {
 		}
 
 		for _, e := range zu {
-			// Eine leere Seite ergibt leeren Text und würde beim nächsten Durchlauf
-			// erneut gelesen. Ein einzelnes Leerzeichen bricht die Schleife und
-			// stört den tsvector nicht.
+			// An empty page yields empty text and would be read again on the next
+			// run. A single space breaks that loop and does not disturb the
+			// tsvector.
 			text := e.text
 			if text == "" {
 				text = " "

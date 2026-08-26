@@ -29,11 +29,11 @@ type s3TestReq struct {
 	Pfadstil  bool   `json:"pfadstil"`
 }
 
-// S3Testen versucht eine Verbindung und schreibt testweise ein winziges Objekt.
+// S3Testen tries a connection and writes a tiny object as a test.
 //
-// Nur zu verbinden würde zu wenig prüfen: die häufigsten Fehler, falscher
-// Schlüssel, fehlendes Schreibrecht, Eimer in einer anderen Region, zeigen
-// sich erst beim ersten Schreiben. Das Testobjekt wird sofort wieder entfernt.
+// Merely connecting would check too little: the most common faults, a wrong key,
+// a missing write permission, a bucket in another region, only show up on the
+// first write. The test object is removed again right away.
 func (s *Server) S3Testen(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
@@ -56,9 +56,9 @@ func (s *Server) S3Testen(w http.ResponseWriter, r *http.Request) {
 		req.Region = "us-east-1"
 	}
 
-	// Eigene Frist: ein Endpunkt, der ins Leere zeigt, lässt den Aufruf sonst
-	// bis zum Zeitlimit der Anfrage hängen, und der Prüfende sieht minutenlang
-	// einen drehenden Knopf.
+	// A deadline of its own: an endpoint pointing nowhere would otherwise leave
+	// the call hanging until the request times out, and whoever is testing sees a
+	// spinning button for minutes.
 	ctx, abbrechen := context.WithTimeout(r.Context(), 12*time.Second)
 	defer abbrechen()
 
@@ -99,8 +99,8 @@ func (s *Server) S3Testen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := a.Loeschen(ctx, schluessel); err != nil {
-		// Schreiben und Lesen gingen, das reicht zum Betrieb. Dass das
-		// Aufräumen scheitert, ist eine Anmerkung, kein Fehlschlag.
+		// Writing and reading worked, that is enough to run on. That the cleanup
+		// fails is a note, not a failure.
 		writeJSON(w, http.StatusOK, map[string]any{
 			"ok":        true,
 			"ablage":    a.Name(),

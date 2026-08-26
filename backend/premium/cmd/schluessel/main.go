@@ -17,7 +17,7 @@
 //	schluessel -inhaber "Firma X" -stufe advanced -funktionen gruppen
 //	    a tier plus one extra bought on top
 //
-//	schluessel -zeige <schlüssel>
+//	schluessel -zeige <key>
 //	    prints what a key contains, without checking the signature
 package main
 

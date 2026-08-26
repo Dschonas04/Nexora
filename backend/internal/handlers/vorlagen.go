@@ -85,9 +85,9 @@ func (s *Server) SetzeVorlage(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"istVorlage": neu})
 }
 
-// inhaltAusVorlage liest den Inhalt einer Vorlage, wenn der Aufrufer sie
-// benutzen darf. Fehlt sie oder ist sie keine, kommt nichts zurück, die neue
-// Seite entsteht dann einfach leer, statt dass der Aufruf scheitert.
+// inhaltAusVorlage reads the content of a template when the caller is allowed to
+// use it. If it is missing or is not a template, nothing comes back and the new
+// page is simply created empty instead of letting the call fail.
 func (s *Server) inhaltAusVorlage(r *http.Request, uid, vorlageID string) (json.RawMessage, string) {
 	if vorlageID == "" {
 		return nil, ""

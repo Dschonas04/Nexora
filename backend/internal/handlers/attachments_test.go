@@ -2,9 +2,9 @@ package handlers
 
 import "testing"
 
-// Der Typ entscheidet über Vorschau und Volltextsuche. Kommt er nichtssagend
-// an, und das tut er bei jeder Endung, die der Browser nicht kennt, muss
-// die Endung einspringen.
+// The type decides about preview and full text search. If it arrives saying
+// nothing, and it does for every extension the browser does not know, the
+// extension has to step in.
 func TestTypAusAngabeUndName(t *testing.T) {
 	faelle := []struct {
 		angabe, name, will string
@@ -12,8 +12,8 @@ func TestTypAusAngabeUndName(t *testing.T) {
 		{"application/pdf", "bericht.pdf", "application/pdf"},
 		{"application/octet-stream", "bericht.pdf", "application/pdf"},
 		{"", "bild.png", "image/png"},
-		// Diese Endungen vergibt die eigene Liste, damit der Typ nicht
-		// davon abhängt, welche Typtabelle auf dem Rechner liegt.
+		// These extensions are assigned by our own list so that the type does not
+		// depend on which type table lies on the machine.
 		{"binary/octet-stream", "notiz.md", "text/markdown"},
 		{"", "protokoll.log", "text/plain"},
 		{"", "nexora.conf", "text/plain"},

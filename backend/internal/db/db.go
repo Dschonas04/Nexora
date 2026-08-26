@@ -101,16 +101,16 @@ CREATE TABLE IF NOT EXISTS spaces (
 );
 CREATE INDEX IF NOT EXISTS spaces_owner_idx ON spaces(owner_id);
 
--- Eine öffentliche Ablage ist für jedes angemeldete Konto der Instanz
--- sichtbar, ohne dass ihr jemand einzeln ein Recht erteilen muss.
---   'nein', nur Eigentümer und ausdrücklich Berechtigte
---   'lesen', alle Angemeldeten dürfen lesen
---   'schreiben', alle Angemeldeten dürfen lesen und bearbeiten
--- Absichtlich nicht "öffentlich im Internet": anonymer Zugriff läuft
--- weiterhin ausschließlich über den Freigabelink einer einzelnen Seite.
--- Ohne CHECK, weil ALTER TABLE ... ADD CONSTRAINT kein IF NOT EXISTS kennt und
--- dieses Skript bei jedem Start durchläuft. Erlaubte Werte setzt der Handler:
--- was er nicht kennt, wird zu 'nein', ein Tippfehler kann also nichts öffnen.
+-- A public space is visible to every logged in account of the instance without
+-- anybody having to grant a right one by one.
+--   'nein', only the owner and those explicitly entitled
+--   'lesen', everybody logged in may read
+--   'schreiben', everybody logged in may read and edit
+-- Deliberately not "public on the internet": anonymous access still runs
+-- exclusively through the share link of a single page.
+-- Without a CHECK, because ALTER TABLE ... ADD CONSTRAINT has no IF NOT EXISTS
+-- and this script runs on every start. The allowed values are enforced by the
+-- handler: what it does not know becomes 'nein', so a typo can open nothing.
 ALTER TABLE spaces ADD COLUMN IF NOT EXISTS oeffentlich text NOT NULL DEFAULT 'nein';
 CREATE INDEX IF NOT EXISTS spaces_oeffentlich_idx ON spaces(oeffentlich) WHERE oeffentlich <> 'nein';
 
@@ -166,22 +166,21 @@ CREATE TABLE IF NOT EXISTS page_links (
 );
 CREATE INDEX IF NOT EXISTS page_links_target_idx ON page_links(target_id);
 
--- Volltextsuche.
+-- Full text search.
 --
--- content ist BlockNote-JSON. Die frühere Suche lief mit ILIKE über dessen
--- Rohtext und traf deshalb auch Schlüsselnamen und Block-Kennungen, konnte
--- keinen Index benutzen (führendes %) und kannte keine Rangfolge. Deshalb
--- wird der reine Fließtext beim Speichern in content_text abgelegt und daraus
--- ein tsvector erzeugt.
+-- content is BlockNote JSON. The earlier search ran ILIKE over its raw text and
+-- therefore also hit key names and block ids, could use no index (leading %) and
+-- knew no ranking. So the plain running text is stored in content_text on save
+-- and a tsvector is generated from it.
 --
--- Die Spalte ist GENERATED: sie kann gar nicht veralten, egal über welchen
--- Weg eine Zeile geschrieben wird. Der Titel wiegt mit Gewicht A schwerer als
--- der Fließtext mit B, damit eine Seite, die den Suchbegriff im Titel trägt,
--- vor einer steht, die ihn nur erwähnt.
+-- The column is GENERATED: it cannot go stale, no matter which way a row is
+-- written. The title weighs more with weight A than the running text with B, so
+-- that a page carrying the search term in its title stands before one that only
+-- mentions it.
 --
--- Wörterbuch ist 'german'. Das kostet bei englischen Inhalten etwas Trefferschärfe,
--- ist aber für deutschsprachige Seiten deutlich besser als 'simple': gesucht
--- wird dann auch über Wortformen hinweg.
+-- The dictionary is 'german'. That costs a little precision on English content
+-- but is clearly better than 'simple' for German language pages: the search then
+-- also reaches across word forms.
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS content_text text NOT NULL DEFAULT '';
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS such_tsv tsvector
 	GENERATED ALWAYS AS (
@@ -190,16 +189,16 @@ ALTER TABLE pages ADD COLUMN IF NOT EXISTS such_tsv tsvector
 	) STORED;
 CREATE INDEX IF NOT EXISTS pages_such_idx ON pages USING GIN (such_tsv);
 
--- Prüfspur: wer hat wann was getan.
+-- Audit trail: who did what and when.
 --
--- Bewusst eine eigene Tabelle statt Spalten an den Objekten: ein Eintrag muss
--- auch dann bestehen bleiben, wenn die Seite gelöscht wird, gerade das
--- Löschen ist der Vorgang, den eine Revision sehen will. Deshalb gibt es hier
--- KEINEN Fremdschlüssel mit ON DELETE CASCADE; objekt_id ist eine lose
--- Referenz, und objekt_titel hält fest, wie das Objekt damals hieß.
+-- Deliberately a table of its own instead of columns on the objects: an entry
+-- has to survive even when the page is deleted, and deleting is precisely the
+-- event a review wants to see. So there is NO foreign key with ON DELETE CASCADE
+-- here; objekt_id is a loose reference, and objekt_titel records what the object
+-- was called back then.
 --
--- akteur_id verweist ebenfalls lose auf users: ein gelöschtes Konto darf seine
--- Spur nicht mitnehmen. akteur_name friert den Namen zum Zeitpunkt ein.
+-- akteur_id also refers loosely to users: a deleted account must not take its
+-- trail with it. akteur_name freezes the name at that moment.
 CREATE TABLE IF NOT EXISTS pruefspur (
 	id           bigserial PRIMARY KEY,
 	zeitpunkt    timestamptz NOT NULL DEFAULT now(),
@@ -218,16 +217,16 @@ CREATE INDEX IF NOT EXISTS pruefspur_akteur_idx ON pruefspur(akteur_id, zeitpunk
 CREATE INDEX IF NOT EXISTS pruefspur_objekt_idx ON pruefspur(objekt_art, objekt_id, zeitpunkt DESC);
 CREATE INDEX IF NOT EXISTS pruefspur_aktion_idx ON pruefspur(aktion, zeitpunkt DESC);
 
--- Kommentare an einer Seite.
+-- Comments on a page.
 --
--- Antworten hängen über eltern_id am Elternkommentar, aber nur eine Ebene tief:
--- ein Faden mit beliebig tiefer Verschachtelung wird unlesbar, und die zweite
--- Ebene deckt ab, was Leute tatsächlich tun, auf einen Beitrag antworten.
--- Die Beschränkung erzwingt der Handler, nicht das Schema.
+-- Replies hang on the parent comment through eltern_id, but only one level deep:
+-- a thread with arbitrarily deep nesting becomes unreadable, and the second level
+-- covers what people actually do, which is reply to a post. The limit is enforced
+-- by the handler, not by the schema.
 --
--- geloescht_am statt DELETE: ein gelöschter Kommentar, an dem Antworten hängen,
--- würde die sonst mitreißen. Der Text wird beim Löschen geleert, die Hülle
--- bleibt stehen, damit der Faden zusammenhält.
+-- geloescht_am instead of DELETE: a deleted comment with replies hanging on it
+-- would otherwise take them along. The text is emptied on deletion, the shell
+-- stays so that the thread holds together.
 CREATE TABLE IF NOT EXISTS kommentare (
 	id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	page_id      uuid NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
@@ -243,19 +242,19 @@ CREATE TABLE IF NOT EXISTS kommentare (
 CREATE INDEX IF NOT EXISTS kommentare_page_idx   ON kommentare(page_id, erstellt_am);
 CREATE INDEX IF NOT EXISTS kommentare_eltern_idx ON kommentare(eltern_id);
 
--- Das Postfach: was an ein Konto gerichtet war, seit es zuletzt hingesehen hat.
+-- The inbox: what was addressed to an account since it last looked.
 --
--- Ohne diese Tabelle erreichte ein Kommentar niemanden. Er stand unter einer
--- Seite und wartete darauf, dass jemand sie zufällig wieder öffnet, eine
--- Rückfrage, die eine Woche unbeantwortet bleibt, ist keine Rückfrage mehr.
+-- Without this table a comment reached nobody. It stood under a page and waited
+-- for somebody to open it again by chance, and a question that goes unanswered
+-- for a week is no longer a question.
 --
--- Die Angaben zum Auslöser sind Kopien und keine Verknüpfungen. Ein Eintrag
--- muss lesbar bleiben, wenn das Konto gelöscht wurde, das ihn ausgelöst hat;
--- dasselbe Argument wie in der Prüfspur.
+-- The details about who triggered it are copies and not references. An entry has
+-- to stay readable when the account that triggered it was deleted; the same
+-- argument as in the audit trail.
 --
--- Der Seitenbezug hängt dagegen an der Seite: verschwindet sie endgültig,
--- verschwindet auch die Nachricht darüber. Ein Postfacheintrag, der ins Leere
--- führt, wäre nur noch Ärger.
+-- The page reference on the other hand hangs on the page: when it disappears for
+-- good, the message about it disappears too. An inbox entry leading nowhere would
+-- be nothing but a nuisance.
 CREATE TABLE IF NOT EXISTS postfach (
 	id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	empfaenger_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -270,30 +269,30 @@ CREATE TABLE IF NOT EXISTS postfach (
 	erstellt_am   timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS postfach_empfaenger_idx ON postfach(empfaenger_id, erstellt_am DESC);
--- Teilindex: gefragt wird fast immer nur nach dem Ungelesenen, und das ist der
--- kleine Teil der Tabelle.
+-- Partial index: almost every query asks only for the unread, and that is the
+-- small part of the table.
 CREATE INDEX IF NOT EXISTS postfach_ungelesen_idx ON postfach(empfaenger_id) WHERE gelesen_am IS NULL;
 
--- Einstellungen, die zur Laufzeit über die Oberfläche geändert werden.
+-- Settings that are changed at runtime through the interface.
 --
--- Sie liegen NICHT in config.conf, weil eine Datei im Container niemand aus
--- dem Browser ändern kann. Umgekehrt gehören Werte wie die Datenbankadresse
--- nicht hierher: sie werden gebraucht, bevor die Datenbank offen ist.
+-- They do NOT live in config.conf, because nobody can change a file inside the
+-- container from the browser. The other way round, values like the database
+-- address do not belong here: they are needed before the database is open.
 --
--- Die Trennung ist also nicht willkürlich: hier steht, was sich im Betrieb
--- ändern darf, in config.conf steht, was beim Start feststehen muss.
+-- The split is therefore not arbitrary: here stands what may change while
+-- running, in config.conf stands what has to be fixed at startup.
 --
--- geaendert_von hält fest, wer zuletzt geschrieben hat, dieselbe Angabe
--- steht auch in der Prüfspur, hier nur griffbereit für die Anzeige.
--- Volltext in Anhängen.
+-- geaendert_von records who wrote last; the same information also stands in the
+-- audit trail, here it is merely at hand for the display.
+-- Full text inside attachments.
 --
--- Der Text wird beim Hochladen gewonnen und hier abgelegt, nicht bei jeder
--- Suche neu aus der Datei geholt: das Auslesen eines PDF kostet Zehntelsekunden,
--- und eine Suche über hundert Anhänge wäre damit unbrauchbar langsam.
+-- The text is won during the upload and stored here, not fetched from the file
+-- again on every search: reading a PDF costs tenths of a second, and a search
+-- across a hundred attachments would be unusably slow that way.
 --
--- Gleiches Verfahren wie bei den Seiten: eine GENERATED-Spalte, die nicht
--- veralten kann, plus GIN-Index. Der Dateiname wiegt mit A schwerer als der
--- Inhalt mit B, wer "Angebot" sucht, meint meist die Datei, die so heißt.
+-- The same procedure as with the pages: a GENERATED column that cannot go stale,
+-- plus a GIN index. The file name weighs more with A than the content with B;
+-- whoever searches for "offer" usually means the file called that.
 ALTER TABLE attachments ADD COLUMN IF NOT EXISTS inhalt_text text NOT NULL DEFAULT '';
 ALTER TABLE attachments ADD COLUMN IF NOT EXISTS such_tsv tsvector
 	GENERATED ALWAYS AS (
@@ -302,26 +301,24 @@ ALTER TABLE attachments ADD COLUMN IF NOT EXISTS such_tsv tsvector
 	) STORED;
 CREATE INDEX IF NOT EXISTS attachments_such_idx ON attachments USING GIN (such_tsv);
 
--- Vorlagen.
+-- Templates.
 --
--- Bewusst ein Schalter an der Seite statt einer eigenen Tabelle: eine Vorlage
--- IST eine Seite. Sie wird im selben Editor geschrieben, liegt im selben Baum
--- und lässt sich lesen wie jede andere. Eine getrennte Ablage hätte einen
--- zweiten Bearbeitungsweg und einen zweiten Rechtebegriff nach sich gezogen,
--- ohne dass jemand etwas davon hätte.
+-- Deliberately a flag on the page instead of a table of its own: a template IS a
+-- page. It is written in the same editor, lies in the same tree and can be read
+-- like any other. A separate store would have dragged a second editing path and a
+-- second notion of permissions along, without anybody gaining from it.
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS ist_vorlage boolean NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS pages_vorlage_idx ON pages(owner_id) WHERE ist_vorlage;
 
--- Gruppen und Space-Rechte.
+-- Groups and space rights.
 --
--- Warum überhaupt: Freigaben je Seite skalieren nicht. Wer vierzehn Kollegen
--- an einen Bereich lassen will, klickt heute vierzehnmal pro Seite. Eine
--- Gruppe ist die Antwort darauf, und der Space die Ebene, auf der man sie
--- vergibt.
+-- Why at all: shares per page do not scale. Whoever wants to let fourteen
+-- colleagues into an area clicks fourteen times per page today. A group is the
+-- answer to that, and the space is the level on which it is granted.
 --
--- Gruppen sind bewusst NICHT je Konto, sondern für die ganze Instanz: eine
--- Abteilung ist keine Privatsache, und zwei Leute, die dieselbe Gruppe meinen,
--- sollen dieselbe meinen.
+-- Groups are deliberately NOT per account but for the whole instance: a
+-- department is not a private matter, and two people meaning the same group
+-- should mean the same one.
 CREATE TABLE IF NOT EXISTS gruppen (
 	id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	name         text UNIQUE NOT NULL,
@@ -337,14 +334,14 @@ CREATE TABLE IF NOT EXISTS gruppen_mitglieder (
 );
 CREATE INDEX IF NOT EXISTS gruppen_mitglieder_user_idx ON gruppen_mitglieder(user_id);
 
--- Ein Recht gilt entweder einer Gruppe oder einem einzelnen Konto, nie beidem.
--- Der CHECK erzwingt das im Schema statt es dem Handler zu überlassen: eine
--- Zeile mit beidem oder mit nichts wäre nicht auszuwerten, und die Datenbank
--- ist der einzige Ort, an dem sie garantiert nie entsteht.
+-- A right applies either to a group or to a single account, never to both. The
+-- CHECK enforces that in the schema instead of leaving it to the handler: a row
+-- with both or with neither could not be evaluated, and the database is the only
+-- place where it is guaranteed never to come into being.
 --
--- recht ist eine Stufenleiter: lesen < schreiben < verwalten. Wer verwalten
--- darf, vergibt Rechte für diesen Space, das ist der Space-Verantwortliche,
--- ohne dass es dafür eine globale Rolle braucht.
+-- recht is a ladder: lesen < schreiben < verwalten. Whoever may verwalten grants
+-- rights for this space, which is the person responsible for it, without needing
+-- a global role for it.
 CREATE TABLE IF NOT EXISTS space_rechte (
 	space_id  uuid NOT NULL REFERENCES spaces(id)  ON DELETE CASCADE,
 	gruppe_id uuid          REFERENCES gruppen(id) ON DELETE CASCADE,
@@ -370,8 +367,8 @@ CREATE TABLE IF NOT EXISTS sitzungen (
     browser       text NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS sitzungen_user_idx ON sitzungen(user_id);
--- Die Aufräumabfrage sucht nach abgelaufenen; ohne den Index läuft sie über
--- alles, auch über die vielen gültigen.
+-- The cleanup query looks for expired rows; without the index it runs over
+-- everything, including the many valid ones.
 CREATE INDEX IF NOT EXISTS sitzungen_ablauf_idx ON sitzungen(laeuft_ab);
 
 CREATE TABLE IF NOT EXISTS einstellungen (

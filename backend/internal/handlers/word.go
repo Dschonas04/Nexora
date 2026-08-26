@@ -36,7 +36,7 @@ func istWord(mime, name string) bool {
 	return strings.EqualFold(strings.TrimPrefix(strings.ToLower(name[strings.LastIndex(name, ".")+1:]), "."), "docx")
 }
 
-// WordLesen gibt einen Word-Anhang als Editorblöcke zurück.
+// WordLesen returns a Word attachment as editor blocks.
 func (s *Server) WordLesen(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")

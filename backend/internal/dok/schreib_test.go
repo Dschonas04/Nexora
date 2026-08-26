@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-// Schreibt die Beispieldatei auf Wunsch heraus, damit sie sich mit einem
-// echten Betrachter prüfen lässt. Ohne die Umgebungsvariable passiert nichts.
+// Writes the example file out on request so that it can be checked with a real
+// viewer. Without the environment variable nothing happens.
 func TestDateienSchreiben(t *testing.T) {
 	ziel := os.Getenv("DOK_SCHREIBEN")
 	if ziel == "" {

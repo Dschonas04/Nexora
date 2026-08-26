@@ -40,7 +40,7 @@ type inline struct {
 	Styles  map[string]any  `json:"styles"`
 	Href    string          `json:"href"`
 	Content json.RawMessage `json:"content"` // for type=link the text lives here
-	Props   map[string]any  `json:"props"`   // bei Erwähnungen
+	Props   map[string]any  `json:"props"`   // for mentions
 }
 
 // MarkdownAusInhalt converts a stored document. Exported because the space

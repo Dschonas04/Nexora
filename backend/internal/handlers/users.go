@@ -97,8 +97,8 @@ func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "cannot delete yourself")
 		return
 	}
-	// Adresse vor dem Löschen lesen: danach ist die Zeile fort, und ein
-	// Prüfspureintrag ohne Namen wäre für eine Revision wertlos.
+	// Read the address before deleting: afterwards the row is gone, and an audit
+	// entry without a name would be worthless for a review.
 	var mail string
 	_ = s.Pool.QueryRow(r.Context(), `SELECT email FROM users WHERE id=$1`, target).Scan(&mail)
 

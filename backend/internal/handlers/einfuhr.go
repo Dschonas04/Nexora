@@ -280,8 +280,7 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 	}
 	seiten := plan
 
-	// Zweiter Durchgang: Verweise auflösen, Beilagen anhängen, Inhalt
-	// schreiben.
+	// Second pass: resolve links, attach enclosures, write the content.
 	nachPfad := map[string]*einfuhrSeite{}
 	for _, sp := range seiten {
 		if sp.pfad != "" {
@@ -789,7 +788,7 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 	return anzahl
 }
 
-// zielPfad macht aus einer Adresse im Dokument einen Pfad im Archiv.
+// zielPfad turns an address in the document into a path inside the archive.
 //
 // Web addresses and anchor jumps have no target inside the archive and return
 // empty. The rest is percent-decoded: a link to "my%20image.png" means the file
@@ -825,7 +824,7 @@ func zielPfad(adresse, verzeichnis string) string {
 	return path.Clean(adresse)
 }
 
-// verweisMerken hält den Verweis zusätzlich in page_links fest.
+// verweisMerken additionally records the link in page_links.
 //
 // The text carries [[Title]] and is therefore readable; the row here carries
 // the id and therefore survives the target page being renamed. Having both
@@ -879,7 +878,7 @@ func (s *Server) tagsSetzen(ctx context.Context, uid string, sp *einfuhrSeite) {
 	}
 }
 
-// beilagenNachtragen hängt an, worauf niemand verwiesen hat.
+// beilagenNachtragen attaches whatever nobody referred to.
 //
 // An archive often contains files no document refers to: old versions, images
 // from a deleted paragraph, enclosures. Dropping them during the import would
