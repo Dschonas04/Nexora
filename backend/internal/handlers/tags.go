@@ -22,9 +22,9 @@ import (
 // keep their own vocabulary without seeing the other's.
 func (s *Server) ListTags(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
-	// Die Anzahl kommt mit. Ohne sie ist ein Schlagwort in der Seitenleiste
-	// nur ein Wort mit einem Punkt davor, erst die Zahl sagt, ob dahinter
-	// etwas steckt, und macht ein verwaistes Schlagwort sichtbar.
+	// The count travels along. Without it a tag in the sidebar is just a word
+	// with a dot in front of it; only the number says whether anything is behind
+	// it, and it makes an orphaned tag visible.
 	rows, err := s.Pool.Query(r.Context(),
 		`SELECT t.id, t.name, t.color,
 		        (SELECT count(*) FROM page_tags pt
@@ -46,18 +46,17 @@ func (s *Server) ListTags(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, list)
 }
 
-// SeitenZuTag liefert die Seiten, die dieses Schlagwort tragen.
+// SeitenZuTag returns the pages carrying this tag.
 //
-// Schlagworte gehören einem Konto, die Seiten dahinter nicht zwangsläufig: man
-// kann eine geteilte Seite mit einem eigenen Schlagwort versehen. Gefiltert
-// wird deshalb nach derselben Regel wie überall, Eigentümer, Admin oder
-// ausdrückliche Freigabe.
+// Tags belong to an account, the pages behind them not necessarily: one can put
+// one's own tag on a shared page. Filtering therefore follows the same rule as
+// everywhere else: owner, admin, or an explicit share.
 func (s *Server) SeitenZuTag(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	tagID := chi.URLParam(r, "id")
 
-	// Das Schlagwort selbst muss dem Aufrufer gehören. Sonst ließe sich über
-	// eine fremde Kennung erkunden, wie andere ihre Seiten ordnen.
+	// The tag itself has to belong to the caller. Otherwise a stranger's id
+	// could be used to explore how other people organise their pages.
 	var gehoert bool
 	if err := s.Pool.QueryRow(r.Context(),
 		`SELECT EXISTS(SELECT 1 FROM tags WHERE id=$1 AND owner_id=$2)`,
@@ -220,7 +219,7 @@ func (s *Server) ListFavorites(w http.ResponseWriter, r *http.Request) {
 // Second, ranking: results come back by relevance, not by modification date. A
 // page whose title matches is weighted above one that merely mentions the term,
 // which is what setweight in the schema is for.
-// kennungMuster ist die Gestalt einer UUID, wie Postgres sie ausgibt.
+// kennungMuster is the shape of a UUID as Postgres writes it.
 var kennungMuster = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
 func istKennung(s string) bool { return kennungMuster.MatchString(s) }
@@ -233,13 +232,13 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Die Filter kommen als Parameter und nicht als Suchsprache im Feld. Wer
-	// "space:technik" tippen muss, tippt es falsch; wer eine Liste aufklappt,
-	// sieht auch gleich, was es überhaupt gibt.
+	// The filters arrive as parameters rather than as a query language in the
+	// field. Whoever has to type "space:technik" types it wrong; whoever opens a
+	// list also sees what there is in the first place.
 	//
-	// Jeder Filter ist eine eigene Bedingung mit einem eigenen Platzhalter.
-	// Sie in die Zeichenkette zu schreiben wäre kürzer und wäre die Stelle,
-	// an der eines Tages eine Eingabe in der Abfrage landet.
+	// Every filter is a condition of its own with a placeholder of its own.
+	// Writing them into the string would be shorter, and it would be the spot
+	// where one day an input ends up inside the query.
 	filter := ""
 	args := []any{uid, q, false, false, false}
 	setz := func(bedingung string, wert any) {
@@ -253,9 +252,9 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	case "ohne":
 		filter += "AND p.space_id IS NULL\n"
 	default:
-		// Die Gestalt wird hier geprüft und nicht der Datenbank überlassen:
-		// eine Kennung, die keine ist, bricht sonst die ganze Abfrage ab, und
-		// die Suche antwortet mit 500 statt mit "so nicht".
+		// The shape is checked here rather than left to the database: an id that
+		// is none aborts the whole query otherwise, and the search answers with a
+		// 500 instead of "not like that".
 		if !istKennung(space) {
 			writeErr(w, http.StatusBadRequest, "ungültige Ablage im Filter")
 			return
@@ -269,8 +268,8 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 		}
 		setz("AND EXISTS (SELECT 1 FROM page_tags pt WHERE pt.page_id = p.id AND pt.tag_id = $?::uuid)", tag)
 	}
-	// Ein Zeitraum in Tagen statt zweier Datumsfelder: gesucht wird "was war
-	// letzte Woche", nicht "was war zwischen dem 3. und dem 9.".
+	// A span in days rather than two date fields: people search for "what was
+	// last week", not for "what was between the 3rd and the 9th".
 	if tage, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("tage"))); err == nil && tage > 0 {
 		setz("AND p.updated_at > now() - make_interval(days => $?)", tage)
 	}
@@ -285,16 +284,16 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	//
 	// ts_headline delivers the snippet with <b> around the hits. The template
 	// escapes it before rendering, so this is data, never markup.
-	// Zwei Quellen, ein Ergebnis: die Seite selbst und ihre Anhänge.
+	// Two sources, one result: the page itself and its attachments.
 	//
-	// Ein Anhangtreffer erscheint als Treffer der Seite, an der er hängt,
-	// alles andere wäre für den Suchenden eine tote Zeile, denn eine Datei ohne
-	// ihre Seite ist kein Ort, an den man gehen kann. Woher der Treffer kam,
-	// steht daneben.
+	// A hit inside an attachment appears as a hit on the page it hangs from.
+	// Anything else would be a dead row for the searcher, because a file without
+	// its page is not a place one can go to. Where the hit came from is noted
+	// beside it.
 	//
-	// Der Rang eines Anhangtreffers wird gedämpft: eine Seite, die den Begriff
-	// selbst enthält, ist fast immer die bessere Antwort als eine, in deren
-	// Anhang er irgendwo vorkommt.
+	// The rank of an attachment hit is damped: a page containing the term itself
+	// is almost always the better answer than one where it appears somewhere in
+	// an attachment.
 	sql := `
 		WITH frage AS (SELECT websearch_to_tsquery('german', $2) AS q),
 		sichtbar AS (
@@ -334,9 +333,9 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 		ORDER BY id, rang DESC
 		LIMIT 50`
 
-	// Der Adminstatus wird einmal aufgelöst und als Parameter übergeben, statt
-	// die users-Tabelle in die Suchabfrage zu ziehen, das hielte den
-	// Abfrageplan sonst unnötig davon ab, den GIN-Index zu benutzen.
+	// The admin status is resolved once and passed as a parameter instead of
+	// pulling the users table into the search query, which would otherwise keep
+	// the query plan from using the GIN index for no good reason.
 	args[2] = s.isAdmin(r.Context(), uid)
 	args[3] = lizenz.Frei(lizenz.Gruppen)
 	args[4] = lizenz.Frei(lizenz.Anhangsuche)
@@ -358,9 +357,8 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 			list = append(list, h)
 		}
 	}
-	// DISTINCT ON zwingt zur Sortierung nach id; die Rangfolge stellen wir
-	// danach wieder her. Bei fünfzig Zeilen ist das billiger als eine weitere
-	// Abfrageebene.
+	// DISTINCT ON forces sorting by id; the ranking is restored afterwards. At
+	// fifty rows that is cheaper than another query level.
 	sort.SliceStable(list, func(i, j int) bool { return list[i].Rang > list[j].Rang })
 	writeJSON(w, http.StatusOK, list)
 }

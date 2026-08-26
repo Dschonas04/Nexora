@@ -1,15 +1,14 @@
-// PDF-Ausgabe, von Hand geschrieben.
+// PDF output, written by hand.
 //
-// Kein Fremdpaket: ein PDF mit den vierzehn Grundschriften ist ein
-// überschaubares Format, und die Alternative wäre eine Abhängigkeit, die für
-// einen Textexport mehr mitbringt, als hier je gebraucht wird. Was fehlt, fehlt
-// bewusst, eingebettete Schriften und eingebettete Bilder. Beides würde die
-// Datei um ein Vielfaches aufblähen; Bilder erscheinen stattdessen als
-// benannter Verweis.
+// No third-party package: a PDF using the fourteen base fonts is a manageable
+// format, and the alternative would be a dependency that brings far more along
+// than a text export ever needs. What is missing is missing on purpose:
+// embedded fonts and embedded images. Both would inflate the file many times
+// over; images appear as a named link instead.
 //
-// Kodiert wird nach WinAnsi. Umlaute kommen damit an; was darin nicht vorkommt
-// etwa Zeichen aus anderen Schriftsystemen, wird zu einem Fragezeichen.
-// Das ist die Grenze der Grundschriften, nicht ein Versehen.
+// The encoding is WinAnsi. Umlauts come through; anything not in it, characters
+// from other writing systems for instance, turns into a question mark. That is
+// the limit of the base fonts, not an oversight.
 package dok
 
 import (
@@ -71,8 +70,8 @@ func textBreite(s string, schrift string, groesse float64) float64 {
 	return float64(summe) * groesse / 1000
 }
 
-// nachWinAnsi wandelt UTF-8 in die Kodierung, mit der die Schriften im PDF
-// angemeldet sind.
+// nachWinAnsi converts UTF-8 into the encoding the fonts are registered with
+// inside the PDF.
 func nachWinAnsi(s string) []byte {
 	out := make([]byte, 0, len(s))
 	for _, r := range s {
@@ -100,8 +99,8 @@ var winAnsiSonder = map[rune]byte{
 	'“': 147, '”': 148, '•': 149, '–': 150, '—': 151,
 	'˜': 152, '™': 153, 'š': 154, '›': 155, 'œ': 156,
 	'ž': 158, 'Ÿ': 159,
-	// Weiche Zeilenumbrüche und geschützte Leerzeichen sollen Leerzeichen sein
-	// und keine Fragezeichen.
+	// Soft line breaks and non-breaking spaces should be spaces, not question
+	// marks.
 	' ': 32, '​': 32,
 }
 
@@ -195,11 +194,11 @@ func (s *setzer) zeileSetzen(woerter []wort, x, zeilenHoehe float64) {
 	}
 }
 
-// umbrechen verteilt Textstücke auf Zeilen, die in breite passen.
+// umbrechen distributes runs of text across lines that fit into breite.
 //
-// Umbrochen wird an Leerzeichen. Ein einzelnes Wort, das länger ist als die
-// Zeile, eine lange Adresse etwa, wird hart getrennt, sonst liefe es über
-// den Rand hinaus und wäre halb weg.
+// Wrapping happens at spaces. A single word longer than the line, a long address
+// for instance, is broken hard, since it would otherwise run past the margin and
+// be half gone.
 func umbrechen(stuecke []wort, breite float64) [][]wort {
 	var zeilen [][]wort
 	var zeile []wort
@@ -212,8 +211,8 @@ func umbrechen(stuecke []wort, breite float64) [][]wort {
 	}
 
 	for _, st := range stuecke {
-		// Der Trenner bleibt am vorigen Wort hängen, damit Leerzeichen nicht
-		// verloren gehen.
+		// The separator stays attached to the previous word so spaces are not
+		// lost.
 		teile := zerlegeMitLeerzeichen(st.text)
 		for _, t := range teile {
 			w := textBreite(t, st.schrift, st.groesse)
@@ -250,8 +249,8 @@ func umbrechen(stuecke []wort, breite float64) [][]wort {
 	return zeilen
 }
 
-// zerlegeMitLeerzeichen schneidet an Wortgrenzen und behält die Leerzeichen am
-// Ende des jeweiligen Wortes.
+// zerlegeMitLeerzeichen cuts at word boundaries and keeps the spaces at the end
+// of each word.
 func zerlegeMitLeerzeichen(s string) []string {
 	var out []string
 	akt := strings.Builder{}
@@ -318,11 +317,11 @@ func PDF(d Dokument) []byte {
 	return PDFMehrere([]Dokument{d}, d.Titel)
 }
 
-// PDFMehrere setzt mehrere Seiten in EIN PDF, jede auf einer neuen Seite.
+// PDFMehrere typesets several pages into ONE PDF, each on a page of its own.
 //
-// Für einen ganzen Space ist das nützlicher als ein Archiv voller Einzeldateien:
-// ein Dokument lässt sich durchblättern, drucken und weiterreichen. Wer die
-// Seiten einzeln braucht, nimmt den Markdown-Export.
+// For a whole space that is more useful than an archive full of separate files:
+// one document can be leafed through, printed and passed on. Whoever needs the
+// pages separately takes the Markdown export.
 func PDFMehrere(docs []Dokument, fuss string) []byte {
 	s := neuerSetzer(fuss, fuss)
 	for i, d := range docs {
@@ -359,8 +358,8 @@ func (s *setzer) absatzSetzen(a Absatz) {
 			groesse = 12
 		}
 		s.y -= 10
-		// Eine Überschrift allein am Seitenfuß ist ein Versprechen, das die
-		// Seite nicht mehr einlöst, dann lieber gleich umbrechen.
+		// A heading alone at the foot of a page is a promise the page no longer
+		// keeps, so better to break right away.
 		s.platzPruefen(groesse*1.5 + 24)
 		for _, z := range umbrechen(alsWoerter(a.Text, groesse, true), satzBreite) {
 			s.zeileSetzen(z, randLinks, groesse*1.35)
@@ -385,8 +384,9 @@ func (s *setzer) absatzSetzen(a Absatz) {
 				z = append([]wort{{marke, fNormal, grund, false, false, false}}, z...)
 				s.zeileSetzen(z, einzug, zeilenHoehe)
 			} else {
-				// Folgezeilen richten sich an der Textspalte aus, nicht an der
-				// Marke, sonst steht der Text unter dem Punkt statt daneben.
+				// Continuation lines align with the text column, not with the
+				// marker, or the text would sit under the bullet instead of beside
+				// it.
 				s.zeileSetzen(z, einzug+markenBreite, zeilenHoehe)
 			}
 		}
@@ -394,9 +394,8 @@ func (s *setzer) absatzSetzen(a Absatz) {
 	case ArtCode:
 		s.y -= 4
 		for _, roh := range a.Zeilen {
-			// Codezeilen werden nicht umbrochen, sondern bei Bedarf hart
-			// getrennt: ein Umbruch an Leerzeichen würde Einrückung erfinden,
-			// die im Code nicht steht.
+			// Code lines are not wrapped but broken hard when needed: wrapping at
+			// spaces would invent indentation that is not in the code.
 			rest := roh
 			for {
 				schnitt := len(rest)
@@ -422,8 +421,8 @@ func (s *setzer) absatzSetzen(a Absatz) {
 		zeilen := umbrechen(alsWoerter(a.Text, grund, false), breite-14)
 		for _, z := range zeilen {
 			s.platzPruefen(zeilenHoehe)
-			// Der Balken wird vor der Zeile gezeichnet, weil zeileSetzen y
-			// bereits verschiebt.
+			// The bar is drawn before the line, because zeileSetzen has already
+			// moved y.
 			fmt.Fprintf(s.akt, "0.75 0.75 0.75 rg %.2f %.2f 2.5 %.2f re f 0 0 0 rg\n",
 				einzug, s.y-zeilenHoehe+2, zeilenHoehe)
 			s.zeileSetzen(z, einzug+12, zeilenHoehe)
@@ -460,12 +459,11 @@ func (s *setzer) absatzSetzen(a Absatz) {
 	}
 }
 
-// tabelleSetzen zeichnet ein einfaches Gitter mit gleich breiten Spalten.
+// tabelleSetzen draws a simple grid with columns of equal width.
 //
-// Gleich breit und nicht nach Inhalt bemessen: eine Spaltenbreite aus dem
-// Inhalt zu errechnen klingt besser, führt aber bei einer langen Zelle dazu,
-// dass alle anderen auf ein paar Punkte zusammenschnurren. Gleiche Breiten sind
-// immer lesbar.
+// Equal rather than measured by content: computing a column width from the
+// content sounds better but makes every other column shrink to a few points as
+// soon as one cell is long. Equal widths are always readable.
 func (s *setzer) tabelleSetzen(zeilen [][]string, x, breite float64) {
 	if len(zeilen) == 0 {
 		return
@@ -540,8 +538,8 @@ func (s *setzer) fertig() []byte {
 	}
 
 	var out bytes.Buffer
-	// Objektnummern werden fortlaufend vergeben; ihre Byteposition landet in
-	// der Querverweistabelle am Ende.
+	// Object numbers are handed out consecutively; their byte offset ends up in
+	// the cross-reference table at the end.
 	var pos []int
 	objekt := func(inhalt string) {
 		pos = append(pos, out.Len())
@@ -555,8 +553,8 @@ func (s *setzer) fertig() []byte {
 	}
 
 	out.WriteString("%PDF-1.4\n")
-	// Ein Kommentar mit hohen Bytes sagt jedem Werkzeug, dass die Datei binär
-	// ist und nicht zeilenweise umkodiert werden darf.
+	// A comment containing high bytes tells every tool that the file is binary
+	// and must not be re-encoded line by line.
 	out.WriteString("%\xe2\xe3\xcf\xd3\n")
 
 	anzahl := len(s.seiten)

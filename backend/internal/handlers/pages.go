@@ -21,12 +21,11 @@ import (
 // ListSharedPages.
 func (s *Server) ListPages(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
-	// Eigene Seiten plus die, die über ein Space-Recht oder eine öffentliche
-	// Ablage erreichbar sind.
+	// Own pages plus those reachable through a space right or a public space.
 	//
-	// Ohne den zweiten Teil könnte man eine Seite per Adresse öffnen, sie aber
-	// nirgends finden, ein Recht, das man nur kennt, wenn einem jemand den
-	// Verweis schickt, ist praktisch keines.
+	// Without the second part one could open a page by address but find it
+	// nowhere; a right one only knows about when somebody sends the link is
+	// practically no right at all.
 	rows, err := s.Pool.Query(r.Context(),
 		`SELECT p.id, p.parent_id, p.space_id, p.title, p.icon, p.updated_at,
 		        (p.owner_id <> $1) AS fremd
@@ -82,9 +81,9 @@ type createPageReq struct {
 	Title    string  `json:"title"`
 	ParentID *string `json:"parentId"`
 	SpaceID  *string `json:"spaceId"`
-	// VorlageID kopiert den Inhalt einer Vorlage in die neue Seite. Kopiert,
-	// nicht verknüpft: eine später geänderte Vorlage lässt bestehende Seiten in
-	// Ruhe. Das erwartet man vom Wort "Vorlage" und nicht vom Wort "Verweis".
+	// VorlageID copies the content of a template into the new page. Copied, not
+	// linked: a template changed later leaves existing pages alone. That is what
+	// one expects from the word "template" and not from the word "link".
 	VorlageID string `json:"vorlageId"`
 }
 
@@ -106,9 +105,9 @@ func (s *Server) CreatePage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Inhalt aus der Vorlage, falls eine angegeben wurde. Ist sie nicht
-	// lesbar oder gar keine Vorlage, entsteht die Seite leer, das ist
-	// harmloser, als den Aufruf scheitern zu lassen.
+	// Content from the template, if one was given. If it is not readable or not
+	// a template at all, the page is created empty; that is more harmless than
+	// letting the call fail.
 	inhalt, icon := s.inhaltAusVorlage(r, uid, req.VorlageID)
 	if len(inhalt) == 0 {
 		inhalt = json.RawMessage("[]")
@@ -197,17 +196,17 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Konflikterkennung. Ohne sie überschreibt der Autosave stillschweigend,
-	// was jemand anderes in der Zwischenzeit geschrieben hat, der Verlust
-	// fällt erst auf, wenn der Text fehlt.
+	// Conflict detection. Without it the autosave silently overwrites whatever
+	// somebody else wrote in the meantime, and the loss is only noticed when the
+	// text is missing.
 	//
-	// Verglichen wird auf die Mikrosekunde. Das ist die Auflösung, die
-	// PostgreSQL für timestamptz führt, und dieselbe kommt über JSON wieder
-	// zurück, der Wert ist also exakt derselbe, nicht nur ungefähr.
+	// Compared down to the microsecond. That is the resolution PostgreSQL keeps
+	// for timestamptz, and the same one comes back through JSON, so the value is
+	// exactly the same and not merely close.
 	//
-	// Auf ganze Sekunden zu runden wäre bequemer, macht die Prüfung aber blind
-	// für zwei Speichervorgänge innerhalb derselben Sekunde. Genau so schnell
-	// speichert der Autosave.
+	// Rounding to whole seconds would be more convenient but makes the check
+	// blind to two saves within the same second. The autosave saves exactly that
+	// fast.
 	if req.Basis != nil && lizenz.Frei(lizenz.Konflikte) {
 		if cur.UpdatedAt.Truncate(time.Microsecond).After(req.Basis.Truncate(time.Microsecond)) {
 			var wer string
@@ -264,10 +263,10 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// content_text wird hier mitgeschrieben, nicht in einem Trigger: der
-	// Fließtext lässt sich aus dem BlockNote-JSON nur in Go herausziehen. Wer
-	// den Inhalt schreibt, muss ihn deshalb mitschreiben, sonst zeigt die
-	// Suche stillschweigend einen alten Stand.
+	// content_text is written here and not in a trigger: the running text can
+	// only be pulled out of the BlockNote JSON in Go. Whoever writes the content
+	// therefore has to write it along, otherwise the search silently shows an old
+	// state.
 	_, err = s.Pool.Exec(r.Context(),
 		`UPDATE pages SET title=$2, content=$3::jsonb, icon=$4, parent_id=$5, space_id=$6,
 		        content_text=$7, updated_at=now()
@@ -325,17 +324,17 @@ func (s *Server) ListTrash(w http.ResponseWriter, r *http.Request) {
 	}
 	defer rows.Close()
 
-	// Die Frist wird einmal gelesen und für alle Zeilen gerechnet: sie gilt für
-	// die ganze Instanz, und ein Aufruf je Zeile hieße, dieselbe Zahl fünfzig
-	// Mal zu holen.
+	// The deadline is read once and computed for all rows: it applies to the
+	// whole instance, and one call per row would mean fetching the same number
+	// fifty times.
 	tage := PapierkorbTage()
 
 	list := []models.PapierkorbSeite{}
 	for rows.Next() {
 		var p models.PapierkorbSeite
 		if err := rows.Scan(&p.ID, &p.ParentID, &p.SpaceID, &p.Title, &p.Icon, &p.UpdatedAt); err == nil {
-			// UpdatedAt trägt hier das Löschdatum, die Spalte heißt so, weil
-			// die Leiste dieselbe Gestalt liest.
+			// UpdatedAt carries the deletion date here; the column is named that way
+			// because the sidebar reads the same shape.
 			if tage > 0 {
 				verfaellt := p.UpdatedAt.AddDate(0, 0, tage)
 				p.VerfaelltAm = &verfaellt
@@ -380,9 +379,9 @@ func (s *Server) PurgePage(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
 
-	// Der Titel wird VOR dem Löschen gelesen. Danach gibt es die Zeile nicht
-	// mehr, und ein Prüfspureintrag "Seite <uuid> endgültig gelöscht" ohne
-	// Namen ist für eine Revision wertlos.
+	// The title is read BEFORE deleting. Afterwards the row no longer exists,
+	// and an audit entry "page <uuid> permanently deleted" without a name is
+	// worthless for a review.
 	var titel string
 	_ = s.Pool.QueryRow(r.Context(), `SELECT title FROM pages WHERE id=$1`, id).Scan(&titel)
 
