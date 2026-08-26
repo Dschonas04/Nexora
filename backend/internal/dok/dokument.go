@@ -54,6 +54,11 @@ type Absatz struct {
 	Text     []Stueck
 	Zeilen   []string   // Codeblock, zeilenweise
 	Tabelle  [][]string // a table, rows of cells
+	// Bild is a picture carried in the answer itself, as a data address. Word
+	// files keep their pictures inside the archive, so there is no address that
+	// could point at one; without this the picture would be lost on the way into
+	// the editor.
+	Bild string
 }
 
 // Dokument is one page in typesetter form.
