@@ -12,9 +12,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // Was diese Instanz anbietet. Erst vom Server erfragt, statt es zu erraten:
-  // ein SSO-Knopf, hinter dem nichts eingerichtet ist, führt in eine
-  // Fehlermeldung statt zu einer Anmeldung.
+  // What this instance offers. Asked of the server rather than guessed: an SSO
+  // button with nothing set up behind it leads into an error message instead of
+  // a sign in.
   const [wege, setWege] = useState<{ oidc: boolean; oidcText: string; ldap: boolean; anbieter: string } | null>(null);
   const [ueberVerzeichnis, setUeberVerzeichnis] = useState(false);
   const [suche] = useSearchParams();
@@ -24,8 +24,8 @@ export default function Login() {
       .ssoZustand()
       .then((z) => setWege(z))
       .catch(() => setWege(null));
-    // Kommt der Browser von einer abgebrochenen SSO-Anmeldung zurück, steht
-    // der Grund in der Adresse.
+    // If the browser comes back from an aborted SSO sign in, the reason stands
+    // in the address.
     const meldung = suche.get("sso");
     if (meldung) setError(meldung);
   }, [suche]);
@@ -38,8 +38,8 @@ export default function Login() {
     try {
       if (ueberVerzeichnis) {
         await api.ldapAnmelden(email, password);
-        // Die Sitzung steht im Plätzchen; neu laden lässt AuthProvider sie
-        // lesen und schaltet auf den Arbeitsbereich um.
+        // The session sits in the cookie; reloading lets AuthProvider read it
+        // and switches over to the workspace.
         window.location.href = "/";
         return;
       }
@@ -92,9 +92,9 @@ export default function Login() {
             <div className="anmelde-trenner">
               <span>oder</span>
             </div>
-            {/* Ein gewöhnlicher Verweis, kein fetch: der Anbieter antwortet mit
-                einer Weiterleitung auf seine eigene Seite, und die muss der
-                Browser selbst ansteuern. */}
+            {/* An ordinary link, not a fetch: the provider answers with a
+                redirect to its own page, and the browser has to go there
+                itself. */}
             <a className="btn-primary anmelde-sso" href="/api/auth/oidc/start">
               {wege.oidcText || `Mit ${wege.anbieter || "SSO"} anmelden`}
             </a>

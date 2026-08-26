@@ -29,7 +29,7 @@ interface Ctx {
   geladen: boolean;
   /** Whether one paid extra is available. Unknown state counts as locked. */
   frei: (extra: Extra) => boolean;
-  /** Nach dem Einlesen eines Schlüssels: Zustand sofort neu holen. */
+  /** After reading in a key: fetch the state again right away. */
   neuLaden: () => void;
 }
 
@@ -45,19 +45,19 @@ export function LizenzProvider({ children }: { children: ReactNode }) {
   const [lizenz, setLizenz] = useState<Lizenz | null>(null);
   const [geladen, setGeladen] = useState(false);
 
-  // Neu geholt, sobald sich das angemeldete Konto ändert.
+  // Fetched anew as soon as the signed in account changes.
   //
-  // Vorher lief der Abruf genau einmal, beim Aufbau der Anwendung, also vor
-  // der Anmeldung. Die Auskunft braucht aber eine Sitzung und antwortete mit
-  // 401; danach galt für den Rest der Sitzung "nichts freigeschaltet". Wer
-  // sich frisch anmeldete, sah gekaufte Funktionen als nicht enthalten, bis er
-  // die Seite neu lud.
+  // Before this the request ran exactly once, while the application was being
+  // built up, that is before signing in. The information needs a session though
+  // and answered with 401; after that "nothing unlocked" applied for the rest of
+  // the session. Whoever signed in freshly saw bought features as not included
+  // until they reloaded the page.
   //
-  // Ein Fehlschlag wird zudem nicht mehr als Antwort genommen: das Backend ist
-  // beim Ausrollen für ein paar Sekunden weg, und eine Instanz, die danach
-  // dauerhaft ihre Lizenz vergisst, ist schlechter als eine, die kurz wartet.
-  // Zähler statt Schalter: jeder Aufruf von neuLaden stößt den Effekt erneut
-  // an, auch wenn sich das Konto nicht geändert hat.
+  // A failure is moreover no longer taken as an answer: the backend is gone for
+  // a few seconds while rolling out, and an instance that permanently forgets
+  // its licence afterwards is worse than one that waits briefly.
+  // A counter instead of a flag: every call of neuLaden triggers the effect
+  // again, even when the account has not changed.
   const [runde, setRunde] = useState(0);
 
   useEffect(() => {
@@ -79,8 +79,8 @@ export function LizenzProvider({ children }: { children: ReactNode }) {
         .catch(() => {
           if (abgebrochen) return;
           versuch += 1;
-          // Drei Anläufe mit wachsendem Abstand, dann bleibt es beim
-          // gesperrten Umfang, irgendwann muss die Oberfläche etwas zeigen.
+          // Three attempts with growing distance, then it stays at the locked
+          // scope; at some point the interface has to show something.
           if (versuch <= 3) {
             window.setTimeout(holen, 600 * versuch);
           } else {

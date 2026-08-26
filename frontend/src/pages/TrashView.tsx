@@ -54,9 +54,9 @@ export default function TrashView({ onChange }: { onChange: () => void }) {
             {items.map((p) => (
               <div key={p.id} className="list-row">
                 <span className="list-title">{p.title || "Ohne Titel"}</span>
-                {/* Die verbleibende Zeit statt des Datums: "noch 3 Tage" ist
-                    die Angabe, nach der man handelt. Der Tag steht im title,
-                    für den Fall, dass jemand es genau wissen will. */}
+                {/* The remaining time instead of the date: "noch 3 Tage" is the
+                    figure one acts on. The day stands in the title, in case
+                    somebody wants to know exactly. */}
                 {p.verfaelltAm && (
                   <span
                     className={"muted small" + (restTage(p.verfaelltAm) <= 3 ? " bald" : "")}
@@ -82,8 +82,8 @@ export default function TrashView({ onChange }: { onChange: () => void }) {
   );
 }
 
-// restTage sagt, wie viele Tage noch bleiben, aufgerundet, weil "noch 0 Tage"
-// bei einer Seite, die es morgen früh noch gibt, schlicht falsch wäre.
+// restTage says how many days are left, rounded up, because "noch 0 Tage" would
+// simply be wrong for a page that still exists tomorrow morning.
 function restTage(verfaelltAm: string): number {
   const ms = new Date(verfaelltAm).getTime() - Date.now();
   return Math.ceil(ms / 86400000);

@@ -1,12 +1,12 @@
-// Kein Testlauf im Bau eingerichtet, diese Datei dient als ausführbare
-// Beschreibung dessen, was die Rechnung leisten muss, und als Vorlage, sobald
-// ein Testlauf für das Frontend dazukommt.
+// No test run is set up in the build; this file serves as an executable
+// description of what the computation has to achieve, and as a template once a
+// test run for the frontend is added.
 import { kontrast, ausHex, lesbarAuf, schriftAuf } from "./farbe";
 
 export function pruefe(): string[] {
   const fehler: string[] = [];
 
-  // Bekannte Werte: Weiß auf Schwarz ist das Maximum.
+  // Known values: white on black is the maximum.
   if (Math.round(kontrast(ausHex("#ffffff"), ausHex("#000000"))) !== 21) {
     fehler.push("Kontrast Weiß/Schwarz ist nicht 21");
   }

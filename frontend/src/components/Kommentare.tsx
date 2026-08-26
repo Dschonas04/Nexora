@@ -66,9 +66,9 @@ export default function Kommentare({ pageId }: { pageId: string }) {
   };
 
   const loeschen = async (id: string) => {
-    // Kein window.confirm: der Kommentar bleibt als Hülle im Faden stehen und
-    // ließe sich notfalls aus der Prüfspur rekonstruieren. Eine Rückfrage für
-    // jeden Klick wäre lästiger als der Schaden.
+    // No window.confirm: the comment stays in the thread as a shell and could be
+    // reconstructed from the audit trail if need be. A confirmation for every
+    // click would be more of a nuisance than the damage.
     await api.kommentarLoeschen(id).catch(() => {});
     laden();
   };

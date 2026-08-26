@@ -56,8 +56,8 @@ export default function GruppenView() {
   };
 
   const loeschen = async (g: Gruppe) => {
-    // Rückfrage, weil mit der Gruppe auch alle Rechte fallen, die über sie
-    // vergeben wurden, das trifft womöglich Leute, die gerade arbeiten.
+    // A confirmation, because with the group all rights granted through it fall
+    // too, which may hit people who are working right now.
     if (
       !(await frage({
         titel: "Gruppe löschen",

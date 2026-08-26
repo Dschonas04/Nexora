@@ -1,15 +1,15 @@
 // Who may do what in one space.
 //
 // The three levels are a ladder, not a set of switches: lesen < schreiben <
-// verwalten. Whoever may verwalten hands out rights for this space — that is
-// the space manager, without needing a global role between user and admin.
-// "May manage Marketing" is a sentence an organisation can check; "is half an
-// admin" is not.
+// verwalten. Whoever may verwalten hands out rights for this space, which is the
+// space manager, without needing a global role between user and admin. "May
+// manage Marketing" is a sentence an organisation can check; "is half an admin"
+// is not.
 //
-// Aufbau der Maske: erst wer schon Zugriff hat, darunter das Erteilen. Wer
-// diesen Kasten öffnet, will meistens zuerst nachsehen und erst dann etwas
-// ändern, und das Hinzufügen setzt voraus, dass man die bestehende Liste
-// kennt, sonst vergibt man ein Recht zweimal.
+// Layout of the mask: first who already has access, below it the granting.
+// Whoever opens this box mostly wants to look first and only then change
+// something, and adding presupposes knowing the existing list, otherwise one
+// grants a right twice.
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Gruppe, SpaceRecht, User, api } from "../api/client";
@@ -22,9 +22,9 @@ const STUFEN: { wert: Stufe; titel: string; erklaerung: string }[] = [
   { wert: "verwalten", titel: "Verwalten", erklaerung: "zusätzlich Rechte an diesem Space vergeben" },
 ];
 
-// Ein Kandidat ist eine Gruppe oder ein Konto in derselben Liste. Die
-// Unterscheidung steckt nur noch in der Art, damit Suche und Auswahl nicht
-// zweimal geschrieben werden müssen.
+// A candidate is a group or an account in the same list. The distinction sits
+// only in its kind, so that search and selection do not have to be written
+// twice.
 type Kandidat = { art: "g" | "u"; id: string; name: string; zusatz: string };
 
 export default function SpaceRechte({
@@ -57,8 +57,8 @@ export default function SpaceRechte({
   useEffect(() => {
     laden();
     api.gruppen().then(setGruppen).catch(() => setGruppen([]));
-    // Konten für die Einzelvergabe. Fehlt das Recht dazu, bleibt die Liste
-    // leer und es lassen sich eben nur Gruppen berechtigen.
+    // Accounts for granting individually. If the right for that is missing the
+    // list stays empty and only groups can be entitled.
     api.listUsers().then(setKonten).catch(() => setKonten([]));
   }, [laden]);
 
@@ -95,8 +95,8 @@ export default function SpaceRechte({
     laden();
   };
 
-  // Schon vergebene Ziele nicht noch einmal anbieten, ändern geht in der
-  // Liste darüber, und zwei Wege für dieselbe Sache verwirren nur.
+  // Do not offer targets that are already granted a second time; changing works
+  // in the list above, and two ways for the same thing only confuse.
   const vergeben = useMemo(
     () => new Set(rechte.map((r) => r.gruppeId ?? r.userId)),
     [rechte],
@@ -143,8 +143,8 @@ export default function SpaceRechte({
           <h4 className="rechte-ueberschrift">Wer Zugriff hat</h4>
 
           <div className="rechte-liste">
-            {/* Steht als Zeile und nicht als Fußnote da: sonst liest sich eine
-                leere Liste so, als käme niemand an den Space. */}
+            {/* Stands there as a row and not as a footnote: otherwise an empty
+                list reads as if nobody could reach the space. */}
             <div className="rechte-zeile rechte-zeile-fest">
               <div className="rechte-wer">
                 <div className="rechte-name">Eigentümer und Administratoren</div>

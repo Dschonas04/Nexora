@@ -25,20 +25,20 @@ export default function Einfuhr({
 }) {
   const [laeuft, setLaeuft] = useState(false);
   const [vorschau, setVorschau] = useState<EinfuhrVorschau | null>(null);
-  // Die gewählten Dateien werden festgehalten, bis die Vorschau bestätigt ist
-  // sonst müsste man sie zum Einführen ein zweites Mal auswählen.
+  // The chosen files are held until the preview is confirmed, otherwise one
+  // would have to pick them a second time for the import itself.
   const [dateien, setDateien] = useState<File[]>([]);
   const [bericht, setBericht] = useState<EinfuhrBericht | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [ueber, setUeber] = useState(false);
   const wahl = useRef<HTMLInputElement>(null);
-  // Eine ganze Ablage einführen. Möglich nur an der Wurzel: in einer Ablage
-  // eine zweite anzulegen ergäbe keine Ordnung, sondern zwei.
+  // Import a whole space. Possible only at the root: creating a second space
+  // inside a space would not yield one order but two.
   const alsAblageMoeglich = !ziel.parentId && !ziel.spaceId;
   const [alsAblage, setAlsAblage] = useState(false);
   const [ablageName, setAblageName] = useState("");
-  // Zähler statt Schalter: über einem Kindelement feuert dragleave, obwohl der
-  // Zeiger den Kasten nie verlassen hat.
+  // A counter instead of a flag: over a child element dragleave fires although
+  // the pointer never left the box.
   const tiefe = useRef(0);
 
   useEffect(() => {
@@ -47,11 +47,11 @@ export default function Einfuhr({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose, laeuft]);
 
-  // Erst rechnen lassen, dann fragen. Zweihundert Seiten rückgängig zu machen
-  // hieße, sie einzeln in den Papierkorb zu schieben, die Vorschau kostet
-  // einen Klick und erspart genau das.
-  // Aus "Homelab.zip" wird "Homelab": der Name, unter dem die Ablage
-  // ausgeführt wurde, ist der beste Vorschlag für die, die daraus entsteht.
+  // Compute first, then ask. Undoing two hundred pages would mean pushing them
+  // into the trash one by one; the preview costs one click and spares exactly
+  // that.
+  // "Homelab.zip" becomes "Homelab": the name the space was exported under is
+  // the best suggestion for the one coming out of it.
   const nameAusDatei = (dateien: File[]) =>
     (dateien[0]?.name ?? "").replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
 
@@ -267,9 +267,9 @@ export default function Einfuhr({
   );
 }
 
-// Aeste zeigt den geplanten Baum. Die Quelldatei steht klein daneben: ein Titel
-// allein verrät nicht, woher er kommt, und genau das will man wissen, wenn
-// eine Seite an unerwarteter Stelle steht.
+// Aeste shows the planned tree. The source file stands small beside it: a title
+// alone does not reveal where it comes from, and that is exactly what one wants
+// to know when a page sits in an unexpected place.
 function Aeste({ knoten }: { knoten: EinfuhrAst[] }) {
   return (
     <ul className="einfuhr-aeste">

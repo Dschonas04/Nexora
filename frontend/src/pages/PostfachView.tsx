@@ -9,8 +9,8 @@ import { useNavigate } from "react-router-dom";
 
 import { Nachricht, api } from "../api/client";
 
-// Der Satz je Art. Der Name des Auslösers steht davor, deshalb fängt jeder
-// Satz mit einem Verb an.
+// The sentence per kind. The name of whoever triggered it stands in front, so
+// every sentence starts with a verb.
 const SATZ: Record<Nachricht["art"], string> = {
   kommentar: "hat kommentiert auf",
   antwort: "hat auf deinen Kommentar geantwortet in",
@@ -114,8 +114,9 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
   );
 }
 
-// wannText sagt, wie lange es her ist. "vor 3 Stunden" beantwortet die Frage,
-// die man beim Lesen stellt; ein Datum mit Uhrzeit müsste man erst umrechnen.
+// wannText says how long ago it was. "vor 3 Stunden" answers the question one
+// asks while reading; a date with a clock time would have to be converted
+// first.
 function wannText(zeitpunkt: string): string {
   const min = Math.floor((Date.now() - new Date(zeitpunkt).getTime()) / 60000);
   if (min < 1) return "gerade eben";

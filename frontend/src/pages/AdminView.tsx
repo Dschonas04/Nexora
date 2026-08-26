@@ -1,9 +1,8 @@
-// Kontenverwaltung, nur für Administratoren. Jede Aktion wird im Backend
-// erneut geprüft; die Ansicht zu verstecken ist Bequemlichkeit, keine
-// Absicherung.
+// Account administration, for administrators only. Every action is checked
+// again in the backend; hiding the view is convenience, not protection.
 //
-// Sie wird innerhalb der Einstellungen gezeigt und bringt deshalb keinen
-// eigenen Rahmen mehr mit, Überschrift und Abstände kommen von dort.
+// It is shown inside the settings and therefore no longer brings a frame of its
+// own; heading and spacing come from there.
 import { useEffect, useState } from "react";
 import { User, api } from "../api/client";
 import { useAuth } from "../auth";

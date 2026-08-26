@@ -55,10 +55,10 @@ const BESCHRIFTUNG: Record<string, string> = {
   "papierkorb.geleert": "Papierkorb der Instanz geleert",
 };
 
-// beschriften liefert den lesbaren Namen. Fehlt einer, wird der Rohname
-// wenigstens entschärft: Punkte zu Pfeilen, Umschreibungen zurück zu Umlauten.
-// Ein neuer Vorgang im Backend soll in der Spur nicht als "seite.geaendert"
-// erscheinen, bloß weil hier eine Zeile vergessen wurde.
+// beschriften returns the readable name. If one is missing, at least the raw
+// name is defused: dots to arrows, transliterations back to umlauts. A new
+// action in the backend shall not appear in the trail as "seite.geaendert"
+// merely because a line was forgotten here.
 function beschriften(aktion: string): string {
   const bekannt = BESCHRIFTUNG[aktion];
   if (bekannt) return bekannt;
