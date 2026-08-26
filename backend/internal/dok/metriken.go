@@ -1,16 +1,16 @@
-// Zeichenbreiten der PDF-Grundschriften, in Tausendstel der Schriftgröße.
+// Character widths of the PDF base fonts, in thousandths of the font size.
 //
-// Ohne sie kann kein Umbruch berechnet werden: eine Proportionalschrift hat für
-// jedes Zeichen eine andere Breite, und ohne Tabelle bliebe nur zu raten, mit
-// dem Ergebnis, dass Zeilen über den Rand hinauslaufen oder viel zu früh
-// umbrechen.
+// Without them no line break can be computed: a proportional font has a
+// different width for every character, and without a table there would be
+// nothing left but guessing, with the result that lines run over the margin or
+// break far too early.
 //
-// Die Zahlen stammen aus den Metriken der URW-Schriften (Nimbus Sans und Nimbus
-// Mono), die zu Helvetica und Courier maßgleich sind. Der Index ist der
-// Zeichencode nach WinAnsiEncoding, dieselbe Kodierung, die den Schriften im
-// PDF mitgegeben wird, damit Umlaute ankommen.
+// The numbers come from the metrics of the URW fonts (Nimbus Sans and Nimbus
+// Mono), which are metrically equal to Helvetica and Courier. The index is the
+// character code according to WinAnsiEncoding, the same encoding the fonts are
+// given in the PDF so that umlauts arrive.
 //
-// Erzeugt aus den AFM-Dateien; von Hand geändert wird hier nichts.
+// Generated from the AFM files; nothing here is changed by hand.
 package dok
 
 // breitenNormal holds the character widths of the regular face.

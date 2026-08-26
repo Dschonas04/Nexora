@@ -43,7 +43,7 @@ func (s *Server) pagePerm(ctx context.Context, uid, pageID string) (canRead, can
 	var ownerID string
 	var admin bool
 	var freigabe *string   // 'read' | 'edit' when the page is shared directly
-	var spaceRecht *string // 'lesen' | 'schreiben' | 'verwalten', bestes Recht am Space
+	var spaceRecht *string // 'lesen' | 'schreiben' | 'verwalten', best right on the space
 
 	err := s.Pool.QueryRow(ctx, `
 		SELECT
@@ -51,12 +51,11 @@ func (s *Server) pagePerm(ctx context.Context, uid, pageID string) (canRead, can
 			(SELECT role = 'admin' FROM users WHERE id = $2),
 			(SELECT sh.permission FROM page_shares sh
 			  WHERE sh.page_id = p.id AND sh.user_id = $2),
-			-- Bestes Recht am Space: einzeln vergeben, über eine Gruppe,
-			-- oder daher, dass die Ablage öffentlich ist. Alle drei Wege
-			-- landen im selben UNION und werden danach nach Stufe sortiert,
-			-- damit der stärkste gewinnt. Die Reihenfolge im ORDER BY ist die
-			-- Stufenleiter, nicht das Alphabet, 'lesen' käme sonst vor
-			-- 'schreiben'.
+			-- Best right on the space: granted directly, through a group, or
+			-- from the space being public. All three ways land in the same
+			-- UNION and are then sorted by level so that the strongest wins.
+			-- The order in the ORDER BY is the ladder of levels, not the
+			-- alphabet, otherwise 'lesen' would come before 'schreiben'.
 			(SELECT x.recht FROM (
 			   SELECT sr.recht FROM space_rechte sr
 			    WHERE $3
@@ -65,8 +64,8 @@ func (s *Server) pagePerm(ctx context.Context, uid, pageID string) (canRead, can
 			           OR sr.gruppe_id IN (SELECT gm.gruppe_id FROM gruppen_mitglieder gm
 			                               WHERE gm.user_id = $2))
 			   UNION ALL
-			   -- Eine öffentliche Ablage gilt für jedes angemeldete Konto und
-			   -- hängt an keinem Zusatzumfang: sie ist Grundausstattung.
+			   -- A public space applies to every logged in account and depends
+			   -- on no paid extra: it is part of the base equipment.
 			   SELECT CASE so.oeffentlich WHEN 'schreiben' THEN 'schreiben' ELSE 'lesen' END
 			     FROM spaces so
 			    WHERE so.id = p.space_id AND so.oeffentlich <> 'nein'
@@ -117,21 +116,21 @@ func (s *Server) darfSpaceVerwalten(ctx context.Context, uid, spaceID string) bo
 	return err == nil && erlaubt
 }
 
-// spaceZugriffSQL liefert die SQL-Bedingung, unter der ein Konto Zugriff auf
-// den Space einer Seite hat. Zwei Wege führen hinein:
+// spaceZugriffSQL returns the SQL condition under which an account has access
+// to the space of a page. Two ways lead in:
 //
-//	ein vergebenes Recht, einzeln oder über eine Gruppe, nur mit Zusatzumfang
-//	eine öffentliche Ablage, für jedes angemeldete Konto der Instanz
+//	a granted right, directly or through a group, only with the paid extra
+//	a public space, for every logged in account of the instance
 //
-// Das steht hier als eine Zeichenkette und nicht viermal ausgeschrieben in den
-// Abfragen, die sie brauchen. Genau das ist der Punkt: Sichtbarkeit an vier
-// Stellen getrennt zu formulieren heißt, dass eines Tages drei davon dasselbe
-// sagen und die vierte etwas anderes, und eine abweichende Rechteprüfung ist
-// der Weg, auf dem Seiten bei den Falschen landen.
+// It stands here as one string instead of being written out four times in the
+// queries that need it. That is precisely the point: phrasing visibility in four
+// places separately means that one day three of them say the same and the fourth
+// says something else, and a diverging permission check is the way pages end up
+// with the wrong people.
 //
-// Die Platzhalter werden übergeben, weil sie je Abfrage andere Nummern haben:
-// spaceID die Spalte mit der Space-Kennung, nutzer den Platzhalter des Kontos,
-// gruppenAn den des Lizenzschalters.
+// The placeholders are passed in because they carry different numbers in each
+// query: spaceID the column with the space id, nutzer the placeholder of the
+// account, gruppenAn the one of the licence switch.
 func spaceZugriffSQL(spaceID, nutzer, gruppenAn string) string {
 	return `(` + spaceID + ` IS NOT NULL AND (
 	        EXISTS (SELECT 1 FROM spaces so

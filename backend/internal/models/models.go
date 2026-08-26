@@ -24,14 +24,14 @@ type Space struct {
 	OwnerID   string    `json:"ownerId"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"createdAt"`
-	// Fremd markiert einen Space, der jemand anderem gehört und über ein
-	// Gruppen- oder Kontorecht sichtbar ist.
+	// Fremd marks a space that belongs to somebody else and is visible through a
+	// group right or an account right.
 	Fremd bool `json:"fremd"`
-	// Oeffentlich: 'nein', 'lesen' oder 'schreiben'. Eine öffentliche Ablage
-	// steht jedem angemeldeten Konto der Instanz offen, ohne Einzelrechte.
+	// Oeffentlich: 'nein', 'lesen' or 'schreiben'. A public space is open to every
+	// logged in account of the instance, without individual rights.
 	Oeffentlich string `json:"oeffentlich"`
-	// DarfVerwalten sagt der Oberfläche, ob sie überhaupt Knöpfe zum Ändern
-	// zeigen soll. Die Entscheidung selbst fällt nochmals im Backend.
+	// DarfVerwalten tells the interface whether to show buttons for changing
+	// things at all. The decision itself is made again in the backend.
 	DarfVerwalten bool `json:"darfVerwalten"`
 }
 
@@ -41,8 +41,8 @@ type Tag struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Color string `json:"color"`
-	// Anzahl der Seiten, die dieses Schlagwort tragen. Erst die Zahl macht aus
-	// einem Wort in der Seitenleiste eine Angabe.
+	// Number of pages carrying this tag. Only the number turns a word in the
+	// sidebar into a piece of information.
 	Anzahl int `json:"anzahl"`
 }
 

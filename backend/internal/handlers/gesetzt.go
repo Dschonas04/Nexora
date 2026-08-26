@@ -1,9 +1,9 @@
-// Export als gesetztes Dokument: PDF und Word.
+// Export as a typeset document: PDF and Word.
 //
-// Markdown bleibt frei, den eigenen Bestand aus dem System zu bekommen darf
-// nie hinter einer Lizenz liegen, das ist der Kern des Versprechens, das eine
-// BSL macht. Gesetzte Dokumente sind etwas anderes: sie sind kein Ausweg,
-// sondern eine Darstellung, und die gehört zum Zusatzumfang.
+// Markdown stays free; getting one's own content out of the system must never
+// sit behind a licence, that is the core of the promise a BSL makes. Typeset
+// documents are a different thing: they are not a way out but a presentation,
+// and that belongs to the paid extras.
 package handlers
 
 import (
@@ -32,9 +32,9 @@ func (s *Server) seiteAlsDokument(r *http.Request, id string) (dok.Dokument, boo
 	return dok.AusInhalt(json.RawMessage(inhalt), titel), true
 }
 
-// dateiKopf setzt Typ und Dateiname. Zwei Angaben mit Absicht: filename für
-// Klienten, die nur ASCII verstehen, filename* nach RFC 5987 für alle anderen
-// damit "Übersicht" eine Übersicht bleibt.
+// dateiKopf sets the type and the file name. Two entries on purpose: filename
+// for clients that understand only ASCII, filename* per RFC 5987 for all the
+// others, so that "Übersicht" stays an Übersicht.
 func dateiKopf(w http.ResponseWriter, typ, name, endung string) {
 	w.Header().Set("Content-Type", typ)
 	w.Header().Set("Content-Disposition",

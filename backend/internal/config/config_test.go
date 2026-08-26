@@ -37,9 +37,9 @@ func TestVorgabeBleibtOhneEintrag(t *testing.T) {
 }
 
 func TestKaputteZeilenKippenNichts(t *testing.T) {
-	// Eine unlesbare Zahl, eine Zeile ohne =, ein Abschnitt: nichts davon darf
-	// die übrigen Werte verlieren. Eine Konfiguration mit einem Tippfehler soll
-	// den Server nicht am Starten hindern.
+	// An unreadable number, a line without =, a section: none of it may lose the
+	// remaining values. A configuration with a typo shall not keep the server from
+	// starting.
 	k := Laden(schreibe(t, `
 [Abschnitt]
 sitzung_stunden = keine-zahl
@@ -83,8 +83,8 @@ func TestListeWirdGetrennt(t *testing.T) {
 }
 
 func TestFehlendeDateiIstKeinFehler(t *testing.T) {
-	// Der wichtigste Fall: ohne jede Konfiguration muss ein brauchbarer
-	// Zustand herauskommen, sonst startet eine frische Installation nicht.
+	// The most important case: without any configuration at all a usable state
+	// has to come out, otherwise a fresh installation does not start.
 	k := Laden(filepath.Join(t.TempDir(), "gibt-es-nicht.conf"))
 	if k.Port == "" || k.DatenbankURL == "" {
 		t.Fatal("Vorgaben fehlen, wenn keine Datei da ist")
@@ -104,9 +104,9 @@ ldap_tls_pruefen = nein
 	}
 }
 
-// Eine bestehende Datei nennt die Frist noch in Tagen. Sie muss weiter gelten,
-// sonst fiele eine Woche stillschweigend auf zwölf Stunden, sobald jemand die
-// neue Fassung einspielt.
+// An existing file still names the duration in days. It has to keep applying,
+// otherwise a week would silently drop to twelve hours as soon as somebody
+// installs the new version.
 func TestAlteAngabeInTagenGiltWeiter(t *testing.T) {
 	k := Laden(schreibe(t, "sitzung_tage = 7\n"))
 	if k.SitzungStunden != 168 {
@@ -114,8 +114,8 @@ func TestAlteAngabeInTagenGiltWeiter(t *testing.T) {
 	}
 }
 
-// Steht beides da, gewinnt die Angabe in Tagen: sie ist die ausdrücklich
-// gesetzte, die neue steht womöglich nur als Vorgabe in einer frischen Datei.
+// If both stand there, the value in days wins: it is the one that was set
+// deliberately, while the new one may merely be the default in a fresh file.
 func TestNeueAngabeAlleinReicht(t *testing.T) {
 	k := Laden(schreibe(t, "sitzung_stunden = 4\n"))
 	if k.SitzungStunden != 4 {

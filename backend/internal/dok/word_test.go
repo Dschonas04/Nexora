@@ -2,9 +2,9 @@ package dok
 
 import "testing"
 
-// Der Rundlauf: ein Dokument schreiben, wieder einlesen und vergleichen. Was
-// hier nicht ankommt, geht beim Bearbeiten einer Word-Datei verloren, der
-// Test ist die ehrliche Liste dessen, was der Weg trägt.
+// The round trip: write a document, read it back in and compare. Whatever does
+// not arrive here is lost when editing a Word file; the test is the honest list
+// of what the path carries.
 func TestWordRundlauf(t *testing.T) {
 	d := Dokument{
 		Titel: "Bericht",
@@ -61,8 +61,8 @@ func TestWordRundlauf(t *testing.T) {
 		t.Error("keine Tabelle überlebt")
 	}
 
-	// Die Auszeichnungen müssen an genau den Stücken hängen, an denen sie
-	// waren, sonst ist der Text zwar da, aber falsch betont.
+	// The styles have to hang on exactly the pieces they hung on, otherwise the
+	// text is there but stressed in the wrong places.
 	fettGefunden, kursivGefunden := false, false
 	for _, a := range zurueck.Absatz {
 		for _, s := range a.Text {
@@ -82,8 +82,8 @@ func TestWordRundlauf(t *testing.T) {
 	}
 }
 
-// Eine kaputte Datei darf nicht in Panik enden, sondern muss einen Fehler
-// liefern, sie kommt aus dem Netz.
+// A broken file must not end in a panic but has to return an error; it comes
+// from the network.
 func TestWordKaputt(t *testing.T) {
 	for _, roh := range [][]byte{nil, []byte("kein zip"), []byte("PK\x03\x04 aber sonst nichts")} {
 		if _, err := AusWord(roh); err == nil {
