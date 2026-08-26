@@ -23,9 +23,9 @@ import (
 	"strings"
 )
 
-// Inline ist ein Textstück im Editor-Dokument. Alle Felder tragen omitempty:
-// BlockNote nimmt unvollständige Blöcke an und ergänzt die Vorgaben selbst, und
-// eine Ausgabe ohne leere Felder lässt sich von Hand lesen.
+// Inline is a piece of text in the editor document. All fields carry omitempty:
+// BlockNote accepts incomplete blocks and fills in the defaults itself, and an
+// output without empty fields can be read by hand.
 type Inline struct {
 	Type    string          `json:"type"`
 	Text    string          `json:"text,omitempty"`
@@ -34,9 +34,8 @@ type Inline struct {
 	Content []Inline        `json:"content,omitempty"`
 }
 
-// Block ist ein Knoten des Dokuments. Content ist bewusst any: bei den meisten
-// Blöcken steht dort eine Liste von Inline-Stücken, bei einer Tabelle ein
-// Objekt mit Zeilen.
+// Block is a node of the document. Content is deliberately any: for most blocks
+// it holds a list of inline pieces, for a table an object with rows.
 type Block struct {
 	Type     string         `json:"type"`
 	Props    map[string]any `json:"props,omitempty"`
@@ -54,18 +53,18 @@ type TabellenZeile struct {
 	Cells [][]Inline `json:"cells"`
 }
 
-// Kopf ist der Vorspann einer Datei, die Angaben, die vor dem Text stehen und
-// nicht zum Text gehören.
+// Kopf is the front matter of a file, the entries standing before the text and
+// not belonging to it.
 type Kopf struct {
 	Titel string
 	Tags  []string
 	Icon  string
 }
 
-// knoten hält den Baum während des Lesens. Block.Children ist eine Liste von
-// Werten, keine von Zeigern; in eine wachsende Liste hinein zu verschachteln
-// hieße, mit Zeigern zu arbeiten, die der nächste Anhang ungültig macht. Also
-// wird erst ein Zeigerbaum gebaut und am Ende einmal umgeschrieben.
+// knoten holds the tree while reading. Block.Children is a list of values, not
+// of pointers; nesting into a growing list would mean working with pointers that
+// the next append invalidates. So a tree of pointers is built first and
+// rewritten once at the end.
 type knoten struct {
 	blk    Block
 	kinder []*knoten
@@ -91,19 +90,19 @@ var (
 	bildAlleinMuster  = regexp.MustCompile(`^!\[([^\]]*)\]\(\s*(<[^>]*>|[^\s)]+)(?:\s+"[^"]*")?\s*\)$`)
 )
 
-// Lies wandelt eine Markdown-Datei in Blöcke um.
+// Lies turns a Markdown file into blocks.
 //
-// Der zurückgegebene Titel ist die Überschrift, die ganz oben stand, sie wird
-// aus dem Text entfernt, weil der Titel in Nexora ein eigenes Feld ist und
-// sonst zweimal auf der Seite stünde. Steht dort keine, bleibt er leer und der
-// Aufrufer nimmt den Dateinamen.
+// The returned title is the heading that stood at the very top; it is removed
+// from the text because the title is a field of its own in Nexora and would
+// otherwise stand twice on the page. If there is none it stays empty and the
+// caller takes the file name.
 func Lies(md string) (string, Kopf, []Block) {
 	kopf, rest := Vorspann(md)
 	zeilen := strings.Split(strings.ReplaceAll(strings.ReplaceAll(rest, "\r\n", "\n"), "\r", "\n"), "\n")
 
 	titel := kopf.Titel
-	// Führende Leerzeilen weg, damit die Überschrift auch dann als erste Zeile
-	// gilt, wenn hinter dem Vorspann noch eine Leerzeile stand.
+	// Drop leading blank lines so that the heading counts as the first line even
+	// when a blank line followed the front matter.
 	for len(zeilen) > 0 && strings.TrimSpace(zeilen[0]) == "" {
 		zeilen = zeilen[1:]
 	}
@@ -118,12 +117,12 @@ func Lies(md string) (string, Kopf, []Block) {
 	return titel, kopf, bloeckeAus(zeilen)
 }
 
-// Vorspann liest den YAML-Kopf zwischen zwei Zeilen aus drei Strichen.
+// Vorspann reads the YAML head between two lines of three dashes.
 //
-// Bewusst kein YAML-Leser: gebraucht werden drei Angaben, und eine Bibliothek
-// für Dateien einzubinden, die ohnehin meist keinen Vorspann haben, steht in
-// keinem Verhältnis. Was nicht verstanden wird, wird übergangen, der Kopf
-// darf den Import einer Datei nicht verhindern.
+// Deliberately no YAML parser: three entries are needed, and pulling in a
+// library for files that mostly have no front matter at all is out of
+// proportion. Whatever is not understood is skipped; the head must not prevent
+// a file from being imported.
 func Vorspann(md string) (Kopf, string) {
 	var k Kopf
 	s := strings.ReplaceAll(md, "\r\n", "\n")
@@ -174,8 +173,8 @@ func Vorspann(md string) (Kopf, string) {
 	return k, rest
 }
 
-// normSchluessel bringt die Schreibweisen der üblichen Werkzeuge auf einen
-// Nenner. Obsidian schreibt "tags", Notion "Tags", Jekyll "title".
+// normSchluessel brings the spellings of the common tools onto one
+// denominator. Obsidian writes "tags", Notion "Tags", Jekyll "title".
 func normSchluessel(s string) string {
 	switch s {
 	case "title", "titel", "name":
@@ -194,8 +193,8 @@ func saubereMarke(s string) string {
 	return strings.TrimSpace(strings.TrimPrefix(s, "#"))
 }
 
-// NurText zieht den reinen Text aus Inline-Stücken. Wird für Titel gebraucht,
-// die im Dokument ausgezeichnet waren, ein Seitentitel trägt keine Fettung.
+// NurText pulls the plain text out of inline pieces. Needed for titles that
+// were styled in the document; a page title carries no bold.
 func NurText(teile []Inline) string {
 	var b strings.Builder
 	for _, t := range teile {

@@ -18,12 +18,12 @@ import (
 // hold a right on, and the public ones.
 func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
-	// Eigene Spaces, die mit einem Recht, und die öffentlichen. Ohne den
-	// zweiten Teil erschienen die freigegebenen Seiten in der Leiste ohne den
-	// Space, zu dem sie gehören, also lose, statt geordnet.
+	// Own spaces, those held by a right, and the public ones. Without the second
+	// part the shared pages would appear in the sidebar without the space they
+	// belong to, loose instead of ordered.
 	//
-	// Sortiert wird so, dass die öffentlichen Ablagen oben stehen: sie sind das
-	// Gemeinsame und damit meist das, was man sucht.
+	// Sorted so that the public spaces stand on top: they are the shared ground
+	// and therefore usually what one is looking for.
 	rows, err := s.Pool.Query(r.Context(),
 		`SELECT sp.id, sp.owner_id, sp.name, sp.created_at, sp.oeffentlich,
 		        (sp.owner_id <> $1) AS fremd,
@@ -85,8 +85,8 @@ func (s *Server) CreateSpace(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "could not create space")
 		return
 	}
-	// Das Gegenstück zum Löschen: erst beide Einträge zusammen ergeben eine
-	// Spur, an der sich der Bestand an Ablagen nachvollziehen lässt.
+	// The counterpart to the deletion: only both entries together make a trail
+	// along which the stock of spaces can be followed.
 	s.spurAusRequest(r, AktSpaceAngelegt, "space", sp.ID, sp.Name, nil)
 	writeJSON(w, http.StatusCreated, sp)
 }
@@ -121,9 +121,9 @@ func (s *Server) DeleteSpace(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
 
-	// Den Namen vorher holen: nach dem Löschen ist er weg, und ein Eintrag in
-	// der Prüfspur, der nur eine Kennung nennt, beantwortet die Frage "welche
-	// Ablage war das?" nicht mehr.
+	// Fetch the name beforehand: after the deletion it is gone, and an audit
+	// entry naming only an id no longer answers the question "which space was
+	// that?".
 	var name string
 	_ = s.Pool.QueryRow(r.Context(), `SELECT name FROM spaces WHERE id=$1`, id).Scan(&name)
 
@@ -138,10 +138,10 @@ func (s *Server) DeleteSpace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Eine Ablage zu löschen ist folgenreich: die Seiten darin verlieren ihre
-	// Zuordnung und die erteilten Rechte verschwinden mit. Bisher hinterließ
-	// das keine Spur, hinterher war nicht mehr festzustellen, dass es die
-	// Ablage überhaupt gab.
+	// Deleting a space has consequences: the pages inside it lose their
+	// assignment and the rights granted on it disappear with it. Until now that
+	// left no trace, and afterwards there was no way to tell the space had ever
+	// existed.
 	s.spurAusRequest(r, AktSpaceGeloescht, "space", id, name, nil)
 
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
@@ -151,19 +151,18 @@ type spaceOeffentlichReq struct {
 	Oeffentlich string `json:"oeffentlich"` // "nein" | "lesen" | "schreiben"
 }
 
-// SetSpaceOeffentlich schaltet eine Ablage für die ganze Instanz frei, oder
-// nimmt das zurück.
+// SetSpaceOeffentlich opens a space to the whole instance, or takes that back.
 //
-// Gemeint ist ausdrücklich "offen für alle angemeldeten Konten dieser Instanz",
-// nicht "offen im Internet". Anonymer Zugriff läuft weiterhin allein über den
-// Freigabelink einer einzelnen Seite. Diese Trennung ist wichtig genug, um sie
-// nicht hinter demselben Wort zu verstecken: wer eine Ablage öffentlich
-// schaltet, soll damit nichts ins Netz stellen.
+// What is meant is explicitly "open to every logged in account of this
+// instance", not "open on the internet". Anonymous access still runs solely
+// through the share link of a single page. That distinction is important enough
+// not to hide it behind the same word: whoever makes a space public shall not
+// thereby put anything on the net.
 //
-// Anders als die Space-Rechte hängt das an keinem Zusatzumfang. Eine gemeinsame
-// Ablage ist das, was ein Wiki überhaupt zum Wiki macht; sie hinter eine Lizenz
-// zu stellen hieße, den freien Kern zur Einzelplatzablage zu machen. Die
-// fein abgestufte Rechtevergabe je Gruppe bleibt der Zusatzumfang.
+// Unlike the space rights this depends on no paid extra. A shared space is what
+// makes a wiki a wiki in the first place; putting it behind a licence would turn
+// the free core into a single seat filing cabinet. The finely graded rights per
+// group remain the paid extra.
 func (s *Server) SetSpaceOeffentlich(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -173,8 +172,8 @@ func (s *Server) SetSpaceOeffentlich(w http.ResponseWriter, r *http.Request) {
 	}
 	var req spaceOeffentlichReq
 	_ = decode(r, &req)
-	// Was nicht ausdrücklich erlaubt ist, wird 'nein'. Ein Tippfehler im
-	// Aufruf soll eine Ablage schließen, niemals öffnen.
+	// Whatever is not explicitly allowed becomes 'nein'. A typo in the call shall
+	// close a space, never open it.
 	wert := "nein"
 	switch req.Oeffentlich {
 	case "lesen", "schreiben":

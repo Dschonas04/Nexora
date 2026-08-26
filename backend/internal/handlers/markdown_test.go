@@ -42,16 +42,16 @@ func TestAuszeichnungen(t *testing.T) {
 }
 
 func TestCodeBleibtInnen(t *testing.T) {
-	// Fett UND Code: die Backticks müssen innen liegen, sonst steht der Stern
-	// im Code und wird nicht mehr als Auszeichnung gelesen.
+	// Bold AND code: the backticks have to sit inside, otherwise the asterisk
+	// stands in the code and is no longer read as a style.
 	md := um(t, `[{"type":"paragraph","content":[
 	 {"type":"text","text":"x","styles":{"bold":true,"code":true}}]}]`)
 	enthaelt(t, md, "**`x`**")
 }
 
 func TestLeerzeichenBleibenAussen(t *testing.T) {
-	// "** fett **" stellt kein Leser als fett dar. Die Leerzeichen gehören
-	// vor und hinter die Sterne.
+	// "** bold **" is rendered as bold by no reader. The spaces belong before and
+	// after the asterisks.
 	md := um(t, `[{"type":"paragraph","content":[
 	 {"type":"text","text":" fett ","styles":{"bold":true}}]}]`)
 	if strings.Contains(md, "** fett **") {
@@ -130,8 +130,8 @@ func TestBild(t *testing.T) {
 }
 
 func TestUnbekannterBlockVerliertKeinenText(t *testing.T) {
-	// Ein Typ, den diese Fassung nicht kennt, darf seinen Text nicht
-	// verschlucken, unvollständig exportieren ist besser als verlieren.
+	// A type this version does not know must not swallow its text; exporting
+	// incompletely is better than losing.
 	md := um(t, `[{"type":"gibtEsNochNicht","content":[{"type":"text","text":"wichtig"}]}]`)
 	enthaelt(t, md, "wichtig")
 }
@@ -178,9 +178,9 @@ func nichtEnthaelt(t *testing.T, got, darfNicht string) {
 	}
 }
 
-// Ein Absatz direkt hinter einem Listeneintrag, ohne Leerzeile dazwischen, ist
-// für jeden Markdown-Leser die Fortsetzung dieses Eintrags, der Absatz
-// verschwindet dann in der Liste.
+// A paragraph directly after a list item, without a blank line in between, is
+// the continuation of that item to every Markdown reader, and the paragraph then
+// disappears into the list.
 func TestAbsatzNachListeBekommtLeerzeile(t *testing.T) {
 	md := um(t, `[
 	 {"type":"bulletListItem","content":[{"type":"text","text":"Punkt"}]},
@@ -188,16 +188,17 @@ func TestAbsatzNachListeBekommtLeerzeile(t *testing.T) {
 	enthaelt(t, md, "- Punkt\n\nDanach")
 }
 
-// Unter "1. " beginnt der Inhalt in Spalte 3. Zwei Leerzeichen Einrückung
-// reichen dort nicht: der Untereintrag wäre eine zweite Liste daneben.
+// Under "1. " the content begins in column 3. Two spaces of indent are not
+// enough there: the sub item would be a second list beside it.
 func TestUntereintragUnterNummerRuecktWeitGenugEin(t *testing.T) {
 	md := um(t, `[{"type":"numberedListItem","content":[{"type":"text","text":"Eins"}],
 	  "children":[{"type":"bulletListItem","content":[{"type":"text","text":"Unter"}]}]}]`)
 	enthaelt(t, md, "1. Eins\n   - Unter")
 }
 
-// Neuere Editorstände liefern Tabellenzellen als Objekt mit content-Feld statt
-// als blanke Liste. Wird das nicht erkannt, steht die Tabelle da und ist leer.
+// Newer editor versions deliver table cells as an object with a content field
+// instead of as a bare list. If that is not recognised the table stands there
+// empty.
 func TestTabellenzelleAlsObjekt(t *testing.T) {
 	md := um(t, `[{"type":"table","content":{"rows":[
 	 {"cells":[{"type":"tableCell","content":[{"type":"text","text":"A"}]},
@@ -211,8 +212,8 @@ func TestSenkrechterStrichZerreisstTabelleNicht(t *testing.T) {
 	enthaelt(t, md, `| a\|b |`)
 }
 
-// Kurze Zeilen bekommen dieselbe Spaltenzahl wie die längste. Sonst zerlegt
-// eine Zeile mit weniger Zellen die Tabelle beim Lesen.
+// Short rows get the same number of columns as the longest one. Otherwise a row
+// with fewer cells tears the table apart on reading.
 func TestTabelleWirdRechteckig(t *testing.T) {
 	md := um(t, `[{"type":"table","content":{"rows":[
 	 {"cells":[[{"type":"text","text":"A"}],[{"type":"text","text":"B"}]]},
@@ -231,8 +232,8 @@ func TestZeilenanfangWirdEntschaerft(t *testing.T) {
 	nichtEnthaelt(t, md, "\n1998. ")
 }
 
-// [[Titel]] ist in Nexora ein Verweis, auch als reiner Text. Maskiert man die
-// Klammern, kommt aus dem Export ein Text zurück, der keiner mehr ist.
+// [[Title]] is a link in Nexora, even as plain text. Escaping the brackets makes
+// the export return a text that is no longer one.
 func TestWikiVerweisBleibtStehen(t *testing.T) {
 	md := um(t, `[{"type":"paragraph","content":[{"type":"text","text":"siehe [[Notiz]] dort"}]}]`)
 	enthaelt(t, md, "siehe [[Notiz]] dort")
@@ -244,16 +245,16 @@ func TestUnterstrichImWortBleibt(t *testing.T) {
 }
 
 func TestBacktickPasstInCodeSpanne(t *testing.T) {
-	// Der Backtick wird eingesetzt statt geschrieben: eine rohe Zeichenkette in
-	// Go kann keinen enthalten.
+	// The backtick is inserted rather than written: a raw string in Go cannot
+	// contain one.
 	roh := strings.ReplaceAll(`[{"type":"paragraph","content":[
 	 {"type":"text","text":"a @ b","styles":{"code":true}}]}]`, "@", "`")
 	md := um(t, roh)
 	enthaelt(t, md, "``a ` b``")
 }
 
-// Zwei Leerzeilen in einem Codeblock sind Inhalt. Sie zu einer zu machen
-// verändert den exportierten Code.
+// Two blank lines in a code block are content. Turning them into one changes the
+// exported code.
 func TestLeerzeilenImCodeBleiben(t *testing.T) {
 	md := um(t, `[{"type":"codeBlock","props":{"language":"go"},
 	  "content":[{"type":"text","text":"a\n\n\nb"}]}]`)

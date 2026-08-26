@@ -20,13 +20,13 @@ import (
 	"unicode/utf8"
 )
 
-// maxAnhangText begrenzt, was in den Index geht. Ein tsvector fasst rund ein
-// Megabyte; ein Handbuch mit tausend Seiten würde die Grenze sprengen und das
-// INSERT scheitern lassen.
+// maxAnhangText limits what goes into the index. A tsvector holds roughly one
+// megabyte; a manual of a thousand pages would burst the limit and make the
+// INSERT fail.
 const maxAnhangText = 400_000
 
-// textAusAnhang liefert den lesbaren Inhalt. roh ist der Dateistrom, mime der
-// gemeldete Typ.
+// textAusAnhang returns the readable content. roh is the file stream, mime the
+// reported type.
 func textAusAnhang(ctx context.Context, roh []byte, mime, dateiname string) string {
 	switch {
 	case strings.HasPrefix(mime, "text/"),
@@ -41,24 +41,24 @@ func textAusAnhang(ctx context.Context, roh []byte, mime, dateiname string) stri
 	return ""
 }
 
-// ausPDF ruft pdftotext auf.
+// ausPDF calls pdftotext.
 //
-// Ein eigener Auslesecode in Go wäre ohne fremde Abhängigkeit ausgekommen,
-// scheitert aber an vielen echten PDFs, Schriftkodierungen, Spalten,
-// eingebettete Bilder. pdftotext ist der Maßstab, an dem sich solche Werkzeuge
-// messen, und liegt als poppler-utils im Abbild.
+// Extraction code of our own in Go would have managed without a foreign
+// dependency, but fails on many real PDFs: font encodings, columns, embedded
+// images. pdftotext is the yardstick such tools are measured against, and it
+// sits in the image as poppler-utils.
 //
-// Ein gescanntes PDF ohne Textebene liefert nichts. Das ist richtig so: dafür
-// bräuchte es Texterkennung, und die gehört nicht in den Weg eines Uploads.
+// A scanned PDF without a text layer yields nothing. That is as it should be:
+// that would need OCR, and OCR does not belong in the path of an upload.
 func ausPDF(ctx context.Context, roh []byte) string {
-	// Eigene Frist. Ein beschädigtes PDF kann pdftotext beliebig lange
-	// beschäftigen, und ein hängender Upload ist schlimmer als ein Anhang
-	// ohne Volltext.
+	// A deadline of its own. A damaged PDF can keep pdftotext busy for an
+	// arbitrarily long time, and a hanging upload is worse than an attachment
+	// without full text.
 	ctx, abbrechen := context.WithTimeout(ctx, 20*time.Second)
 	defer abbrechen()
 
-	// "-" für Eingabe und Ausgabe: nichts wird auf die Platte geschrieben, was
-	// sonst aufgeräumt werden müsste.
+	// "-" for input and output: nothing is written to disk that would have to be
+	// cleaned up afterwards.
 	cmd := exec.CommandContext(ctx, "pdftotext", "-q", "-enc", "UTF-8", "-", "-")
 	cmd.Stdin = bytes.NewReader(roh)
 	var aus, fehler bytes.Buffer
@@ -86,14 +86,14 @@ func kuerzen(s string) string {
 	return s
 }
 
-// mitschnitt liest den Strom und gibt ihn zugleich weiter.
+// mitschnitt reads the stream and passes it on at the same time.
 //
-// Der Anhang muss ohnehin durch den Server laufen, um in der Ablage zu landen.
-// Ihn danach zum Auslesen ein zweites Mal zu holen wäre eine vermeidbare Runde
-// gerade beim Objektspeicher, wo das über das Netz ginge.
+// The attachment has to run through the server anyway to land in the storage.
+// Fetching it a second time afterwards to read it would be an avoidable round
+// trip, especially with an object store, where it would go across the network.
 //
-// Gepuffert wird nur bis zur Indexgrenze; alles darüber fließt durch, ohne
-// gemerkt zu werden. Sonst läge eine 200-MB-Datei komplett im Arbeitsspeicher.
+// Buffered only up to the index limit; everything beyond flows through without
+// being remembered. Otherwise a 200 MB file would sit in memory in full.
 type mitschnitt struct {
 	quelle io.Reader
 	puffer bytes.Buffer

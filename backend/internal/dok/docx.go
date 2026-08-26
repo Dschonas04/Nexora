@@ -1,15 +1,14 @@
-// Word-Ausgabe (.docx).
+// Word output (.docx).
 //
-// Eine docx-Datei ist ein ZIP mit XML darin. Das lässt sich mit archive/zip und
-// encoding/xml aus der Standardbibliothek schreiben; ein Fremdpaket brächte für
-// diesen Zweck vor allem Umfang mit.
+// A docx file is a ZIP with XML inside. That can be written with archive/zip and
+// encoding/xml from the standard library; a third party package would mainly
+// bring bulk for this purpose.
 //
-// Aufzählungen werden mit einem gesetzten Zeichen und Einzug geschrieben, nicht
-// über die Nummerierungsdefinitionen von Word. Das ist eine bewusste
-// Entscheidung: numbering.xml ist der Teil des Formats, an dem sich Word am
-// schnellsten stört, und eine Datei, die Word als beschädigt meldet, ist
-// wertlos, eine Liste, die als Text richtig dasteht, aber nicht per Klick
-// weiternummeriert, ist es nicht.
+// Bullet and numbered lists are written with a typeset character and an indent,
+// not through Word's numbering definitions. That is a deliberate decision:
+// numbering.xml is the part of the format Word takes offence at fastest, and a
+// file Word reports as damaged is worthless, while a list that reads correctly
+// as text but does not renumber itself on a click is not.
 package dok
 
 import (
@@ -24,8 +23,8 @@ func wxml(s string) string {
 	r := strings.NewReplacer(
 		"&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;",
 	)
-	// Steuerzeichen sind in XML 1.0 nicht erlaubt und machen die Datei
-	// unlesbar, Word öffnet sie dann gar nicht erst.
+	// Control characters are not allowed in XML 1.0 and make the file unreadable;
+	// Word then refuses to open it at all.
 	var b strings.Builder
 	for _, c := range s {
 		if c < 0x20 && c != '\t' && c != '\n' {
@@ -60,8 +59,8 @@ func lauf(s Stueck, groesse int, immerFett bool) string {
 	// Halbe Punkte: w:sz zählt in Halbpunkten.
 	fmt.Fprintf(&eig, `<w:sz w:val="%d"/><w:szCs w:val="%d"/>`, groesse*2, groesse*2)
 
-	// xml:space="preserve" ist nicht kosmetisch: ohne das Attribut wirft Word
-	// führende und folgende Leerzeichen weg, und aus "a **b** c" wird "a**b**c".
+	// xml:space="preserve" is not cosmetic: without the attribute Word throws
+	// away leading and trailing spaces, and "a **b** c" becomes "a**b**c".
 	return fmt.Sprintf(`<w:r><w:rPr>%s</w:rPr><w:t xml:space="preserve">%s</w:t></w:r>`,
 		eig.String(), wxml(s.Text))
 }
@@ -152,8 +151,8 @@ func tabelleXML(zeilen [][]string) string {
 		return ""
 	}
 	spalten := len(zeilen[0])
-	// 9026 Twips ist die Satzbreite einer A4-Seite mit den unten gesetzten
-	// Rändern; gleichmäßig geteilt.
+	// 9026 twips is the type width of an A4 page with the margins set below;
+	// divided evenly.
 	spaltenBreite := 9026 / spalten
 
 	var b strings.Builder
@@ -187,8 +186,8 @@ func tabelleXML(zeilen [][]string) string {
 		b.WriteString("</w:tr>")
 	}
 	b.WriteString("</w:tbl>")
-	// Word braucht nach einer Tabelle einen Absatz, sonst hängt die nächste
-	// Tabelle direkt daran und beide verschmelzen beim Bearbeiten.
+	// Word needs a paragraph after a table, otherwise the next table attaches
+	// directly to it and both merge while editing.
 	b.WriteString("<w:p/>")
 	return b.String()
 }
@@ -198,8 +197,7 @@ func Word(d Dokument) ([]byte, error) {
 	return WordMehrere([]Dokument{d})
 }
 
-// WordMehrere schreibt mehrere Seiten in EIN Dokument, getrennt durch einen
-// Seitenumbruch.
+// WordMehrere writes several pages into ONE document, separated by a page break.
 func WordMehrere(docs []Dokument) ([]byte, error) {
 	var koerper strings.Builder
 	for i, d := range docs {
@@ -207,10 +205,10 @@ func WordMehrere(docs []Dokument) ([]byte, error) {
 			koerper.WriteString(`<w:p><w:r><w:br w:type="page"/></w:r></w:p>`)
 		}
 		if d.Titel != "" {
-			// Als Überschrift der ersten Ebene, nicht als fetter Absatz: Word
-			// zeigt sie dann im Navigationsbereich, und beim Wiedereinlesen
-			// ist sie als Titel zu erkennen. Vorher war sie nur groß und fett
-			// für das Auge dasselbe, für jedes Programm nichts.
+			// As a first level heading, not as a bold paragraph: Word then shows it
+			// in the navigation pane, and on reading it back it can be recognised as
+			// a title. Before it was merely large and bold, the same thing to the
+			// eye, nothing to any program.
 			koerper.WriteString(`<w:p><w:pPr><w:pStyle w:val="Heading1"/>` +
 				`<w:spacing w:after="240"/></w:pPr>` +
 				lauf(Stueck{Text: d.Titel, Fett: true}, 24, false) + `</w:p>`)
@@ -246,10 +244,9 @@ func WordMehrere(docs []Dokument) ([]byte, error) {
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>`
 
-	// Nur die Formatvorlagen, auf die oben verwiesen wird. Word ergänzt beim
-	// Speichern selbst, was ihm fehlt; was hier steht, muss aber stimmen,
-	// ein Verweis auf eine Vorlage, die es nicht gibt, ist ein Fehler in der
-	// Datei.
+	// Only the styles referred to above. Word adds whatever it misses when
+	// saving; what stands here has to be right though, a reference to a style that
+	// does not exist is an error in the file.
 	var vorlagen strings.Builder
 	vorlagen.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">

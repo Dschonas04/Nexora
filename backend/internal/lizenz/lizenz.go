@@ -43,12 +43,12 @@ var Alle = []Funktion{
 	Pruefspur, Gruppen, SSO, LDAP, Anhangsuche, Export, Vorlagen, Kommentare, Konflikte,
 }
 
-// Stufe ist ein Bündel von Funktionen, das, was verkauft wird.
+// Stufe is a bundle of features, the thing that is sold.
 //
-// Einzelne Funktionen bleiben trotzdem der Maßstab im Code: geprüft wird immer
-// gegen eine Funktion, nie gegen eine Stufe. Sonst müsste jede Abfrage wissen,
-// welche Stufe was enthält, und eine Umstellung des Angebots hieße, den halben
-// Code anzufassen.
+// Individual features remain the measure in the code nonetheless: checks always
+// run against a feature, never against a tier. Otherwise every query would have
+// to know which tier contains what, and rearranging the offer would mean
+// touching half the code.
 type Stufe string
 
 const (
@@ -61,9 +61,9 @@ const (
 // StufenReihe is the order from the smallest tier to the largest.
 var StufenReihe = []Stufe{StufeFrei, StufeAdvanced, StufePro, StufeBusiness}
 
-// stufenZusatz nennt, was eine Stufe GEGENÜBER DER VORIGEN hinzufügt. Kumulativ
-// aufgeschrieben wäre dieselbe Liste dreimal da, und beim nächsten Umsortieren
-// stimmte eine davon nicht mehr.
+// stufenZusatz names what a tier adds COMPARED TO THE PREVIOUS ONE. Written
+// cumulatively the same list would appear three times, and at the next
+// rearrangement one of them would no longer be right.
 var stufenZusatz = map[Stufe][]Funktion{
 	StufeFrei:     {},
 	StufeAdvanced: {Versionen, Anhaenge, Vorlagen, Kommentare},
@@ -71,8 +71,8 @@ var stufenZusatz = map[Stufe][]Funktion{
 	StufeBusiness: {Gruppen, Pruefspur, SSO, LDAP},
 }
 
-// FunktionenDerStufe liefert alles, was eine Stufe enthält, einschließlich
-// dessen, was die kleineren schon enthielten.
+// FunktionenDerStufe returns everything a tier contains, including what the
+// smaller ones already contained.
 func FunktionenDerStufe(st Stufe) []Funktion {
 	var raus []Funktion
 	for _, s := range StufenReihe {
@@ -81,8 +81,8 @@ func FunktionenDerStufe(st Stufe) []Funktion {
 			return raus
 		}
 	}
-	// Unbekannte Stufe: nichts freischalten. Ein Tippfehler im Schlüssel darf
-	// nicht zufällig zu Business führen.
+	// Unknown tier: unlock nothing. A typo in the key must not accidentally lead
+	// to Business.
 	return nil
 }
 
@@ -96,14 +96,13 @@ func StufeGueltig(st Stufe) bool {
 	return false
 }
 
-// Aussteller signiert neue Schlüssel. Auch das implementiert das
-// premium-Paket, der freie Kern kennt weder den privaten Schlüssel noch das
-// Verfahren und kann deshalb keine Schlüssel erzeugen, egal wie er aufgerufen
-// wird.
+// Aussteller signs new keys. This too is implemented by the premium package;
+// the free core knows neither the private key nor the procedure and can
+// therefore issue no keys, however it is called.
 type Aussteller interface {
-	// Moeglich sagt, ob überhaupt ausgestellt werden kann. Auf einer
-	// gewöhnlichen Installation ist das nein: dort liegt kein privater
-	// Schlüssel, und das soll auch so bleiben.
+	// Moeglich says whether issuing is possible at all. On an ordinary
+	// installation the answer is no: no private key lies there, and it should stay
+	// that way.
 	Moeglich() bool
 	Stelle(inhaber string, stufe Stufe, zusaetzlich []Funktion, ablauf time.Time) (string, error)
 }
@@ -167,8 +166,8 @@ func Ausstellen(inhaber string, stufe Stufe, zusaetzlich []Funktion, ablauf time
 	return a.Stelle(inhaber, stufe, zusaetzlich, ablauf)
 }
 
-// Pruefe liest einen Schlüssel, ohne den geltenden zu ersetzen. Für die
-// Verwaltung: erst sehen, was ein Schlüssel enthält, dann entscheiden.
+// Pruefe reads a key without replacing the one in force. For the admin console:
+// first see what a key contains, then decide.
 func Pruefe(schluessel string) (Zustand, error) {
 	mu.RLock()
 	p := pruefer
