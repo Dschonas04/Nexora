@@ -99,6 +99,10 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   // element to the next, otherwise the highlight would flicker.
   const [ueberSeite, setUeberSeite] = useState(0);
   const [eingeworfen, setEingeworfen] = useState<FileList | null>(null);
+  // Counts up whenever the editor has uploaded a picture: the list below the
+  // page reads its own data and would otherwise not know about it until the next
+  // time the page is opened.
+  const [anhangTick, setAnhangTick] = useState(0);
   const [exportOffen, setExportOffen] = useState(false);
   // Refs rather than state: changing either must not trigger a render. The timer
   // drives the debounced autosave, the editor handle is needed for the markdown
@@ -355,6 +359,21 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   // list, which uploads them; the drop does not have to hit the narrow list at
   // the very bottom.
   const dateiAbwurfMoeglich = canEdit && frei("anhaenge");
+
+  // A picture in the text is an attachment of this page, nothing else. It takes
+  // the same route as any other file and therefore lies wherever the instance
+  // keeps its attachments, on the disk or in the bucket, and it is reachable
+  // only for whoever may read the page.
+  //
+  // That is the whole point of doing it this way: an image block wants an
+  // address, and an address into somebody else's server means the picture is
+  // gone the day that server is. The list under the page shows it as well, which
+  // is honest, since that is exactly what it is.
+  const bildHochladen = async (datei: File) => {
+    const anhang = await api.uploadAttachment(page.id, datei);
+    setAnhangTick((n) => n + 1);
+    return `/api/pages/${page.id}/attachments/${anhang.id}`;
+  };
   const sindDateien = (e: React.DragEvent) =>
     Array.from(e.dataTransfer.types).includes("Files");
 
@@ -505,10 +524,12 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
               linkResolver={resolveLink}
               onOpenLink={(pid) => nav(`/page/${pid}`)}
               mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}
+              dateiHochladen={dateiAbwurfMoeglich ? bildHochladen : undefined}
             />
             {frei("anhaenge") && (
               <Attachments
                 pageId={page.id}
+                neuLaden={anhangTick}
                 canEdit={canEdit}
                 eingeworfen={eingeworfen}
                 onEingeworfenFertig={() => setEingeworfen(null)}

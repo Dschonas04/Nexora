@@ -17,9 +17,21 @@ import { Gruppe, SpaceRecht, User, api } from "../api/client";
 type Stufe = "lesen" | "schreiben" | "verwalten";
 
 const STUFEN: { wert: Stufe; titel: string; erklaerung: string }[] = [
-  { wert: "lesen", titel: "Lesen", erklaerung: "Seiten ansehen, nichts ändern" },
-  { wert: "schreiben", titel: "Schreiben", erklaerung: "Seiten ansehen und bearbeiten" },
-  { wert: "verwalten", titel: "Verwalten", erklaerung: "zusätzlich Rechte an diesem Space vergeben" },
+  {
+    wert: "lesen",
+    titel: "Lesen",
+    erklaerung: "Seiten ansehen, nichts ändern",
+  },
+  {
+    wert: "schreiben",
+    titel: "Schreiben",
+    erklaerung: "Seiten ansehen und bearbeiten",
+  },
+  {
+    wert: "verwalten",
+    titel: "Verwalten",
+    erklaerung: "zusätzlich Rechte an diesem Space vergeben",
+  },
 ];
 
 // A candidate is a group or an account in the same list. The distinction sits
@@ -56,10 +68,16 @@ export default function SpaceRechte({
 
   useEffect(() => {
     laden();
-    api.gruppen().then(setGruppen).catch(() => setGruppen([]));
+    api
+      .gruppen()
+      .then(setGruppen)
+      .catch(() => setGruppen([]));
     // Accounts for granting individually. If the right for that is missing the
     // list stays empty and only groups can be entitled.
-    api.listUsers().then(setKonten).catch(() => setKonten([]));
+    api
+      .listUsers()
+      .then(setKonten)
+      .catch(() => setKonten([]));
   }, [laden]);
 
   useEffect(() => {
@@ -110,20 +128,28 @@ export default function SpaceRechte({
         name: g.name,
         zusatz: `Gruppe, ${g.mitglieder} ${g.mitglieder === 1 ? "Mitglied" : "Mitglieder"}`,
       })),
-      ...konten.map<Kandidat>((k) => ({ art: "u", id: k.id, name: k.name, zusatz: k.email })),
+      ...konten.map<Kandidat>((k) => ({
+        art: "u",
+        id: k.id,
+        name: k.name,
+        zusatz: k.email,
+      })),
     ].filter((k) => !vergeben.has(k.id));
     const s = suche.trim().toLowerCase();
     if (!s) return alle;
     return alle.filter(
-      (k) => k.name.toLowerCase().includes(s) || k.zusatz.toLowerCase().includes(s),
+      (k) =>
+        k.name.toLowerCase().includes(s) || k.zusatz.toLowerCase().includes(s),
     );
   }, [gruppen, konten, vergeben, suche]);
 
-  // Eine getroffene Wahl darf nicht stumm verschwinden, wenn die Suche sie
-  // ausblendet oder das Recht inzwischen anderswo vergeben wurde.
+  // A choice once made must not vanish silently when the search hides it or the
+  // right has meanwhile been granted elsewhere.
   useEffect(() => {
     if (ziel && vergeben.has(ziel.id)) setZiel(null);
   }, [ziel, vergeben]);
+
+  const gewaehlteStufe = STUFEN.find((x) => x.wert === stufe)!;
 
   return (
     <div className="qv-overlay" onClick={onClose}>
@@ -146,28 +172,49 @@ export default function SpaceRechte({
             {/* Stands there as a row and not as a footnote: otherwise an empty
                 list reads as if nobody could reach the space. */}
             <div className="rechte-zeile rechte-zeile-fest">
+              <Zeichen name="Eigentümer" gruppe />
               <div className="rechte-wer">
-                <div className="rechte-name">Eigentümer und Administratoren</div>
-                <div className="muted small">immer voller Zugriff</div>
+                <div className="rechte-name">
+                  Eigentümer und Administratoren
+                </div>
+                <div className="rechte-meta">immer voller Zugriff</div>
               </div>
-              <div className="muted small">Verwalten</div>
+              <span className="rechte-fest-stufe">Verwalten</span>
             </div>
 
             {rechte.map((r) => (
               <div className="rechte-zeile" key={(r.gruppeId ?? r.userId)!}>
+                <Zeichen
+                  name={(r.gruppeId ? r.gruppeName : r.userName) ?? ""}
+                  gruppe={!!r.gruppeId}
+                />
                 <div className="rechte-wer">
-                  <div className="rechte-name">{r.gruppeId ? r.gruppeName : r.userName}</div>
-                  <div className="muted small">{r.gruppeId ? "Gruppe" : "Konto"}</div>
+                  <div className="rechte-name">
+                    {r.gruppeId ? r.gruppeName : r.userName}
+                  </div>
+                  <div className="rechte-meta">
+                    {r.gruppeId ? "Gruppe" : "Konto"}
+                  </div>
                 </div>
-                <select value={r.recht} onChange={(e) => aendern(r, e.target.value)}>
-                  {STUFEN.map((s) => (
-                    <option key={s.wert} value={s.wert}>
-                      {s.titel}
+                <select
+                  value={r.recht}
+                  onChange={(e) => aendern(r, e.target.value)}
+                >
+                  {STUFEN.map((x) => (
+                    <option key={x.wert} value={x.wert}>
+                      {x.titel}
                     </option>
                   ))}
                 </select>
-                <button className="link-btn" onClick={() => aendern(r, "")}>
-                  entziehen
+                {/* A symbol instead of the word "entziehen": the row already
+                    carries a select, and two labels side by side read like two
+                    offers of equal rank. */}
+                <button
+                  className="icon-btn"
+                  title="Recht entziehen"
+                  onClick={() => aendern(r, "")}
+                >
+                  ✕
                 </button>
               </div>
             ))}
@@ -175,58 +222,102 @@ export default function SpaceRechte({
 
           <h4 className="rechte-ueberschrift">Zugriff erteilen</h4>
 
-          <input
-            className="rechte-suche"
-            value={suche}
-            placeholder="Gruppe oder Konto suchen…"
-            onChange={(e) => setSuche(e.target.value)}
-          />
-
-          <div className="rechte-auswahl">
-            {kandidaten.length === 0 ? (
-              <div className="muted small rechte-leer">
-                {suche.trim()
-                  ? "Nichts gefunden."
-                  : "Alle bekannten Gruppen und Konten haben bereits ein Recht."}
+          {/* Two steps, not three lists stacked on top of each other: first
+              who, then how much. As long as nobody is chosen only the search
+              stands here; afterwards the choice takes its place. */}
+          {ziel ? (
+            <div className="rechte-ziel">
+              <Zeichen name={ziel.name} gruppe={ziel.art === "g"} />
+              <div className="rechte-wer">
+                <div className="rechte-name">{ziel.name}</div>
+                <div className="rechte-meta">{ziel.zusatz}</div>
               </div>
-            ) : (
-              kandidaten.map((k) => (
+              <button
+                className="icon-btn"
+                title="Auswahl aufheben"
+                onClick={() => setZiel(null)}
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <>
+              <input
+                className="rechte-suche"
+                value={suche}
+                placeholder="Gruppe oder Konto suchen…"
+                onChange={(e) => setSuche(e.target.value)}
+              />
+
+              <div className="rechte-auswahl">
+                {kandidaten.length === 0 ? (
+                  <div className="rechte-leer muted small">
+                    {suche.trim()
+                      ? "Nichts gefunden."
+                      : "Alle bekannten Gruppen und Konten haben bereits ein Recht."}
+                  </div>
+                ) : (
+                  kandidaten.map((k) => (
+                    <button
+                      type="button"
+                      key={`${k.art}:${k.id}`}
+                      className="rechte-kandidat"
+                      onClick={() => setZiel(k)}
+                    >
+                      <Zeichen name={k.name} gruppe={k.art === "g"} />
+                      <span className="rechte-wer">
+                        <span className="rechte-name">{k.name}</span>
+                        <span className="rechte-meta">{k.zusatz}</span>
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
+          )}
+
+          {/* The level as one piece with three fields: it is a ladder, and
+              three cards side by side made it look like three separate
+              switches. The explanation stands below for the chosen level only,
+              instead of three times at once. */}
+          <div className="rechte-fuss">
+            <div className="rechte-leiter" role="group" aria-label="Stufe">
+              {STUFEN.map((x) => (
                 <button
                   type="button"
-                  key={`${k.art}:${k.id}`}
-                  className={`rechte-kandidat${ziel && ziel.art === k.art && ziel.id === k.id ? " gewaehlt" : ""}`}
-                  onClick={() => setZiel(k)}
+                  key={x.wert}
+                  className={`rechte-sprosse${stufe === x.wert ? " gewaehlt" : ""}`}
+                  onClick={() => setStufe(x.wert)}
                 >
-                  <span className="rechte-name">{k.name}</span>
-                  <span className="muted small">{k.zusatz}</span>
+                  {x.titel}
                 </button>
-              ))
-            )}
-          </div>
-
-          <div className="rechte-stufen">
-            {STUFEN.map((s) => (
-              <button
-                type="button"
-                key={s.wert}
-                className={`rechte-stufe${stufe === s.wert ? " gewaehlt" : ""}`}
-                onClick={() => setStufe(s.wert)}
-              >
-                <span className="rechte-name">{s.titel}</span>
-                <span className="muted small">{s.erklaerung}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="rechte-abschluss">
-            <button className="btn btn-primary" disabled={!ziel} onClick={erteilen}>
-              {ziel
-                ? `„${ziel.name}“ darf ${STUFEN.find((s) => s.wert === stufe)!.titel.toLowerCase()}`
-                : "Erteilen"}
+              ))}
+            </div>
+            <button
+              className="btn btn-primary"
+              disabled={!ziel}
+              onClick={erteilen}
+            >
+              Erteilen
             </button>
+          </div>
+          <div className="rechte-erklaerung muted small">
+            {gewaehlteStufe.erklaerung}
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// Zeichen is the mark in front of a name: a circle for an account, a rounded
+// square for a group. The shape alone already says which of the two it is; the
+// word beside it only has to confirm it.
+function Zeichen({ name, gruppe }: { name: string; gruppe?: boolean }) {
+  const buchstabe = (name.trim()[0] ?? "?").toUpperCase();
+  return (
+    <span className={"rechte-zeichen" + (gruppe ? " gruppe" : "")}>
+      {buchstabe}
+    </span>
   );
 }

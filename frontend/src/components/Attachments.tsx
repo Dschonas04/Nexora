@@ -9,13 +9,19 @@ interface Props {
   pageId: string;
   canEdit: boolean;
   /**
-   * Dateien, die woanders auf der Seite abgelegt wurden. Die Anhangliste ist
-   * ein schmaler Streifen ganz unten; wer eine Datei "auf die Seite" zieht,
-   * trifft ihn meistens nicht. Deshalb nimmt die Seite den Wurf entgegen und
-   * reicht ihn hierher weiter, hochgeladen wird nur an einer Stelle.
+   * Files dropped somewhere else on the page. The attachment list is a narrow
+   * strip at the very bottom; whoever drags a file "onto the page" mostly does
+   * not hit it. So the page takes the drop and passes it on to here, and the
+   * upload happens in one place only.
    */
   eingeworfen?: FileList | null;
   onEingeworfenFertig?: () => void;
+  /**
+   * Counts up when somebody added a file elsewhere, an image in the editor for
+   * instance. The list reads its own data and would otherwise show a state that
+   * is one file behind until the page is opened again.
+   */
+  neuLaden?: number;
 }
 
 function humanSize(bytes: number): string {
@@ -28,11 +34,17 @@ function humanSize(bytes: number): string {
 // list, so the thumbnail and the overlay can never disagree about what is
 // previewable.
 
-export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfenFertig }: Props) {
+export default function Attachments({
+  pageId,
+  canEdit,
+  eingeworfen,
+  onEingeworfenFertig,
+  neuLaden,
+}: Props) {
   const [items, setItems] = useState<Attachment[]>([]);
   const [busy, setBusy] = useState(false);
-  // Was beim letzten Hochladen schiefging. Ohne diese Zeile war ein
-  // fehlgeschlagener Upload nicht von einem aus, der nie stattfand.
+  // What went wrong during the last upload. Without this line a failed upload
+  // could not be told apart from one that never happened.
   const [fehler, setFehler] = useState<string | null>(null);
   // An index instead of an object: the viewer pages through the whole list, and
   // for that it has to know where it stands, not only which file was meant.
@@ -51,7 +63,7 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
   useEffect(() => {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageId]);
+  }, [pageId, neuLaden]);
 
   // Uploads run one after another, not in parallel: the size limit applies per
   // file, and sequential requests keep a large selection from saturating the
