@@ -12,13 +12,13 @@ import PageView from "./PageView";
 import TagView from "./TagView";
 import { useEingabe, useRueckfrage } from "../components/Rueckfrage";
 
-// Nachgeladen statt mitgeliefert: diese Ansichten ruft man selten auf, ihr Code
-// steckte aber im selben Bündel wie die Seitenansicht und musste bei jedem
-// Aufruf der Anwendung mit übertragen und ausgewertet werden. Der Graph bringt
-// dabei seine eigene Rechnerei mit, die Einstellungen ihre langen Formulare.
+// Loaded on demand instead of shipped along: these views are rarely opened, but
+// their code sat in the same bundle as the page view and had to be transferred
+// and parsed on every start of the application. The graph brings its own
+// computation along, the settings their long forms.
 //
-// Wer sie öffnet, wartet einmal kurz auf das Nachladen, dafür startet die
-// Anwendung für alle anderen schneller.
+// Whoever opens them waits briefly once for the load, and in exchange the
+// application starts faster for everybody else.
 const TrashView = lazy(() => import("./TrashView"));
 const GraphView = lazy(() => import("./GraphView"));
 const PruefspurView = lazy(() => import("./PruefspurView"));
@@ -35,8 +35,8 @@ export default function Workspace() {
   const [favorites, setFavorites] = useState<PageMeta[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [spaces, setSpaces] = useState<Space[]>([]);
-  // Zahl der ungelesenen Nachrichten. Sie hängt an keiner Ansicht, sondern an
-  // der Leiste, und wird deshalb hier gehalten.
+  // Number of unread messages. It hangs on no view but on the sidebar, and is
+  // therefore kept here.
   const [ungelesen, setUngelesen] = useState(0);
 
   // useCallback keeps these stable, so the effect below runs once on mount
@@ -64,10 +64,9 @@ export default function Workspace() {
     refreshSpaces();
   }, [refreshPages, refreshShared, refreshFav, refreshTags, refreshSpaces]);
 
-  // Das Postfach wird regelmäßig nachgesehen. Eine Minute ist der Abstand
-  // zwischen "erfährt es zu spät" und "fragt ohne Anlass": es geht um
-  // Kommentare, nicht um eine Unterhaltung in Echtzeit. Geholt wird nur die
-  // Zahl, nicht die Liste.
+  // The inbox is checked regularly. One minute is the distance between "hears
+  // about it too late" and "asks without occasion": this is about comments, not
+  // about a conversation in real time. Only the number is fetched, not the list.
   useEffect(() => {
     refreshPostfach();
     const uhr = setInterval(refreshPostfach, 60_000);
@@ -144,10 +143,10 @@ export default function Workspace() {
     await refreshPages();
   };
 
-  // Sichtbarkeit einer Ablage umstellen. Danach wird auch die Seitenliste neu
-  // geholt: eine geöffnete Ablage bringt fremde Seiten mit, eine geschlossene
-  // nimmt sie wieder mit, die Leiste wäre sonst so lange falsch, bis jemand
-  // die Seite neu lädt.
+  // Switch the visibility of a space. Afterwards the page list is fetched anew
+  // as well: an opened space brings other people's pages along, a closed one
+  // takes them away again, and the sidebar would otherwise be wrong until
+  // somebody reloads the page.
   const setSpaceOeffentlich = async (id: string, wert: "nein" | "lesen" | "schreiben") => {
     await api.spaceOeffentlich(id, wert);
     await refreshSpaces();
@@ -196,8 +195,8 @@ export default function Workspace() {
         }}
       />
       <div className="main">
-        {/* Bis ein nachgeladener Teil da ist, steht hier der Wartetext,
-            verzögert eingeblendet, damit ein schneller Wechsel nichts zeigt. */}
+        {/* Until a lazily loaded part is there the waiting text stands here,
+            faded in with a delay so that a fast switch shows nothing. */}
         <Suspense fallback={<div className="empty-state spaet">Lädt…</div>}>
           <Routes>
             <Route index element={<EmptyState onCreate={() => createPage(null)} />} />
@@ -229,9 +228,9 @@ export default function Workspace() {
               }
             />
             <Route path="graph" element={<GraphView />} />
-            {/* Konten und Gruppen liegen jetzt in den Einstellungen. Die alten
-                Adressen bleiben gültig und führen dorthin, ein Lesezeichen
-                soll nicht ins Leere laufen. */}
+            {/* Accounts and groups now live in the settings. The old addresses
+                stay valid and lead there; a bookmark shall not run into the
+                void. */}
             <Route path="admin" element={<Navigate to="/einstellungen/nutzer" replace />} />
             <Route path="pruefspur" element={<PruefspurView />} />
             <Route path="einstellungen" element={<EinstellungenView />} />

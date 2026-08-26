@@ -1,19 +1,19 @@
-// Rückfragen vor folgenreichen Schritten.
+// Confirmations before consequential steps.
 //
-// Vorher stellte der Browser sie: window.confirm. Das ist verlässlich, aber es
-// ist nicht diese Anwendung, der Kasten sieht in jedem Browser anders aus,
-// nimmt keine Gestaltung an, nennt den Dienst beim Domainnamen und blockiert
-// nebenbei alles, was im Hintergrund läuft.
+// Before this the browser asked them: window.confirm. That is reliable, but it
+// is not this application; the box looks different in every browser, accepts no
+// styling, names the service by its domain name and blocks everything running in
+// the background on the side.
 //
-// Hier steht dieselbe Frage im Fenster der Anwendung: mit Titel, Erklärung und
-// einem Knopf, der benennt, was er tut ("Löschen") statt "OK".
+// Here the same question stands in the application's window: with a title, an
+// explanation and a button that names what it does ("Löschen") instead of "OK".
 //
-// Verwendet wird sie wie confirm, nur mit await:
+// It is used like confirm, only with await:
 //
 //     const frage = useRueckfrage();
 //     if (!(await frage({ text: "Wirklich?", bestaetigen: "Löschen" }))) return;
 //
-// Das Versprechen wird erst eingelöst, wenn jemand geantwortet hat.
+// The promise is only resolved once somebody has answered.
 import { ReactNode, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 export interface Rueckfrage {
@@ -21,12 +21,13 @@ export interface Rueckfrage {
   titel?: string;
   bestaetigen?: string;
   abbrechen?: string;
-  // Färbt den bestätigenden Knopf als Warnung. Für alles, was Daten entfernt.
+  // Colours the confirming button as a warning. For everything that removes
+  // data.
   gefaehrlich?: boolean;
 }
 
-// Dieselbe Hülle, nur mit einem Feld darin: für die Fälle, in denen bisher
-// window.prompt aufgerufen wurde. Antwort ist der Text oder null beim Abbruch.
+// The same shell, only with a field in it: for the cases where window.prompt
+// used to be called. The answer is the text, or null on cancel.
 export interface Eingabe {
   titel?: string;
   text?: string;
@@ -59,8 +60,8 @@ export function useEingabe() {
 export function RueckfrageProvider({ children }: { children: ReactNode }) {
   const [offen, setOffen] = useState<Dialog | null>(null);
   const [wert, setWert] = useState("");
-  // Als ref, nicht als Zustand: das Auflösen des Versprechens soll kein
-  // erneutes Zeichnen auslösen, und es darf nicht zwischendurch verloren gehen.
+  // As a ref, not as state: resolving the promise shall not trigger another
+  // render, and it must not get lost in between.
   const antwortRef = useRef<Antwort | null>(null);
   const jaRef = useRef<HTMLButtonElement>(null);
   const feldRef = useRef<HTMLInputElement>(null);
@@ -87,9 +88,9 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Eine Antwort, zwei Formen: der Ja/Nein-Dialog löst mit true oder false auf,
-  // der mit Feld mit dem Text oder null. Beides läuft durch dieselbe Stelle,
-  // damit ein offenes Versprechen nicht auf zwei Wegen eingelöst werden kann.
+  // One answer, two shapes: the yes/no dialog resolves with true or false, the
+  // one with a field with the text or null. Both run through the same place so
+  // that an open promise cannot be resolved along two paths.
   const schliessen = useCallback(
     (ja: boolean, text?: string) => {
       const mitFeld = offen?.mitFeld;
@@ -102,14 +103,14 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
     [offen],
   );
 
-  // Der Tastaturzweig liest den Feldinhalt über eine Referenz: sonst müsste
-  // der Zuhörer bei jedem Zeichen neu angemeldet werden.
+  // The keyboard branch reads the field content through a reference: otherwise
+  // the listener would have to be registered anew on every character.
   const wertRef = useRef("");
   wertRef.current = wert;
 
-  // Tastatur: Esc bricht ab, Enter bestätigt. Beides ist an dieser Stelle
-  // erwartbar, und ohne die Tastatur wäre der Dialog für alle unbrauchbar, die
-  // nicht zeigen können.
+  // Keyboard: Esc cancels, Enter confirms. Both are what one expects here, and
+  // without the keyboard the dialog would be unusable for everybody who cannot
+  // point.
   useEffect(() => {
     if (!offen) return;
     if (offen.mitFeld) feldRef.current?.select();
@@ -120,7 +121,7 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
         schliessen(false);
       } else if (e.key === "Enter") {
         e.preventDefault();
-        // Beim Feld zählt sein Inhalt, und leer heißt: nichts zu tun.
+        // With the field its content counts, and empty means: nothing to do.
         if (offen.mitFeld) {
           const t = wertRef.current.trim();
           if (t) schliessen(true, t);
@@ -137,8 +138,8 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{ frage, eingabe }}>
       {children}
       {offen && (
-        // Ein Klick daneben bricht ab, wie das Kreuz, nur schneller. Bei einer
-        // Rückfrage ist das gefahrlos: Abbrechen ist die harmlose Antwort.
+        // A click beside it cancels, like the cross, only faster. With a
+        // confirmation that is harmless: cancelling is the safe answer.
         <div className="modal-backdrop" onClick={() => schliessen(false)}>
           <div
             className="modal rueckfrage"

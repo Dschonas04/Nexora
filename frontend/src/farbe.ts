@@ -27,18 +27,18 @@ export function zuHex({ r, g, b }: RGB): string {
   return `#${t(r)}${t(g)}${t(b)}`;
 }
 
-/** Relative Leuchtkraft nach WCAG. 0 ist Schwarz, 1 ist Weiß. */
+/** Relative luminance per WCAG. 0 is black, 1 is white. */
 export function leuchtkraft(c: RGB): number {
   const kanal = (v: number) => {
     const s = v / 255;
-    // Die Kurve ist nicht linear: das Auge nimmt dunkle Abstufungen feiner
-    // wahr als helle. Ein einfacher Mittelwert der Kanäle läge deutlich daneben.
+    // The curve is not linear: the eye perceives dark gradations more finely
+    // than light ones. A simple mean of the channels would be clearly off.
     return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
   };
   return 0.2126 * kanal(c.r) + 0.7152 * kanal(c.g) + 0.0722 * kanal(c.b);
 }
 
-/** Kontrastverhältnis zweier Farben, 1 bis 21. */
+/** Contrast ratio of two colours, 1 to 21. */
 export function kontrast(a: RGB, b: RGB): number {
   const la = leuchtkraft(a);
   const lb = leuchtkraft(b);
@@ -48,14 +48,14 @@ export function kontrast(a: RGB, b: RGB): number {
 }
 
 /**
- * Welche Schrift auf dieser Fläche lesbar ist: Weiß oder ein sehr dunkles Grau.
- * Reines Schwarz wäre härter als nötig und passt zu keinem der Grundtöne.
+ * Which text is readable on this surface: white or a very dark grey. Pure black
+ * would be harsher than necessary and fits none of the base tones.
  *
- * Weiß wird bevorzugt, solange Dunkel nicht deutlich besser abschneidet. Rein
- * nach der Zahl bekäme ein mittleres Blau dunkle Schrift, rechnerisch
- * richtig, aber ein blauer Knopf mit fast schwarzer Aufschrift sieht nach
- * Versehen aus. Der Faktor kippt erst bei wirklich hellen Farben wie Gelb, und
- * genau dort soll er kippen.
+ * White is preferred as long as dark does not score clearly better. Purely by
+ * the number a medium blue would get dark text, which is arithmetically right,
+ * but a blue button with almost black lettering looks like a mistake. The factor
+ * only tips with really light colours such as yellow, and that is exactly where
+ * it should tip.
  */
 export function schriftAuf(flaeche: string): string {
   const f = ausHex(flaeche);
@@ -65,12 +65,12 @@ export function schriftAuf(flaeche: string): string {
 }
 
 /**
- * Rückt eine Farbe so weit von der Fläche ab, bis sie darauf lesbar ist.
+ * Moves a colour away from the surface until it is readable on it.
  *
- * Aufgehellt wird auf dunklem Grund, abgedunkelt auf hellem, in kleinen
- * Schritten, damit die gewählte Farbe erkennbar bleibt. Nach 24 Schritten wird
- * abgebrochen: bei einer Fläche mittlerer Helligkeit gibt es Farben, die das
- * Ziel nie erreichen, und eine Endlosschleife wäre die schlechtere Antwort.
+ * Lightened on a dark ground, darkened on a light one, in small steps so that
+ * the chosen colour stays recognisable. After 24 steps it gives up: on a surface
+ * of medium brightness there are colours that never reach the goal, and an
+ * endless loop would be the worse answer.
  */
 export function lesbarAuf(farbe: string, flaeche: string, ziel = 4.5): string {
   const grund = ausHex(flaeche);

@@ -33,17 +33,17 @@ function caretInfo(x: number, y: number): { node: Node; offset: number } | null 
   return null;
 }
 
-// Hebt [[Verweise]] im Text hervor.
+// Highlights [[links]] in the text.
 //
-// Ein Verweis ist gewöhnlicher Text, gerade das macht ihn haltbar, denn er
-// überlebt jede Umbenennung der Zielseite. Nur sah er dadurch auch aus wie
-// gewöhnlicher Text: die Klammern standen roh da, und dass man darauf klicken
-// kann, sah man ihm nicht an.
+// A link is ordinary text, and that is exactly what makes it durable, because it
+// survives every renaming of the target page. Only it therefore also looked like
+// ordinary text: the brackets stood there raw, and one could not tell it could
+// be clicked.
 //
-// Also legt diese Erweiterung eine Auszeichnung über die Fundstellen, ohne den
-// Text selbst anzurühren. Wer den Verweis auflöst, entscheidet die Seite: gibt
-// es das Ziel, wird der Titel als Verweis gezeichnet, sonst bleibt er blass und
-// unterstrichen, ein Hinweis auf einen Titel, den es (noch) nicht gibt.
+// So this extension lays a decoration over the occurrences without touching the
+// text itself. Whether the link resolves is decided by the page: if the target
+// exists the title is drawn as a link, otherwise it stays pale and underlined, a
+// hint at a title that does not exist (yet).
 function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) | undefined) {
   return Extension.create({
     name: "nexoraVerweise",
@@ -83,14 +83,13 @@ function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) 
 }
 
 
-// siehtNachMarkdownAus entscheidet, ob ein eingefügter Text als Markdown
-// gemeint war.
+// siehtNachMarkdownAus decides whether a pasted text was meant as Markdown.
 //
-// Die Frage ist nötig, weil die Antwort nicht immer ja ist: wer eine Zeile aus
-// einem Protokoll einfügt, will sie so, wie sie ist. Deshalb wird nicht nach
-// einzelnen Zeichen gesucht, sondern nach den Formen, die niemand versehentlich
-// tippt, eine Überschrift am Zeilenanfang, eine Aufzählung, ein Zitat, ein
-// Code-Zaun, ein Verweis in Klammern oder ein Wort zwischen zwei Sternenpaaren.
+// The question is necessary because the answer is not always yes: whoever pastes
+// a line from a log wants it as it is. So it does not look for single characters
+// but for the shapes nobody types by accident: a heading at the start of a line,
+// a bullet, a quote, a code fence, a link in brackets or a word between two pairs
+// of asterisks.
 const MARKDOWN_MUSTER = [
   /^#{1,6}\s+\S/m,
   /^\s*[-*+]\s+\S/m,
@@ -135,9 +134,10 @@ export default function Editor({
   // The editor is created once. Its content is not reactive, which is why the
   // page view remounts this component with a new key when it changes the
   // document from the outside.
-  // Über eine Referenz, nicht über den Wert: der Editor wird einmal gebaut, die
-  // Liste der Seiten kommt aber nach und ändert sich weiter. Die Erweiterung
-  // fragt deshalb bei jedem Zeichnen neu nach.
+  //
+  // Through a reference and not through the value: the editor is built once, but
+  // the list of pages arrives later and keeps changing. The extension therefore
+  // asks again on every draw.
   const loeserRef = useRef(linkResolver);
   loeserRef.current = linkResolver;
 
@@ -180,10 +180,10 @@ export default function Editor({
   const onClickCapture = (e: React.MouseEvent) => {
     if (!linkResolver || !onOpenLink) return;
 
-    // Der schnelle Weg: die Auszeichnung oben hat den Titel bereits in eine
-    // eigene Umhüllung gelegt, ihr Text ist der Titel. Er muss zuerst kommen,
-    // denn genau diese Umhüllung teilt den Text im Dokument in drei Stücke,
-    // die Suche unten fände in "Ziel" keine Klammern mehr.
+    // The fast path: the decoration above has already put the title into a
+    // wrapper of its own, and its text is the title. It has to come first,
+    // because that very wrapper splits the text in the document into three
+    // pieces, so the search below would find no brackets in "Ziel" any more.
     const umhuellung = (e.target as HTMLElement | null)?.closest?.(".verweis");
     if (umhuellung) {
       const id = linkResolver((umhuellung.textContent || "").trim());
@@ -195,8 +195,8 @@ export default function Editor({
       return;
     }
 
-    // Der Rückfallweg für Text ohne Auszeichnung: die Stelle unter dem Zeiger
-    // im Absatz suchen.
+    // The fallback path for text without decoration: look for the place under
+    // the pointer inside the paragraph.
     const ci = caretInfo(e.clientX, e.clientY);
     if (!ci || ci.node.nodeType !== Node.TEXT_NODE) return;
     const text = ci.node.textContent || "";
@@ -217,15 +217,15 @@ export default function Editor({
     }
   };
 
-  // Eingefügtes Markdown als Markdown übernehmen.
+  // Take pasted Markdown over as Markdown.
   //
-  // Ohne das landete "## Titel" als die vier Zeichen, die dort stehen, und
-  // das ist der übliche Weg, auf dem Text hier ankommt: aus einer Notizen-App,
-  // einer Antwort, einem README. Der Editor kennt die Umwandlung bereits, sie
-  // wurde nur nie an die Zwischenablage gehängt.
+  // Without this "## Titel" would land as the four characters standing there,
+  // and that is the usual way text arrives here: from a notes app, an answer, a
+  // README. The editor knows the conversion already, it was only never hooked up
+  // to the clipboard.
   //
-  // Nur reiner Text wird angefasst. Liegt HTML in der Zwischenablage, kann
-  // BlockNote das selbst und besser.
+  // Only plain text is touched. If HTML lies in the clipboard, BlockNote can do
+  // that itself and better.
   const onPasteCapture = (e: React.ClipboardEvent) => {
     if (!editable) return;
     const zwischen = e.clipboardData;
@@ -241,8 +241,8 @@ export default function Editor({
       const hier = editor.getTextCursorPosition().block;
       const leer =
         Array.isArray(hier.content) && hier.content.length === 0 && hier.type === "paragraph";
-      // In einen leeren Absatz hinein statt darunter: sonst bliebe über dem
-      // eingefügten Text eine leere Zeile stehen.
+      // Into an empty paragraph instead of below it: otherwise an empty line
+      // would remain above the pasted text.
       if (leer) {
         editor.replaceBlocks([hier], bloecke);
       } else {
