@@ -16,16 +16,16 @@ export interface Datei {
   mime: string;
   /** Where the bytes live. The caller builds it, the viewer never guesses. */
   url: string;
-  /** Für Word-Dateien: ohne beides lässt sich der Inhalt nicht holen. */
+  /** For Word files: without both the content cannot be fetched. */
   seiteId?: string;
   darfSchreiben?: boolean;
 }
 
-// Der Dateityp, den der Browser beim Hochladen angibt, ist eine Behauptung und
-// manchmal gar keine: bei unbekannter Endung schickt er nichts oder
-// "application/octet-stream". Dann entscheidet die Endung des Dateinamens.
-// Ohne das steht eine PDF-Datei in der Liste und meldet "keine Vorschau",
-// obwohl sie eine hätte.
+// The file type the browser states on upload is a claim and sometimes not even
+// that: with an unknown extension it sends nothing or
+// "application/octet-stream". Then the extension of the file name decides.
+// Without that a PDF file stands in the list reporting "no preview" although it
+// would have one.
 const NACH_ENDUNG: Record<string, string> = {
   pdf: "application/pdf",
   png: "image/png",
@@ -79,7 +79,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   const [text, setText] = useState<string | null>(null);
   const [textFehler, setTextFehler] = useState(false);
 
-  // Word: Inhalt als Editorblöcke, dazu Titel und Zustand des Bearbeitens.
+  // Word: content as editor blocks, plus the title and the editing state.
   const [word, setWord] = useState<{ titel: string; bloecke: unknown[] } | null>(null);
   const [wordFehler, setWordFehler] = useState<string | null>(null);
   const [bearbeiten, setBearbeiten] = useState(false);
@@ -94,8 +94,8 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   const vorher = useRef<HTMLElement | null>(null);
 
   const datei = dateien[i];
-  // Einmal an einer Stelle bestimmt, danach nur noch diese Größe benutzt:
-  // sonst käme die Kopfzeile zu einem anderen Schluss als der Inhalt.
+  // Determined once in one place and only that size used afterwards: otherwise
+  // the header would come to a different conclusion than the content.
   const typ = datei ? echterTyp(datei.mime, datei.filename) : "";
 
   const weiter = useCallback(
@@ -125,8 +125,8 @@ export default function QuickView({ dateien, start, onClose }: Props) {
     wordStand.current = null;
   }, [datei?.id]);
 
-  // Word-Anhang holen. Nicht die Bytes, die kann der Browser nicht anzeigen
-  //, sondern den Inhalt als Blöcke, den der Server aus der Datei liest.
+  // Fetch a Word attachment. Not the bytes, which the browser cannot display,
+  // but the content as blocks, which the server reads out of the file.
   useEffect(() => {
     if (!datei || !istWord(typ) || !datei.seiteId) return;
     let weg = false;
@@ -288,14 +288,14 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             <img className="qv-image" style={bildStil} src={datei.url} alt={datei.filename} />
           )}
           {istPdf(typ) && (
-            // Der eingebaute PDF-Betrachter des Browsers bringt Blättern,
-            // Zoom und Suche schon mit. Das auf einer Rendering-Bibliothek
-            // nachzubauen wäre viel Code für ein schlechteres Ergebnis.
+            // The browser's built in PDF viewer brings paging, zoom and search
+            // along already. Rebuilding that on a rendering library would be a
+            // lot of code for a worse result.
             //
-            // <object> statt <iframe>: Browser, die PDF nicht selbst anzeigen
-            // können, und mobile Browser können es meist nicht, zeigen
-            // dann den Inhalt zwischen den Marken statt einer leeren weißen
-            // Fläche, vor der man ratlos sitzt.
+            // <object> instead of <iframe>: browsers that cannot display PDF
+            // themselves, and mobile browsers mostly cannot, then show the
+            // content between the tags instead of an empty white area one sits
+            // in front of at a loss.
             <object className="qv-frame" data={datei.url} type="application/pdf" aria-label={datei.filename}>
               <div className="qv-none">
                 Dieser Browser zeigt PDF-Dateien nicht selbst an.
@@ -350,10 +350,10 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                       </button>
                     )}
                   </div>
-                  {/* Der Hinweis steht VOR dem Bearbeiten da, nicht danach als
-                      Entschuldigung: wer eine Word-Datei hier ändert, bekommt
-                      ein sauberes Dokument mit ihrem Inhalt, nicht dieselbe
-                      Datei mit einer geänderten Zeile. */}
+                  {/* The note stands there BEFORE editing, not afterwards as an
+                      excuse: whoever changes a Word file here gets a clean
+                      document with its content, not the same file with one line
+                      changed. */}
                   {bearbeiten && (
                     <div className="qv-word-hinweis muted small">
                       Beim Speichern wird die Datei neu geschrieben. Text, Überschriften,

@@ -36,9 +36,9 @@ type Bereich =
 
 const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
   { id: "uebersicht", titel: "Übersicht", unter: "Zahlen und Zustand auf einen Blick" },
-  // Konten und Gruppen hatten je einen eigenen Eintrag in der Seitenleiste.
-  // Beides ist Verwaltung und wird selten angefasst, es gehört dorthin, wo
-  // man ohnehin sucht, wenn man etwas einstellen will.
+  // Accounts and groups each used to have an entry of their own in the sidebar.
+  // Both are administration and are rarely touched; they belong where one looks
+  // anyway when one wants to set something.
   { id: "nutzer", titel: "Nutzer", unter: "Konten, Rollen, Zugänge" },
   { id: "gruppen", titel: "Gruppen", unter: "Konten bündeln für Space-Rechte" },
   { id: "sicherheit", titel: "Sicherheit", unter: "Registrierung, Laufzeiten, Administratoren" },
@@ -101,8 +101,8 @@ function bytes(n: number): string {
   return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
-// Ein Zeitpunkt, wie man ihn vorliest: Datum und Uhrzeit, ohne Sekunden und
-// ohne Zeitzone, die Frage lautet "wann war ich das", nicht "wie spät war es
+// A point in time as one reads it out: date and clock time, without seconds and
+// without a time zone; the question is "when was that me", not "what time was it
 // in UTC".
 function zeitpunkt(iso: string): string {
   const d = new Date(iso);
@@ -121,9 +121,9 @@ export default function EinstellungenView() {
   const { user } = useAuth();
   const { neuLaden: designNeuLaden } = useDesign();
 
-  // Der offene Bereich steht in der Adresse, nicht im Zustand. Damit lässt
-  // sich ein Bereich verlinken, der Zurück-Knopf führt zurück in den vorigen,
-  // und die alten Adressen für Nutzer und Gruppen können hierher zeigen.
+  // The open section stands in the address, not in the state. That way a section
+  // can be linked, the back button leads into the previous one, and the old
+  // addresses for users and groups can point here.
   const nav = useNavigate();
   const { bereich: ausAdresse } = useParams();
   const bereich: Bereich = (BEREICHE.some((b) => b.id === ausAdresse)
@@ -137,8 +137,8 @@ export default function EinstellungenView() {
   const [laeuft, setLaeuft] = useState<string | null>(null);
   const [laedt, setLaedt] = useState(true);
 
-  // Objektspeicher-Test. Die Zugangsdaten bleiben ausschließlich hier im
-  // Formular, gespeichert wird nichts davon, siehe den Hinweis im Bereich.
+  // Object storage test. The credentials stay in this form exclusively, nothing
+  // of it is saved; see the note in the section.
   const [ablage, setAblage] = useState<string>("");
   const [s3, setS3] = useState({
     endpunkt: "",
@@ -177,9 +177,9 @@ export default function EinstellungenView() {
     api.ablageZustand().then((a) => setAblage(a.ablage)).catch(() => setAblage(""));
   }, []);
 
-  // Wartung. Die Datei wird erst beim Öffnen des Bereichs geholt: sie enthält
-  // Zugangsdaten, wenn auch unkenntlich gemacht, und geht niemanden etwas
-  // an, der nur die Farben ändern wollte.
+  // Maintenance. The file is fetched only when the section is opened: it
+  // contains credentials, masked though they are, and is none of the business of
+  // somebody who only wanted to change the colours.
   const [konfig, setKonfig] = useState<KonfigDatei | null>(null);
   const [konfigEntwurf, setKonfigEntwurf] = useState("");
   const [konfigHinweise, setKonfigHinweise] = useState<string[]>([]);
@@ -195,8 +195,8 @@ export default function EinstellungenView() {
   });
   const [ausgestellt, setAusgestellt] = useState("");
 
-  // Sitzungen. Erst beim Öffnen des Bereichs geholt: die Liste ändert sich
-  // ständig, und sie interessiert nur den, der gerade hinsieht.
+  // Sessions. Fetched only when the section is opened: the list changes
+  // constantly, and it interests only whoever is looking right now.
   const [sitzungen, setSitzungen] = useState<Sitzung[] | null>(null);
   const sitzungenLaden = useCallback(() => {
     api
@@ -246,9 +246,9 @@ export default function EinstellungenView() {
         text: `Gespeichert. Sicherung: ${r.sicherung}. Wirksam wird die Änderung erst nach einem Neustart.`,
         art: "ok",
       });
-      // Neu holen: die Antwort enthält den geschriebenen Stand nicht, und der
-      // Entwurf im Feld zeigt sonst weiter die Sterne, die inzwischen wieder
-      // echte Werte sind.
+      // Fetch anew: the answer does not contain the written state, and the draft
+      // in the field would otherwise keep showing the asterisks that are real
+      // values again by now.
       setKonfig(null);
     } catch (e) {
       setMeldung({ text: (e as Error).message, art: "fehler" });
@@ -363,8 +363,8 @@ export default function EinstellungenView() {
     } catch (err) {
       setMeldung({ text: (err as Error).message, art: "fehler" });
       setEntwurf((v) => ({ ...v, [e.schluessel]: e.wert }));
-      // Vorschau zurücknehmen, sonst zeigt die Oberfläche eine Farbe, die der
-      // Server nie angenommen hat.
+      // Take the preview back, otherwise the interface shows a colour the server
+      // never accepted.
       if (e.schluessel.startsWith("design_")) designNeuLaden();
     } finally {
       setLaeuft(null);
@@ -931,8 +931,8 @@ export default function EinstellungenView() {
                   key={g.wert}
                   className={"tonkachel" + (aktuellerTon === g.wert ? " gewaehlt" : "")}
                   onClick={() => {
-                    // Sofort anwenden, dann speichern: eine Farbe erst nach der
-                    // Antwort des Servers zu sehen macht das Auswählen zur Qual.
+                    // Apply right away, then save: seeing a colour only after
+                    // the server's answer makes picking one a torment.
                     anwenden({ grundton: g.wert, akzent: aktuellerAkzent });
                     setEntwurf((v) => ({ ...v, design_grundton: g.wert }));
                     if (grundton) speichern(grundton, g.wert);
@@ -1245,10 +1245,10 @@ export default function EinstellungenView() {
                   <code>{konfig.pfad}</code>
                   {!konfig.schreibbar && " — für den Dienst nur lesbar"}
                 </p>
-                {/* Der Satz steht hier und nicht im Kleingedruckten: wer
-                    Zugangsdaten sucht und Sterne findet, hält sie sonst für
-                    verloren und schreibt sie neu, ausgerechnet die, die
-                    stimmen. */}
+                {/* The sentence stands here and not in the small print: whoever
+                    looks for credentials and finds asterisks otherwise takes
+                    them for lost and writes them anew, of all things the ones
+                    that are correct. */}
                 <p className="muted small">
                   Zugangsdaten sind unkenntlich gemacht. Zeilen mit{" "}
                   <code>********</code> bleiben beim Speichern unverändert; wer einen Wert ändern
