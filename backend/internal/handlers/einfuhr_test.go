@@ -10,9 +10,9 @@ import (
 	"nexora/internal/einlesen"
 )
 
-// hinUndZurueck ist die Probe, die zählt: was der Export schreibt, muss der
-// Import wieder als dasselbe lesen. Wer nur den Leser für sich prüft, merkt
-// nicht, dass die beiden Seiten auseinanderlaufen.
+// hinUndZurueck is the check that counts: what the export writes the import has
+// to read back as the same thing. Whoever only tests the reader on its own does
+// not notice the two sides drifting apart.
 func hinUndZurueck(t *testing.T, md string) string {
 	t.Helper()
 	_, _, bloecke := einlesen.Lies(md)
@@ -56,8 +56,8 @@ func TestRundlaufWikiVerweis(t *testing.T) {
 }
 
 func TestRundlaufMaskierung(t *testing.T) {
-	// Der Export maskiert das Sternchen, der Import nimmt die Maskierung
-	// zurück, der Export maskiert wieder, am Text darf sich nichts ändern.
+	// The export escapes the asterisk, the import takes the escape back, the
+	// export escapes again; the text itself must not change.
 	zurueck := hinUndZurueck(t, `2 \* 3 ist 6`+"\n")
 	if !strings.Contains(zurueck, `2 \* 3 ist 6`) {
 		t.Fatalf("Maskierung nicht stabil:\n%s", zurueck)
@@ -84,9 +84,8 @@ func TestZielPfadRelativ(t *testing.T) {
 }
 
 func TestZielPfadBleibtImArchiv(t *testing.T) {
-	// Ein Verweis darf nicht aus dem Archiv herausführen. Er kann hier zwar
-	// nichts anrichten, es wird nichts auf die Platte geschrieben, aber
-	// er soll auch nichts treffen.
+	// A link must not lead out of the archive. It can do no harm here, nothing is
+	// written to disk, but it shall hit nothing either.
 	if p := zielPfad("../../etc/passwd", "a/b"); strings.HasPrefix(p, "..") {
 		t.Fatalf("Pfad führt aus dem Archiv: %q", p)
 	}
@@ -163,9 +162,9 @@ func TestIstMarkdown(t *testing.T) {
 }
 
 func TestRundlaufCodeBehaeltEinrueckung(t *testing.T) {
-	// Der Editor hat keinen Codeblock; der Export schreibt jede Zeile als
-	// Codestück. Die Einrückung darf dabei nicht verloren gehen, in Code
-	// ist sie kein Schmuck.
+	// The editor has no code block; the export writes every line as a piece of
+	// code. The indent must not be lost in the process, in code it is not
+	// decoration.
 	md := "```go\nfunc a() {\n    b()\n}\n```\n"
 	einmal := hinUndZurueck(t, md)
 	if !strings.Contains(einmal, "    b()") {
@@ -178,8 +177,8 @@ func TestRundlaufCodeBehaeltEinrueckung(t *testing.T) {
 }
 
 func TestRundlaufCodeMitRandLeerzeichen(t *testing.T) {
-	// Ein Leerzeichen an beiden Enden nimmt jeder Markdown-Leser wieder weg.
-	// Der Export muss deshalb füllen, sonst schrumpft der Code bei jedem Lauf.
+	// A space at both ends is taken away again by every Markdown reader. The
+	// export therefore has to pad, otherwise the code shrinks with every run.
 	md := "Vorher `  eng  ` nachher.\n"
 	zurueck := hinUndZurueck(t, hinUndZurueck(t, md))
 	if !strings.Contains(zurueck, "  eng  ") {
@@ -247,8 +246,8 @@ func TestPlanLiestAuchHTML(t *testing.T) {
 }
 
 func TestPlanNimmtIndexHTMLAlsDeckblatt(t *testing.T) {
-	// Eine Confluence-Ausfuhr legt ihr Deckblatt als index.html ab. Ohne das
-	// hinge es als gewöhnliche Seite neben dem Ordner statt darüber.
+	// A Confluence export files its cover page as index.html. Without this it
+	// would hang beside the folder as an ordinary page instead of above it.
 	plan := planen([]einfuhrDatei{
 		{pfad: "index.html", inhalt: []byte("<h1>Startseite</h1>")},
 		{pfad: "Technik/netzplan.html", inhalt: []byte("<h1>Netzplan</h1>")},
@@ -263,9 +262,9 @@ func TestPlanNimmtIndexHTMLAlsDeckblatt(t *testing.T) {
 }
 
 func TestPlanNimmtNotionOrdnernotizDaneben(t *testing.T) {
-	// Notion legt die Notiz zum Ordner NEBEN den Ordner, nicht hinein. Ohne
-	// diesen Fall entstünde sie zweimal: als leere Ordnerseite und als Datei
-	// daneben.
+	// Notion files the note about a folder BESIDE the folder, not inside it.
+	// Without this case it would come into being twice: as an empty folder page
+	// and as the file next to it.
 	plan := planen([]einfuhrDatei{
 		{pfad: "Wochenplan 8f3a1b2c4d5e6f708192a3b4c5d6e7f8.md", inhalt: []byte("# Wochenplan\n")},
 		{pfad: "Wochenplan 8f3a1b2c4d5e6f708192a3b4c5d6e7f8/Unterpunkt 1234567890abcdef1234567890abcdef.md",

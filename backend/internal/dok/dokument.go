@@ -1,14 +1,14 @@
-// Package dok bringt ein gespeichertes Seitendokument in Formate, die eine
-// feste Seitenaufteilung haben: PDF und Word.
+// Package dok brings a stored page document into formats that have a fixed page
+// layout: PDF and Word.
 //
-// Warum eine eigene Zwischenform und nicht der Umweg über Markdown: Markdown
-// kennt keine Seitenränder, keine Schriftgrößen und keinen Seitenumbruch. Wer
-// ein PDF setzen will, braucht genau das. Die Umwandlung nach Markdown bleibt
-// deshalb, wo sie ist, sie beantwortet eine andere Frage.
+// Why an intermediate form of its own and not the detour through Markdown:
+// Markdown knows no margins, no font sizes and no page break. Whoever wants to
+// typeset a PDF needs exactly that. The conversion to Markdown therefore stays
+// where it is, it answers a different question.
 //
-// Gelesen wird dasselbe Dokument des Editors. Es ist derselbe JSON-Baum, aber
-// mit einem anderen Ziel: hier zählt, was ein Textstück AUSSIEHT (fett, fest,
-// verwiesen), nicht welche Zeichen man in eine Datei schreiben müsste.
+// What is read is the same editor document. It is the same JSON tree, but with a
+// different goal: here what counts is what a piece of text LOOKS like (bold,
+// monospaced, linked), not which characters one would have to write into a file.
 package dok
 
 import (
@@ -16,8 +16,8 @@ import (
 	"strings"
 )
 
-// Art sagt, was ein Absatz ist. Die Formatierer entscheiden daran über
-// Schriftgröße, Einzug und Abstand.
+// Art says what a paragraph is. The formatters decide font size, indent and
+// spacing from it.
 type Art int
 
 const (
@@ -80,10 +80,9 @@ type stueckJSON struct {
 	Props   map[string]any  `json:"props"`
 }
 
-// AusInhalt liest ein gespeichertes Dokument ein. Wie überall bei dieser
-// Umwandlung gilt: ein unbekannter Blocktyp wird ein Absatz, kein Fehler. Ein
-// Dokument, das unvollständig exportiert, ist mehr wert als eines, das den
-// Export verweigert.
+// AusInhalt reads in a stored document. As everywhere in this conversion: an
+// unknown block type becomes a paragraph, not an error. A document that exports
+// incompletely is worth more than one that refuses to export.
 func AusInhalt(roh json.RawMessage, titel string) Dokument {
 	d := Dokument{Titel: titel}
 	var knoten []knoten
@@ -134,9 +133,9 @@ func lies(knoten []knoten, tiefe int) []Absatz {
 		case "codeBlock":
 			a.Art = ArtCode
 			a.Sprache, _ = k.Props["language"].(string)
-			// Tabulatoren werden zu Leerzeichen: die Grundschriften eines PDF
-			// kennen kein Tabulatorzeichen, es würde ersatzlos verschwinden,
-			// und ausgerechnet im Code trägt die Einrückung Bedeutung.
+			// Tabs become spaces: the base fonts of a PDF have no tab character, it
+			// would vanish without replacement, and in code of all places the indent
+			// carries meaning.
 			a.Zeilen = strings.Split(strings.ReplaceAll(rohtext(k.Content), "\t", "    "), "\n")
 			nummer = 0
 
@@ -161,9 +160,8 @@ func lies(knoten []knoten, tiefe int) []Absatz {
 			if name == "" {
 				name = k.Type
 			}
-			// Bilder werden nicht eingebettet, sondern benannt und verwiesen.
-			// Ein Platzhalter, der sagt, was fehlt und wo es liegt, ist
-			// ehrlicher als eine leere Fläche.
+			// Images are not embedded but named and linked. A placeholder saying
+			// what is missing and where it lies is more honest than an empty area.
 			a.Text = []Stueck{{Text: name, Verweis: adresse}}
 			if unterschrift != "" && unterschrift != name {
 				a.Text = append(a.Text, Stueck{Text: " – " + unterschrift, Kursiv: true})
@@ -180,9 +178,9 @@ func lies(knoten []knoten, tiefe int) []Absatz {
 			nummer = 0
 		}
 
-		// Ein leerer Absatz ohne Kinder ist eine Leerzeile im Editor. Die
-		// Formatierer machen daraus einen Abstand; wegzulassen wäre falsch,
-		// denn dann rückte der Text zusammen.
+		// An empty paragraph without children is a blank line in the editor. The
+		// formatters turn it into spacing; leaving it out would be wrong, because
+		// then the text would close up.
 		out = append(out, a)
 
 		if len(k.Children) > 0 {
@@ -204,8 +202,8 @@ func stuecke(roh json.RawMessage) []Stueck {
 	}
 	var teile []stueckJSON
 	if err := json.Unmarshal(roh, &teile); err != nil {
-		// Einzelne Zeichenkette, oder ein Objekt mit content, so kommen die
-		// Zellen einer Tabelle.
+		// A single string, or an object with content, which is how the cells of a
+		// table arrive.
 		var s string
 		if json.Unmarshal(roh, &s) == nil {
 			return []Stueck{{Text: s}}

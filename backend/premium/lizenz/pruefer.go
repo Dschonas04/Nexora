@@ -23,16 +23,16 @@ import (
 	kern "nexora/internal/lizenz"
 )
 
-// oeffentlicheSchluessel sind die Gegenstücke der privaten Schlüssel, die
-// Lizenzen unterschreiben. Sie stehen als Konstanten hier und nicht in einer
-// Einstellung: wer sie ändern kann, kann sich seine eigene Lizenz ausstellen.
+// oeffentlicheSchluessel are the counterparts of the private keys that sign
+// licences. They stand here as constants and not in a setting: whoever can
+// change them can issue themselves a licence.
 //
-// Eine Liste statt eines einzelnen Wertes, damit sich der Signierschlüssel
-// wechseln lässt, ohne dass bereits ausgegebene Lizenzen ungültig werden. Ein
-// Schlüssel wird aus der Liste genommen, wenn die damit ausgestellten Lizenzen
-// abgelaufen sind, oder sofort, wenn der private Teil abhandenkommt.
+// A list instead of a single value, so the signing key can be rotated without
+// invalidating licences already handed out. A key is taken out of the list when
+// the licences issued with it have expired, or right away when its private half
+// goes missing.
 //
-// Erzeugt mit premium/cmd/schluessel -neu.
+// Generated with premium/cmd/schluessel -neu.
 var oeffentlicheSchluessel = []string{
 	"SBReFHg3IMDCQAbHPZxpicPr31HiD1V6-yKHw0y63ZA",
 	"dsY-UfRNTuGKqTGdjBlJtb5k1rR8FJOarJ-nD9JJRlo",
@@ -42,8 +42,8 @@ var oeffentlicheSchluessel = []string{
 // ends up in a key the customer has to copy by hand.
 type Nutzlast struct {
 	Inhaber string `json:"i"` // who the key is for
-	// Die verkaufte Stufe. Sie ist die übliche Form; die Liste darunter bleibt
-	// für Sonderfälle, ein Kunde, der genau eine Funktion dazukauft.
+	// The tier that was sold. It is the usual form; the list below stays for
+	// special cases, a customer buying exactly one extra feature.
 	Stufe       string   `json:"s,omitempty"`
 	Funktionen  []string `json:"f,omitempty"` // einzeln freigeschaltete Zusätze
 	Ablauf      string   `json:"a,omitempty"` // ISO date, empty means perpetual
@@ -52,8 +52,8 @@ type Nutzlast struct {
 
 // Pruefer implements kern.Pruefer.
 type Pruefer struct {
-	// Mehrere gültige Schlüssel: siehe oeffentlicheSchluessel. Geprüft wird
-	// der Reihe nach, der erste, der passt, gewinnt.
+	// Several valid keys: see oeffentlicheSchluessel. Checked one after another,
+	// the first one that matches wins.
 	oeffentlich []ed25519.PublicKey
 }
 
@@ -74,15 +74,15 @@ func init() {
 	for _, s := range oeffentlicheSchluessel {
 		roh, err := base64.RawURLEncoding.DecodeString(s)
 		if err != nil || len(roh) != ed25519.PublicKeySize {
-			// Ein kaputter Schlüssel in der Liste darf die übrigen nicht
-			// mitnehmen, aber auch nicht stillschweigend alles freigeben.
+			// A broken key in the list must not take the others with it, but must
+			// not silently unlock everything either.
 			continue
 		}
 		gueltige = append(gueltige, ed25519.PublicKey(roh))
 	}
 	if len(gueltige) == 0 {
-		// Ein Build ohne brauchbaren Schlüssel darf keine Lizenz annehmen.
-		// Nichts zu registrieren lässt jeden Zusatz gesperrt.
+		// A build without a usable key must accept no licence. Registering nothing
+		// leaves every extra locked.
 		return
 	}
 	kern.Registriere(&Pruefer{oeffentlich: gueltige})
@@ -136,9 +136,9 @@ func (p *Pruefer) Pruefe(schluessel string) (kern.Zustand, error) {
 		}
 	}
 
-	// Aus der Stufe wird die Liste, dann kommen einzeln genannte Zusätze dazu.
-	// Ein Schlüssel darf beides tragen: die Stufe für das Übliche, die Liste
-	// für das, was jemand darüber hinaus gekauft hat.
+	// The list comes from the tier, then individually named extras are added. A
+	// key may carry both: the tier for the usual case, the list for whatever
+	// somebody bought beyond it.
 	gewuenscht := n.Funktionen
 	var stufe kern.Stufe
 	if n.Stufe != "" {
@@ -154,8 +154,8 @@ func (p *Pruefer) Pruefe(schluessel string) (kern.Zustand, error) {
 	// Unknown names in the key are dropped rather than passed through: a key
 	// from a newer generator must not unlock anything this build cannot do.
 	//
-	// Doppelte fallen dabei ebenfalls weg, Stufe und Liste dürfen sich
-	// überschneiden, in der Antwort steht jede Funktion einmal.
+	// Duplicates fall away with them: tier and list may overlap, and every
+	// feature appears once in the answer.
 	gesehen := map[kern.Funktion]bool{}
 	var erlaubt []kern.Funktion
 	for _, f := range gewuenscht {
@@ -166,8 +166,8 @@ func (p *Pruefer) Pruefe(schluessel string) (kern.Zustand, error) {
 			}
 		}
 	}
-	// Die freie Stufe schaltet nichts frei, und das ist kein Fehler: ein
-	// Schlüssel auf "free" ist eine gültige Aussage über den Umfang.
+	// The free tier unlocks nothing, and that is not an error: a key set to
+	// "free" is a valid statement about the scope.
 	if len(erlaubt) == 0 && stufe != kern.StufeFrei {
 		return kern.Zustand{}, errors.New("Schlüssel schaltet keine Funktion frei, die dieser Build kennt")
 	}

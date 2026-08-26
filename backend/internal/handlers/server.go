@@ -18,10 +18,10 @@ import (
 
 const (
 	cookieName = "nexora_token"
-	// Rückfall, wenn keine Einstellung greift. Die tatsächliche Dauer liefert
-	// SitzungDauer und lässt sich im Betrieb ändern. Es gibt keine Verlängerung
-	// und keine Liste offener Sitzungen: ein Token bleibt bis zu seinem Ablauf
-	// brauchbar, auch nach einer Passwortänderung.
+	// Fallback when no setting applies. The actual duration comes from
+	// SitzungDauer and can be changed while running. Sessions themselves are kept
+	// in the database, so a token can be revoked and renewed; this value only
+	// says how long a freshly signed one stays valid.
 	tokenTTL = 7 * 24 * time.Hour
 )
 
@@ -30,16 +30,16 @@ const (
 type Server struct {
 	Pool   *pgxpool.Pool
 	Secret []byte
-	// Sitzungen ist der kurze Zwischenspeicher für die Sitzungsprüfung. Darf
-	// nil sein, dann wird jedes Mal gefragt.
+	// Sitzungen is the short lived cache for the session check. May be nil, then
+	// every request asks the database.
 	Sitzungen *sitzungsSpeicher
-	// Redis ist der gemeinsame Zwischenspeicher über mehrere Instanzen hinweg.
-	// Darf nil sein: ohne ihn läuft alles weiter, nur ohne geteilten Speicher.
+	// Redis is the shared cache across several instances. May be nil: without it
+	// everything keeps working, only without shared storage.
 	Redis *RedisSpeicher
 	// SSO carries the values for signing in through an outside identity.
 	SSO SSOEinstellungen
-	// Ablage entscheidet, wo die Bytes eines Anhangs liegen: auf der Platte
-	// oder in einem S3-Eimer. Die Handler kennen den Unterschied nicht.
+	// Ablage decides where the bytes of an attachment lie: on disk or in an S3
+	// bucket. The handlers do not know the difference.
 	Ablage ablage.Ablage
 }
 
@@ -70,14 +70,13 @@ func (s *Server) setAuthCookie(w http.ResponseWriter, token string) {
 	s.setAuthCookieFuer(w, nil, token)
 }
 
-// setAuthCookieFuer setzt das Plätzchen und markiert es als Secure, wenn die
-// Anfrage über HTTPS kam.
+// setAuthCookieFuer sets the cookie and marks it Secure when the request came
+// over HTTPS.
 //
-// Fest auf Secure zu stellen ginge nicht: dann käme über eine reine
-// HTTP-Verbindung gar kein Plätzchen mehr an, und eine Instanz im Heimnetz
-// ohne TLS wäre unbenutzbar. Umgekehrt ist ein Sitzungsplätzchen ohne Secure
-// auf einer HTTPS-Seite eine Einladung, es über einen untergeschobenen
-// HTTP-Aufruf abzugreifen.
+// Setting Secure unconditionally would not work: no cookie would arrive over a
+// plain HTTP connection at all, and an instance in a home network without TLS
+// would be unusable. The other way round, a session cookie without Secure on an
+// HTTPS site is an invitation to grab it through a smuggled in HTTP call.
 func (s *Server) setAuthCookieFuer(w http.ResponseWriter, r *http.Request, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
@@ -91,8 +90,8 @@ func (s *Server) setAuthCookieFuer(w http.ResponseWriter, r *http.Request, token
 	})
 }
 
-// ueberTLS erkennt eine verschlüsselte Anfrage, auch hinter einem Proxy, der
-// selbst entschlüsselt und es im Kopf X-Forwarded-Proto weitersagt.
+// ueberTLS recognises an encrypted request, also behind a proxy that decrypts
+// itself and says so in the X-Forwarded-Proto header.
 func ueberTLS(r *http.Request) bool {
 	if r == nil {
 		return false

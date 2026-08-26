@@ -38,9 +38,9 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Selbstregistrierung kann abgeschaltet sein. Das allererste Konto kommt
-	// trotzdem durch: es wird zum Administrator, und ohne diese Ausnahme wäre
-	// eine frische Instanz mit geschlossener Registrierung unbenutzbar.
+	// Self registration can be switched off. The very first account gets through
+	// nonetheless: it becomes the administrator, and without that exception a
+	// fresh instance with closed registration would be unusable.
 	if !RegistrierungOffen() {
 		var vorhanden int
 		_ = s.Pool.QueryRow(r.Context(), `SELECT count(*) FROM users`).Scan(&vorhanden)
@@ -50,8 +50,8 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Domänenfilter. Greift nur hier, nicht auf Konten, die ein Administrator
-	// anlegt, der weiß, was er tut.
+	// Domain filter. Applies only here, not to accounts an administrator creates,
+	// who knows what they are doing.
 	if erlaubt := ErlaubteDomaenen(); len(erlaubt) > 0 {
 		domaene := req.Email[strings.LastIndex(req.Email, "@")+1:]
 		passt := false
@@ -139,9 +139,9 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	// One message for an unknown address and for a wrong password, so the
 	// response cannot be used to find out which addresses are registered.
 	if err != nil || !auth.CheckPassword(hash, req.Password) {
-		// Der Fehlversuch wird festgehalten, ohne ihn hätte die Prüfspur
-		// genau die Vorgänge nicht, für die man sie am ehesten aufschlägt.
-		// Die eingegebene Adresse steht dabei im Klartext, das Passwort nie.
+		// The failed attempt is recorded; without it the audit trail would lack
+		// exactly those events one opens it for in the first place. The address
+		// that was entered stands there in the clear, the password never.
 		s.spur(r.Context(), models.Spureintrag{
 			Aktion:      AktAnmeldungFehl,
 			AkteurEmail: req.Email,
@@ -161,16 +161,15 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
-// Logout beendet die Sitzung und löscht das Plätzchen.
+// Logout ends the session and clears the cookie.
 //
-// Das Widerrufen ist der eigentliche Teil: früher blieb das Token gültig, weil
-// es unterschrieben war, abgemeldet war nur der Browser, der es wegwarf.
+// Revoking it is the actual part: previously the token stayed valid because it
+// was signed, and only the browser that threw it away was logged out.
 func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
-	// Die Kennung kommt aus dem Plätzchen, nicht aus dem Zusammenhang: das
-	// Abmelden liegt bewusst vor der Anmeldeprüfung, damit es auch mit einem
-	// abgelaufenen Token noch geht. Ohne diese Zeile bliebe die Sitzung
-	// bestehen und das Token weiter brauchbar, genau das, was Abmelden
-	// verhindern soll.
+	// The id comes from the cookie, not from the context: logging out sits
+	// deliberately before the authentication check so that it still works with an
+	// expired token. Without this line the session would remain and the token stay
+	// usable, precisely what logging out is meant to prevent.
 	sid := middleware.SitzungID(r)
 	if sid == "" {
 		if c, err := r.Cookie("nexora_token"); err == nil {
@@ -206,10 +205,10 @@ func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
-// issueSession legt die Sitzung an, unterschreibt ein Token darauf und setzt
-// das Plätzchen. Scheitert das Anlegen, wird trotzdem ein Token ausgestellt,
-// nur eben ohne Sitzungskennung: lieber angemeldet ohne Liste als gar nicht
-// angemeldet, weil eine Nebensache klemmt.
+// issueSession creates the session, signs a token on it and sets the cookie. If
+// creating it fails a token is issued anyway, only without a session id: better
+// logged in without a list than not logged in at all because a side matter is
+// stuck.
 func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID string) {
 	sid, err := s.sitzungAnlegen(r.Context(), r, userID)
 	if err != nil {
