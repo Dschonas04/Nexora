@@ -30,9 +30,9 @@ import (
 // Konfig holds every setting. The comments in config.conf carry the same
 // explanations, so the file documents itself without needing this source.
 type Konfig struct {
-	// Pfad ist die Datei, aus der gelesen wurde, leer, wenn keine gefunden
-	// wurde. Die Einstellungsseite zeigt und bearbeitet genau diese Datei;
-	// ohne den Pfad müsste sie raten, und raten hiesse: die falsche ändern.
+	// Pfad is the file that was read, empty when none was found. The settings
+	// page shows and edits exactly this file; without the path it would have to
+	// guess, and guessing means editing the wrong one.
 	Pfad string
 
 	// Server
@@ -60,9 +60,9 @@ type Konfig struct {
 	// Anhänge
 	MaxAnhangMB int
 
-	// Papierkorb
-	// Nach wie vielen Tagen im Papierkorb eine Seite endgültig verschwindet.
-	// 0 heißt: nie von selbst, dann bleibt sie liegen, bis jemand sie löscht.
+	// Trash
+	// After how many days in the trash a page disappears for good.
+	// 0 means never by itself, and then it stays until somebody deletes it.
 	PapierkorbTage int
 
 	// Objektspeicher (S3)
@@ -77,9 +77,8 @@ type Konfig struct {
 
 	// Redis
 	//
-	// Freiwillig. Redis ist hier ein Zwischenspeicher, keine Ablage: alles,
-	// was darin liegt, steht auch in der Datenbank. Fehlt Redis, läuft die
-	// Anwendung vollständig weiter.
+	// Optional. Redis is a cache here, not a store: everything in it also stands
+	// in the database. Without Redis the application carries on in full.
 	RedisAdresse   string
 	RedisPasswort  string
 	RedisDatenbank int
@@ -183,9 +182,9 @@ func Laden(pfad string) Konfig {
 
 	hol := func(schluessel, umgebung string) (string, bool) {
 		merkeSchluessel(schluessel)
-		// Umgebung schlägt Datei. Damit lässt sich ein einzelner Wert im
-		// Container überschreiben, ohne die Datei anzufassen, und ein
-		// Geheimnis muss nie auf die Platte.
+		// The environment beats the file. That way a single value can be
+		// overridden inside a container without touching the file, and a secret
+		// never has to reach the disk.
 		if v := os.Getenv(umgebung); v != "" {
 			return v, true
 		}
@@ -240,9 +239,9 @@ func Laden(pfad string) Konfig {
 	text(&k.DatenbankURL, "datenbank_url", "DATABASE_URL")
 	text(&k.JWTGeheimnis, "jwt_geheimnis", "JWT_SECRET")
 	zahl(&k.SitzungStunden, "sitzung_stunden", "NEXORA_SESSION_HOURS")
-	// Der alte Schlüssel in Tagen wird weiter gelesen und umgerechnet. Eine
-	// bestehende Datei soll nicht stillschweigend von sieben Tagen auf zwölf
-	// Stunden fallen, nur weil die Einheit gewechselt hat.
+	// The old key in days is still read and converted. An existing file must not
+	// silently drop from seven days to twelve hours just because the unit
+	// changed.
 	var alteTage int
 	zahl(&alteTage, "sitzung_tage", "NEXORA_SESSION_DAYS")
 	if alteTage > 0 {
@@ -310,20 +309,20 @@ func datei(pfad string) (map[string]string, error) {
 	return werte, err
 }
 
-// lesen ist der eigentliche Parser. Getrennt von datei, weil die
-// Einstellungsseite einen Entwurf prüfen können muss, BEVOR er auf der Platte
-// landet, eine Konfiguration erst zu schreiben und dann festzustellen, dass
-// sie kaputt ist, hiesse: beim nächsten Start startet nichts mehr.
+// lesen is the actual parser. Kept apart from datei because the settings page
+// has to be able to check a draft BEFORE it reaches the disk: writing a
+// configuration first and finding out afterwards that it is broken would mean
+// nothing starts next time.
 //
-// Die zweite Rückgabe sind Beanstandungen: Zeilen ohne '=' und doppelte
-// Schlüssel. Sie sind keine Fehler, die Datei bleibt lesbar, aber fast
-// immer ein Versehen.
+// The second return value holds the complaints: lines without '=' and duplicate
+// keys. They are not errors, the file stays readable, but they are almost always
+// a slip.
 func lesen(r io.Reader, name string) (map[string]string, []string, error) {
 	werte := map[string]string{}
 	beanstandet := []string{}
 	s := bufio.NewScanner(r)
-	// Ein LDAP-Filter oder eine lange URL sprengt die Vorgabe von 64 KiB nicht,
-	// ein versehentlich hier abgelegtes Zertifikat schon.
+	// An LDAP filter or a long URL does not exceed the 64 KiB default; a
+	// certificate accidentally dropped in here does.
 	s.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 
 	zeilennr := 0
@@ -345,8 +344,8 @@ func lesen(r io.Reader, name string) (map[string]string, []string, error) {
 		}
 		schluessel := strings.ToLower(strings.TrimSpace(zeile[:i]))
 		wert := strings.TrimSpace(zeile[i+1:])
-		// Anführungszeichen erlauben Werte mit Rand-Leerzeichen; ein Passwort
-		// darf schließlich auf ein Leerzeichen enden.
+		// Quotes allow values with leading or trailing spaces; a password may
+		// after all end in one.
 		if len(wert) >= 2 && wert[0] == '"' && wert[len(wert)-1] == '"' {
 			wert = wert[1 : len(wert)-1]
 		}
@@ -365,12 +364,11 @@ func lesen(r io.Reader, name string) (map[string]string, []string, error) {
 	return werte, beanstandet, nil
 }
 
-// merkeSchluessel sammelt, welche Schlüssel Laden überhaupt auswertet.
+// merkeSchluessel collects which keys Laden actually evaluates.
 //
-// Die Liste wird nicht von Hand gepflegt, sondern beim Laden nebenbei
-// aufgeschrieben. Eine Liste, die man von Hand nachträgt, wäre spätestens beim
-// dritten neuen Schlüssel unvollständig, und dann meldete die
-// Einstellungsseite einen richtig geschriebenen Eintrag als Tippfehler.
+// The list is not maintained by hand but written down in passing while loading.
+// A hand-maintained list would be incomplete by the third new key at the latest,
+// and the settings page would then report a correctly spelled entry as a typo.
 var schluesselWacht struct {
 	sync.Mutex
 	gesehen map[string]bool
@@ -389,9 +387,8 @@ func merkeSchluessel(k string) {
 	}
 }
 
-// BekannteSchluessel liefert alle Schlüssel, die Laden auswertet. Gefüllt ist
-// die Liste, sobald Laden einmal gelaufen ist, und das ist beim Start immer
-// der Fall.
+// BekannteSchluessel returns every key Laden evaluates. The list is filled once
+// Laden has run, which at startup is always the case.
 func BekannteSchluessel() []string {
 	schluesselWacht.Lock()
 	defer schluesselWacht.Unlock()
@@ -401,13 +398,13 @@ func BekannteSchluessel() []string {
 	return out
 }
 
-// Pruefen liest einen Entwurf und sagt, was daran auffällt: kaputte Zeilen,
-// doppelte Schlüssel und Namen, die das Programm nicht kennt.
+// Pruefen reads a draft and reports what stands out about it: broken lines,
+// duplicate keys and names the program does not know.
 //
-// Ein unbekannter Schlüssel ist kein Fehler, die Datei darf mehr enthalten,
-// als diese Fassung auswertet. Er ist aber fast immer ein Tippfehler, und ein
-// Tippfehler in einer Konfiguration wirkt genau wie eine Einstellung, die man
-// nie vorgenommen hat: er tut nichts und sagt nichts.
+// An unknown key is not an error, since the file may contain more than this
+// version evaluates. It is almost always a typo, though, and a typo in a
+// configuration behaves exactly like a setting nobody ever made: it does
+// nothing and says nothing.
 func Pruefen(inhalt string) []string {
 	werte, beanstandet, err := lesen(strings.NewReader(inhalt), "Entwurf")
 	if err != nil {
@@ -417,8 +414,8 @@ func Pruefen(inhalt string) []string {
 	for _, k := range BekannteSchluessel() {
 		bekannt[k] = true
 	}
-	// Nur prüfen, wenn die Liste überhaupt gefüllt ist. Sonst wäre nach einem
-	// Start ohne Laden jeder Schlüssel unbekannt.
+	// Only check when the list is filled at all. Otherwise every key would count
+	// as unknown after a start without Laden.
 	if len(bekannt) > 0 {
 		var unbekannt []string
 		for k := range werte {
@@ -439,9 +436,9 @@ func Pruefen(inhalt string) []string {
 // rather than fatal: a homelab install with the default secret should still
 // start, it should just be impossible to miss that it did.
 func (k Konfig) Warnungen() []string {
-	// Leere Liste, nicht nil: eine nil-Liste wird zu JSON null, und ein Leser,
-	// der darauf .length aufruft, stürzt ab. Genau das ist der
-	// Einstellungsseite passiert, solange nichts zu bemängeln war.
+	// An empty list, not nil: a nil slice becomes JSON null, and a reader calling
+	// .length on it crashes. That is exactly what happened to the settings page
+	// while there was nothing to complain about.
 	w := []string{}
 	if k.JWTGeheimnis == "change-me-in-production" {
 		w = append(w, "jwt_geheimnis steht auf der Vorgabe, jede Sitzung ist fälschbar")
