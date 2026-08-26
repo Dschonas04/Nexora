@@ -48,9 +48,8 @@ export default function TagView({
         ? `Schlagwort „${tag.name}“ löschen?`
         : `Schlagwort „${tag.name}“ löschen? Es wird von ${seiten.length} Seiten entfernt. ` +
           `Die Seiten selbst bleiben.`;
-    // Hier lohnt die Rückfrage: anders als ein gelöschter Kommentar lässt sich
-    // ein Schlagwort nicht wiederherstellen, und mit ihm gehen alle
-    // Zuordnungen verloren.
+    // Here the confirmation is worth it: unlike a deleted comment a tag cannot
+    // be restored, and all its assignments are lost with it.
     if (
       !(await frageStellen({
         titel: "Schlagwort löschen",
@@ -101,9 +100,9 @@ export default function TagView({
             {seiten.map((p) => (
               <div key={p.id} className="tree-row" onClick={() => nav(`/page/${p.id}`)}>
                 <span className="tree-label">{p.title || "Ohne Titel"}</span>
-                {/* Ein Schlagwort kann an einer geteilten Seite hängen, das
-                    gehört dazugesagt, sonst wundert man sich, warum sie nicht
-                    im eigenen Baum steht. */}
+                {/* A tag can hang on a shared page, and that belongs said,
+                    otherwise one wonders why it does not stand in one's own
+                    tree. */}
                 {p.shared && <span className="pill klein">geteilt</span>}
               </div>
             ))}

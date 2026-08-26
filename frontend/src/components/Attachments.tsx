@@ -34,12 +34,12 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
   // Was beim letzten Hochladen schiefging. Ohne diese Zeile war ein
   // fehlgeschlagener Upload nicht von einem aus, der nie stattfand.
   const [fehler, setFehler] = useState<string | null>(null);
-  // Index statt Objekt: der Viewer blättert durch die ganze Liste, dafür muss
-  // er wissen, an welcher Stelle er steht, nicht nur, welche Datei gemeint war.
+  // An index instead of an object: the viewer pages through the whole list, and
+  // for that it has to know where it stands, not only which file was meant.
   const [offenBei, setOffenBei] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  // Was gerade hochgeht: Name, Nummer in der Reihe und Anteil. Ohne Anzeige
-  // sieht ein großer Anhang aus wie ein Hänger.
+  // What is going up right now: name, number in the row and fraction. Without a
+  // display a large attachment looks like a hang.
   const [lauf, setLauf] = useState<{
     name: string;
     nummer: number;
@@ -60,9 +60,9 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
     if (!files || files.length === 0) return;
     setBusy(true);
     setFehler(null);
-    // Jede Datei einzeln, damit eine, die zu groß ist oder abgewiesen wird,
-    // die anderen nicht mitreißt. Am Ende steht, was nicht ankam, vorher
-    // scheiterte ein Upload lautlos und die Datei war einfach nicht da.
+    // Every file on its own, so that one that is too large or is refused does
+    // not take the others with it. At the end stands what did not arrive; before
+    // this an upload failed silently and the file was simply not there.
     const gescheitert: string[] = [];
     const alle = Array.from(files);
     try {
@@ -98,11 +98,11 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eingeworfen]);
 
-  // Ziehen und Ablegen von Dateien.
+  // Dragging and dropping files.
   //
-  // Der Zähler statt eines einfachen Schalters ist nötig, weil dragleave auch
-  // dann feuert, wenn der Zeiger von einem Kind- auf ein anderes Kindelement
-  // wechselt. Mit einem bool flackerte die Hervorhebung bei jeder Bewegung.
+  // The counter instead of a simple flag is necessary because dragleave also
+  // fires when the pointer moves from one child element to another. With a bool
+  // the highlight flickered on every movement.
   const [ueber, setUeber] = useState(0);
 
   const istDatei = (e: DragEvent) =>
@@ -127,15 +127,15 @@ export default function Attachments({ pageId, canEdit, eingeworfen, onEingeworfe
   return (
     <div
       className={"attachments" + (ueber > 0 ? " abwurf" : "")}
-      // Nur reagieren, wenn wirklich Dateien im Spiel sind. Sonst würde auch
-      // eine gezogene Seite aus dem Baum die Hervorhebung auslösen.
+      // React only when files are really involved. Otherwise a page dragged out
+      // of the tree would trigger the highlight too.
       onDragEnter={(e) => {
         if (canEdit && istDatei(e)) setUeber((n) => n + 1);
       }}
       onDragOver={(e) => {
         if (canEdit && istDatei(e)) {
-          // Ohne preventDefault öffnet der Browser die Datei in einem neuen
-          // Tab, statt sie hier abzulegen.
+          // Without preventDefault the browser opens the file in a new tab
+          // instead of dropping it here.
           e.preventDefault();
           e.dataTransfer.dropEffect = "copy";
         }

@@ -21,10 +21,9 @@ const Ctx = createContext<{ design: Design; neuLaden: () => void }>({
   neuLaden: () => {},
 });
 
-// Der Grund, auf dem der Akzent landet, je Grundton. Muss zu den Werten in
-// styles.css passen, sie hier zu wiederholen ist unschön, aber die Alternative
-// wäre, sie zur Laufzeit aus dem Stylesheet zu lesen, und das kostet mehr als
-// es einbringt.
+// The ground the accent lands on, per base tone. Has to match the values in
+// styles.css; repeating them here is not pretty, but the alternative would be to
+// read them from the stylesheet at runtime, and that costs more than it brings.
 const GRUND: Record<string, string> = {
   weiss: "#ffffff",
   grau: "#f7f7f6",
@@ -32,16 +31,16 @@ const GRUND: Record<string, string> = {
 };
 
 // anwenden writes the values where CSS can see them. Exported so the settings
-// page can preview a choice before it is saved — waiting for a round trip to
-// see a colour makes picking one a chore.
+// page can preview a choice before it is saved, since waiting for a round trip
+// to see a colour makes picking one a chore.
 //
-// Neben dem Akzent selbst werden zwei abgeleitete Werte gesetzt, und die sind
-// der eigentliche Punkt: --accent-text ist die Schrift, die AUF der Akzentfläche
-// lesbar ist, --accent-lesbar der Akzent so weit abgerückt, dass er als Schrift
-// AUF dem Grund lesbar bleibt.
+// Besides the accent itself two derived values are set, and those are the actual
+// point: --accent-text is the text readable ON the accent surface,
+// --accent-lesbar the accent moved far enough away to stay readable as text ON
+// the ground.
 //
-// Ohne das stand weiße Schrift auf einem hellen Akzent und ein dunkler Akzent
-// als Verweis auf dunklem Grund. Beides war unlesbar.
+// Without that, white text stood on a light accent and a dark accent stood as a
+// link on a dark ground. Both were unreadable.
 export function anwenden(d: Design) {
   const wurzel = document.documentElement;
   wurzel.setAttribute("data-grundton", d.grundton);
@@ -62,8 +61,8 @@ export function DesignProvider({ children }: { children: ReactNode }) {
         setDesign(d);
         anwenden(d);
       })
-      // Schlägt der Abruf fehl, bleibt die Vorgabe aus dem Stylesheet stehen.
-      // Eine Oberfläche ohne Farben wäre schlimmer als eine mit den falschen.
+      // If the request fails, the default from the stylesheet stays. An
+      // interface without colours would be worse than one with the wrong ones.
       .catch(() => {});
   }, []);
 
