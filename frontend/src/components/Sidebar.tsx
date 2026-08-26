@@ -10,9 +10,9 @@ import PageTree from "./PageTree";
 import SpaceRechte from "./SpaceRechte";
 import Einfuhr from "./Einfuhr";
 
-// Schlüssel im Speicher des Browsers. Eingeklappt wird gemerkt, nicht offen:
-// so ist eine neu angelegte Ablage von selbst aufgeklappt, ohne dass sie
-// irgendwo eingetragen werden müsste.
+// Keys in the browser's storage. Collapsed is remembered, not open: that way a
+// newly created space is expanded by itself without having to be recorded
+// anywhere.
 const ZU_SCHLUESSEL = "nexora.leiste.eingeklappt";
 
 function gemerkteZu(): Set<string> {
@@ -89,13 +89,13 @@ export default function Sidebar(props: Props) {
       try {
         localStorage.setItem(ZU_SCHLUESSEL, JSON.stringify([...n]));
       } catch {
-        // Nicht speichern zu können ist kein Grund, nicht einzuklappen.
+        // Not being able to save is no reason not to collapse.
       }
       return n;
     });
-  // Beim Ziehen klappt ein Abschnitt von selbst auf, sobald der Zeiger über
-  // seiner Überschrift verweilt. Ohne das müsste man die Seite ablegen,
-  // aufklappen, wieder aufnehmen, oder das Ziel bliebe unsichtbar.
+  // While dragging, a section expands by itself as soon as the pointer rests
+  // over its heading. Without that one would have to drop the page, expand, pick
+  // it up again, or the target would stay invisible.
   const aufklappen = (key: string) => setZu((prev) => {
     if (!prev.has(key)) return prev;
     const n = new Set(prev);
@@ -110,24 +110,24 @@ export default function Sidebar(props: Props) {
   const [q, setQ] = useState("");
   const { frei } = useLizenz();
 
-  // Vorlagen werden einmal geholt, nicht bei jedem Öffnen des Menüs: die Liste
-  // ist kurz und ändert sich selten, ein Abruf je Klick wäre Verschwendung.
+  // Templates are fetched once, not every time the menu opens: the list is short
+  // and rarely changes, one request per click would be a waste.
   const [vorlagen, setVorlagen] = useState<PageMeta[]>([]);
   const [vorlagenOffen, setVorlagenOffen] = useState(false);
   const [rechteFuer, setRechteFuer] = useState<{ id: string; name: string } | null>(null);
-  // Kennung der Ablage, deren Sichtbarkeitsmenü offen steht, höchstens eine
-  // zur Zeit, deshalb ein einzelner Wert und keine Menge.
+  // Id of the space whose visibility menu is open, at most one at a time, hence
+  // a single value and not a set.
   const [sichtbarkeitFuer, setSichtbarkeitFuer] = useState<string | null>(null);
-  // Dasselbe für das Export-Menü einer Ablage.
+  // The same for the export menu of a space.
   const [exportFuer, setExportFuer] = useState<string | null>(null);
   // Ziel der Einfuhr, solange ihr Kasten offen steht.
   const [einfuhrZiel, setEinfuhrZiel] = useState<
     { ziel: { parentId?: string; spaceId?: string }; name: string } | null
   >(null);
-  // Lange Listen werden auf vier Einträge gekürzt. Eine Leiste, die von
-  // fünfzehn Ablagen und dreißig Schlagwörtern gefüllt wird, ist keine
-  // Übersicht mehr, man scrollt an allem vorbei, was man sucht. Der Rest ist
-  // einen Klick entfernt und die Zahl daneben sagt, wie viel dort wartet.
+  // Long lists are cut to four entries. A sidebar filled by fifteen spaces and
+  // thirty tags is no longer an overview; one scrolls past everything one is
+  // looking for. The rest is one click away and the number beside it says how
+  // much is waiting there.
   const [alleSpaces, setAlleSpaces] = useState(false);
   const [alleTags, setAlleTags] = useState(false);
   useEffect(() => {
@@ -235,9 +235,9 @@ export default function Sidebar(props: Props) {
         {!h.eigen && <span className="pill klein">geteilt</span>}
       </div>
       {h.quelle && (
-        // Woher der Treffer stammt. Ohne diese Zeile läse sich ein Ausschnitt
-        // aus einem PDF wie Seiteninhalt, den man auf der Seite dann vergeblich
-        // sucht.
+        // Where the hit comes from. Without this line an excerpt from a PDF
+        // would read like page content that one then looks for on the page in
+        // vain.
         <div className="treffer-quelle muted small">aus Anhang: {h.quelle}</div>
       )}
       {h.ausschnitt.trim() !== "" && (
@@ -250,10 +250,10 @@ export default function Sidebar(props: Props) {
   // no page can become invisible by not belonging anywhere.
   const ungrouped = pages.filter((p) => !p.spaceId);
 
-  // Wie viele Einträge eine gekürzte Liste zeigt.
+  // How many entries a shortened list shows.
   const KURZ = 4;
-  // Die geöffnete Ablage wird immer gezeigt, auch wenn sie hinter der Grenze
-  // liegt: die Leiste soll nicht verschweigen, wo man gerade steht.
+  // The open space is always shown, even when it lies beyond the limit: the
+  // sidebar shall not conceal where one currently stands.
   const aktiveSpaceId = pages.find((p) => p.id === activeId)?.spaceId ?? null;
   const sichtbareSpaces = alleSpaces
     ? spaces
@@ -284,8 +284,8 @@ export default function Sidebar(props: Props) {
         <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
           +
         </button>
-        {/* Der zweite Knopf erscheint nur, wenn es überhaupt Vorlagen gibt.
-            Ein leeres Menü anzubieten wäre ein Versprechen ohne Inhalt. */}
+        {/* The second button appears only when there are templates at all.
+            Offering an empty menu would be a promise without content. */}
         {frei("vorlagen") && vorlagen.length > 0 && (
           <div className="vorlagenmenue">
             <button
@@ -318,9 +318,9 @@ export default function Sidebar(props: Props) {
 
       <div className="search-box">
         <input placeholder="Suchen…" value={q} onChange={(e) => setQ(e.target.value)} />
-        {/* Der Knopf erscheint erst beim Suchen: ohne Suchwort gäbe es nichts
-            einzugrenzen. Der Punkt daneben sagt, dass ein Filter steht,
-            sonst wundert man sich über zu wenige Treffer. */}
+        {/* The button appears only while searching: without a search term there
+            would be nothing to narrow down. The dot beside it says that a filter
+            is set, otherwise one wonders about too few hits. */}
         {q.trim() !== "" && (
           <button
             className={"icon-btn" + (filterAktiv ? " aktiv" : "")}
@@ -383,19 +383,18 @@ export default function Sidebar(props: Props) {
         </div>
       )}
 
-      {/* Die beiden Aktionen hingen bisher an der Überschrift "Seiten". Damit
-          waren sie an einen Abschnitt gebunden, den es nicht immer gibt,
-          und der neben benannten Ablagen ohnehin fehl am Platz wirkte. Sie
-          stehen jetzt für sich, oberhalb aller Abschnitte. */}
+      {/* Both actions used to hang on the heading "Seiten". That tied them to a
+          section which does not always exist and which looked out of place
+          beside named spaces anyway. They now stand on their own, above all
+          sections. */}
       {results === null && (
         <div className="sidebar-werkzeuge">
           <button className="text-btn" onClick={onCreateSpace}>
             + Space
           </button>
-          {/* Beschriftet statt als Pfeil: ein Symbol allein sagt nicht, dass
-              sich hier ein ganzes Archiv einlesen lässt, und seit die
-              Einfuhr eine eigene Ablage anlegen kann, ist das der Weg zurück
-              aus einer Ausfuhr. */}
+          {/* Labelled instead of an arrow: an icon alone does not say that a
+              whole archive can be read in here, and since the import can create
+              a space of its own, this is the way back out of an export. */}
           <button
             className="text-btn"
             title="Markdown, HTML oder ein ZIP einlesen, wahlweise als eigene Ablage"
@@ -441,9 +440,9 @@ export default function Sidebar(props: Props) {
                       if (!dragId) return;
                       e.preventDefault();
                       setDropTarget(marke);
-                      // Eine eingeklappte Ablage öffnet sich, sobald man mit
-                      // einer Seite darüber steht: sonst zieht man auf ein
-                      // Ziel, dessen Inhalt man nicht sieht.
+                      // A collapsed space opens as soon as one hovers over it
+                      // with a page: otherwise one drags onto a target whose
+                      // content one cannot see.
                       aufklappen(marke);
                     }}
                     onDragLeave={() => setDropTarget((t) => (t === marke ? null : t))}
@@ -452,11 +451,10 @@ export default function Sidebar(props: Props) {
                       dropOnSpace(sp.id);
                     }}
                   >
-                    {/* Der ganze linke Teil klappt, Pfeil und Name. Das
-                        Umbenennen hat jetzt einen eigenen Knopf: eine
-                        Beschriftung, die beim Anklicken ein Eingabefeld
-                        aufmacht, ist nicht das, was man von einer Überschrift
-                        in einer Leiste erwartet. */}
+                    {/* The whole left part folds, arrow and name. Renaming now
+                        has a button of its own: a label that opens an input
+                        field when clicked is not what one expects from a heading
+                        in a sidebar. */}
                     <button
                       className="klapp-btn"
                       aria-expanded={!eingeklappt}
@@ -468,9 +466,9 @@ export default function Sidebar(props: Props) {
                     <span className="klapp-name" onClick={() => klappen(marke)}>
                       {sp.name}
                     </span>
-                    {/* Sagt ohne Umweg, dass hier alle mitlesen. Der Zusatz
-                        steht im title, weil "offen" allein nicht verrät, ob
-                        auch geschrieben werden darf. */}
+                    {/* Says without detour that everybody reads along here. The
+                        addition stands in the title because "offen" alone does
+                        not reveal whether writing is allowed too. */}
                     {sp.oeffentlich !== "nein" && (
                       <span
                         className="pill klein offen"
@@ -492,10 +490,10 @@ export default function Sidebar(props: Props) {
                       <button className="icon-btn" title="Neue Seite" onClick={() => onCreateInSpace(sp.id)}>
                         +
                       </button>
-                      {/* Verwalten-Knöpfe nur für die, die es dürfen. Das
-                          Backend prüft es ohnehin noch einmal; hier geht es
-                          darum, niemandem einen Knopf hinzustellen, der bei
-                          jedem Druck abgewiesen wird. */}
+                      {/*Manage buttons only for those allowed to. The backend
+                          checks it again anyway; the point here is not to put a
+                          button in front of somebody that is refused on every
+                          press. */}
                       {sp.darfVerwalten && (
                         <button
                           className="icon-btn"
@@ -530,11 +528,11 @@ export default function Sidebar(props: Props) {
                       >
                         ↑
                       </button>
-                      {/* Ein normaler Verweis auf die Adresse, kein fetch: so
-                          setzt der Browser den Dateinamen aus dem
-                          Content-Disposition-Kopf und lädt den Strom direkt
-                          auf die Platte, statt ihn erst in den Speicher zu
-                          holen. */}
+                      {/* An ordinary link to the address, not a fetch: that way
+                          the browser takes the file name from the
+                          Content-Disposition header and writes the stream
+                          straight to disk instead of pulling it into memory
+                          first. */}
                       {frei("export") && (
                         <div className="exportmenue">
                           <button
@@ -578,9 +576,9 @@ export default function Sidebar(props: Props) {
                     </span>
                   </div>
 
-                  {/* Kleines Menü statt eines Dreifach-Umschalters: welche der
-                      drei Stufen gerade gilt, soll man sehen und nicht durch
-                      Weiterklicken herausfinden müssen. */}
+                  {/* A small menu instead of a three way toggle: which of the
+                      three levels applies shall be visible and not something one
+                      has to find out by clicking on. */}
                   {sichtbarkeitFuer === sp.id && (
                     <div className="sichtbarkeit-menue">
                       <div className="vorlagenliste-titel">Wer sieht diese Ablage?</div>
@@ -603,10 +601,10 @@ export default function Sidebar(props: Props) {
                           <span className="muted small">{erklaerung}</span>
                         </button>
                       ))}
-                      {/* Der Satz steht bewusst da: "öffentlich" heißt in
-                          Nexora nicht "im Internet". Wer eine Seite anonym
-                          erreichbar machen will, nimmt den Freigabelink der
-                          Seite. */}
+                      {/* The sentence stands there on purpose: "public" does not
+                          mean "on the internet" in Nexora. Whoever wants a page
+                          reachable anonymously takes the share link of the
+                          page. */}
                       <div className="sichtbarkeit-hinweis muted small">
                         Betrifft nur angemeldete Konten dieser Instanz. Ohne Anmeldung bleibt die
                         Ablage unerreichbar.
@@ -648,8 +646,8 @@ export default function Sidebar(props: Props) {
               );
             })}
 
-            {/* Der Rest der Ablagen, hinter einem Klick. Die Zahl steht dabei,
-                damit man weiß, ob sich das Aufklappen lohnt. */}
+            {/* The rest of the spaces, behind one click. The number stands with
+                it so that one knows whether expanding is worth it. */}
             {spaces.length > sichtbareSpaces.length && (
               <div className="tree-row mehr-zeile" onClick={() => setAlleSpaces(true)}>
                 <span className="tree-label">
@@ -663,12 +661,11 @@ export default function Sidebar(props: Props) {
               </div>
             )}
 
-            {/* Der Auffangabschnitt für Seiten, die in keiner Ablage liegen.
-                Er erscheint nur, wenn er etwas enthält, oder wenn gerade eine
-                Seite gezogen wird, denn dann ist er das Ziel, mit dem man eine
-                Seite wieder aus ihrer Ablage herausholt. Eine leere Überschrift
-                "Seiten" zwischen benannten Ablagen sagte nichts und stand nur
-                im Weg. */}
+            {/* The catch all section for pages lying in no space. It appears only
+                when it contains something, or while a page is being dragged,
+                because then it is the target with which one pulls a page back
+                out of its space. An empty heading "Seiten" between named spaces
+                said nothing and only stood in the way. */}
             {(ungrouped.length > 0 || dragId) && (
             <div className="sidebar-section">
               <div
@@ -700,9 +697,8 @@ export default function Sidebar(props: Props) {
                   <span className="tag-anzahl muted small">{ungrouped.length}</span>
                 )}
                 <span className="tree-actions">
-                  {/* Ohne den Pfeil würde React das Klickereignis als erstes
-                      Argument durchreichen, und das wäre dann die
-                      Vorlagen-Kennung. */}
+                  {/* Without the arrow React would pass the click event as the
+                      first argument, and that would then be the template id. */}
                   <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
                     +
                   </button>
@@ -739,9 +735,8 @@ export default function Sidebar(props: Props) {
             </div>
             )}
 
-            {/* Ein frischer Arbeitsbereich: keine Ablage, keine Seite, nichts
-                geteilt. Statt drei leerer Überschriften steht hier, was als
-                Nächstes zu tun ist. */}
+            {/* A fresh workspace: no space, no page, nothing shared. Instead of
+                three empty headings, what to do next stands here. */}
             {spaces.length === 0 && pages.length === 0 && shared.length === 0 && (
               <div className="sidebar-section leerer-anfang">
                 <p className="muted">
@@ -779,10 +774,10 @@ export default function Sidebar(props: Props) {
                 </Klapptitel>
                 {!zu.has("schlagwoerter") &&
                   sichtbareTags.map((t) => (
-                    // Anklickbar, und die Zahl dahinter sagt, ob etwas
-                    // dranhängt. Ohne beides war das hier nur Zierde: eine
-                    // Beschriftung, der man nicht folgen kann, verspricht eine
-                    // Ordnung, die es gar nicht gibt.
+                    // Clickable, and the number behind it says whether anything
+                    // hangs on it. Without both this was mere decoration: a
+                    // label one cannot follow promises an order that does not
+                    // exist.
                     <div
                       key={t.id}
                       className={"tree-row" + (currentPath === `/tag/${t.id}` ? " active" : "")}
@@ -810,11 +805,11 @@ export default function Sidebar(props: Props) {
               </div>
             )}
 
-            {/* Was zum eigenen Arbeiten gehört. Die Überschrift hieß einmal
-                "Workspace", ein englischer Rest, der außerdem nichts über
-                den Inhalt sagte: darunter standen Posteingang und Papierkorb
-                neben der Nutzerverwaltung. Die Verwaltung steht deshalb jetzt
-                für sich, siehe unten. */}
+            {/* What belongs to one's own work. The heading was once called
+                "Workspace", an English leftover that also said nothing about the
+                content: below it stood the inbox and the trash next to user
+                administration. Administration therefore now stands on its own,
+                see below. */}
             <div className="sidebar-section">
               <Klapptitel marke="workspace" zu={zu} klappen={klappen}>
                 Arbeitsbereich
@@ -824,8 +819,8 @@ export default function Sidebar(props: Props) {
                 onClick={() => onNavigate("/postfach")}
               >
                 <span className="tree-label">Postfach</span>
-                {/* Die Zahl steht nur da, wenn sie etwas sagt. Eine Null neben
-                    dem Eintrag wäre eine Aufforderung ohne Anlass. */}
+                {/* The number stands there only when it says something. A zero
+                    beside the entry would be a prompt without occasion. */}
                 {ungelesen > 0 && <span className="postfach-zaehler">{ungelesen}</span>}
               </div>
               <div
@@ -842,14 +837,14 @@ export default function Sidebar(props: Props) {
               </div>
             </div>
 
-            {/* Verwaltung. Nur für Administratoren sichtbar, das räumt allein
-                die Oberfläche auf, das Backend prüft die Rolle bei jedem Aufruf
-                erneut. Das Protokoll ist zusätzlich Zusatzumfang: ein Eintrag,
-                der ohnehin abgewiesen würde, wird gar nicht erst angeboten.
+            {/* Administration. Visible only to administrators, which merely
+                tidies up the interface; the backend checks the role again on
+                every call. The log is a paid extra on top: an entry that would
+                be refused anyway is not offered in the first place.
 
-                Einstellungen, Nutzer und Gruppen haben keine eigene Zeile mehr:
-                sie liegen alle hinter dem Zahnrad in der Überschrift. Was in
-                der Liste steht, ist zum Nachlesen da, nicht zum Einstellen. */}
+                Settings, users and groups no longer have a row of their own:
+                they all live behind the gear in the heading. What stands in the
+                list is there to read, not to configure. */}
             {user?.role === "admin" && (
               <div className="sidebar-section">
                 <Klapptitel
@@ -904,17 +899,17 @@ export default function Sidebar(props: Props) {
   );
 }
 
-// Klapptitel ist die Überschrift eines Leistenabschnitts, der nur auf- und
-// zuklappt und sonst nichts kann. Die Ablagen und der Abschnitt "Seiten" haben
-// ihre eigene, ausgeschriebene Überschrift: dort hängen Ziehziele und
-// Verwaltungsknöpfe dran, die hier nur im Weg wären.
-// Ein kleines Zahnrad für die Verwaltung. Von Hand gezeichnet statt aus einer
-// Bibliothek geholt: die Leiste braucht genau dieses eine Sinnbild, und ein
-// ganzes Symbolpaket dafür mitzuschleppen wäre unverhältnismäßig.
+// Klapptitel is the heading of a sidebar section that only expands and
+// collapses and can do nothing else. The spaces and the section "Seiten" have
+// their own written out heading: drop targets and management buttons hang there,
+// which would only be in the way here.
+// A small gear for administration. Drawn by hand instead of taken from a
+// library: the sidebar needs exactly this one symbol, and dragging a whole icon
+// set along for it would be out of proportion.
 //
-// Nabe und Kranz als Kreise, die Zähne als acht kurze Striche nach außen. Bei
-// dreizehn Pixeln Kantenlänge liest sich das deutlicher als ein fein
-// ausgearbeiteter Umriss, der auf dieser Größe nur verschmiert.
+// Hub and rim as circles, the teeth as eight short strokes pointing outwards. At
+// thirteen pixels a side that reads more clearly than a finely worked outline,
+// which only smears at this size.
 function Zahnrad() {
   return (
     <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
@@ -949,16 +944,16 @@ function Klapptitel({
   zu: Set<string>;
   klappen: (marke: string) => void;
   anzahl?: number;
-  // Sinnbild vor dem Namen. Nur dort gesetzt, wo es etwas unterscheidet,
-  // ein Symbol neben jeder Überschrift wäre Zierrat und keine Hilfe.
+  // Symbol in front of the name. Only set where it distinguishes something; an
+  // icon beside every heading would be ornament and no help.
   symbol?: React.ReactNode;
   symbolTitel?: string;
-  // Ist eine Aktion hinterlegt, wird aus dem Sinnbild eine Schaltfläche. Ohne
-  // sie bleibt es reine Beschriftung.
+  // If an action is given, the symbol becomes a button. Without one it stays a
+  // pure label.
   symbolAktion?: () => void;
-  // Hebt das Sinnbild hervor, solange man auf der Ansicht steht, die es
-  // öffnet. Ohne das verlöre man beim Klick die Anzeige, wo man ist, die
-  // Zeile, die das sonst übernahm, gibt es nicht mehr.
+  // Highlights the symbol as long as one stands on the view it opens. Without
+  // that one would lose the indication of where one is on clicking; the row that
+  // used to do that does not exist any more.
   symbolAktiv?: boolean;
   children: React.ReactNode;
 }) {
@@ -979,8 +974,8 @@ function Klapptitel({
             className={"klapp-symbol klapp-symbol-btn" + (symbolAktiv ? " aktiv" : "")}
             title={symbolTitel}
             aria-label={symbolTitel}
-            // Sonst klappt die Überschrift zusätzlich zu, weil der Klick
-            // weiterläuft und dort das Auf und Zu auslöst.
+            // Otherwise the heading collapses as well, because the click keeps
+            // travelling and triggers the open and close there.
             onClick={(e) => {
               e.stopPropagation();
               symbolAktion();
@@ -994,7 +989,7 @@ function Klapptitel({
       <span className="klapp-name" onClick={() => klappen(marke)}>
         {children}
       </span>
-      {/* Die Zahl nur im eingeklappten Zustand: aufgeklappt zählt man selbst. */}
+      {/* The number only while collapsed: expanded one counts oneself. */}
       {eingeklappt && anzahl !== undefined && anzahl > 0 && (
         <span className="tag-anzahl muted small">{anzahl}</span>
       )}
