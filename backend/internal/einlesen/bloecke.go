@@ -5,25 +5,25 @@ import (
 	"strings"
 )
 
-// stapelEintrag hält einen offenen Listeneintrag samt der Spalte, in der seine
-// Marke stand. Ein tiefer eingerückter Eintrag ist sein Kind.
+// stapelEintrag holds an open list item together with the column its marker
+// stood in. An item indented further is its child.
 type stapelEintrag struct {
 	einzug int
 	k      *knoten
 }
 
-// bloeckeAus liest die Zeilen eines Dokuments.
+// bloeckeAus reads the lines of a document.
 //
-// Zeilenweise und ohne Rückschau über mehr als eine Zeile hinaus: Markdown ist
-// zeilenorientiert, und ein Leser, der jederzeit sagen kann, in welchem Zustand
-// er ist, bleibt änderbar. Ein vollständiger CommonMark-Leser wäre das Zehnfache
-// an Code für Fälle, die in Notizen nicht vorkommen.
+// Line by line and without looking back further than one line: Markdown is line
+// oriented, and a reader that can say at any moment which state it is in stays
+// changeable. A complete CommonMark reader would be ten times the code for cases
+// that do not occur in notes.
 func bloeckeAus(zeilen []string) []Block {
 	var wurzel []*knoten
 	var stapel []stapelEintrag
 
-	// anhaengen hängt einen Listeneintrag an der richtigen Stelle ein: unter
-	// den letzten offenen Eintrag, der weniger weit eingerückt ist.
+	// anhaengen inserts a list item in the right place: below the last open
+	// item that is indented less far.
 	anhaengen := func(k *knoten, einzug int) {
 		for len(stapel) > 0 && stapel[len(stapel)-1].einzug >= einzug {
 			stapel = stapel[:len(stapel)-1]
@@ -49,13 +49,13 @@ func bloeckeAus(zeilen []string) []Block {
 		leer := strings.TrimSpace(z) == ""
 
 		if leer {
-			// Eine Leerzeile beendet einen Absatz, aber keine Liste: zwischen
-			// zwei Listeneinträgen darf eine stehen, und die Liste geht weiter.
+			// A blank line ends a paragraph but not a list: one may stand between
+			// two list items, and the list carries on.
 			continue
 		}
 
-		// Codezaun. Zuerst geprüft, weil innerhalb des Zauns keine andere
-		// Regel gilt, ein "# " dort ist eine Raute und keine Überschrift.
+		// A code fence. Checked first, because inside the fence no other rule
+		// applies: a "# " there is a hash, not a heading.
 		if m := zaunMuster.FindStringSubmatch(z); m != nil {
 			zaun := m[1][:1]
 			var code []string
@@ -72,13 +72,12 @@ func bloeckeAus(zeilen []string) []Block {
 			continue
 		}
 
-		// Überschrift.
+		// A heading.
 		if m := ueberschriftMuster.FindStringSubmatch(z); m != nil {
 			stufe := len(m[1])
-			// Der Editor kennt drei Stufen. Tiefere zusammenzulegen verliert
-			// Gliederung, sie zu Absätzen zu machen verlöre die Überschrift
-			// ganz, und in einer dreistufigen Ansicht fällt eine vierte
-			// Ebene ohnehin kaum auf.
+			// The editor knows three levels. Merging deeper ones loses structure,
+			// turning them into paragraphs would lose the heading altogether, and
+			// in a three-level view a fourth level hardly shows anyway.
 			if stufe > 3 {
 				stufe = 3
 			}
@@ -90,8 +89,8 @@ func bloeckeAus(zeilen []string) []Block {
 			continue
 		}
 
-		// Waagerechte Linie. Der Editor hat keine; drei Geviertstriche sind
-		// das, was am ehesten danach aussieht.
+		// A horizontal rule. The editor has none; three hyphens are the closest
+		// thing that looks like one.
 		if trennerMuster.MatchString(z) {
 			gerade(&knoten{blk: Block{
 				Type:    "paragraph",
@@ -100,13 +99,13 @@ func bloeckeAus(zeilen []string) []Block {
 			continue
 		}
 
-		// Tabelle: eine Zeile mit senkrechten Strichen, deren Nachfolgerin die
-		// Trennzeile ist. Ohne diese zweite Bedingung wäre jeder Satz mit einem
-		// senkrechten Strich eine Tabelle.
+		// A table: a row of vertical bars whose successor is the separator row.
+		// Without that second condition every sentence containing a vertical bar
+		// would be a table.
 		if strings.Contains(z, "|") && i+1 < len(zeilen) && trennzeileMuster.MatchString(zeilen[i+1]) {
 			var roh []string
 			roh = append(roh, z)
-			i++ // Trennzeile überspringen
+			i++ // skip the separator row
 			for i+1 < len(zeilen) && strings.Contains(zeilen[i+1], "|") && strings.TrimSpace(zeilen[i+1]) != "" {
 				i++
 				roh = append(roh, zeilen[i])
@@ -115,9 +114,9 @@ func bloeckeAus(zeilen []string) []Block {
 			continue
 		}
 
-		// Zitat. Der Editor hat keinen Zitatblock, also wird der Inhalt kursiv
-		// gesetzt und das Zeichen ">" fällt weg. Mehrere Zitatzeilen
-		// hintereinander gehören zu einem Zitat.
+		// A quote. The editor has no quote block, so the content is set in
+		// italics and the ">" disappears. Several quote lines in a row belong to
+		// one quote.
 		if strings.HasPrefix(strings.TrimLeft(z, " "), ">") {
 			var zitat []string
 			for i < len(zeilen) && strings.HasPrefix(strings.TrimLeft(zeilen[i], " "), ">") {
@@ -139,10 +138,10 @@ func bloeckeAus(zeilen []string) []Block {
 			continue
 		}
 
-		// Absatz. Alle folgenden Zeilen gehören dazu, bis eine Leerzeile oder
-		// ein Block anderer Art kommt.
-		// Roh gesammelt, ungetrimmt: zwei Leerzeichen am Zeilenende sind in
-		// Markdown ein harter Umbruch, und wer vorher trimmt, hat ihn verloren.
+		// A paragraph. Every following line belongs to it until a blank line or
+		// a block of another kind arrives.
+		// Collected raw, untrimmed: two spaces at the end of a line are a hard
+		// break in Markdown, and trimming first loses it.
 		var absatz []string
 		absatz = append(absatz, z)
 		for i+1 < len(zeilen) {
@@ -155,12 +154,12 @@ func bloeckeAus(zeilen []string) []Block {
 		}
 		text := absatzText(absatz)
 
-		// Eine eingerückte Zeile, die ganz aus einem Codestück besteht, kommt
-		// aus einem Codeblock. Der Editor hat keinen; der Export schreibt
-		// deshalb jede Zeile als `Text`, und die Einrückung steht davor statt
-		// darin. Wandert sie nicht in das Codestück hinein, verliert jeder
-		// eingerückte Codeblock beim Wiedereinlesen seine Stufen, und
-		// Einrückung ist in Code kein Schmuck.
+		// An indented line consisting entirely of a code span comes from a code
+		// block. The editor has none; the export therefore writes every line as
+		// `text`, and the indentation ends up in front of it instead of inside.
+		// If it does not move into the code span, every indented code block
+		// loses its levels when read back in, and indentation is not decoration
+		// in code.
 		if len(absatz) == 1 && len(stapel) == 0 {
 			if einzug := absatz[0][:einzugVon(absatz[0])]; einzug != "" {
 				if inneres, marke, ok := ganzCode(text); ok {
@@ -169,16 +168,16 @@ func bloeckeAus(zeilen []string) []Block {
 			}
 		}
 
-		// Eine Zeile, die nur aus einem Bild besteht, wird ein Bildblock. In
-		// einen Absatz gepackt wäre sie ein Verweis, den man anklicken muss,
-		// gemeint war ein Bild, das man sieht.
+		// A line consisting of nothing but an image becomes an image block.
+		// Wrapped in a paragraph it would be a link one has to click; what was
+		// meant is an image one can see.
 		if m := bildAlleinMuster.FindStringSubmatch(text); m != nil {
 			gerade(&knoten{blk: bildBlock(m[1], m[2])})
 			continue
 		}
 
-		// Fortsetzung eines Listeneintrags: eingerückter Fließtext unter einem
-		// Eintrag gehört zu ihm, nicht neben die Liste.
+		// Continuation of a list item: indented prose below an item belongs to
+		// it, not beside the list.
 		if len(stapel) > 0 && einzugVon(z) > stapel[len(stapel)-1].einzug {
 			letzter := stapel[len(stapel)-1].k
 			letzter.blk.Content = append(letzter.blk.Content.([]Inline),
@@ -189,8 +188,8 @@ func bloeckeAus(zeilen []string) []Block {
 		gerade(&knoten{blk: Block{Type: "paragraph", Content: inlineAus(text, nil)}})
 	}
 
-	// Ein Dokument ohne einen einzigen Block wäre für den Editor kein gültiger
-	// Anfangsinhalt; ein leerer Absatz ist die leere Seite.
+	// A document without a single block would not be valid initial content for
+	// the editor; an empty paragraph is the empty page.
 	if len(wurzel) == 0 {
 		return []Block{{Type: "paragraph"}}
 	}
@@ -201,12 +200,12 @@ func bloeckeAus(zeilen []string) []Block {
 	return out
 }
 
-// ersterDerListe nimmt die Anfangszahl weg, wenn schon ein nummerierter
-// Eintrag davor steht.
+// ersterDerListe drops the start number when a numbered item already stands
+// before it.
 //
-// BlockNote zählt eine Liste selbst durch und liest die Angabe nur am ersten
-// Eintrag. Stünde sie an jedem, finge nach dem Speichern jeder Eintrag eine
-// neue Liste an, aus "5. 6. 7." würde "5. 5. 5.".
+// BlockNote counts a list itself and only reads the number on the first item. If
+// it stood on every item, each one would start a new list after saving, and
+// "5. 6. 7." would turn into "5. 5. 5.".
 func ersterDerListe(k *knoten, geschwister []*knoten) {
 	if k.blk.Type != "numberedListItem" || len(geschwister) == 0 {
 		return
@@ -220,8 +219,8 @@ func ersterDerListe(k *knoten, geschwister []*knoten) {
 	}
 }
 
-// ganzCode sagt, ob eine Zeile aus nichts als einem Codestück besteht, und
-// liefert dessen Inhalt samt der Zahl der Rückstriche, die ihn einfassen.
+// ganzCode reports whether a line consists of nothing but a code span, and
+// returns its content together with the backtick run that fences it.
 func ganzCode(z string) (string, string, bool) {
 	n := 0
 	for n < len(z) && z[n] == '`' {
@@ -235,16 +234,16 @@ func ganzCode(z string) (string, string, bool) {
 		return "", "", false
 	}
 	inneres := z[n : len(z)-n]
-	// Ein Rückstrichlauf derselben Länge im Inneren hieße, dass die Zeile aus
-	// mehreren Stücken besteht und nicht aus einem.
+	// A run of backticks of the same length inside would mean the line consists
+	// of several spans rather than one.
 	if strings.Contains(inneres, marke) {
 		return "", "", false
 	}
 	return inneres, marke, true
 }
 
-// beginntBlock sagt, ob eine Zeile einen neuen Block anfängt. Ohne das würde
-// eine Liste, die ohne Leerzeile auf einen Absatz folgt, im Absatz verschwinden.
+// beginntBlock reports whether a line starts a new block. Without it a list
+// following a paragraph without a blank line would vanish into the paragraph.
 func beginntBlock(z string) bool {
 	if ueberschriftMuster.MatchString(z) || trennerMuster.MatchString(z) ||
 		zaunMuster.MatchString(z) || aufzaehlungMuster.MatchString(z) ||
@@ -276,9 +275,9 @@ func listenEintrag(z string) (*knoten, int, bool) {
 	if m := nummerMuster.FindStringSubmatch(z); m != nil {
 		einzug := len(strings.ReplaceAll(m[1], "\t", "    "))
 		props := map[string]any{}
-		// Eine Liste, die bei 5 anfängt, soll bei 5 anfangen. BlockNote merkt
-		// sich das nur am ersten Eintrag; bei allen anderen wäre die Angabe
-		// falsch, weil der Editor selbst durchzählt.
+		// A list starting at 5 should start at 5. BlockNote only remembers that
+		// on the first item; on every other one the number would be wrong,
+		// because the editor counts by itself.
 		if n, err := strconv.Atoi(m[2]); err == nil && n != 1 {
 			props["start"] = n
 		}
@@ -290,14 +289,13 @@ func listenEintrag(z string) (*knoten, int, bool) {
 	return nil, 0, false
 }
 
-// absatzText fügt die Zeilen eines Absatzes zusammen.
+// absatzText joins the lines of a paragraph.
 //
-// Ein weicher Umbruch, eine Zeile, die einfach zu Ende ist, wird zum
-// Leerzeichen, so will es Markdown. Zwei Leerzeichen oder ein Rückstrich am
-// Ende sind ein harter Umbruch und bleiben einer: im Editor steht dann ein
-// Zeilenumbruch mitten im Absatz, und der Export schreibt ihn wieder als
-// "  \n". Ohne diese Unterscheidung liefe eine Anschrift oder ein Gedicht beim
-// Import zu einer einzigen Zeile zusammen.
+// A soft break, a line that simply ends, becomes a space, as Markdown wants.
+// Two spaces or a backslash at the end are a hard break and stay one: the editor
+// then holds a line break inside the paragraph, and the export writes it back as
+// "  \n". Without that distinction an address or a poem would run together into
+// a single line on import.
 func absatzText(zeilen []string) string {
 	var b strings.Builder
 	hartVorher := false
@@ -317,13 +315,13 @@ func absatzText(zeilen []string) string {
 	return b.String()
 }
 
-// codeBloecke macht aus den Zeilen eines Codezauns Absätze in fester Schrift.
+// codeBloecke turns the lines of a code fence into paragraphs in a fixed-width
+// face.
 //
-// Der Editor dieser Fassung hat keinen Codeblock. Ein Absatz je Zeile hält die
-// Umbrüche und die Reihenfolge; alles in einen Absatz zu legen sähe im Editor
-// zwar geschlossener aus, ließe sich aber nicht mehr zeilenweise bearbeiten.
-// Die Sprachangabe geht dabei verloren, sie steht in keinem Feld, das der
-// Editor kennt.
+// The editor of this version has no code block. One paragraph per line keeps the
+// breaks and the order; putting everything into one paragraph would look more
+// contained in the editor but could no longer be edited line by line. The
+// language tag is lost on the way, since no field the editor knows holds it.
 func codeBloecke(zeilen []string, sprache string) []Block {
 	var out []Block
 	if sprache != "" {
@@ -345,8 +343,8 @@ func codeBloecke(zeilen []string, sprache string) []Block {
 	return out
 }
 
-// kursivMachen zeichnet einen ganzen Block kursiv aus, der Ersatz für den
-// Zitatblock, den der Editor nicht hat.
+// kursivMachen sets a whole block in italics, the stand-in for the quote block
+// the editor does not have.
 func kursivMachen(b Block) Block {
 	if teile, ok := b.Content.([]Inline); ok {
 		for i := range teile {
@@ -363,9 +361,9 @@ func kursivMachen(b Block) Block {
 	return b
 }
 
-// tabelle liest die Zeilen einer Tabelle. Alle Zeilen bekommen die Breite der
-// breitesten: eine Zeile mit weniger Zellen als der Kopf würde den Editor sonst
-// mit einer unvollständigen Tabelle zurücklassen.
+// tabelle reads the lines of a table. Every row is padded to the width of the
+// widest one: a row with fewer cells than the header would otherwise leave the
+// editor with an incomplete table.
 func tabelle(zeilen []string) Block {
 	var roh [][]string
 	breite := 0
@@ -394,8 +392,8 @@ func tabelle(zeilen []string) Block {
 	return Block{Type: "table", Content: inhalt}
 }
 
-// zellenTeilen trennt an senkrechten Strichen, aber nicht an maskierten: "\|"
-// ist ein Strich im Text und keine Zellengrenze.
+// zellenTeilen splits on vertical bars, but not on escaped ones: "\|" is a bar
+// in the text, not a cell boundary.
 func zellenTeilen(z string) []string {
 	z = strings.TrimSpace(z)
 	z = strings.TrimPrefix(z, "|")
@@ -419,9 +417,9 @@ func zellenTeilen(z string) []string {
 	return zellen
 }
 
-// bildBlock baut den Bildblock. Die Adresse behält ihre Gestalt; ob sie auf
-// eine Datei im Archiv zeigt und umgeschrieben werden muss, entscheidet der
-// Aufrufer, nicht der Leser.
+// bildBlock builds the image block. The address keeps its shape; whether it
+// points at a file inside the archive and has to be rewritten is decided by the
+// caller, not by the reader.
 func bildBlock(alt, adresse string) Block {
 	adresse = strings.TrimSuffix(strings.TrimPrefix(adresse, "<"), ">")
 	return Block{

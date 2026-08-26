@@ -1,19 +1,18 @@
-// Eine Word-Datei lesen und in Editorblöcke verwandeln.
+// Reading a Word file and turning it into editor blocks.
 //
-// Das Gegenstück zu docx.go. Zusammen ergeben sie einen Kreis: eine .docx
-// öffnen, im Editor ändern, wieder als .docx ablegen.
+// The counterpart to docx.go. Together they close a circle: open a .docx, edit
+// it in the editor, write it back as a .docx.
 //
-// Was dabei überlebt und was nicht, ist die wichtigste Aussage dieser Datei.
-// Übernommen werden Überschriften, Absätze, Aufzählungen, nummerierte Listen,
-// Tabellen und die Auszeichnungen fett, kursiv, unterstrichen, durchgestrichen.
-// Alles Übrige nicht: Kopf- und Fußzeilen, Formatvorlagen, Kommentare,
-// Änderungsverfolgung, Bilder, Spalten, Rahmen, Schriftarten, Farben.
+// What survives that trip and what does not is the most important statement in
+// this file. Carried over are headings, paragraphs, bullet lists, numbered
+// lists, tables and the bold, italic, underline and strikethrough marks.
+// Nothing else: headers and footers, styles, comments, tracked changes, images,
+// columns, borders, typefaces, colours.
 //
-// Das ist keine Nachlässigkeit, sondern die Grenze des Vorhabens: der Editor
-// kennt zehn Blockarten, Word kennt hunderte. Wer eine Word-Datei hier
-// bearbeitet und zurückschreibt, bekommt ein sauberes Dokument mit ihrem
-// Inhalt, nicht dieselbe Datei mit einer geänderten Zeile. Deshalb sagt die
-// Oberfläche das vorher.
+// That is not negligence but the boundary of the undertaking: the editor knows
+// ten kinds of block, Word knows hundreds. Whoever edits a Word file here and
+// writes it back gets a clean document containing its content, not the same file
+// with one line changed. Which is why the interface says so beforehand.
 package dok
 
 import (
@@ -43,8 +42,8 @@ func AusWord(roh []byte) (Dokument, error) {
 		if err != nil {
 			return Dokument{}, errors.New("Hauptteil nicht lesbar")
 		}
-		// Begrenzt: eine .docx mit einem entpackt gigantischen document.xml
-		// wäre sonst ein Weg, den Speicher vollzuschreiben.
+		// Bounded: a .docx with a gigantic uncompressed document.xml would
+		// otherwise be a way to fill memory.
 		xmlRoh, err = io.ReadAll(io.LimitReader(auf, 64<<20))
 		auf.Close()
 		if err != nil {
@@ -64,9 +63,8 @@ type wDokument struct {
 }
 
 type wBody struct {
-	// Reihenfolge zählt: Absätze und Tabellen wechseln sich ab. Deshalb ein
-	// gemeinsames Feld statt zweier Listen, sonst stünden alle Tabellen am
-	// Ende.
+	// Order matters: paragraphs and tables alternate. Hence one shared field
+	// instead of two lists, which would put every table at the end.
 	Inhalt []wInhalt `xml:",any"`
 }
 
@@ -137,9 +135,9 @@ func wordZuDokument(xmlRoh []byte) (Dokument, error) {
 			} else if a.Art != ArtNummer {
 				nummer = 0
 			}
-			// Leere Absätze am Stück zusammenfassen: Word setzt sie gern als
-			// Abstandshalter, und daraus im Editor je eine leere Zeile zu
-			// machen bläht das Dokument auf.
+			// Collapse consecutive empty paragraphs: Word likes to use them as
+			// spacers, and turning each into a blank line in the editor bloats the
+			// document.
 			if a.Art == ArtAbsatz && len(a.Text) == 0 {
 				if len(raus.Absatz) > 0 &&
 					raus.Absatz[len(raus.Absatz)-1].Art == ArtAbsatz &&
@@ -157,8 +155,8 @@ func wordZuDokument(xmlRoh []byte) (Dokument, error) {
 		}
 	}
 
-	// Der Titel ist die erste Überschrift der Ebene 1, sonst bleibt er leer und
-	// der Aufrufer nimmt den Dateinamen.
+	// The title is the first level 1 heading; otherwise it stays empty and the
+	// caller falls back to the file name.
 	for i, a := range raus.Absatz {
 		if a.Art == ArtUeberschrift && a.Stufe == 1 {
 			raus.Titel = nurText(a.Text)
@@ -169,8 +167,8 @@ func wordZuDokument(xmlRoh []byte) (Dokument, error) {
 	return raus, nil
 }
 
-// wordAbsatz macht aus einem <w:p> einen Absatz. Der zweite Rückgabewert sagt,
-// ob es ein Punkt einer nummerierten Liste ist.
+// wordAbsatz turns one <w:p> into a paragraph. The second return value says
+// whether it is an item of a numbered list.
 func wordAbsatz(p wInhalt) (Absatz, bool) {
 	a := Absatz{Art: ArtAbsatz}
 	stil := strings.ToLower(p.Eigenschaften.Stil.Wert)
@@ -192,11 +190,11 @@ func wordAbsatz(p wInhalt) (Absatz, bool) {
 
 	istNummer := false
 	if p.Eigenschaften.Nummern.ID.Wert != "" {
-		// numId sagt: der Absatz gehört zu einer Liste. Ob Punkte oder Ziffern,
-		// steht in numbering.xml, einer eigenen Datei mit eigener Struktur.
-		// Sie zusätzlich zu lesen wäre viel Aufwand für eine Unterscheidung,
-		// die man im Editor mit einem Klick ändert. Deshalb: Aufzählung, außer
-		// der Stil sagt ausdrücklich etwas anderes.
+		// numId says the paragraph belongs to a list. Whether bullets or digits
+		// is recorded in numbering.xml, a separate file with a structure of its
+		// own. Reading that as well would be a lot of work for a distinction one
+		// changes in the editor with a single click. So: bullet list, unless the
+		// style says otherwise explicitly.
 		if a.Art != ArtUeberschrift {
 			a.Art = ArtAufzaehlung
 		}
@@ -269,20 +267,20 @@ func nurText(st []Stueck) string {
 	return strings.TrimSpace(b.String())
 }
 
-// NachBloecken übersetzt ein Dokument in die Blöcke, die der Editor versteht.
+// NachBloecken translates a document into the blocks the editor understands.
 //
-// Nur die Typen, die BlockNote kennt: Absatz, Überschrift (Ebene 1 bis 3),
-// Aufzählung, nummerierte Liste, Tabelle. Ein unbekannter wird ein Absatz,
-// ein Block, den der Editor nicht kennt, ließe die Seite gar nicht erst
-// öffnen, und das wäre der schlechtere Ausgang.
+// Only the types BlockNote knows: paragraph, heading (levels 1 to 3), bullet
+// list, numbered list, table. An unknown one becomes a paragraph, because a
+// block the editor does not know would keep the page from opening at all, and
+// that would be the worse outcome.
 func NachBloecken(d Dokument) []map[string]any {
 	bloecke := []map[string]any{}
 	for _, a := range d.Absatz {
 		switch a.Art {
 		case ArtUeberschrift:
 			stufe := a.Stufe
-			// BlockNote kennt drei Ebenen. Tiefere werden zur dritten statt
-			// verworfen: die Gliederung leidet, der Text bleibt.
+			// BlockNote knows three levels. Deeper ones become the third rather
+			// than being discarded: the structure suffers, the text remains.
 			if stufe < 1 {
 				stufe = 1
 			}
@@ -350,8 +348,8 @@ func stueckeNachInhalt(st []Stueck) []any {
 }
 
 func tabelleNachBlock(zeilen [][]string) map[string]any {
-	// Rechteckig machen: BlockNote verlangt in jeder Zeile gleich viele
-	// Zellen, Word erlaubt verbundene und damit fehlende.
+	// Make it rectangular: BlockNote wants the same number of cells in every
+	// row, while Word allows merged and therefore missing ones.
 	breite := 0
 	for _, z := range zeilen {
 		if len(z) > breite {

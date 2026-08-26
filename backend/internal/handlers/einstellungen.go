@@ -95,9 +95,9 @@ var bekannt = map[string]struct {
 	},
 }
 
-// grundtoene sind die erlaubten Werte für design_grundton. Eine feste Liste
-// statt freier Eingabe: die Farbwerte dazu stehen im Stylesheet, ein
-// unbekannter Name ergäbe eine Oberfläche ohne Farben.
+// grundtoene are the permitted values for design_grundton. A fixed list rather
+// than free input: the colour values behind them live in the stylesheet, and an
+// unknown name would produce an interface without colours.
 var grundtoene = map[string]bool{"weiss": true, "grau": true, "dunkel": true}
 
 // speicher keeps the values in memory.
@@ -174,9 +174,9 @@ func janein(b bool) string {
 	return "nein"
 }
 
-// RegistrierungOffen, ErlaubteDomaenen und MaxAnhangBytes sind die Fragen, die
-// die Handler tatsächlich stellen. Sie lesen aus dem Zwischenspeicher, damit
-// eine Änderung sofort greift, ohne Neustart.
+// RegistrierungOffen, ErlaubteDomaenen and MaxAnhangBytes are the questions the
+// handlers actually ask. They read from the cache so a change takes effect at
+// once, without a restart.
 func RegistrierungOffen() bool { return wert("registrierung_offen") == "ja" }
 
 func ErlaubteDomaenen() []string {
@@ -197,9 +197,8 @@ func MaxAnhangBytes() int64 {
 	return int64(n) << 20
 }
 
-// PapierkorbTage ist die Frist, nach der eine gelöschte Seite von selbst
-// verschwindet. 0 heißt: nie, dann bleibt der Papierkorb, bis jemand ihn
-// leert.
+// PapierkorbTage is the deadline after which a deleted page disappears by
+// itself. 0 means never, and then the trash stays until somebody empties it.
 func PapierkorbTage() int {
 	n, err := strconv.Atoi(wert("papierkorb_tage"))
 	if err != nil || n < 0 {
@@ -208,12 +207,12 @@ func PapierkorbTage() int {
 	return n
 }
 
-// EinfuhrGrenze ist die Obergrenze für eine Einfuhr im Ganzen.
+// EinfuhrGrenze is the ceiling for one import as a whole.
 //
-// Abgeleitet aus der Anhangsgrenze und nicht als eigene Einstellung: ein Archiv
-// enthält viele Dateien, und für jede einzelne darin gilt die Anhangsgrenze
-// unverändert weiter. Ein zweiter Schalter, der dasselbe in Groß regelt, wäre
-// eine Stellschraube mehr, die irgendwann zur ersten im Widerspruch steht.
+// Derived from the attachment limit rather than a setting of its own: an archive
+// contains many files, and the attachment limit still applies to each one inside
+// it. A second knob governing the same thing in the large would be one more
+// adjustment that eventually contradicts the first.
 func EinfuhrGrenze() int64 {
 	return MaxAnhangBytes() * 8
 }
@@ -225,8 +224,8 @@ func SitzungDauer() time.Duration {
 	return time.Duration(SitzungStunden()) * time.Hour
 }
 
-// SitzungStunden ist dieselbe Angabe in Stunden. Die Datenbank rechnet mit
-// Stunden, nicht mit Nanosekunden.
+// SitzungStunden is the same figure in hours. The database counts in hours, not
+// in nanoseconds.
 func SitzungStunden() int {
 	n, err := strconv.Atoi(wert("sitzung_stunden"))
 	if err != nil || n <= 0 {
@@ -235,8 +234,8 @@ func SitzungStunden() int {
 	return n
 }
 
-// istHexFarbe prüft #rrggbb. Bewusst eng: der Wert wird im Browser in eine
-// CSS-Variable geschrieben, und was dort landet, muss harmlos sein.
+// istHexFarbe checks #rrggbb. Deliberately narrow: the value is written into a
+// CSS variable in the browser, and whatever ends up there has to be harmless.
 func istHexFarbe(s string) bool {
 	if len(s) != 7 || s[0] != '#' {
 		return false
@@ -249,9 +248,9 @@ func istHexFarbe(s string) bool {
 	return true
 }
 
-// Design liefert das Aussehen an jedes angemeldete Konto, nicht nur an Admins.
-// Ohne das könnte ein normaler Benutzer die eingestellten Farben nie sehen,
-// die Einstellungsseite selbst ist ihm ja verwehrt.
+// Design serves the appearance to every signed-in account, not only to admins.
+// Without that an ordinary user could never see the configured colours, since
+// the settings page itself is closed to them.
 func (s *Server) Design(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{
 		"grundton": wert("design_grundton"),
@@ -266,8 +265,8 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Herkunft und letzte Änderung mitliefern: ein Administrator soll sehen,
-	// ob ein Wert noch aus der Datei stammt oder jemand ihn hier gesetzt hat.
+	// Origin and last change travel along: an administrator should see whether a
+	// value still comes from the file or whether somebody set it here.
 	art := map[string]struct {
 		von string
 		am  string
@@ -295,8 +294,8 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 	}
 	speicher.RUnlock()
 
-	// Feste Reihenfolge: eine Map iteriert zufällig, und eine Seite, deren
-	// Felder bei jedem Laden die Plätze tauschen, ist unbenutzbar.
+	// A fixed order: a map iterates at random, and a page whose fields swap
+	// places on every load is unusable.
 	reihenfolge := []string{
 		"registrierung_offen", "erlaubte_domaenen",
 		"max_anhang_mb", "sitzung_stunden", "papierkorb_tage", "such_woerterbuch",
@@ -344,8 +343,8 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 	}
 	b, ok := bekannt[req.Schluessel]
 	if !ok {
-		// Unbekannte Schlüssel werden abgewiesen statt gespeichert. Sonst
-		// könnte man beliebige Zeilen ablegen, denen ein späterer Leser traut.
+		// Unknown keys are rejected rather than stored. Otherwise arbitrary rows
+		// could be placed here that a later reader would trust.
 		writeErr(w, http.StatusBadRequest, "unbekannte Einstellung")
 		return
 	}
@@ -359,9 +358,9 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 		}
 	case "zahl":
 		n, err := strconv.Atoi(wertNeu)
-		// Die Null ist nur beim Papierkorb ein Wert und heißt dort "nie von
-		// selbst". Bei einer Anhangsgrenze oder einer Sitzungsdauer wäre sie
-		// eine Instanz, die nichts mehr annimmt oder niemanden mehr anmeldet.
+		// Zero is only a value for the trash, where it means "never by itself".
+		// For an attachment limit or a session lifetime it would be an instance
+		// that accepts nothing or signs nobody in.
 		if err != nil || n < 0 || (n == 0 && req.Schluessel != "papierkorb_tage") {
 			writeErr(w, http.StatusBadRequest, "erwartet eine Zahl größer null")
 			return
@@ -374,9 +373,8 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, http.StatusBadRequest, "höchstens 2048 MB")
 			return
 		}
-		// Eine Obergrenze, damit niemand versehentlich eine Sitzung auf Jahre
-		// stellt: 8760 Stunden sind ein Jahr, und darüber ist die Angabe
-		// erfahrungsgemäß ein Tippfehler.
+		// An upper bound so nobody accidentally sets a session to years: 8760
+		// hours are one year, and beyond that the figure is a typo in practice.
 		if req.Schluessel == "sitzung_stunden" && n > 8760 {
 			writeErr(w, http.StatusBadRequest, "höchstens 8760 Stunden, das ist ein Jahr")
 			return
@@ -387,8 +385,8 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "farbe":
-		// Nur #rrggbb. Alles andere landete ungeprüft in einer CSS-Variablen,
-		// und eine Zeichenkette mit Klammern wäre dort ein Einfallstor.
+		// Only #rrggbb. Anything else would land unchecked in a CSS variable, and
+		// a string with brackets would be a way in.
 		if !istHexFarbe(wertNeu) {
 			writeErr(w, http.StatusBadRequest, "erwartet eine Farbe wie #2383e2")
 			return
@@ -404,9 +402,9 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Die Selbstregistrierung darf nicht abgeschaltet werden, solange es noch
-	// gar kein Konto gibt, sonst käme niemand mehr hinein, denn das erste
-	// Konto wird zum Administrator.
+	// Self-registration must not be switched off while there is no account at
+	// all, or nobody could get in any more, since the first account becomes the
+	// administrator.
 	if req.Schluessel == "registrierung_offen" && wertNeu == "nein" {
 		var anzahl int
 		_ = s.Pool.QueryRow(r.Context(), `SELECT count(*) FROM users`).Scan(&anzahl)
@@ -487,8 +485,8 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 	_ = s.Pool.QueryRow(ctx, `SELECT pg_size_pretty(pg_database_size(current_database()))`).Scan(&dbGroesse)
 	_ = s.Pool.QueryRow(ctx, `SHOW server_version`).Scan(&dbVersion)
 
-	// Die größten Tabellen, damit sichtbar ist, wohin der Platz geht. Ohne das
-	// bleibt "8711 kB" eine Zahl ohne Aussage.
+	// The largest tables, so it is visible where the space goes. Without that
+	// "8711 kB" stays a number that says nothing.
 	type tabelle struct {
 		Name   string `json:"name"`
 		Zeilen int64  `json:"zeilen"`
@@ -514,13 +512,13 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Anhänge belegen Platz auf der Platte, nicht in der Datenbank, die Summe
-	// gehört deshalb getrennt ausgewiesen.
+	// Attachments take space on disk, not in the database, so the total belongs
+	// in a line of its own.
 	var anhangBytes int64
 	_ = s.Pool.QueryRow(ctx, `SELECT coalesce(sum(size), 0) FROM attachments`).Scan(&anhangBytes)
 
-	// Wer zuletzt angemeldet war, und wie viele Fehlversuche es gab: die zwei
-	// Fragen, die man einer Sicherheitsübersicht als Erstes stellt.
+	// Who signed in last and how many failed attempts there were: the two
+	// questions one asks a security overview first.
 	var letzteAnmeldung, letzterFehlversuch string
 	_ = s.Pool.QueryRow(ctx,
 		`SELECT to_char(max(zeitpunkt), 'YYYY-MM-DD HH24:MI') FROM pruefspur WHERE aktion=$1`,
@@ -532,8 +530,8 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 	fehlversuche24 := zahl(`SELECT count(*) FROM pruefspur
 	                        WHERE aktion='` + AktAnmeldungFehl + `' AND zeitpunkt > now() - interval '24 hours'`)
 
-	// Admins namentlich: eine Zahl allein beantwortet nicht, wer eigentlich
-	// alles überall hineinsehen kann.
+	// Admins by name: a number alone does not answer who can actually look
+	// into everything.
 	type konto struct {
 		Name  string `json:"name"`
 		Email string `json:"email"`
@@ -603,8 +601,8 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 			"sitzungStunden":     SitzungStunden(),
 		},
 		"warnungen": k.Warnungen(),
-		// Die Dienste, mit denen dieser hier redet. Nicht der Docker-Verbund
-		// selbst, den sieht Nexora nicht, siehe verbund.go.
+		// The services this one talks to. Not the Docker stack itself, which
+		// Nexora does not see, see verbund.go.
 		"verbund": s.verbund(ctx),
 	})
 }
@@ -616,8 +614,8 @@ func (s *Server) IndexNeuAufbauen(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
 		return
 	}
-	// Leeren und neu ziehen. Der Nachzug läuft ohnehin in Stapeln, deshalb
-	// hält das auch eine große Instanz nicht lange auf.
+	// Empty it and pull it again. The refill runs in batches anyway, so this
+	// does not hold up a large instance for long.
 	if _, err := s.Pool.Exec(r.Context(), `UPDATE pages SET content_text=''`); err != nil {
 		writeErr(w, http.StatusInternalServerError, "Index konnte nicht geleert werden")
 		return
