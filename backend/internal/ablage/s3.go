@@ -35,16 +35,16 @@ type Einstellungen struct {
 	Pfadstil  bool // true: http://host/bucket/key statt http://bucket.host/key
 }
 
-// NeuS3 verbindet sich und stellt sicher, dass der Eimer existiert.
+// NeuS3 connects and makes sure the bucket exists.
 //
-// Der Eimer wird angelegt, wenn er fehlt: sonst müsste jede Installation vorher
-// von Hand eingerichtet werden, und der erste Upload schlüge fehl, ohne dass
-// jemand versteht, warum.
+// The bucket is created when it is missing: otherwise every installation would
+// have to be set up by hand beforehand, and the first upload would fail without
+// anybody understanding why.
 func NeuS3(ctx context.Context, e Einstellungen) (*S3, error) {
 	endpunkt := e.Endpunkt
-	// Ein versehentlich mit Schema eingetragener Endpunkt ist der häufigste
-	// Tippfehler. minio-go will ihn ohne, also nehmen wir ihn hier weg statt
-	// den Betreiber mit einer kryptischen Meldung zu bestrafen.
+	// An endpoint accidentally entered with a scheme is the most common typo.
+	// minio-go wants it without, so we take it off here instead of punishing the
+	// operator with a cryptic message.
 	if u, err := url.Parse(endpunkt); err == nil && u.Host != "" {
 		endpunkt = u.Host
 	}
@@ -92,9 +92,8 @@ func (s *S3) Name() string { return s.anzeige }
 
 func (s *S3) Schreiben(ctx context.Context, key string, r io.Reader, groesse int64, mime string) (int64, error) {
 	if groesse <= 0 {
-		// Unbekannte Länge: minio-go lädt dann in Teilen hoch. Funktioniert,
-		// braucht aber mehr Arbeitsspeicher, deshalb geben wir die Größe nach
-		// Möglichkeit mit.
+		// Unknown length: minio-go then uploads in parts. That works but needs more
+		// memory, so we pass the size along whenever we can.
 		groesse = -1
 	}
 	if mime == "" {
@@ -113,9 +112,8 @@ func (s *S3) Lesen(ctx context.Context, key string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	// GetObject meldet einen fehlenden Schlüssel erst beim ersten Lesen. Ein
-	// Stat vorweg macht aus dem späten, unverständlichen Fehler einen frühen
-	// verständlichen.
+	// GetObject reports a missing key only on the first read. A Stat beforehand
+	// turns the late, incomprehensible error into an early, understandable one.
 	if _, err := o.Stat(); err != nil {
 		o.Close()
 		return nil, err

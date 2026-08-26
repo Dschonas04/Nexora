@@ -29,20 +29,20 @@ func CheckPassword(hash, pw string) bool {
 // invalidating tokens already handed out.
 type Claims struct {
 	UserID string `json:"uid"`
-	// SitzungID verweist auf die Zeile in der Tabelle sitzungen. Ohne sie wäre
-	// ein Token bis zum Ablauf gültig, egal was danach passiert, Abmelden,
-	// Passwortwechsel, ein verlorenes Gerät. Mit ihr entscheidet die Datenbank
-	// bei jeder Anfrage mit.
+	// SitzungID refers to the row in the sitzungen table. Without it a token
+	// would be valid until it expires, no matter what happens afterwards: logging
+	// out, a password change, a lost device. With it the database has a say on
+	// every request.
 	SitzungID string `json:"sid,omitempty"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken signs a session token for userID that expires after ttl.
 //
-// sitzungID darf leer sein, dann ist das Token wie früher rein rechnerisch
-// gültig. Genutzt wird das nirgends mehr; die Möglichkeit bleibt, damit ein
-// altes Token aus einer Sitzung vor dieser Änderung nicht schlagartig ungültig
-// wird.
+// sitzungID may be empty, then the token is valid purely by computation as it
+// used to be. Nothing uses that any more; the possibility remains so that an old
+// token from a session predating this change does not become invalid all at
+// once.
 func GenerateToken(secret []byte, userID, sitzungID string, ttl time.Duration) (string, error) {
 	claims := Claims{
 		UserID:    userID,

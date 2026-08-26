@@ -67,9 +67,9 @@ type gruppeReq struct {
 	Beschreibung string `json:"beschreibung"`
 }
 
-// CreateGruppe legt eine Gruppe an. Admins only: eine Gruppe ist ein Begriff
-// für die ganze Instanz, und wenn jeder einen erfinden darf, gibt es bald drei
-// Gruppen namens "Vertrieb".
+// CreateGruppe creates a group. Admins only: a group is a term for the whole
+// instance, and if everybody may invent one there will soon be three groups
+// called "Sales".
 func (s *Server) CreateGruppe(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
@@ -93,8 +93,8 @@ func (s *Server) CreateGruppe(w http.ResponseWriter, r *http.Request) {
 		req.Name, strings.TrimSpace(req.Beschreibung)).
 		Scan(&g.ID, &g.Name, &g.Beschreibung, &g.ErstelltAm)
 	if err != nil {
-		// Der eindeutige Name ist Absicht, deshalb ist das kein Serverfehler
-		// sondern eine Auskunft.
+		// The unique name is intended, so this is not a server error but a piece of
+		// information.
 		writeErr(w, http.StatusConflict, "eine Gruppe dieses Namens gibt es bereits")
 		return
 	}
@@ -110,8 +110,8 @@ func (s *Server) DeleteGruppe(w http.ResponseWriter, r *http.Request) {
 	}
 	id := chi.URLParam(r, "id")
 
-	// Name vor dem Löschen lesen, danach steht in der Prüfspur sonst nur
-	// eine Kennung, mit der niemand mehr etwas anfangen kann.
+	// Read the name before deleting, otherwise the audit trail afterwards holds
+	// nothing but an id nobody can make sense of any more.
 	var name string
 	_ = s.Pool.QueryRow(r.Context(), `SELECT name FROM gruppen WHERE id=$1`, id).Scan(&name)
 
@@ -179,8 +179,8 @@ func (s *Server) SetzeMitglied(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	if req.Drin {
-		// ON CONFLICT DO NOTHING: zweimal hinzufügen ist kein Fehler, sondern
-		// derselbe Wunsch zweimal geäußert.
+		// ON CONFLICT DO NOTHING: adding twice is not an error but the same wish
+		// expressed twice.
 		_, err = s.Pool.Exec(r.Context(),
 			`INSERT INTO gruppen_mitglieder (gruppe_id, user_id) VALUES ($1, $2)
 			 ON CONFLICT DO NOTHING`, gruppeID, req.UserID)
@@ -269,8 +269,8 @@ func (s *Server) SetzeSpaceRecht(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "invalid body")
 		return
 	}
-	// Genau eines von beidem, wie im Schema. Hier noch einmal, damit die
-	// Antwort verständlich ist statt eine Verletzung des CHECK zu melden.
+	// Exactly one of the two, as in the schema. Checked here again so that the
+	// answer is understandable instead of reporting a violated CHECK.
 	if (req.GruppeID == "") == (req.UserID == "") {
 		writeErr(w, http.StatusBadRequest, "entweder eine Gruppe oder ein Konto angeben, nicht beides")
 		return

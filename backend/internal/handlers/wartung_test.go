@@ -5,10 +5,9 @@ import (
 	"testing"
 )
 
-// Die Zugangsdaten sollen nicht in den Browser wandern, aber ein Speichern
-// darf sie auch nicht durch Sterne ersetzen. Beides zusammen ergibt einen
-// Rundlauf, der genau dann stimmt, wenn hinterher wieder das Ursprüngliche
-// dasteht.
+// The credentials shall not travel into the browser, but saving must not
+// replace them with asterisks either. Both together make a round trip that is
+// correct exactly when the original stands there again afterwards.
 func TestGeheimnisseUeberlebenDenRundlauf(t *testing.T) {
 	alt := `# Kopf
 [Datenbank]
@@ -27,8 +26,8 @@ oidc_geheimnis =
 	if !strings.Contains(gezeigt, "port = 8080") {
 		t.Error("harmlose Zeile wurde mit versteckt")
 	}
-	// Ein leerer Wert bleibt leer, sonst stünden dort Sterne, die man beim
-	// Speichern für einen echten Wert hielte.
+	// An empty value stays empty, otherwise asterisks would stand there that one
+	// would take for a real value while saving.
 	if !strings.Contains(gezeigt, "oidc_geheimnis =\n") {
 		t.Error("leerer Wert wurde zu Sternen")
 	}
@@ -39,8 +38,8 @@ oidc_geheimnis =
 	}
 }
 
-// Wer einen Wert wirklich ändert, dessen Eingabe muss ankommen, die
-// Rückführung darf nur die Sterne ersetzen.
+// Whoever really changes a value must have their input arrive; the restoring
+// step may only replace the asterisks.
 func TestGeaendertesGeheimnisWirdUebernommen(t *testing.T) {
 	alt := "jwt_geheimnis = altwert\nport = 8080\n"
 	entwurf := "jwt_geheimnis = neuwert\nport = 9090\n"

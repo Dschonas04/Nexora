@@ -13,24 +13,23 @@ import (
 	kern "nexora/internal/lizenz"
 )
 
-// HoechsteLaufzeit begrenzt, wie weit ein Schlüssel in die Zukunft reichen darf.
+// HoechsteLaufzeit limits how far into the future a key may reach.
 //
-// Ein Jahr, und zwar aus einem Grund, der nichts mit dem Verkauf zu tun hat:
-// geprüft wird offline, also lässt sich ein ausgegebener Schlüssel nicht mehr
-// zurückrufen. Das Ablaufdatum ist der einzige Hebel, den es gibt. Ein
-// unbefristeter Schlüssel wäre ein Zugang für immer, auch wenn die Abmachung
-// dahinter längst endet.
+// One year, and for a reason that has nothing to do with selling: checking
+// happens offline, so a key once handed out can no longer be recalled. The
+// expiry date is the only lever there is. An unlimited key would be access
+// forever, even long after the agreement behind it ends.
 //
-// 366 Tage statt 365: sonst fällt ein am 29. Februar ausgestellter Schlüssel
-// aus der Grenze.
+// 366 days instead of 365: otherwise a key issued on 29 February falls outside
+// the limit.
 const HoechsteLaufzeit = 366 * 24 * time.Hour
 
-// Ausstellen signiert einen Lizenzschlüssel.
+// Ausstellen signs a licence key.
 //
-// Hier und nur hier entsteht ein Schlüssel, die Befehlszeile und die
-// Verwaltungsoberfläche rufen dieselbe Stelle auf. Zwei Wege, die dieselben
-// Regeln je für sich umsetzen, driften auseinander, und die Regel, die dann
-// fehlt, ist erfahrungsgemäß die Frist.
+// Here and only here a key comes into being; the command line and the admin
+// console call the same place. Two paths implementing the same rules each for
+// themselves drift apart, and the rule that then goes missing is, in
+// experience, the expiry.
 func Ausstellen(privat ed25519.PrivateKey, inhaber string, stufe kern.Stufe,
 	zusaetzlich []kern.Funktion, ablauf time.Time) (string, error) {
 
@@ -81,10 +80,10 @@ func Ausstellen(privat ed25519.PrivateKey, inhaber string, stufe kern.Stufe,
 		base64.RawURLEncoding.EncodeToString(sig), nil
 }
 
-// hausAussteller verbindet den Kern mit dem Signieren. Er hält den privaten
-// Schlüssel nicht fest, sondern liest ihn bei jedem Aufruf aus der Umgebung:
-// so lässt er sich abziehen, ohne den Dienst neu zu starten, und er steht
-// nicht dauerhaft im Speicher eines langlebigen Prozesses.
+// hausAussteller connects the core with the signing. It does not hold on to the
+// private key but reads it from the environment on every call: that way it can
+// be pulled without restarting the service, and it does not sit permanently in
+// the memory of a long lived process.
 type hausAussteller struct{}
 
 func (hausAussteller) Moeglich() bool { return privatAusUmgebung() != nil }

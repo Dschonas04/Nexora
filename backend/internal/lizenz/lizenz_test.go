@@ -13,13 +13,12 @@ import (
 	plizenz "nexora/premium/lizenz"
 )
 
-// Der Test erzeugt sein eigenes Schlüsselpaar und stellt sich seine Lizenzen
-// selbst aus.
+// The test generates its own key pair and issues its licences itself.
 //
-// Ein fertiger Schlüssel im Repository wäre ein Schlüssel für jeden, der es
-// klont, und weil offline geprüft wird, ließe er sich nie zurückziehen.
-// Nebenbei prüft der Test so den ganzen Weg vom Signieren bis zum
-// Freischalten, statt nur die halbe Strecke.
+// A ready made key in the repository would be a key for everybody who clones
+// it, and because checking happens offline it could never be withdrawn. As a
+// side effect the test this way covers the whole way from signing to unlocking
+// instead of only half the distance.
 func einrichten(t *testing.T) ed25519.PrivateKey {
 	t.Helper()
 	oeff, priv, err := ed25519.GenerateKey(rand.Reader)
@@ -103,13 +102,13 @@ func TestVeraenderterSchluesselWirdAbgelehnt(t *testing.T) {
 	priv := einrichten(t)
 	s := schluessel(t, priv, plizenz.Nutzlast{Inhaber: "Echt", Funktionen: alleNamen()})
 
-	// Ein einzelnes Zeichen im Datenteil kippen. Die Signatur darf dann nicht
-	// mehr passen, das ist der Kern des ganzen Verfahrens.
+	// Flip a single character in the data part. The signature must then no longer
+	// match, that is the core of the whole procedure.
 	//
-	// Gekippt wird an fester Stelle statt nach einem bestimmten Buchstaben zu
-	// suchen: welche Zeichen im Base64 vorkommen, hängt vom Inhalt ab, und ein
-	// nicht gefundener Buchstabe hätte den Schlüssel unverändert gelassen,
-	// der Test wäre dann grün gewesen, ohne je etwas zu prüfen.
+	// Flipped at a fixed position rather than by searching for a particular
+	// letter: which characters occur in the Base64 depends on the content, and a
+	// letter that is not found would have left the key unchanged, so the test
+	// would have been green without ever checking anything.
 	punkt := strings.Index(s, ".")
 	if punkt < 2 {
 		t.Fatal("Schlüssel hat nicht die erwartete Form")
@@ -136,8 +135,8 @@ func TestVeraenderterSchluesselWirdAbgelehnt(t *testing.T) {
 
 func TestFremdeSignaturWirdAbgelehnt(t *testing.T) {
 	einrichten(t)
-	// Mit einem anderen Paar unterschrieben: inhaltlich einwandfrei, nur nicht
-	// von uns. Genau das muss die Prüfung erkennen.
+	// Signed with a different pair: sound in content, only not by us. That is
+	// exactly what the check has to notice.
 	_, fremd, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		t.Fatal(err)
@@ -174,8 +173,8 @@ func TestHeuteAblaufendeLizenzGiltNoch(t *testing.T) {
 
 func TestUnbekannteFunktionWirdVerworfen(t *testing.T) {
 	priv := einrichten(t)
-	// Ein Schlüssel aus einem neueren Generator darf nichts freischalten, was
-	// dieser Stand gar nicht kann.
+	// A key from a newer generator must unlock nothing this version cannot do at
+	// all.
 	kern.Laden(schluessel(t, priv, plizenz.Nutzlast{
 		Inhaber:    "Zukunft",
 		Funktionen: []string{"gibt-es-nicht", string(kern.Anhaenge)},

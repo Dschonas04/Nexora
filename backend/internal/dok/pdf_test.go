@@ -73,9 +73,8 @@ func TestNummerierungUndTiefe(t *testing.T) {
 	}
 }
 
-// Umlaute müssen als WinAnsi-Bytes ankommen, nicht als Fragezeichen: das ist
-// der einzige Grund, warum die Schriften überhaupt mit dieser Kodierung
-// angemeldet werden.
+// Umlauts have to arrive as WinAnsi bytes, not as question marks: that is the
+// only reason the fonts are registered with this encoding at all.
 func TestWinAnsiUmlaute(t *testing.T) {
 	got := nachWinAnsi("Prüfspur – Größe €")
 	if bytes.Contains(got, []byte("?")) {
@@ -107,8 +106,8 @@ func TestUmbruchBleibtInDerBreite(t *testing.T) {
 	}
 }
 
-// Ein einzelnes Wort, das breiter ist als die Zeile, muss hart getrennt
-// werden, sonst läuft es über den Rand und ist zur Hälfte weg.
+// A single word wider than the line has to be broken hard, otherwise it runs
+// over the margin and half of it is gone.
 func TestUeberlangesWortWirdGetrennt(t *testing.T) {
 	zeilen := umbrechen([]wort{{strings.Repeat("A", 400), fNormal, 10.5, false, false, false}}, satzBreite)
 	if len(zeilen) < 2 {
@@ -136,8 +135,8 @@ func TestPDFIstEinPDF(t *testing.T) {
 	if !bytes.Contains(roh, []byte("/WinAnsiEncoding")) {
 		t.Error("Schriften ohne WinAnsi, Umlaute kämen nicht an")
 	}
-	// Die Querverweistabelle muss auf echte Objektanfänge zeigen, sonst
-	// öffnet kein Betrachter die Datei.
+	// The cross reference table has to point at real object starts, otherwise no
+	// viewer opens the file.
 	i := bytes.LastIndex(roh, []byte("startxref"))
 	if i < 0 {
 		t.Fatal("startxref fehlt")
@@ -183,8 +182,8 @@ func TestWordIstEinZipMitDokument(t *testing.T) {
 			t.Errorf("%s fehlt im Paket", name)
 		}
 	}
-	// Jeder Teil muss für sich wohlgeformtes XML sein, sonst meldet Word die
-	// Datei als beschädigt und öffnet sie gar nicht.
+	// Every part has to be well formed XML on its own, otherwise Word reports the
+	// file as damaged and does not open it at all.
 	for _, f := range z.File {
 		if !strings.HasSuffix(f.Name, ".xml") && !strings.HasSuffix(f.Name, ".rels") {
 			continue
@@ -207,8 +206,8 @@ func TestWordIstEinZipMitDokument(t *testing.T) {
 			t.Errorf("%q fehlt im Dokument", will)
 		}
 	}
-	// Leerzeichen am Rand eines Laufs dürfen nicht wegfallen, sonst klebt
-	// "mit fett und" zusammen.
+	// Spaces at the edge of a run must not fall away, otherwise "with bold and"
+	// sticks together.
 	if !strings.Contains(dokument, `xml:space="preserve"`) {
 		t.Error("xml:space fehlt, Word wirft Randleerzeichen weg")
 	}

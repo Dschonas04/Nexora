@@ -72,8 +72,8 @@ func (s *Server) ListKommentare(w http.ResponseWriter, r *http.Request) {
 		}
 		if geloescht != nil {
 			k.Geloescht = true
-			// Der Text wird hier verworfen, nicht erst im Browser. Was der
-			// Server nicht sendet, kann auch niemand aus der Antwort fischen.
+			// The text is dropped here, not first in the browser. What the server
+			// does not send, nobody can fish out of the answer either.
 			k.Text = ""
 		}
 		k.Darf = !k.Geloescht && (k.AutorID == uid || isOwner || admin)
@@ -113,9 +113,9 @@ func (s *Server) CreateKommentar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Nur eine Antwortebene. Wird auf eine Antwort geantwortet, hängt der neue
-	// Beitrag an deren Elternteil, der Faden bleibt flach statt sich immer
-	// weiter einzurücken.
+	// Only one level of replies. If somebody replies to a reply, the new post
+	// hangs on its parent, so the thread stays flat instead of indenting further
+	// and further.
 	if req.ElternID != nil {
 		var grosseltern *string
 		var elternSeite string
@@ -123,8 +123,8 @@ func (s *Server) CreateKommentar(w http.ResponseWriter, r *http.Request) {
 			`SELECT eltern_id, page_id::text FROM kommentare WHERE id=$1`,
 			*req.ElternID).Scan(&grosseltern, &elternSeite)
 		if err != nil || elternSeite != id {
-			// Ein Elternteil von einer anderen Seite wäre ein Weg, Kommentare
-			// über Seitengrenzen einzuschleusen.
+			// A parent from another page would be a way to smuggle comments across
+			// page boundaries.
 			writeErr(w, http.StatusBadRequest, "Bezugskommentar gehört nicht zu dieser Seite")
 			return
 		}
@@ -154,12 +154,11 @@ func (s *Server) CreateKommentar(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, k)
 }
 
-// postfachAusKommentar stellt zu, was dieser Kommentar auslöst.
+// postfachAusKommentar delivers whatever this comment triggers.
 //
-// Die Reihenfolge ist eine Rangfolge: wer erwähnt wurde, bekommt die Erwähnung
-// und nicht zusätzlich die allgemeine Nachricht. Zwei Zeilen für denselben
-// Kommentar wären keine doppelte Aufmerksamkeit, sondern doppelte Arbeit beim
-// Wegräumen.
+// The order is a ranking: whoever was mentioned gets the mention and not the
+// general message on top of it. Two rows for the same comment would not be
+// double attention but double work while clearing them away.
 func (s *Server) postfachAusKommentar(ctx context.Context, uid, name, pageID, kommentarID string, elternID *string, text string) {
 	titel := s.seitenTitel(ctx, pageID)
 	bedient := map[string]bool{uid: true}

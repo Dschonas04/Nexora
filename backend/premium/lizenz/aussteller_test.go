@@ -12,9 +12,9 @@ import (
 	kern "nexora/internal/lizenz"
 )
 
-// paar erzeugt ein Schlüsselpaar für den Test. Der eingebaute öffentliche
-// Schlüssel taugt hier nicht: zu ihm gehört ein privater, der nicht im
-// Verzeichnis liegt und auch nie dort liegen darf.
+// paar generates a key pair for the test. The built in public key is of no use
+// here: a private one belongs to it that does not lie in the repository and
+// never may.
 func paar(t *testing.T) (ed25519.PublicKey, ed25519.PrivateKey) {
 	t.Helper()
 	oeff, priv, err := ed25519.GenerateKey(rand.Reader)
@@ -24,8 +24,8 @@ func paar(t *testing.T) (ed25519.PublicKey, ed25519.PrivateKey) {
 	return oeff, priv
 }
 
-// Der ganze Weg, für jede Stufe: ausstellen, prüfen, und was dabei
-// freigeschaltet wird, muss genau die Stufe sein.
+// The whole way, for every tier: issue, check, and what gets unlocked has to be
+// exactly that tier.
 func TestJedeStufeLaesstSichAktivieren(t *testing.T) {
 	oeff, priv := paar(t)
 	pruefer := NeuerPruefer(oeff)
@@ -92,9 +92,9 @@ func TestStufePlusZusatz(t *testing.T) {
 	}
 }
 
-// Ohne Angabe gilt ein Jahr, und länger wird nicht ausgestellt. Der Grund steht
-// bei HoechsteLaufzeit: geprüft wird offline, ein Schlüssel lässt sich nicht
-// zurückrufen, das Datum ist der einzige Hebel.
+// Without a given duration one year applies, and nothing longer is issued. The
+// reason stands at HoechsteLaufzeit: checking happens offline, a key cannot be
+// recalled, the date is the only lever.
 func TestLaufzeit(t *testing.T) {
 	oeff, priv := paar(t)
 
@@ -128,12 +128,12 @@ func TestLaufzeit(t *testing.T) {
 	}
 }
 
-// Ein abgelaufener Schlüssel schaltet nichts frei, sonst wäre die Frist eine
-// Behauptung ohne Folgen.
+// An expired key unlocks nothing, otherwise the expiry would be a claim without
+// consequences.
 func TestAbgelaufenerSchluesselGiltNicht(t *testing.T) {
 	oeff, priv := paar(t)
-	// Am Aussteller vorbei, weil der ein Datum in der Vergangenheit zu Recht
-	// verweigert. Geprüft wird hier die andere Seite.
+	// Past the issuer, because it rightly refuses a date in the past. What is
+	// checked here is the other side.
 	alt := Nutzlast{Inhaber: "Kundin", Stufe: string(kern.StufePro),
 		Ablauf: time.Now().Add(-72 * time.Hour).Format("2006-01-02")}
 	schluessel := selbstGebaut(t, priv, alt)
@@ -144,8 +144,8 @@ func TestAbgelaufenerSchluesselGiltNicht(t *testing.T) {
 	}
 }
 
-// Ein veränderter Schlüssel muss auffallen, sonst könnte sich jeder die
-// Stufe umschreiben.
+// A tampered key has to be noticed, otherwise anybody could rewrite their own
+// tier.
 func TestVeraenderterSchluesselFaelltAuf(t *testing.T) {
 	oeff, priv := paar(t)
 	schluessel, err := Ausstellen(priv, "Kundin", kern.StufeAdvanced, nil, time.Time{})
@@ -172,8 +172,8 @@ func TestVeraenderterSchluesselFaelltAuf(t *testing.T) {
 	}
 }
 
-// selbstGebaut unterschreibt eine Nutzlast unmittelbar, für die Fälle, die
-// der Aussteller zu Recht verweigert und die der Prüfer trotzdem abfangen muss.
+// selbstGebaut signs a payload directly, for the cases the issuer rightly
+// refuses and the verifier still has to catch.
 func selbstGebaut(t *testing.T, priv ed25519.PrivateKey, n Nutzlast) string {
 	t.Helper()
 	daten, err := json.Marshal(n)
