@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Rauchtest: das gebaute Backend gegen eine Wegwerf-Datenbank.
+# Smoke test: the built backend against a throwaway database.
 #
-# Die Prüfungen mit "go test" fassen keine Datenbank an, und genau dort sitzen
-# die Fehler, die man nicht sieht: eine Abfrage, die sich nicht übersetzen
-# lässt, fällt erst auf, wenn sie zum ersten Mal läuft. Ein Beispiel aus der
-# Wirklichkeit war ($1 || ' days')::interval, alle Prüfungen grün, und der
-# Papierkorb räumte trotzdem nie auf.
+# The checks run by "go test" touch no database, and that is exactly where the
+# errors sit that one does not see: a query that cannot be parsed only shows up
+# when it runs for the first time. A real world example was
+# ($1 || ' days')::interval, with every check green and the trash never clearing
+# itself all the same.
 #
-# Deshalb hier: echte Postgres-Instanz, echtes Programm, echte Aufrufe über
-# HTTP. Alles in einem Wegwerf-Verzeichnis, das am Ende verschwindet, der
-# Test darf nichts hinterlassen, auch wenn er scheitert.
+# Hence this: a real Postgres instance, the real program, real calls over HTTP.
+# All of it in a throwaway directory that disappears at the end; the test must
+# leave nothing behind, even when it fails.
 set -euo pipefail
 
 WURZEL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -30,8 +30,8 @@ aufraeumen() {
 trap aufraeumen EXIT
 
 melde() {
-    # Ein fehlgeschlagener Schritt bricht nicht sofort ab: es ist mehr wert zu
-    # wissen, welche fünf von zwanzig Prüfungen fallen, als nur die erste.
+    # A failed step does not abort right away: knowing which five of twenty
+    # checks fall is worth more than knowing only the first.
     if [ "$1" = "ok" ]; then
         printf '  ok    %s\n' "$2"
     else
@@ -54,9 +54,9 @@ createdb -h 127.0.0.1 -p "$PGPORT" -U nexora nexora
 echo "== Backend bauen"
 ( cd "$WURZEL" && go build -o "$ARBEIT/nexora" . )
 
-# Als Funktion, weil der Papierkorb weiter unten einen zweiten Start mit einer
-# anderen Frist braucht, die Uhr räumt beim Hochfahren einmal auf, und genau
-# das soll geprüft werden.
+# As a function, because the trash further down needs a second start with a
+# different deadline; the sweeper clears once while coming up, and that is
+# exactly what is to be checked.
 starte_dienst() {
     DATABASE_URL="postgres://nexora@127.0.0.1:${PGPORT}/nexora?sslmode=disable" \
     JWT_SECRET="rauchtest-geheimnis-lang-genug-fuer-hs256" \
@@ -161,17 +161,17 @@ pruefe "endgültig entfernt" "200" "$(code -X DELETE "$BASIS/api/pages/$SEITE/pu
 pruefe "danach nicht mehr auffindbar" "404" "$(code "$BASIS/api/pages/$SEITE")"
 
 echo "== Papierkorb räumt sich selbst"
-# Die Frist ist eine Zusage, die ohne Prüfung niemand nachrechnet: eine Seite
-# in den Papierkorb legen, ihren Löschzeitpunkt um fünf Tage zurückdatieren
-# und den Dienst mit der Frist 1 neu starten. Die Uhr räumt beim Hochfahren
-# einmal auf, danach muss die Seite fort sein.
+# The deadline is a promise nobody recalculates without a check: put a page into
+# the trash, back date its deletion time by five days and restart the service
+# with the deadline set to 1. The sweeper clears once while coming up, and
+# afterwards the page has to be gone.
 #
-# Zurückdatiert wird in der Wegwerf-Datenbank dieses Tests, nicht irgendwo
-# sonst. Anders ließe sich ein Ablauf über Tage nicht in Sekunden prüfen.
+# The back dating happens in this test's throwaway database, nowhere else.
+# Otherwise an expiry spanning days could not be checked in seconds.
 #
-# Die 0 wird absichtlich NICHT geprüft: sie heißt "nie von selbst", und die Uhr
-# überspringt sie. Ein Test, der 0 als "sofort alles" liest, hätte die
-# Bedeutung verdreht.
+# The 0 is deliberately NOT checked: it means "never by itself", and the sweeper
+# skips it. A test reading 0 as "everything at once" would have twisted the
+# meaning.
 FRIST=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
         -d '{"title":"Verfaellt"}' | feld "['id']")
 hole -X DELETE "$BASIS/api/pages/$FRIST" >/dev/null
@@ -243,10 +243,10 @@ pruefe "LDAP ohne Lizenz weist ab" "402" \
           -d '{"benutzer":"wer","passwort":"was"}')"
 
 echo "== Lizenz"
-# Ein eigenes Schlüsselpaar für den Test: der öffentliche Teil steckt fest im
-# Programm, also lässt sich hier nicht mit einem echten Schlüssel prüfen, und
-# ein echter gehört ohnehin nicht in ein Verzeichnis. Geprüft wird deshalb, was
-# ohne gültige Signatur passieren MUSS: Zurückweisung.
+# A key pair of its own for the test: the public half sits fixed in the program,
+# so nothing can be checked here with a real key, and a real one does not belong
+# in a repository anyway. What is checked is therefore what MUST happen without a
+# valid signature: rejection.
 pruefe "unsinniger Schlüssel wird abgewiesen" "400" \
        "$(code -X PUT "$BASIS/api/system/lizenz" -H 'Content-Type: application/json' \
           -d '{"schluessel":"kein.schluessel"}')"

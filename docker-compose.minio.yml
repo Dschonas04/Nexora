@@ -1,25 +1,25 @@
-# Beilage: ein MinIO für die Anhänge.
+# Side file: a MinIO for the attachments.
 #
-# Ohne diese Datei liegen Anhänge auf der Platte des Backends, das reicht für
-# eine Instanz auf einem Rechner. Der Objektspeicher lohnt, sobald die Anhänge
-# eigenständig gesichert, geteilt oder auf ein anderes Gerät gelegt werden
-# sollen.
+# Without this file attachments lie on the backend's disk, which is enough for an
+# instance on a single machine. The object store pays off as soon as the
+# attachments are to be backed up, shared or placed on another device on their
+# own.
 #
-# Wer bereits ein MinIO oder einen S3-Dienst betreibt, nimmt diese Datei NICHT,
-# sondern trägt die vorhandenen Zugangsdaten als NEXORA_S3_* in die .env ein.
+# Whoever already runs a MinIO or an S3 service does NOT take this file but
+# enters the existing credentials as NEXORA_S3_* in the .env.
 #
 #     docker compose -f docker-compose.yml -f docker-compose.db.yml \
 #                    -f docker-compose.minio.yml up -d
 #
-# Zwei Dinge sind hier bewusst unbequem gelöst:
+# Two things are deliberately made inconvenient here:
 #
-# 1. Kein Kennwort hat eine Vorgabe. Compose bricht ab, wenn eines fehlt.
-#    Ein mitgeliefertes "bitte-aendern" bleibt erfahrungsgemäß stehen, und ein
-#    Objektspeicher mit bekanntem Kennwort ist ein offenes Regal.
+# 1. No password has a default. Compose aborts when one is missing. A shipped
+#    "please-change-me" stays in place, in experience, and an object store with a
+#    known password is an open shelf.
 #
-# 2. Die Ports hören auf 127.0.0.1, nicht auf allen Adressen. Der Speicher ist
-#    für Nexora da, nicht fürs Netz; wer ihn von außen braucht, setzt
-#    MINIO_ADRESSE ausdrücklich auf 0.0.0.0 und stellt TLS davor.
+# 2. The ports listen on 127.0.0.1, not on every address. The store is there for
+#    Nexora, not for the network; whoever needs it from outside sets
+#    MINIO_ADRESSE to 0.0.0.0 explicitly and puts TLS in front of it.
 services:
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
@@ -30,7 +30,7 @@ services:
     volumes:
       - nexora_s3:/data
     ports:
-      # Erste Zahl: die S3-Schnittstelle. Zweite: die Web-Oberfläche.
+      # First number: the S3 interface. Second: the web interface.
       - "${MINIO_ADRESSE:-127.0.0.1}:${MINIO_PORT:-9010}:9000"
       - "${MINIO_ADRESSE:-127.0.0.1}:${MINIO_KONSOLE_PORT:-9011}:9001"
     healthcheck:
@@ -40,15 +40,15 @@ services:
       retries: 6
     restart: unless-stopped
 
-  # Einmalige Einrichtung: Eimer anlegen und ein eigenes Konto für Nexora, das
-  # nur diesen einen Eimer sehen darf.
+  # One time setup: create the bucket and an account of its own for Nexora that
+  # may see only this one bucket.
   #
-  # Das Wurzelkonto ist der Verwalter des Speichers, es darf Konten anlegen,
-  # Regeln ändern und jeden Eimer löschen. Es einer Anwendung in die Hand zu
-  # geben heißt, jeden Fehler in ihr zu einem Vollzugriff zu machen. Nexora
-  # braucht Lesen und Schreiben in einem Eimer, mehr nicht.
+  # The root account is the administrator of the store; it may create accounts,
+  # change rules and delete every bucket. Handing it to an application means
+  # turning every fault in it into full access. Nexora needs reading and writing
+  # in one bucket, no more.
   #
-  # Der Lauf ist wiederholbar: alles hier verträgt es, schon getan zu sein.
+  # The run is repeatable: everything here tolerates having been done already.
   minio-einrichten:
     image: minio/mc:RELEASE.2025-04-16T18-13-26Z
     depends_on:
@@ -92,15 +92,15 @@ services:
 
   backend:
     environment:
-      # Hier zählt der Containername, nicht der veröffentlichte Port: das
-      # Backend spricht MinIO über das Netz des Verbunds an.
+      # Here the container name counts, not the published port: the backend
+      # talks to MinIO over the compound's network.
       NEXORA_S3_AKTIV: "ja"
       NEXORA_S3_ENDPUNKT: ${NEXORA_S3_ENDPUNKT:-http://minio:9000}
       NEXORA_S3_BUCKET: ${NEXORA_S3_BUCKET:-nexora}
-      # Das eingeschränkte Konto von oben, nicht die Wurzel.
+      # The restricted account from above, not the root one.
       NEXORA_S3_ZUGRIFFSSCHLUESSEL: ${NEXORA_S3_ZUGRIFFSSCHLUESSEL:?bitte in der .env setzen}
       NEXORA_S3_GEHEIMNIS: ${NEXORA_S3_GEHEIMNIS:?bitte in der .env setzen}
-      # MinIO spricht Pfadstil, nicht die Unterdomänen von Amazon.
+      # MinIO speaks path style, not Amazon's subdomains.
       NEXORA_S3_PFADSTIL: "ja"
     depends_on:
       minio-einrichten:

@@ -1,14 +1,14 @@
 #!/bin/sh
-# Legt beim Start ein Zertifikat an, falls keines liegt, und startet dann nginx.
+# Creates a certificate on start when none is there, then starts nginx.
 #
-# Selbst ausgestellt, mit Absicht: Nexora läuft im eigenen Netz unter einer
-# IP-Adresse, und dafür stellt keine Zertifizierungsstelle etwas aus. Der Browser
-# wird also warnen, das ist der Preis. Verschlüsselt ist die Verbindung
-# trotzdem, und darum geht es hier: das Sitzungsplätzchen und die Passwörter
-# sollen nicht im Klartext über das Netz gehen.
+# Self signed, on purpose: Nexora runs in one's own network under an IP address,
+# and no certificate authority issues anything for that. The browser will
+# therefore warn, and that is the price. The connection is encrypted all the
+# same, and that is the point here: the session cookie and the passwords shall
+# not travel over the network in the clear.
 #
-# Wer ein echtes Zertifikat hat, hängt es unter /etc/nginx/tls ein
-# (zertifikat.pem und schluessel.pem). Dann wird nichts erzeugt.
+# Whoever has a real certificate mounts it under /etc/nginx/tls (zertifikat.pem
+# and schluessel.pem). Then nothing is generated.
 set -eu
 
 VERZ=/etc/nginx/tls
@@ -19,10 +19,10 @@ mkdir -p "$VERZ"
 
 if [ ! -f "$ZERT" ] || [ ! -f "$SCHLUESSEL" ]; then
     echo "TLS: kein Zertifikat gefunden, es wird eines erzeugt"
-    # Der Name steht in NEXORA_TLS_NAME, sonst der Rechnername. Zusätzlich
-    # kommen die üblichen lokalen Namen und Adressen als Alternativnamen
-    # hinein: ohne sie meckert der Browser nicht nur über den Aussteller,
-    # sondern zusätzlich über den Namen, zwei Warnungen statt einer.
+    # The name comes from NEXORA_TLS_NAME, failing that the host name. The usual
+    # local names and addresses go in as alternative names as well: without them
+    # the browser complains not only about the issuer but about the name on top
+    # of it, two warnings instead of one.
     NAME="${NEXORA_TLS_NAME:-$(hostname)}"
     openssl req -x509 -newkey rsa:2048 -sha256 -days 825 -nodes \
         -keyout "$SCHLUESSEL" -out "$ZERT" \

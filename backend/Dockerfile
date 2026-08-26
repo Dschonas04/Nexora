@@ -7,9 +7,9 @@ COPY . .
 RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -trimpath -o /nexora ./
 
 FROM alpine:3.19
-# poppler-utils liefert pdftotext für den Volltext in PDF-Anhängen. Ein
-# reiner Go-Auslesecode käme ohne diese Abhängigkeit aus, scheitert aber an
-# vielen echten PDFs, Schriftkodierungen, Spalten, eingebettete Bilder.
+# poppler-utils supplies pdftotext for the full text in PDF attachments.
+# Extraction code purely in Go would manage without this dependency but fails on
+# many real PDFs: font encodings, columns, embedded images.
 RUN apk add --no-cache poppler-utils \
  && adduser -D -u 10001 nexora \
  && mkdir -p /data/attachments \
