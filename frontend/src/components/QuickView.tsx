@@ -357,8 +357,9 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                   {bearbeiten && (
                     <div className="qv-word-hinweis muted small">
                       Beim Speichern wird die Datei neu geschrieben. Text, Überschriften,
-                      Listen und Tabellen bleiben; Kopfzeilen, Formatvorlagen, Kommentare,
-                      Bilder und Schriftarten gehen verloren.
+                      Listen, Tabellen und Verweise bleiben; Kopfzeilen, Formatvorlagen,
+                      Kommentare und Schriftarten gehen verloren. Bilder werden hier
+                      angezeigt, beim Speichern aber nicht zurückgeschrieben.
                     </div>
                   )}
                   <Editor
