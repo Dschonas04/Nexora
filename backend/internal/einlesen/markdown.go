@@ -19,6 +19,7 @@
 package einlesen
 
 import (
+	"encoding/json"
 	"regexp"
 	"strings"
 )
@@ -29,9 +30,22 @@ import (
 type Inline struct {
 	Type    string          `json:"type"`
 	Text    string          `json:"text,omitempty"`
-	Styles  map[string]bool `json:"styles,omitempty"`
+	Styles  map[string]bool `json:"styles"`
 	Href    string          `json:"href,omitempty"`
 	Content []Inline        `json:"content,omitempty"`
+}
+
+// MarshalJSON always writes the styles, even when there are none. BlockNote
+// reads them with Object.entries; a missing or null field makes that throw, and
+// the editor then refuses the whole document. The page an import produced would
+// stay blank, and with it everything around it.
+func (i Inline) MarshalJSON() ([]byte, error) {
+	type roh Inline
+	k := roh(i)
+	if k.Styles == nil {
+		k.Styles = map[string]bool{}
+	}
+	return json.Marshal(k)
 }
 
 // Block is a node of the document. Content is deliberately any: for most blocks
