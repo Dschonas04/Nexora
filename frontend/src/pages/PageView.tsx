@@ -8,6 +8,7 @@ import { Graph, Page, PageMeta, PagePatch, Tag, api } from "../api/client";
 import Editor from "../components/Editor";
 import VersionPanel from "../components/VersionPanel";
 import ShareDialog from "../components/ShareDialog";
+import Fehlergrenze from "../components/Fehlergrenze";
 import Attachments from "../components/Attachments";
 import Kommentare from "../components/Kommentare";
 import { useLizenz } from "../lizenz";
@@ -515,17 +516,25 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                 </button>
               )}
             </div>
-            <Editor
-              key={`${page.id}:${editorKey}`}
-              initialContent={page.content}
-              editable={canEdit}
-              onChange={onContent}
-              onEditorReady={(e) => (editorRef.current = e)}
-              linkResolver={resolveLink}
-              onOpenLink={(pid) => nav(`/page/${pid}`)}
-              mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}
-              dateiHochladen={dateiAbwurfMoeglich ? bildHochladen : undefined}
-            />
+            {/* A block the editor cannot read would otherwise take the whole
+                window with it: React unmounts everything on an uncaught render
+                error. Here only the document goes, the page around it stays. */}
+            <Fehlergrenze
+              key={`grenze:${page.id}:${editorKey}`}
+              text="Der Inhalt dieser Seite liess sich nicht anzeigen."
+            >
+              <Editor
+                key={`${page.id}:${editorKey}`}
+                initialContent={page.content}
+                editable={canEdit}
+                onChange={onContent}
+                onEditorReady={(e) => (editorRef.current = e)}
+                linkResolver={resolveLink}
+                onOpenLink={(pid) => nav(`/page/${pid}`)}
+                mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}
+                dateiHochladen={dateiAbwurfMoeglich ? bildHochladen : undefined}
+              />
+            </Fehlergrenze>
             {frei("anhaenge") && (
               <Attachments
                 pageId={page.id}

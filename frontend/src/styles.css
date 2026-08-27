@@ -2919,3 +2919,26 @@ a {
   line-height: 1.5;
   color: var(--muted);
 }
+
+/* What stands where a part of the view could not be drawn. Deliberately quiet:
+   it marks the gap, it does not become the loudest thing on the screen. */
+.fehlergrenze {
+  border: 1px solid var(--fehler-rand);
+  background: var(--fehler-bg);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.fehlergrenze-text {
+  color: var(--fehler-text);
+  font-weight: 600;
+}
+
+.fehlergrenze-grund {
+  word-break: break-word;
+}

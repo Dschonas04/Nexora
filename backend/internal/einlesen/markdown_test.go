@@ -286,3 +286,34 @@ func TestTrennerWirdSichtbar(t *testing.T) {
 		t.Fatalf("Trenner verschluckt: %s", alsJSON(t, b))
 	}
 }
+
+// Every piece of text has to carry its styles, even when there are none.
+// BlockNote reads them with Object.entries; without the field the editor rejects
+// the whole document and the page stays blank.
+func TestStileStehenImmerImJSON(t *testing.T) {
+	_, _, bloecke := Lies("Ein schlichter Satz ohne Auszeichnung.\n\n- Ein Punkt\n")
+	roh, err := json.Marshal(bloecke)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var wieder []map[string]any
+	if err := json.Unmarshal(roh, &wieder); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(wieder) == 0 {
+		t.Fatal("keine Bloecke")
+	}
+	for _, b := range wieder {
+		inhalt, _ := b["content"].([]any)
+		for _, teil := range inhalt {
+			stueck, _ := teil.(map[string]any)
+			if stueck["type"] != "text" {
+				continue
+			}
+			stile, da := stueck["styles"]
+			if !da || stile == nil {
+				t.Fatalf("Textstueck ohne styles: %v", stueck)
+			}
+		}
+	}
+}

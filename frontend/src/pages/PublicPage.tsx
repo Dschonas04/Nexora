@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { PublicPage as PublicPageData, api } from "../api/client";
 import Editor from "../components/Editor";
+import Fehlergrenze from "../components/Fehlergrenze";
 
 export default function PublicPage() {
   const { token } = useParams();
@@ -32,7 +33,9 @@ export default function PublicPage() {
         </h1>
         {/* Same editor as inside the app, but read-only, so a public page
             renders exactly like the original. */}
-        <Editor initialContent={page.content} editable={false} />
+        <Fehlergrenze text="Der Inhalt dieser Seite liess sich nicht anzeigen.">
+          <Editor initialContent={page.content} editable={false} />
+        </Fehlergrenze>
       </div>
     </div>
   );

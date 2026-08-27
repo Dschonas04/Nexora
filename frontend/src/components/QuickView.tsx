@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api } from "../api/client";
 import Editor from "./Editor";
+import Fehlergrenze from "./Fehlergrenze";
 
 export interface Datei {
   id: string;
@@ -84,8 +85,8 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   const [wordFehler, setWordFehler] = useState<string | null>(null);
   const [bearbeiten, setBearbeiten] = useState(false);
   const [gespeichert, setGespeichert] = useState<string | null>(null);
-  // Der jeweils letzte Stand aus dem Editor. Als Referenz, damit jeder
-  // Tastendruck nicht die ganze Ansicht neu zeichnet.
+  // The latest state from the editor. Held in a reference so that every
+  // keystroke does not redraw the whole view.
   const wordStand = useRef<{ titel: string; bloecke: unknown } | null>(null);
 
   const box = useRef<HTMLDivElement>(null);
@@ -362,14 +363,19 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                       angezeigt, beim Speichern aber nicht zurückgeschrieben.
                     </div>
                   )}
-                  <Editor
-                    key={datei.id + (bearbeiten ? ":schreiben" : ":lesen")}
-                    initialContent={word.bloecke}
-                    editable={!!bearbeiten}
-                    onChange={(bloecke) => {
-                      wordStand.current = { titel: word.titel, bloecke };
-                    }}
-                  />
+                  <Fehlergrenze
+                    key={"grenze:" + datei.id + (bearbeiten ? ":schreiben" : ":lesen")}
+                    text="Diese Datei liess sich nicht darstellen."
+                  >
+                    <Editor
+                      key={datei.id + (bearbeiten ? ":schreiben" : ":lesen")}
+                      initialContent={word.bloecke}
+                      editable={!!bearbeiten}
+                      onChange={(bloecke) => {
+                        wordStand.current = { titel: word.titel, bloecke };
+                      }}
+                    />
+                  </Fehlergrenze>
                   {gespeichert === "gespeichert" && (
                     <div className="hinweis-ok">Gespeichert.</div>
                   )}

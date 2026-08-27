@@ -15,6 +15,30 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 // be reset before each use; see onClickCapture below.
 const WIKI_RE = /\[\[([^[\]]+)\]\]/g;
 
+// geradegeruecktes repairs content before it reaches the editor.
+//
+// BlockNote reads the styles of a piece of text with Object.entries. If the
+// field is missing or null that throws, and the editor then rejects the whole
+// document instead of that one piece — the page stays empty. Older imports
+// wrote exactly such pieces, and they lie in the database to this day, so it is
+// not enough to write them correctly from now on.
+//
+// Deliberately a copy: the original is state of the calling view, and repairing
+// it in place would change something that view never handed over for changing.
+function geradegeruecktes(wert: unknown): unknown {
+  if (Array.isArray(wert)) return wert.map(geradegeruecktes);
+  if (wert === null || typeof wert !== "object") return wert;
+  const alt = wert as Record<string, unknown>;
+  const neu: Record<string, unknown> = {};
+  for (const [schluessel, inhalt] of Object.entries(alt)) {
+    neu[schluessel] = geradegeruecktes(inhalt);
+  }
+  if (alt.type === "text" && (neu.styles === undefined || neu.styles === null)) {
+    neu.styles = {};
+  }
+  return neu;
+}
+
 // caretInfo returns the text node and character offset under a screen point,
 // bridging the two browser APIs. Used to tell whether a click landed inside a
 // [[wiki-link]] token.
@@ -182,9 +206,12 @@ export default function Editor({
   dateiHochladen?: (datei: File) => Promise<string>;
 }) {
   // BlockNote rejects an empty array as initialContent — use undefined instead.
+  // Everything that does arrive is straightened out first: documents written by
+  // an older import are missing the styles on their text pieces, and BlockNote
+  // refuses the entire document over that.
   const content =
     Array.isArray(initialContent) && initialContent.length > 0
-      ? (initialContent as PartialBlock[])
+      ? (geradegeruecktes(initialContent) as PartialBlock[])
       : undefined;
 
   // The editor is created once. Its content is not reactive, which is why the
