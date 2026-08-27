@@ -1137,7 +1137,7 @@ export default function Sidebar(props: Props) {
                   zu={zu}
                   klappen={klappen}
                   symbol={<Zahnrad />}
-                  symbolTitel="Einstellungen"
+                  symbolTitel="Verwaltung"
                   symbolAktion={() => onNavigate("/einstellungen")}
                   symbolAktiv={currentPath.startsWith("/einstellungen")}
                 >

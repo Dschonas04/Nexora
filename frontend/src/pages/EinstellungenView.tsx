@@ -429,7 +429,7 @@ export default function EinstellungenView() {
   if (user?.role !== "admin") {
     return (
       <div className="page-pad">
-        <h2>Einstellungen</h2>
+        <h2>Verwaltung</h2>
         <p className="muted">Diese Seite ist Administratoren vorbehalten.</p>
       </div>
     );
@@ -1358,7 +1358,7 @@ export default function EinstellungenView() {
   return (
     <div className="einstellungen-manager">
       <nav className="einstellungen-nav">
-        <div className="einstellungen-nav-titel">Einstellungen</div>
+        <div className="einstellungen-nav-titel">Verwaltung</div>
         {BEREICHE.map((b) => (
           <button
             key={b.id}
