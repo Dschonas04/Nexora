@@ -110,6 +110,28 @@ a {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Bezugspunkt fuer den Griff an der Kante. */
+  position: relative;
+}
+
+/* Die ziehbare Kante. Vier Pixel breit und durchsichtig: sie soll zu treffen
+   sein, ohne als Streifen im Bild zu stehen. Erst unter dem Zeiger faerbt sie
+   sich, damit man sieht, dass man sie hat. */
+.leiste-kante {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  z-index: 5;
+  /* Beruehrgeraete: der Browser soll hier nicht scrollen wollen, waehrend
+     gezogen wird. */
+  touch-action: none;
+}
+.leiste-kante:hover {
+  background: #2383e2;
+  opacity: 0.5;
 }
 
 /* Weggeraeumte Leiste. Sie bleibt als schmaler Streifen stehen, statt ganz zu
