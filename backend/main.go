@@ -183,6 +183,10 @@ func main() {
 			r.Get("/pages/{id}", h.GetPage)
 			r.Put("/pages/{id}", h.UpdatePage)
 			r.Delete("/pages/{id}", h.DeletePage) // moves to the trash
+			// Moving and ordering in one call: the drag in the sidebar is one
+			// gesture. Registered before the wildcard routes below for the same
+			// reason as the static /pages/... ones above.
+			r.Put("/pages/{id}/reihenfolge", h.SeiteVerschieben)
 			r.Post("/pages/{id}/restore", h.RestorePage)
 			r.Delete("/pages/{id}/purge", h.PurgePage) // deletes for good, cascades to subpages
 			r.Post("/pages/{id}/favorite", h.AddFavorite)
@@ -315,6 +319,9 @@ func main() {
 			// Spaces
 			r.Get("/spaces", h.ListSpaces)
 			r.Post("/spaces", h.CreateSpace)
+			// Before /spaces/{id}: otherwise chi would read "reihenfolge" as the
+			// id of a space and answer 404 for a rename that never happened.
+			r.Put("/spaces/reihenfolge", h.SpacesOrdnen)
 			r.Put("/spaces/{id}", h.RenameSpace)
 			r.Delete("/spaces/{id}", h.DeleteSpace)
 			// Open a space to every signed-in account (not to the internet).

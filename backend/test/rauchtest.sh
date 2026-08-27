@@ -274,6 +274,76 @@ echo "== Postfach"
 pruefe "Postfach antwortet" "200" "$(code "$BASIS/api/postfach")"
 pruefe "Zähler antwortet" "0" "$(hole "$BASIS/api/postfach/anzahl" | feld "['ungelesen']")"
 
+echo "== Umhängen und Reihenfolge"
+# Three pages at the top level, in a known order. titel() reads the sidebar
+# order back the way the interface sees it: the list as the API returns it.
+# Only the three of them: pages from the earlier steps are lying around at the
+# top level too, and their place is none of this section's business.
+titel() { hole "$BASIS/api/pages" | python3 -c '
+import json, sys
+unsere = {"Eins", "Zwei", "Drei"}
+print(",".join(p["title"] for p in json.load(sys.stdin)
+               if p["parentId"] is None and p["spaceId"] is None and p["title"] in unsere))'; }
+neue_seite() {
+    hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
+         -d "{\"title\":\"$1\"}" | feld "['id']"
+}
+EINS=$(neue_seite Eins)
+ZWEI=$(neue_seite Zwei)
+DREI=$(neue_seite Drei)
+pruefe "Ausgangsfolge" "Eins,Zwei,Drei" "$(titel)"
+
+pruefe "Drei vor Eins" "200" \
+       "$(code -X PUT "$BASIS/api/pages/$DREI/reihenfolge" -H 'Content-Type: application/json' \
+          -d "{\"vorId\":\"$EINS\"}")"
+pruefe "steht jetzt vorn" "Drei,Eins,Zwei" "$(titel)"
+
+pruefe "Eins ans Ende" "200" \
+       "$(code -X PUT "$BASIS/api/pages/$EINS/reihenfolge" -H 'Content-Type: application/json' \
+          -d '{"vorId":null}')"
+pruefe "steht jetzt hinten" "Drei,Zwei,Eins" "$(titel)"
+
+# Hanging one page under another: it has to leave the top level and turn up as a
+# child, and the order of what stays behind must survive it.
+pruefe "Zwei unter Drei" "200" \
+       "$(code -X PUT "$BASIS/api/pages/$ZWEI/reihenfolge" -H 'Content-Type: application/json' \
+          -d "{\"elternId\":\"$DREI\"}")"
+pruefe "oben nur noch zwei" "Drei,Eins" "$(titel)"
+pruefe "hängt unter Drei" "$DREI" \
+       "$(hole "$BASIS/api/pages/$ZWEI" | feld "['parentId']")"
+
+# The guard against a page landing inside its own subtree. Without it the branch
+# would hang below itself and be reachable from nowhere.
+pruefe "Drei unter die eigene Unterseite wird abgewiesen" "400" \
+       "$(code -X PUT "$BASIS/api/pages/$DREI/reihenfolge" -H 'Content-Type: application/json' \
+          -d "{\"elternId\":\"$ZWEI\"}")"
+pruefe "unter sich selbst wird abgewiesen" "400" \
+       "$(code -X PUT "$BASIS/api/pages/$DREI/reihenfolge" -H 'Content-Type: application/json' \
+          -d "{\"elternId\":\"$DREI\"}")"
+
+# A subpage follows its parent into the parent's space, so the two cannot drift
+# into different sections of the sidebar.
+pruefe "Drei in die Ablage" "200" \
+       "$(code -X PUT "$BASIS/api/pages/$DREI/reihenfolge" -H 'Content-Type: application/json' \
+          -d "{\"elternId\":null,\"spaceId\":\"$ABL_ID\"}")"
+pruefe "die Unterseite zieht mit" "$ABL_ID" \
+       "$(hole "$BASIS/api/pages/$ZWEI" | feld "['spaceId']")"
+
+echo "== Reihenfolge der Ablagen"
+ZWEITE=$(hole -X POST "$BASIS/api/spaces" -H 'Content-Type: application/json' \
+         -d '{"name":"Zweite Ablage"}' | feld "['id']")
+ablagen() { hole "$BASIS/api/spaces" | python3 -c '
+import json, sys
+print(",".join(a["name"] for a in json.load(sys.stdin)))'; }
+pruefe "nach Namen sortiert" "Umzug,Zweite Ablage" "$(ablagen)"
+pruefe "Reihenfolge gesetzt" "204" \
+       "$(code -X PUT "$BASIS/api/spaces/reihenfolge" -H 'Content-Type: application/json' \
+          -d "{\"ids\":[\"$ZWEITE\",\"$ABL_ID\"]}")"
+pruefe "steht jetzt so da" "Zweite Ablage,Umzug" "$(ablagen)"
+pruefe "leere Liste wird abgewiesen" "400" \
+       "$(code -X PUT "$BASIS/api/spaces/reihenfolge" -H 'Content-Type: application/json' \
+          -d '{"ids":[]}')"
+
 echo
 if [ "$fehler" -gt 0 ]; then
     echo "$fehler Prüfungen sind gefallen." >&2

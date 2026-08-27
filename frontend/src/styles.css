@@ -1162,6 +1162,39 @@ a {
   cursor: grab;
 }
 
+/* The gap between two rows: the place a page lands in when it is dropped
+   between them, as opposed to below one of them.
+
+   It is invisible and two pixels high while nothing is happening, so it does
+   not push the rows apart; while something is being dragged it grows to six so
+   that it can actually be hit, and under the pointer it becomes a line. Without
+   the growth one would have to hit two pixels with a moving mouse. */
+.tree-luecke {
+  height: 2px;
+  margin-right: 6px;
+  border-radius: 2px;
+}
+.tree-luecke.scharf {
+  height: 6px;
+}
+.tree-luecke.aktiv {
+  background: #2383e2;
+  box-shadow: 0 0 0 1px rgba(35, 131, 226, 0.35);
+}
+
+/* A space that another space is about to be dropped in front of. A line above
+   it, not a frame around it: the frame means "into this one", and that is
+   exactly what is NOT meant here. */
+.sidebar-section-title.space-davor {
+  box-shadow: inset 0 3px 0 -1px #2383e2;
+}
+.sidebar-section-title.dragging {
+  opacity: 0.45;
+}
+.sidebar-section-title[draggable="true"] {
+  cursor: grab;
+}
+
 /* Quick viewer: paging, counter, footer.
    The body is positioned relatively so that the arrows float inside it instead
    of taking space away, otherwise the image shrinks by their width. */

@@ -122,6 +122,22 @@ ALTER TABLE pages ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 CREATE INDEX IF NOT EXISTS pages_space_idx   ON pages(space_id);
 CREATE INDEX IF NOT EXISTS pages_deleted_idx ON pages(deleted_at);
 
+-- Where a space sits in the sidebar, per account.
+--
+-- Deliberately NOT a column on spaces: the sidebar is personal, and a space
+-- opened to the whole instance stands in everybody's list. A shared column
+-- would mean that whoever drags it last decides the order for all the others,
+-- including in workspaces they cannot even see.
+--
+-- Spaces without an entry sort after the ordered ones, by name -- that is
+-- where a newly created space appears until somebody drags it.
+CREATE TABLE IF NOT EXISTS space_reihenfolge (
+	user_id  uuid NOT NULL REFERENCES users(id)  ON DELETE CASCADE,
+	space_id uuid NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+	platz    integer NOT NULL,
+	PRIMARY KEY (user_id, space_id)
+);
+
 -- Immutable snapshots of a page, written on save (coalesced).
 CREATE TABLE IF NOT EXISTS page_versions (
 	id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),

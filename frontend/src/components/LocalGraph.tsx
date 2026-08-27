@@ -45,7 +45,7 @@ export default function LocalGraph({ graph, pageId, onOpen }: Props) {
 
   return (
     <div className="local-graph">
-      <div className="local-graph-title">Lokaler Graph</div>
+      <div className="local-graph-title">Lokaler Graf</div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="local-graph-svg">
         {neighbours.map((nb, i) => {
           const ang = (i / neighbours.length) * Math.PI * 2 - Math.PI / 2;
