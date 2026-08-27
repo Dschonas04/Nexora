@@ -14,6 +14,7 @@ import Einfuhr from "./Einfuhr";
 // newly created space is expanded by itself without having to be recorded
 // anywhere.
 const ZU_SCHLUESSEL = "nexora.leiste.eingeklappt";
+const VERSTECKT_SCHLUESSEL = "nexora.leiste.versteckt";
 
 function gemerkteZu(): Set<string> {
   try {
@@ -23,6 +24,14 @@ function gemerkteZu(): Set<string> {
     // Ein privates Fenster ohne Speicher oder ein kaputter Eintrag darf die
     // Leiste nicht lahmlegen, dann eben alles aufgeklappt.
     return new Set<string>();
+  }
+}
+
+function gemerktVersteckt(): boolean {
+  try {
+    return localStorage.getItem(VERSTECKT_SCHLUESSEL) === "ja";
+  } catch {
+    return false;
   }
 }
 
@@ -89,6 +98,10 @@ export default function Sidebar(props: Props) {
   // Verzweigungen INNERHALB eines Baums steuert, hier geht es um den
   // Abschnitt als Ganzes.
   const [zu, setZu] = useState<Set<string>>(gemerkteZu);
+  // Die Leiste ganz weg. Getrennt von `zu`: das eine klappt Abschnitte
+  // zusammen, das hier raeumt die Leiste beiseite, damit nur noch die Seite
+  // dasteht.
+  const [versteckt, setVersteckt] = useState<boolean>(gemerktVersteckt);
   const klappen = (key: string) =>
     setZu((prev) => {
       const n = new Set(prev);
@@ -100,6 +113,52 @@ export default function Sidebar(props: Props) {
       }
       return n;
     });
+
+  // Alle Abschnitte auf einmal. Solange noch einer offen steht, klappt der
+  // Griff zu -- so bedeutet ein zweiter Druck immer das Gegenteil des ersten
+  // und nicht noch einmal dasselbe.
+  const alleMarken = () => {
+    const marken = ["favoriten", "geteilt", "schlagwoerter", "workspace", "verwaltung", "root"];
+    for (const sp of spaces) marken.push("space:" + sp.id);
+    return marken;
+  };
+  const alleKlappen = () => {
+    const marken = alleMarken();
+    const zumachen = marken.some((m) => !zu.has(m));
+    const n = zumachen ? new Set([...zu, ...marken]) : new Set<string>();
+    setZu(n);
+    try {
+      localStorage.setItem(ZU_SCHLUESSEL, JSON.stringify([...n]));
+    } catch {
+      // Nicht speichern zu koennen ist kein Grund, nicht zu klappen.
+    }
+  };
+  const alleZu = alleMarken().every((m) => zu.has(m));
+
+  const leisteUmschalten = () =>
+    setVersteckt((v) => {
+      try {
+        localStorage.setItem(VERSTECKT_SCHLUESSEL, v ? "nein" : "ja");
+      } catch {
+        // s.o.
+      }
+      return !v;
+    });
+
+  // Strg + Rueckschraegstrich blendet die Leiste aus und wieder ein. Nicht
+  // Strg+B: das ist im Editor fett, und eine Tastenfolge doppelt zu belegen
+  // heisst, dass eine der beiden Bedeutungen irgendwann ueberrascht.
+  useEffect(() => {
+    const auf = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
+        e.preventDefault();
+        leisteUmschalten();
+      }
+    };
+    window.addEventListener("keydown", auf);
+    return () => window.removeEventListener("keydown", auf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // While dragging, a section expands by itself as soon as the pointer rests
   // over its heading. Without that one would have to drop the page, expand, pick
   // it up again, or the target would stay invisible.
@@ -326,6 +385,25 @@ export default function Sidebar(props: Props) {
     onDropLuecke: (l: TreeGap) => dropInLuecke(l),
   };
 
+  // Weggeraeumte Leiste: ein schmaler Streifen, der nichts kann ausser sich
+  // selbst zurueckholen. Ganz verschwinden darf sie nicht -- sonst gaebe es
+  // keinen Weg zurueck ausser der Tastenfolge, und die kennt nur, wer sie
+  // schon einmal gelesen hat.
+  if (versteckt) {
+    return (
+      <div className="sidebar schmal">
+        <button
+          className="icon-btn leiste-griff"
+          title="Leiste einblenden (Strg + \)"
+          aria-label="Leiste einblenden"
+          onClick={leisteUmschalten}
+        >
+          »
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="sidebar">
       <div className="sidebar-header">
@@ -363,6 +441,16 @@ export default function Sidebar(props: Props) {
             )}
           </div>
         )}
+        {/* Ganz rechts, weil er die Leiste als Ganzes betrifft und nicht das,
+            was in ihr steht. */}
+        <button
+          className="icon-btn leiste-griff"
+          title="Leiste ausblenden (Strg + \)"
+          aria-label="Leiste ausblenden"
+          onClick={leisteUmschalten}
+        >
+          «
+        </button>
       </div>
 
       <div className="search-box">
@@ -450,6 +538,15 @@ export default function Sidebar(props: Props) {
             onClick={() => setEinfuhrZiel({ ziel: {}, name: "Seiten" })}
           >
             ↑ Einlesen
+          </button>
+          {/* Jede Ablage einzeln zuzuklappen ist bei einem Dutzend Ablagen ein
+              Dutzend Klicks. Hier ist es einer. */}
+          <button
+            className="text-btn"
+            title={alleZu ? "Alle Abschnitte wieder aufklappen" : "Alle Abschnitte zuklappen"}
+            onClick={alleKlappen}
+          >
+            {alleZu ? "▾ Alles" : "▸ Alles"}
           </button>
         </div>
       )}
@@ -928,27 +1025,31 @@ export default function Sidebar(props: Props) {
               <Klapptitel marke="workspace" zu={zu} klappen={klappen}>
                 Arbeitsbereich
               </Klapptitel>
-              <div
-                className={"tree-row" + (currentPath === "/postfach" ? " active" : "")}
-                onClick={() => onNavigate("/postfach")}
-              >
-                <span className="tree-label">Postfach</span>
-                {/* The number stands there only when it says something. A zero
-                    beside the entry would be a prompt without occasion. */}
-                {ungelesen > 0 && <span className="postfach-zaehler">{ungelesen}</span>}
-              </div>
-              <div
-                className={"tree-row" + (currentPath === "/graph" ? " active" : "")}
-                onClick={() => onNavigate("/graph")}
-              >
-                <span className="tree-label">Graf</span>
-              </div>
-              <div
-                className={"tree-row" + (currentPath === "/trash" ? " active" : "")}
-                onClick={() => onNavigate("/trash")}
-              >
-                <span className="tree-label">Papierkorb</span>
-              </div>
+              {!zu.has("workspace") && (
+                <>
+                  <div
+                    className={"tree-row" + (currentPath === "/postfach" ? " active" : "")}
+                    onClick={() => onNavigate("/postfach")}
+                  >
+                    <span className="tree-label">Postfach</span>
+                    {/* The number stands there only when it says something. A zero
+                        beside the entry would be a prompt without occasion. */}
+                    {ungelesen > 0 && <span className="postfach-zaehler">{ungelesen}</span>}
+                  </div>
+                  <div
+                    className={"tree-row" + (currentPath === "/graph" ? " active" : "")}
+                    onClick={() => onNavigate("/graph")}
+                  >
+                    <span className="tree-label">Graf</span>
+                  </div>
+                  <div
+                    className={"tree-row" + (currentPath === "/trash" ? " active" : "")}
+                    onClick={() => onNavigate("/trash")}
+                  >
+                    <span className="tree-label">Papierkorb</span>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Administration. Visible only to administrators, which merely
@@ -972,7 +1073,7 @@ export default function Sidebar(props: Props) {
                 >
                   Verwaltung
                 </Klapptitel>
-                {frei("pruefspur") && (
+                {!zu.has("verwaltung") && frei("pruefspur") && (
                   <div
                     className={"tree-row" + (currentPath === "/pruefspur" ? " active" : "")}
                     onClick={() => onNavigate("/pruefspur")}
