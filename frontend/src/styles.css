@@ -270,9 +270,11 @@ a {
 .tree-actions {
   display: none;
   gap: 2px;
+  flex-shrink: 0;
 }
 
-.tree-row:hover .tree-actions {
+.tree-row:hover .tree-actions,
+.sidebar-section-title:hover .tree-actions {
   display: flex;
 }
 
@@ -535,6 +537,7 @@ a {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   padding: 0;
+  white-space: nowrap;
 }
 .text-btn:hover {
   color: var(--text);
@@ -2179,10 +2182,10 @@ a {
   background: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 18px;
   line-height: 1;
-  width: 18px;
-  flex: 0 0 18px;
+  width: 22px;
+  flex: 0 0 22px;
   padding: 0;
   text-align: left;
 }
@@ -2204,6 +2207,18 @@ a {
   cursor: pointer;
   margin-right: auto;
   user-select: none;
+  /* Damit beim Zeigen die Zeichen ganz dastehen und der NAME weicht: ohne
+     min-width behaelt der Name seine Wunschbreite, und die Zeichen laufen
+     rechts aus der Leiste heraus. */
+  min-width: 0;
+}
+
+/* Beim Zeigen macht die Marke den Zeichen Platz. Sonst muesste bei schmaler
+   Leiste der Name weichen, und ein angeschnittener Name ist schlimmer als eine
+   Marke, die einen Wimpernschlag spaeter wieder dasteht -- der Zustand aendert
+   sich dadurch nicht, nur seine Anzeige pausiert. */
+.sidebar-section-title:hover .pill.klein.offen {
+  display: none;
 }
 
 /* Eine offene Ablage wird ruhig gekennzeichnet, nicht angestrahlt: sie ist ein
@@ -2338,13 +2353,6 @@ a {
 .anhang-fehler .icon-btn {
   margin-left: auto;
   color: inherit;
-}
-
-/* Menu behind a button (export). Like the template menu, only in another
-   place; the list itself shares its styling with that one. */
-.exportmenue {
-  position: relative;
-  display: inline-flex;
 }
 
 /* Wartung: Konfigurationsdatei */
@@ -2714,7 +2722,11 @@ a {
 .sidebar-werkzeuge {
   display: flex;
   align-items: center;
-  gap: 8px;
+  /* Umbrechen darf die ZEILE, nicht der Knopf: bei schmaler Leiste rutscht
+     sonst der Pfeil ueber sein Wort und das Werkzeug sieht zerbrochen aus.
+     Deshalb hier wrap und beim Knopf nowrap. */
+  flex-wrap: wrap;
+  gap: 4px 10px;
   padding: 2px 12px 6px;
 }
 
