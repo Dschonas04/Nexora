@@ -65,6 +65,49 @@ const DRAG_ALPHA = 0.35; // keep the sim warm while interacting
 
 const DRAG_THRESHOLD = 4; // px before a press counts as a drag, not a click
 
+// Label placement.
+//
+// Every node carries its name, so the names get in each other's way. Nothing
+// here moves a node; only the label steps aside, and only into one of a few
+// fixed places around its own node. A label that wanders freely is worse than
+// one that overlaps: one no longer sees which name belongs to which dot.
+const LABEL_SCHRIFT = 12;
+const LABEL_HOEHE = 14;
+// Rough width per character at that size in a sans face. Measuring properly
+// would mean a canvas and one measurement per name per frame; for stepping
+// aside, an estimate that errs on the generous side is enough -- too wide only
+// means a label steps aside a little too eagerly.
+const LABEL_BREITE_JE_ZEICHEN = 6.4;
+
+interface Kasten {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function ueberlappen(a: Kasten, b: Kasten): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+// The places a label may take, in order of preference: to the right of the node
+// first, because that is where one looks for it, then left, then below, then
+// above, and finally further below as the last way out.
+type Anker = "start" | "end" | "middle";
+const LABEL_PLAETZE: { dx: (r: number) => number; dy: (r: number) => number; anker: Anker }[] = [
+  { dx: (r) => r + 5, dy: () => 4, anker: "start" },
+  { dx: (r) => -(r + 5), dy: () => 4, anker: "end" },
+  { dx: () => 0, dy: (r) => r + 14, anker: "middle" },
+  { dx: () => 0, dy: (r) => -(r + 8), anker: "middle" },
+  { dx: () => 0, dy: (r) => r + 28, anker: "middle" },
+];
+
+// kastenFuer is where a label sits once it has taken one of those places.
+function kastenFuer(x: number, y: number, breite: number, dx: number, dy: number, anker: Anker): Kasten {
+  const links = anker === "start" ? x + dx : anker === "end" ? x + dx - breite : x + dx - breite / 2;
+  return { x: links, y: y + dy - LABEL_HOEHE + 3, w: breite, h: LABEL_HOEHE };
+}
+
 export default function GraphView() {
   const nav = useNavigate();
   const [graph, setGraph] = useState<Graph>({ nodes: [], edges: [] });
@@ -116,6 +159,10 @@ export default function GraphView() {
   // The mutable simulation state lives in refs so the animation loop never
   // triggers React re-creation; we only nudge React to repaint each frame.
   const particles = useRef<Record<string, Particle>>({});
+  // Where each label currently sits. Recomputed with the simulation, kept in a
+  // ref for the same reason the positions are: it changes sixty times a second
+  // and must not drag React through it.
+  const beschriftung = useRef<Record<string, { dx: number; dy: number; anker: Anker }>>({});
   const alpha = useRef(0);
   const raf = useRef<number | null>(null);
   const fixed = useRef<{ id: string; x: number; y: number } | null>(null);
@@ -255,6 +302,55 @@ export default function GraphView() {
         }
       }
     }
+
+    beschriftungenVerteilen();
+  };
+
+  // Give every label a place where it covers as little as possible.
+  //
+  // Greedy and in one pass: the nodes with the most edges come first and keep
+  // the good place to the right, everything else steps aside around them. A
+  // proper optimum would be worth neither the code nor the milliseconds -- it is
+  // recomputed on every frame anyway, and one frame later the picture has moved
+  // on regardless.
+  //
+  // The circles count as occupied as well: a name lying across a dot is no
+  // better than one lying across another name.
+  const beschriftungenVerteilen = () => {
+    const p = particles.current;
+    const reihe = [...graph.nodes].sort(
+      (a, b) => (derived.degree[b.id] || 0) - (derived.degree[a.id] || 0),
+    );
+    const belegt: Kasten[] = [];
+    for (const n of reihe) {
+      const pp = p[n.id];
+      if (!pp) continue;
+      const r = nodeRadius(n.id);
+      belegt.push({ x: pp.x - r, y: pp.y - r, w: r * 2, h: r * 2 });
+    }
+    const gewaehlt: Record<string, { dx: number; dy: number; anker: Anker }> = {};
+    for (const n of reihe) {
+      const pp = p[n.id];
+      if (!pp) continue;
+      const r = nodeRadius(n.id);
+      const breite = (n.title || "Ohne Titel").length * LABEL_BREITE_JE_ZEICHEN;
+      let platz = LABEL_PLAETZE[0];
+      let kasten = kastenFuer(pp.x, pp.y, breite, platz.dx(r), platz.dy(r), platz.anker);
+      for (const k of LABEL_PLAETZE) {
+        const versuch = kastenFuer(pp.x, pp.y, breite, k.dx(r), k.dy(r), k.anker);
+        if (!belegt.some((b) => ueberlappen(b, versuch))) {
+          platz = k;
+          kasten = versuch;
+          break;
+        }
+      }
+      // Taken either way: even the last resort blocks the spot for whoever comes
+      // after, otherwise two labels that both had to give up would land on top
+      // of one another.
+      belegt.push(kasten);
+      gewaehlt[n.id] = { dx: platz.dx(r), dy: platz.dy(r), anker: platz.anker };
+    }
+    beschriftung.current = gewaehlt;
   };
 
   const loop = () => {
@@ -473,6 +569,7 @@ export default function GraphView() {
                 if (!pp) return null;
                 const r = nodeRadius(node.id);
                 const op = nodeOpacity(node.id);
+                const platz = beschriftung.current[node.id] ?? { dx: r + 5, dy: 4, anker: "start" as Anker };
                 return (
                   <g
                     key={node.id}
@@ -490,11 +587,13 @@ export default function GraphView() {
                       strokeWidth={hover === node.id ? 2 : 1}
                     />
                     {/* The white edge around the letters is what keeps a name
-                        readable where it crosses an edge or another name. */}
+                        readable where it crosses an edge -- stepping aside
+                        settles the labels among themselves, not the lines. */}
                     <text
-                      x={r + 5}
-                      y={4}
-                      fontSize={12}
+                      x={platz.dx}
+                      y={platz.dy}
+                      textAnchor={platz.anker}
+                      fontSize={LABEL_SCHRIFT}
                       fill="#37352f"
                       stroke="#ffffff"
                       strokeWidth={3.5}
