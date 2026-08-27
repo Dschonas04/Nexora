@@ -2171,15 +2171,18 @@ a {
    the heading, not a button in front of it. The width is fixed so that the
    labels of all sections begin on the same edge; an arrow shifting the line
    between the two glyphs makes the whole sidebar jitter. */
+/* Das Dreieck vor einer Ablage. Groesser als das der Zeilen darunter, und das
+   mit Absicht: es klappt einen ganzen Abschnitt, nicht einen Ast, und war in
+   der alten Groesse eher zu ahnen als zu treffen. */
 .klapp-btn {
   border: none;
   background: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 10px;
+  font-size: 14px;
   line-height: 1;
-  width: 14px;
-  flex: 0 0 14px;
+  width: 18px;
+  flex: 0 0 18px;
   padding: 0;
   text-align: left;
 }
