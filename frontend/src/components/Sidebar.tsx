@@ -244,6 +244,10 @@ export default function Sidebar(props: Props) {
   // a single value and not a set.
   const [sichtbarkeitFuer, setSichtbarkeitFuer] = useState<string | null>(null);
   // The same for the export menu of a space.
+  // Die beiden Menues der Werkzeugzeile. exportFuer haelt die Ablage, sobald
+  // eine gewaehlt ist: dann zeigt dasselbe Feld die Formate statt der Liste.
+  const [einfuhrOffen, setEinfuhrOffen] = useState(false);
+  const [ausfuhrOffen, setAusfuhrOffen] = useState(false);
   const [exportFuer, setExportFuer] = useState<string | null>(null);
   // Ziel der Einfuhr, solange ihr Kasten offen steht.
   const [einfuhrZiel, setEinfuhrZiel] = useState<
@@ -602,13 +606,120 @@ export default function Sidebar(props: Props) {
           {/* Labelled instead of an arrow: an icon alone does not say that a
               whole archive can be read in here, and since the import can create
               a space of its own, this is the way back out of an export. */}
-          <button
-            className="text-btn"
-            title="Markdown, HTML oder ein ZIP einlesen, wahlweise als eigene Ablage"
-            onClick={() => setEinfuhrZiel({ ziel: {}, name: "Seiten" })}
-          >
-            ↑ Einlesen
-          </button>
+          {/* Einlesen fragt zuerst, wohin. Frueher hing an jeder Ablage ein
+              eigener Pfeil dafuer; die Frage ist dieselbe, sie steht jetzt nur
+              einmal da statt an jeder Ueberschrift. */}
+          <div className="vorlagenmenue">
+            <button
+              className="text-btn"
+              title="Markdown, HTML oder ein ZIP einlesen, wahlweise als eigene Ablage"
+              onClick={() => {
+                setAusfuhrOffen(false);
+                setEinfuhrOffen((v) => !v);
+              }}
+            >
+              ↑ Einlesen
+            </button>
+            {einfuhrOffen && (
+              <div className="vorlagenliste" onMouseLeave={() => setEinfuhrOffen(false)}>
+                <div className="vorlagenliste-titel">Wohin einlesen</div>
+                <button
+                  className="vorlageneintrag"
+                  onClick={() => {
+                    setEinfuhrOffen(false);
+                    setEinfuhrZiel({ ziel: {}, name: "Seiten" });
+                  }}
+                >
+                  Als neue Ablage oder ohne
+                </button>
+                {spaces.map((sp) => (
+                  <button
+                    key={sp.id}
+                    className="vorlageneintrag"
+                    onClick={() => {
+                      setEinfuhrOffen(false);
+                      setEinfuhrZiel({ ziel: { spaceId: sp.id }, name: sp.name });
+                    }}
+                  >
+                    In: {sp.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* Ein gewoehnlicher Sprung auf die Adresse, kein fetch: so nimmt der
+              Browser den Dateinamen aus dem Content-Disposition-Kopf und
+              schreibt den Strom direkt auf die Platte, statt ihn erst in den
+              Speicher zu ziehen. */}
+          {frei("export") && spaces.length > 0 && (
+            <div className="vorlagenmenue">
+              <button
+                className="text-btn"
+                title="Eine ganze Ablage ausgeben, als ZIP, PDF oder Word"
+                onClick={() => {
+                  setEinfuhrOffen(false);
+                  setExportFuer(null);
+                  setAusfuhrOffen((v) => !v);
+                }}
+              >
+                ↓ Ausgeben
+              </button>
+              {ausfuhrOffen && (
+                <div
+                  className="vorlagenliste"
+                  onMouseLeave={() => {
+                    setAusfuhrOffen(false);
+                    setExportFuer(null);
+                  }}
+                >
+                  {exportFuer === null ? (
+                    <>
+                      <div className="vorlagenliste-titel">Welche Ablage</div>
+                      {spaces.map((sp) => (
+                        <button
+                          key={sp.id}
+                          className="vorlageneintrag"
+                          onClick={() => setExportFuer(sp.id)}
+                        >
+                          {sp.name}
+                        </button>
+                      ))}
+                    </>
+                  ) : (
+                    <>
+                      <div className="vorlagenliste-titel">
+                        {spaces.find((sp) => sp.id === exportFuer)?.name ?? "Ablage"} ausgeben
+                      </div>
+                      {(
+                        [
+                          ["", "Markdown-Dateien (.zip)"],
+                          ["pdf", "Ein PDF mit allen Seiten"],
+                          ["word", "Ein Word-Dokument"],
+                        ] as const
+                      ).map(([form, titel]) => (
+                        <button
+                          key={titel}
+                          className="vorlageneintrag"
+                          onClick={() => {
+                            const id = exportFuer;
+                            setAusfuhrOffen(false);
+                            setExportFuer(null);
+                            window.location.href =
+                              `/api/spaces/${id}/export` + (form ? `?format=${form}` : "");
+                          }}
+                        >
+                          {titel}
+                        </button>
+                      ))}
+                      <button className="vorlageneintrag" onClick={() => setExportFuer(null)}>
+                        ← Andere Ablage
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           {/* Jede Ablage einzeln zuzuklappen ist bei einem Dutzend Ablagen ein
               Dutzend Klicks. Hier ist es einer. */}
           <button
@@ -737,7 +848,11 @@ export default function Sidebar(props: Props) {
                     {eingeklappt && spacePages.length > 0 && (
                       <span className="tag-anzahl muted small">{spacePages.length}</span>
                     )}
-                    <span className="tree-actions" style={{ display: "flex" }}>
+                    {/* Ohne das feste display folgen die Zeichen derselben Regel
+                        wie in den Zeilen darunter: sie erscheinen, wenn man auf
+                        die Ueberschrift zeigt. Sonst steht ueber jeder Ablage
+                        eine Reihe Zeichen, die man fast nie braucht. */}
+                    <span className="tree-actions">
                       <button className="icon-btn" title="Neue Seite" onClick={() => onCreateInSpace(sp.id)}>
                         +
                       </button>
@@ -772,53 +887,10 @@ export default function Sidebar(props: Props) {
                           ⚿
                         </button>
                       )}
-                      <button
-                        className="icon-btn"
-                        title="Markdown in diese Ablage einführen"
-                        onClick={() => setEinfuhrZiel({ ziel: { spaceId: sp.id }, name: sp.name })}
-                      >
-                        ↑
-                      </button>
-                      {/* An ordinary link to the address, not a fetch: that way
-                          the browser takes the file name from the
-                          Content-Disposition header and writes the stream
-                          straight to disk instead of pulling it into memory
-                          first. */}
-                      {frei("export") && (
-                        <div className="exportmenue">
-                          <button
-                            className="icon-btn"
-                            title="Ablage exportieren"
-                            onClick={() => setExportFuer((v) => (v === sp.id ? null : sp.id))}
-                          >
-                            ↓
-                          </button>
-                          {exportFuer === sp.id && (
-                            <div className="vorlagenliste" onMouseLeave={() => setExportFuer(null)}>
-                              <div className="vorlagenliste-titel">Ablage exportieren</div>
-                              {(
-                                [
-                                  ["", "Markdown-Dateien (.zip)"],
-                                  ["pdf", "Ein PDF mit allen Seiten"],
-                                  ["word", "Ein Word-Dokument"],
-                                ] as const
-                              ).map(([form, titel]) => (
-                                <button
-                                  key={titel}
-                                  className="vorlageneintrag"
-                                  onClick={() => {
-                                    setExportFuer(null);
-                                    window.location.href =
-                                      `/api/spaces/${sp.id}/export` + (form ? `?format=${form}` : "");
-                                  }}
-                                >
-                                  {titel}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      {/* Ein- und Ausfuhr standen frueher hier, an jeder
+                          Ueberschrift zwei weitere Zeichen. Sie stehen jetzt
+                          oben links ueber allen Ablagen und fragen dort nach
+                          der Ablage -- siehe die Werkzeugzeile. */}
                       {sp.darfVerwalten && (
                         <button className="icon-btn" title="Space löschen" onClick={() => onDeleteSpace(sp.id)}>
                           ✕
