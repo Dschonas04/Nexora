@@ -2,7 +2,7 @@
 // the workspace links. It owns no data of its own, everything arrives as props
 // from Workspace; what it does own is view state such as which branches are
 // open and what is currently being dragged.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PageMeta, SearchHit, Space, SuchFilter, Tag, api } from "../api/client";
 import { useLizenz } from "../lizenz";
 import { useAuth } from "../auth";
@@ -15,6 +15,13 @@ import Einfuhr from "./Einfuhr";
 // anywhere.
 const ZU_SCHLUESSEL = "nexora.leiste.eingeklappt";
 const VERSTECKT_SCHLUESSEL = "nexora.leiste.versteckt";
+const BREITE_SCHLUESSEL = "nexora.leiste.breite";
+// Die Grenzen der Breite. Schmaler als 180 stehen die Titel der Seiten nur noch
+// abgeschnitten da, breiter als 520 nimmt die Leiste der Seite den Platz weg,
+// um den es hier gerade geht.
+const BREITE_VORGABE = 260;
+const BREITE_MIN = 180;
+const BREITE_MAX = 520;
 
 function gemerkteZu(): Set<string> {
   try {
@@ -25,6 +32,16 @@ function gemerkteZu(): Set<string> {
     // Leiste nicht lahmlegen, dann eben alles aufgeklappt.
     return new Set<string>();
   }
+}
+
+function gemerkteBreite(): number {
+  try {
+    const roh = Number(localStorage.getItem(BREITE_SCHLUESSEL));
+    if (Number.isFinite(roh) && roh >= BREITE_MIN && roh <= BREITE_MAX) return roh;
+  } catch {
+    // s.u.
+  }
+  return BREITE_VORGABE;
 }
 
 function gemerktVersteckt(): boolean {
@@ -102,6 +119,11 @@ export default function Sidebar(props: Props) {
   // zusammen, das hier raeumt die Leiste beiseite, damit nur noch die Seite
   // dasteht.
   const [versteckt, setVersteckt] = useState<boolean>(gemerktVersteckt);
+  // Die Breite der Leiste, in Pixeln. Sie steht im Zustand und nicht im
+  // Stylesheet, weil sie am Rand gezogen wird; gemerkt wird sie erst beim
+  // Loslassen, sonst schriebe jedes Bild des Ziehens in den Speicher.
+  const [breite, setBreite] = useState<number>(gemerkteBreite);
+  const zug = useRef<{ startX: number; startBreite: number } | null>(null);
   const klappen = (key: string) =>
     setZu((prev) => {
       const n = new Set(prev);
@@ -144,6 +166,43 @@ export default function Sidebar(props: Props) {
       }
       return !v;
     });
+
+  // Am rechten Rand ziehen. Waehrend des Zugs faengt der Griff den Zeiger ein,
+  // damit eine schnelle Bewegung, die ueber die Leiste hinauslaeuft, weiter
+  // ankommt; und die Textauswahl wird abgestellt, weil sonst beim Ziehen die
+  // halbe Leiste blau markiert wird.
+  const zugBeginnen = (e: React.PointerEvent) => {
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    zug.current = { startX: e.clientX, startBreite: breite };
+    document.body.style.userSelect = "none";
+  };
+  const zugBewegen = (e: React.PointerEvent) => {
+    const z = zug.current;
+    if (!z) return;
+    const neu = Math.min(BREITE_MAX, Math.max(BREITE_MIN, z.startBreite + (e.clientX - z.startX)));
+    setBreite(neu);
+  };
+  const zugBeenden = (e: React.PointerEvent) => {
+    if (!zug.current) return;
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    zug.current = null;
+    document.body.style.userSelect = "";
+    try {
+      localStorage.setItem(BREITE_SCHLUESSEL, String(breite));
+    } catch {
+      // Nicht merken zu koennen ist kein Grund, nicht zu ziehen.
+    }
+  };
+  // Ein Doppelklick auf den Griff setzt die Breite zurueck. Wer sich verzogen
+  // hat, findet so wieder heraus, ohne die Vorgabe zu kennen.
+  const zugZuruecksetzen = () => {
+    setBreite(BREITE_VORGABE);
+    try {
+      localStorage.setItem(BREITE_SCHLUESSEL, String(BREITE_VORGABE));
+    } catch {
+      // s.o.
+    }
+  };
 
   // Strg + Rueckschraegstrich blendet die Leiste aus und wieder ein. Nicht
   // Strg+B: das ist im Editor fett, und eine Tastenfolge doppelt zu belegen
@@ -405,7 +464,18 @@ export default function Sidebar(props: Props) {
   }
 
   return (
-    <div className="sidebar">
+    <div className="sidebar" style={{ width: breite, minWidth: breite }}>
+      {/* Der Griff zum Ziehen sitzt auf der Kante, nicht daneben: die Kante ist
+          die Stelle, an der man es versucht. */}
+      <div
+        className="leiste-kante"
+        title="Breite ziehen, Doppelklick setzt zurück"
+        onPointerDown={zugBeginnen}
+        onPointerMove={zugBewegen}
+        onPointerUp={zugBeenden}
+        onPointerCancel={zugBeenden}
+        onDoubleClick={zugZuruecksetzen}
+      />
       <div className="sidebar-header">
         <span className="brand">Nexora</span>
         <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
