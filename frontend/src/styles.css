@@ -112,6 +112,24 @@ a {
   overflow: hidden;
 }
 
+/* Weggeraeumte Leiste. Sie bleibt als schmaler Streifen stehen, statt ganz zu
+   verschwinden: ohne ihn gaebe es keinen sichtbaren Weg zurueck. */
+.sidebar.schmal {
+  width: 34px;
+  min-width: 34px;
+  align-items: center;
+  padding-top: 10px;
+}
+
+.leiste-griff {
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.55;
+}
+.leiste-griff:hover {
+  opacity: 1;
+}
+
 .sidebar-header {
   padding: 14px 14px 8px;
   display: flex;
