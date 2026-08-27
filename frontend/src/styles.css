@@ -521,6 +521,27 @@ a {
   color: var(--muted);
 }
 
+/* Eingabefelder folgen dem Grundton.
+   Ohne diese Regel nimmt der Browser seine Vorgabe -- weisses Feld mit
+   schwarzer Schrift. Im dunklen Grundton leuchteten die Felder der Anmeldung
+   deshalb wie Lampen. Wo ein Feld ausdruecklich anders aussehen soll (der
+   Seitentitel etwa), steht das weiter unten und schlaegt diese Regel. */
+/* :where() haelt die Spezifitaet bei null -- sonst schlaegt diese Regel jede
+   Klasse, die ein einzelnes Feld anders haben will, und der Seitentitel stuende
+   wieder in einem weissen Kasten. */
+input:where(:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"])),
+select,
+textarea {
+  background: var(--flaeche);
+  color: var(--text);
+  border-color: var(--border);
+  font-family: inherit;
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+}
+
 /* Tame BlockNote to match the minimal look */
 .bn-container,
 .bn-editor {
@@ -969,13 +990,40 @@ a {
 .graph-node text {
   user-select: none;
 }
+/* Der Graf zeichnet mit den Farben des Grundtons statt mit festen: sonst steht
+   im dunklen Fenster ein Bild aus hellen Linien und dunkler Schrift. */
+.graph-kante {
+  stroke: var(--border);
+}
+.graph-kante.eltern {
+  stroke: var(--muted);
+}
+.graph-kante.betont {
+  stroke: var(--accent);
+}
+.graph-knoten {
+  /* Der Rand ist der Grund der Seite: so hebt sich ein Knoten von den Linien
+     ab, die hinter ihm durchlaufen. */
+  stroke: var(--bg);
+}
+.graph-knoten.betont {
+  stroke: var(--text);
+}
+.graph-name {
+  fill: var(--text);
+  /* Der Saum um die Buchstaben ist der Grund selbst, damit ein Name lesbar
+     bleibt, wo er eine Linie kreuzt. */
+  stroke: var(--bg);
+}
+
 .graph-hint {
   position: absolute;
   top: 12px;
   left: 14px;
   font-size: 12px;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--flaeche);
+  border: 1px solid var(--border);
   padding: 4px 8px;
   border-radius: var(--radius);
   pointer-events: none;
@@ -997,7 +1045,8 @@ a {
   max-width: 60%;
   font-size: 12px;
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--flaeche);
+  border: 1px solid var(--border);
   padding: 6px 10px;
   border-radius: var(--radius);
   z-index: 2;

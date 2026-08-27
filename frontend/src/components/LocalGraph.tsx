@@ -62,19 +62,18 @@ export default function LocalGraph({ graph, pageId, onOpen }: Props) {
                 y1={cy}
                 x2={x}
                 y2={y}
-                stroke="#dcdcda"
+                className="graph-kante"
                 strokeWidth={nb.kind === "parent" ? 1.6 : 1}
                 strokeDasharray={nb.kind === "link" ? "4 3" : undefined}
               />
               <g className="local-node" onClick={() => onOpen(nb.id)}>
-                <circle cx={x} cy={y} r={6} fill="#2383e2" />
+                <circle cx={x} cy={y} r={6} fill="var(--accent)" className="graph-knoten" />
                 <text
                   x={x + dx}
                   y={y + 4}
                   fontSize={12}
                   textAnchor={anchor}
-                  fill="#37352f"
-                  stroke="#ffffff"
+                  className="graph-name"
                   strokeWidth={3.5}
                   paintOrder="stroke"
                   strokeLinejoin="round"
@@ -86,15 +85,14 @@ export default function LocalGraph({ graph, pageId, onOpen }: Props) {
           );
         })}
         <g>
-          <circle cx={cx} cy={cy} r={9} fill="#1a73d0" />
+          <circle cx={cx} cy={cy} r={9} fill="var(--accent)" className="graph-knoten betont" />
           <text
             x={cx}
             y={cy - 16}
             fontSize={12}
             textAnchor="middle"
-            fill="#37352f"
+            className="graph-name"
             fontWeight={600}
-            stroke="#ffffff"
             strokeWidth={3.5}
             paintOrder="stroke"
             strokeLinejoin="round"
