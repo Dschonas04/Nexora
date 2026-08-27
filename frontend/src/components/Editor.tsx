@@ -11,6 +11,8 @@ import { Extension, InputRule } from "@tiptap/core";
 import { Plugin } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
+import { useDesign } from "../design";
+
 // Shared pattern for [[Page title]]. It carries the g flag, so lastIndex has to
 // be reset before each use; see onClickCapture below.
 const WIKI_RE = /\[\[([^[\]]+)\]\]/g;
@@ -205,6 +207,9 @@ export default function Editor({
   // which means an image has to live somewhere before it can be used here.
   dateiHochladen?: (datei: File) => Promise<string>;
 }) {
+  const { design } = useDesign();
+  const grundton = design.grundton;
+
   // BlockNote rejects an empty array as initialContent — use undefined instead.
   // Everything that does arrive is straightened out first: documents written by
   // an older import are missing the styles on their text pieces, and BlockNote
@@ -358,10 +363,14 @@ export default function Editor({
       onClickCapture={onClickCapture}
       onPasteCapture={onPasteCapture}
     >
+      {/* BlockNote brings its own two themes and knows nothing of the base
+          tones here. Fixed on "light" it kept its dark letters on the dark
+          ground -- the text of a page was then barely there, and the menus of
+          the editor stood as light boxes in a dark window. */}
       <BlockNoteView
         editor={editor}
         editable={editable}
-        theme="light"
+        theme={grundton === "dunkel" ? "dark" : "light"}
         onChange={() => onChange?.(editor.document)}
       >
         {mentionTargets && (

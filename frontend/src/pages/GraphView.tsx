@@ -557,7 +557,14 @@ export default function GraphView() {
                     y1={a.y}
                     x2={b.x}
                     y2={b.y}
-                    stroke={lit ? "#2383e2" : edge.kind === "parent" ? "#c7c7c4" : "#dcdcda"}
+                    // Die Farben stehen im Stylesheet, nicht hier: als Attribut
+                    // waeren sie an einen Grundton gebunden, und im dunklen
+                    // stuenden helle Linien auf hellem Text.
+                    className={
+                      "graph-kante" +
+                      (edge.kind === "parent" ? " eltern" : "") +
+                      (lit ? " betont" : "")
+                    }
                     strokeWidth={edge.kind === "parent" ? 1.6 : 1}
                     strokeDasharray={edge.kind === "link" ? "4 3" : undefined}
                     opacity={dim ? 0.12 : 1}
@@ -583,7 +590,10 @@ export default function GraphView() {
                     <circle
                       r={hover === node.id ? r + 2 : r}
                       fill={spaceColor[spaceKey(node)] ?? "#2383e2"}
-                      stroke={hover === node.id ? "#37352f" : "#ffffff"}
+                      // Der Rand ist der Grund der Seite, damit ein Knoten sich
+                      // von den Linien dahinter abhebt -- hell im Hellen,
+                      // dunkel im Dunklen.
+                      className={"graph-knoten" + (hover === node.id ? " betont" : "")}
                       strokeWidth={hover === node.id ? 2 : 1}
                     />
                     {/* The white edge around the letters is what keeps a name
@@ -594,8 +604,7 @@ export default function GraphView() {
                       y={platz.dy}
                       textAnchor={platz.anker}
                       fontSize={LABEL_SCHRIFT}
-                      fill="#37352f"
-                      stroke="#ffffff"
+                      className="graph-name"
                       strokeWidth={3.5}
                       paintOrder="stroke"
                       strokeLinejoin="round"

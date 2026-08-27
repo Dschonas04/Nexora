@@ -9,6 +9,7 @@
 import { ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import { api } from "./api/client";
+import { useAuth } from "./auth";
 import { lesbarAuf, schriftAuf } from "./farbe";
 
 export interface Design {
@@ -53,6 +54,14 @@ export function anwenden(d: Design) {
 
 export function DesignProvider({ children }: { children: ReactNode }) {
   const [design, setDesign] = useState<Design>({ grundton: "grau", akzent: "#2383e2" });
+  // Whose look is being asked for. /api/design needs a session, so before the
+  // sign-in the call answers 401 -- and it has to be repeated afterwards.
+  //
+  // Without that the interface stayed in the default look until somebody
+  // reloaded the page by hand: one signed in and the workspace was light, even
+  // though it had been set to dark. Half the picture then belonged to one look
+  // and half to the other.
+  const { user } = useAuth();
 
   const neuLaden = useCallback(() => {
     api
@@ -66,7 +75,9 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       .catch(() => {});
   }, []);
 
-  useEffect(neuLaden, [neuLaden]);
+  // Runs on the first draw and again on every change of account -- signing in,
+  // signing out, switching users.
+  useEffect(neuLaden, [neuLaden, user?.id]);
 
   return <Ctx.Provider value={{ design, neuLaden }}>{children}</Ctx.Provider>;
 }
