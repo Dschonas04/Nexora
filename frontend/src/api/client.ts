@@ -594,6 +594,13 @@ export const api = {
     req<void>(`/pages/${id}/links/${targetId}`, { method: "DELETE" }),
   updatePage: (id: string, patch: PagePatch) =>
     req<Page>(`/pages/${id}`, { method: "PUT", body: JSON.stringify(patch) }),
+  // Hanging a page somewhere else and placing it among its new siblings, in one
+  // call: a drag in the sidebar is one gesture, and two requests could half
+  // fail. vorId is the sibling it lands in front of; null means the end.
+  seiteVerschieben: (
+    id: string,
+    ziel: { elternId?: string | null; spaceId?: string | null; vorId?: string | null },
+  ) => req<Page>(`/pages/${id}/reihenfolge`, { method: "PUT", body: JSON.stringify(ziel) }),
   deletePage: (id: string) => req<void>(`/pages/${id}`, { method: "DELETE" }),
   restorePage: (id: string) => req<void>(`/pages/${id}/restore`, { method: "POST" }),
   purgePage: (id: string) => req<void>(`/pages/${id}/purge`, { method: "DELETE" }),
@@ -741,6 +748,11 @@ export const api = {
   renameSpace: (id: string, name: string) =>
     req<void>(`/spaces/${id}`, { method: "PUT", body: JSON.stringify({ name }) }),
   deleteSpace: (id: string) => req<void>(`/spaces/${id}`, { method: "DELETE" }),
+  // The order of the sidebar, as a complete list. It is kept per account: a
+  // space open to the whole instance stands in everybody's sidebar, and whoever
+  // drags it must not rearrange it for the others.
+  spacesOrdnen: (ids: string[]) =>
+    req<void>("/spaces/reihenfolge", { method: "PUT", body: JSON.stringify({ ids }) }),
   spaceOeffentlich: (id: string, oeffentlich: "nein" | "lesen" | "schreiben") =>
     req<{ oeffentlich: string }>(`/spaces/${id}/oeffentlich`, {
       method: "PUT",

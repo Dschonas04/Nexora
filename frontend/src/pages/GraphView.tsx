@@ -1,4 +1,4 @@
-// The full-workspace knowledge graph: a live force simulation drawn as SVG,
+// The Graf over the whole workspace: a live force simulation drawn as SVG,
 // pannable, zoomable and draggable.
 //
 // The simulation runs entirely outside React. Positions live in refs and are
@@ -409,20 +409,21 @@ export default function GraphView() {
     return 0.15;
   };
 
-  // Labels stay hidden until you zoom in past this scale (LogSeq-style), so the
-  // overview isn't cluttered; hovering a node always reveals it and its
-  // neighbours' labels regardless of zoom.
-  const LABEL_ZOOM = 1.3;
-  const showLabel = (id: string) =>
-    view.scale >= LABEL_ZOOM || id === hover || (!!hover && derived.neighbours[hover]?.has(id));
+  // Every node carries its name, at every zoom level. Hiding them until one
+  // zoomed in kept the picture tidy and made it useless: a graph of unnamed dots
+  // says nothing about what is connected to what, and to read it one had to
+  // hover over every dot one at a time.
+  //
+  // What was tidy about it is kept in another way: the labels fade with their
+  // node, so hovering still lifts one neighbourhood out of the rest.
 
   return (
     <div className="graph-wrap" ref={wrapRef}>
       {graph.nodes.length === 0 ? (
-        <div className="empty-state">Noch keine Seiten für den Graphen.</div>
+        <div className="empty-state">Noch keine Seiten für den Graf.</div>
       ) : (
         <>
-          <div className="graph-hint">Namen bei Hover/Zoom · Knoten ziehen · Hintergrund ziehen · scrollen zum Zoomen</div>
+          <div className="graph-hint">Knoten ziehen · Hintergrund ziehen · scrollen zum Zoomen</div>
           {derived.legend.length > 1 && (
             <div className="graph-legend">
               {derived.legend.map((l) => (
@@ -488,20 +489,20 @@ export default function GraphView() {
                       stroke={hover === node.id ? "#37352f" : "#ffffff"}
                       strokeWidth={hover === node.id ? 2 : 1}
                     />
-                    {showLabel(node.id) && (
-                      <text
-                        x={r + 5}
-                        y={4}
-                        fontSize={12}
-                        fill="#37352f"
-                        stroke="#ffffff"
-                        strokeWidth={3.5}
-                        paintOrder="stroke"
-                        strokeLinejoin="round"
-                      >
-                        {node.title || "Ohne Titel"}
-                      </text>
-                    )}
+                    {/* The white edge around the letters is what keeps a name
+                        readable where it crosses an edge or another name. */}
+                    <text
+                      x={r + 5}
+                      y={4}
+                      fontSize={12}
+                      fill="#37352f"
+                      stroke="#ffffff"
+                      strokeWidth={3.5}
+                      paintOrder="stroke"
+                      strokeLinejoin="round"
+                    >
+                      {node.title || "Ohne Titel"}
+                    </text>
                   </g>
                 );
               })}

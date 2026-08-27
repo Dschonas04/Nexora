@@ -8,6 +8,7 @@ import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { PageMeta, Space, Tag, api } from "../api/client";
 import Sidebar from "../components/Sidebar";
+import { TreeGap } from "../components/PageTree";
 import PageView from "./PageView";
 import TagView from "./TagView";
 import { useEingabe, useRueckfrage } from "../components/Rueckfrage";
@@ -161,6 +162,26 @@ export default function Workspace() {
     await refreshPages();
   };
 
+  // Dropped between two rows: hang it there AND put it in that place. One call,
+  // because the backend has to write both in one transaction anyway -- a page
+  // that hangs in the new spot but stands in the old order would be worse than
+  // no move at all.
+  const ordnePage = async (id: string, ziel: TreeGap) => {
+    await api.seiteVerschieben(id, {
+      elternId: ziel.elternId,
+      spaceId: ziel.elternId === null ? (ziel.spaceId ?? null) : undefined,
+      vorId: ziel.vorId,
+    });
+    await refreshPages();
+  };
+
+  // The order of the spaces. It is kept per account, so this changes nobody
+  // else's sidebar.
+  const ordneSpaces = async (ids: string[]) => {
+    await api.spacesOrdnen(ids);
+    await refreshSpaces();
+  };
+
   // Read the open page from the URL instead of tracking it in state, so the
   // sidebar highlight stays right after a back or forward navigation.
   const match = loc.pathname.match(/^\/page\/(.+)$/);
@@ -185,6 +206,8 @@ export default function Workspace() {
         onDeleteSpace={deleteSpace}
         onSpaceOeffentlich={setSpaceOeffentlich}
         onMovePage={movePage}
+        onOrdnePage={ordnePage}
+        onOrdneSpaces={ordneSpaces}
         onNavigate={(to) => nav(to)}
         currentPath={loc.pathname}
         ungelesen={ungelesen}

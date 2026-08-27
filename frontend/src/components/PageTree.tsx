@@ -3,6 +3,21 @@
 // the shape comes purely from parentId.
 import { PageMeta } from "../api/client";
 
+// A gap between two rows: the place a page lands in when it is dropped there.
+// vorId is the row below the gap, null for the gap at the end of a level.
+// spaceId only matters at the top level of a section; below that the page takes
+// the space of its parent.
+export interface TreeGap {
+  elternId: string | null;
+  spaceId?: string | null;
+  vorId: string | null;
+}
+
+export function gleicheLuecke(a: TreeGap | null, b: TreeGap | null): boolean {
+  if (!a || !b) return false;
+  return a.elternId === b.elternId && a.vorId === b.vorId && (a.spaceId ?? null) === (b.spaceId ?? null);
+}
+
 // Drag and drop state and callbacks, owned by the sidebar and threaded down.
 // Keeping it in one object avoids passing eight separate props through every
 // level of the recursion. Absent means the tree is not draggable, which is how
@@ -16,11 +31,21 @@ export interface TreeDnD {
   onDragLeavePage: (id: string) => void;
   onDropPage: (page: PageMeta) => void;
   canDropOnPage: (id: string) => boolean;
+  // Dropping ONTO a row nests the page below it; dropping into a gap puts it
+  // between two rows. Two gestures, one drag: without the gaps a page could
+  // only ever be nested, never sorted.
+  luecke: TreeGap | null;
+  onDragOverLuecke: (l: TreeGap) => void;
+  onDragLeaveLuecke: () => void;
+  onDropLuecke: (l: TreeGap) => void;
 }
 
 interface Props {
   pages: PageMeta[];
   parentId: string | null;
+  /** The space this level belongs to. Only read for the top level of a section:
+      a page dropped into a gap there has to land in the right space. */
+  spaceId?: string | null;
   activeId?: string;
   expanded: Set<string>;
   onToggle: (id: string) => void;
@@ -34,6 +59,7 @@ interface Props {
 export default function PageTree({
   pages,
   parentId,
+  spaceId = null,
   activeId,
   expanded,
   onToggle,
@@ -49,15 +75,45 @@ export default function PageTree({
   const children = pages.filter((p) => (p.parentId ?? null) === parentId);
   if (children.length === 0) return null;
 
+  // The strip between two rows. It is a few pixels high and only reacts while
+  // something is being dragged; the rest of the time it is not in the way,
+  // which is why it carries no padding of its own.
+  const luecke = (vorId: string | null) => {
+    if (!dnd) return null;
+    const ziel: TreeGap = { elternId: parentId, spaceId, vorId };
+    const aktiv = gleicheLuecke(dnd.luecke, ziel);
+    return (
+      <div
+        className={"tree-luecke" + (aktiv ? " aktiv" : "") + (dnd.dragId ? " scharf" : "")}
+        style={{ marginLeft: 6 + depth * 14 }}
+        onDragOver={(e) => {
+          if (!dnd.dragId) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          dnd.onDragOverLuecke(ziel);
+        }}
+        onDragLeave={() => dnd.onDragLeaveLuecke()}
+        onDrop={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dnd.onDropLuecke(ziel);
+        }}
+      />
+    );
+  };
+
   return (
     <>
-      {children.map((p) => {
+      {children.map((p, i) => {
         const kids = pages.filter((c) => (c.parentId ?? null) === p.id);
         const isOpen = expanded.has(p.id);
         const isDropTarget = dnd?.dropTarget === p.id;
         const isDragging = dnd?.dragId === p.id;
         return (
           <div key={p.id}>
+            {/* One gap above every row, and one more below the last: together
+                they cover every place a page can go on this level. */}
+            {luecke(p.id)}
             <div
               className={
                 "tree-row" +
@@ -138,6 +194,7 @@ export default function PageTree({
               <PageTree
                 pages={pages}
                 parentId={p.id}
+                spaceId={p.spaceId ?? null}
                 activeId={activeId}
                 expanded={expanded}
                 onToggle={onToggle}
@@ -148,6 +205,7 @@ export default function PageTree({
                 depth={depth + 1}
               />
             )}
+            {i === children.length - 1 && luecke(null)}
           </div>
         );
       })}

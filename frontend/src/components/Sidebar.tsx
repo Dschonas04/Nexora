@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { PageMeta, SearchHit, Space, SuchFilter, Tag, api } from "../api/client";
 import { useLizenz } from "../lizenz";
 import { useAuth } from "../auth";
-import PageTree from "./PageTree";
+import PageTree, { TreeGap } from "./PageTree";
 import SpaceRechte from "./SpaceRechte";
 import Einfuhr from "./Einfuhr";
 
@@ -46,6 +46,11 @@ interface Props {
   onDeleteSpace: (id: string) => void;
   onSpaceOeffentlich: (id: string, wert: "nein" | "lesen" | "schreiben") => void;
   onMovePage: (id: string, parentId: string | null, spaceId: string | null) => void;
+  /** Umhängen UND einsortieren in einem: das Ziel nennt die Ebene und die
+      Nachbarseite, vor der die Seite landet. */
+  onOrdnePage: (id: string, ziel: TreeGap) => void;
+  /** Die Reihenfolge der Ablagen, vollständig und in der neuen Folge. */
+  onOrdneSpaces: (ids: string[]) => void;
   onNavigate: (to: string) => void;
   currentPath: string;
   // Nach einer Einfuhr sind Seiten, Ablagen und Schlagworte veraltet, die
@@ -71,6 +76,8 @@ export default function Sidebar(props: Props) {
     onDeleteSpace,
     onSpaceOeffentlich,
     onMovePage,
+    onOrdnePage,
+    onOrdneSpaces,
     onNavigate,
     currentPath,
     onEingefuehrt,
@@ -145,6 +152,15 @@ export default function Sidebar(props: Props) {
   // page id, "space:<id>" for a space header, or "root" for the ungrouped
   // section. A single value guarantees only one target can be highlighted.
   const [dropTarget, setDropTarget] = useState<string | null>(null);
+  // The gap a page is hovering over. Kept apart from dropTarget on purpose: a
+  // gap and a row mean two different things -- put between, or hang below -- and
+  // one value for both would light up the wrong one of the two.
+  const [luecke, setLuecke] = useState<TreeGap | null>(null);
+  // The space being dragged, and the one it is hovering over. Spaces are moved
+  // in the same gesture as pages, but they are a list, not a tree, so they need
+  // no target of their own beyond "in front of this one".
+  const [spaceDrag, setSpaceDrag] = useState<string | null>(null);
+  const [spaceZiel, setSpaceZiel] = useState<string | null>(null);
 
   // Descendants of the dragged page. Dropping a page into its own subtree would
   // detach that branch from the tree entirely, so those targets are refused.
@@ -179,6 +195,31 @@ export default function Sidebar(props: Props) {
     if (dragId) onMovePage(dragId, null, spaceId);
     setDragId(null);
     setDropTarget(null);
+  };
+  // Dropping into a gap: same page, but the place among the siblings is named
+  // as well. A gap inside one's own subtree is refused for the same reason a
+  // row there is.
+  const dropInLuecke = (ziel: TreeGap) => {
+    if (dragId && (ziel.elternId === null || canDropOnPage(ziel.elternId))) {
+      onOrdnePage(dragId, ziel);
+    }
+    setDragId(null);
+    setDropTarget(null);
+    setLuecke(null);
+  };
+
+  // Spaces: the whole list is sent, in the order it stands in afterwards. The
+  // sidebar knows that order anyway, and a complete list needs no arithmetic
+  // over neighbours on either side.
+  const dropSpaceVor = (vorId: string | null) => {
+    const gezogen = spaceDrag;
+    setSpaceDrag(null);
+    setSpaceZiel(null);
+    if (!gezogen) return;
+    const ohne = spaces.filter((sp) => sp.id !== gezogen).map((sp) => sp.id);
+    const stelle = vorId === null ? ohne.length : ohne.indexOf(vorId);
+    if (stelle < 0) return;
+    onOrdneSpaces([...ohne.slice(0, stelle), gezogen, ...ohne.slice(stelle)]);
   };
 
   const toggle = (id: string) =>
@@ -275,6 +316,14 @@ export default function Sidebar(props: Props) {
     onDragLeavePage: (id: string) => setDropTarget((t) => (t === id ? null : t)),
     onDropPage: (page: PageMeta) => dropOnPage(page),
     canDropOnPage,
+    luecke,
+    onDragOverLuecke: (l: TreeGap) => {
+      // A gap lights up instead of a row, never both.
+      setDropTarget(null);
+      setLuecke(l);
+    },
+    onDragLeaveLuecke: () => setLuecke(null),
+    onDropLuecke: (l: TreeGap) => dropInLuecke(l),
   };
 
   return (
@@ -435,8 +484,36 @@ export default function Sidebar(props: Props) {
               return (
                 <div className="sidebar-section" key={sp.id}>
                   <div
-                    className={"sidebar-section-title" + (dropTarget === marke ? " drop-target" : "")}
+                    className={
+                      "sidebar-section-title" +
+                      (dropTarget === marke ? " drop-target" : "") +
+                      (spaceZiel === sp.id ? " space-davor" : "") +
+                      (spaceDrag === sp.id ? " dragging" : "")
+                    }
+                    // The heading is the handle for the space itself. Draggable
+                    // only when no page is in flight, otherwise the browser
+                    // would start a second drag out of the first.
+                    draggable={!dragId}
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("text/plain", "space:" + sp.id);
+                      e.dataTransfer.effectAllowed = "move";
+                      setSpaceDrag(sp.id);
+                    }}
+                    onDragEnd={() => {
+                      setSpaceDrag(null);
+                      setSpaceZiel(null);
+                    }}
                     onDragOver={(e) => {
+                      // Two kinds of freight land on this heading: a space,
+                      // which sorts itself in front of this one, and a page,
+                      // which moves into it.
+                      if (spaceDrag) {
+                        if (spaceDrag === sp.id) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        setSpaceZiel(sp.id);
+                        return;
+                      }
                       if (!dragId) return;
                       e.preventDefault();
                       setDropTarget(marke);
@@ -445,9 +522,16 @@ export default function Sidebar(props: Props) {
                       // content one cannot see.
                       aufklappen(marke);
                     }}
-                    onDragLeave={() => setDropTarget((t) => (t === marke ? null : t))}
+                    onDragLeave={() => {
+                      setDropTarget((t) => (t === marke ? null : t));
+                      setSpaceZiel((z) => (z === sp.id ? null : z));
+                    }}
                     onDrop={(e) => {
                       e.preventDefault();
+                      if (spaceDrag) {
+                        dropSpaceVor(sp.id);
+                        return;
+                      }
                       dropOnSpace(sp.id);
                     }}
                   >
@@ -641,6 +725,7 @@ export default function Sidebar(props: Props) {
                     <PageTree
                       pages={spacePages}
                       parentId={null}
+                      spaceId={sp.id}
                       activeId={activeId}
                       expanded={expanded}
                       onToggle={toggle}
@@ -674,19 +759,39 @@ export default function Sidebar(props: Props) {
                 because then it is the target with which one pulls a page back
                 out of its space. An empty heading "Seiten" between named spaces
                 said nothing and only stood in the way. */}
-            {(ungrouped.length > 0 || dragId) && (
+            {(ungrouped.length > 0 || dragId || spaceDrag) && (
             <div className="sidebar-section">
               <div
-                className={"sidebar-section-title" + (dropTarget === "root" ? " drop-target" : "")}
+                className={
+                  "sidebar-section-title" +
+                  (dropTarget === "root" ? " drop-target" : "") +
+                  (spaceZiel === "ende" ? " space-davor" : "")
+                }
                 onDragOver={(e) => {
+                  // This heading stands below every space, so a space dropped
+                  // here goes to the end of the list -- the one place no other
+                  // heading can stand for.
+                  if (spaceDrag) {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    setSpaceZiel("ende");
+                    return;
+                  }
                   if (!dragId) return;
                   e.preventDefault();
                   setDropTarget("root");
                   aufklappen("root");
                 }}
-                onDragLeave={() => setDropTarget((t) => (t === "root" ? null : t))}
+                onDragLeave={() => {
+                  setDropTarget((t) => (t === "root" ? null : t));
+                  setSpaceZiel((z) => (z === "ende" ? null : z));
+                }}
                 onDrop={(e) => {
                   e.preventDefault();
+                  if (spaceDrag) {
+                    dropSpaceVor(null);
+                    return;
+                  }
                   dropOnSpace(null);
                 }}
               >
@@ -731,6 +836,7 @@ export default function Sidebar(props: Props) {
                 <PageTree
                   pages={ungrouped}
                   parentId={null}
+                  spaceId={null}
                   activeId={activeId}
                   expanded={expanded}
                   onToggle={toggle}
@@ -835,7 +941,7 @@ export default function Sidebar(props: Props) {
                 className={"tree-row" + (currentPath === "/graph" ? " active" : "")}
                 onClick={() => onNavigate("/graph")}
               >
-                <span className="tree-label">Wissensgraph</span>
+                <span className="tree-label">Graf</span>
               </div>
               <div
                 className={"tree-row" + (currentPath === "/trash" ? " active" : "")}

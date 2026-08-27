@@ -22,8 +22,10 @@ func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 	// part the shared pages would appear in the sidebar without the space they
 	// belong to, loose instead of ordered.
 	//
-	// Sorted so that the public spaces stand on top: they are the shared ground
-	// and therefore usually what one is looking for.
+	// The order is the one the account dragged for itself; see
+	// space_reihenfolge. Whatever has no place yet stands behind it, the public
+	// spaces first -- they are the shared ground and therefore usually what one
+	// is looking for.
 	rows, err := s.Pool.Query(r.Context(),
 		`SELECT sp.id, sp.owner_id, sp.name, sp.created_at, sp.oeffentlich,
 		        (sp.owner_id <> $1) AS fremd,
@@ -36,6 +38,7 @@ func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 		                       OR sr.gruppe_id IN (SELECT gm.gruppe_id FROM gruppen_mitglieder gm
 		                                           WHERE gm.user_id = $1))))) AS darf_verwalten
 		 FROM spaces sp
+		 LEFT JOIN space_reihenfolge sr2 ON sr2.space_id = sp.id AND sr2.user_id = $1
 		 WHERE sp.owner_id = $1
 		    OR sp.oeffentlich <> 'nein'
 		    OR ($2 AND EXISTS (
@@ -44,7 +47,8 @@ func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 		             AND (sr.user_id = $1
 		                  OR sr.gruppe_id IN (SELECT gm.gruppe_id FROM gruppen_mitglieder gm
 		                                      WHERE gm.user_id = $1))))
-		 ORDER BY (sp.oeffentlich = 'nein'), sp.name`, uid, lizenz.Frei(lizenz.Gruppen))
+		 ORDER BY (sr2.platz IS NULL), sr2.platz,
+		          (sp.oeffentlich = 'nein'), sp.name`, uid, lizenz.Frei(lizenz.Gruppen))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "query failed")
 		return
