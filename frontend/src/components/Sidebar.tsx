@@ -1140,6 +1140,7 @@ export default function Sidebar(props: Props) {
                   symbolTitel="Verwaltung"
                   symbolAktion={() => onNavigate("/einstellungen")}
                   symbolAktiv={currentPath.startsWith("/einstellungen")}
+                  nameFolgtSymbol
                 >
                   Verwaltung
                 </Klapptitel>
@@ -1223,6 +1224,7 @@ function Klapptitel({
   symbolTitel,
   symbolAktion,
   symbolAktiv,
+  nameFolgtSymbol,
   children,
 }: {
   marke: string;
@@ -1236,6 +1238,10 @@ function Klapptitel({
   // If an action is given, the symbol becomes a button. Without one it stays a
   // pure label.
   symbolAktion?: () => void;
+  // Lets the name do what the symbol does, instead of folding. Where a heading
+  // leads somewhere, the word beside the icon is the first thing one clicks --
+  // and folding is then still one click away, on the triangle.
+  nameFolgtSymbol?: boolean;
   // Highlights the symbol as long as one stands on the view it opens. Without
   // that one would lose the indication of where one is on clicking; the row that
   // used to do that does not exist any more.
@@ -1271,7 +1277,11 @@ function Klapptitel({
         ) : (
           <span className="klapp-symbol">{symbol}</span>
         ))}
-      <span className="klapp-name" onClick={() => klappen(marke)}>
+      <span
+        className={"klapp-name" + (nameFolgtSymbol && symbolAktion ? " klapp-name-fuehrt" : "")}
+        title={nameFolgtSymbol && symbolAktion ? symbolTitel : undefined}
+        onClick={() => (nameFolgtSymbol && symbolAktion ? symbolAktion() : klappen(marke))}
+      >
         {children}
       </span>
       {/* The number only while collapsed: expanded one counts oneself. */}
