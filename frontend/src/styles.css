@@ -2190,6 +2190,14 @@ a {
   color: var(--text);
 }
 
+/* Wo die Ueberschrift irgendwohin fuehrt, faerbt sich das Wort unter dem Zeiger
+   wie das Zahnrad daneben -- sonst sieht man ihm nicht an, dass es mehr tut als
+   zuklappen. */
+.klapp-name-fuehrt:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
 /* The name folds along. mr: auto pushes everything else, the count and the
    buttons, to the right, as the heading with space-between intends anyway. */
 .klapp-name {
