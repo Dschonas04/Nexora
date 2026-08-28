@@ -505,9 +505,6 @@ export default function Sidebar(props: Props) {
       />
       <div className="sidebar-header">
         <span className="brand">Nexora</span>
-        <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
-          +
-        </button>
         {/* Ganz rechts, weil er die Leiste als Ganzes betrifft und nicht das,
             was in ihr steht. */}
         <button
@@ -613,7 +610,15 @@ export default function Sidebar(props: Props) {
           sections. */}
       {results === null && (
         <div className="sidebar-werkzeuge">
-          <button className="text-btn" onClick={onCreateSpace}>
+          {/* Alles, womit etwas entsteht oder das Haus verlässt, steht in
+              dieser einen Zeile beieinander: neue Seite, neue Ablage, Import,
+              Export. Die neue Seite hing vorher als blankes Plus oben in der
+              Kopfzeile -- ein Zeichen ohne Wort, weit weg von den drei anderen,
+              die dasselbe tun. */}
+          <button className="text-btn" title="Neue Seite ganz oben anlegen" onClick={() => onCreateRoot()}>
+            + Seite
+          </button>
+          <button className="text-btn" title="Neue Ablage anlegen" onClick={onCreateSpace}>
             + Space
           </button>
           {/* Labelled instead of an arrow: an icon alone does not say that a
@@ -631,7 +636,7 @@ export default function Sidebar(props: Props) {
                 setEinfuhrOffen((v) => !v);
               }}
             >
-              ↑ Import
+              Import
             </button>
             {einfuhrOffen && (
               <div className="klappliste" onMouseLeave={() => setEinfuhrOffen(false)}>
@@ -675,7 +680,7 @@ export default function Sidebar(props: Props) {
                   setAusfuhrOffen((v) => !v);
                 }}
               >
-                ↓ Export
+                Export
               </button>
               {ausfuhrOffen && (
                 <div
@@ -744,7 +749,7 @@ export default function Sidebar(props: Props) {
           {/* Jede Ablage einzeln zuzuklappen ist bei einem Dutzend Ablagen ein
               Dutzend Klicks. Hier ist es einer. */}
           <button
-            className="text-btn"
+            className="text-btn klapp-alles"
             title={alleZu ? "Alle Abschnitte wieder aufklappen" : "Alle Abschnitte zuklappen"}
             onClick={alleKlappen}
           >
