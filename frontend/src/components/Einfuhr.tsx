@@ -94,7 +94,7 @@ export default function Einfuhr({
       <div className="qv-box einfuhr-box" onClick={(e) => e.stopPropagation()}>
         <div className="qv-head">
           <span className="qv-title">
-            Einfuhr nach „{alsAblage ? ablageName.trim() || "neuer Ablage" : zielName}“
+            Import nach „{alsAblage ? ablageName.trim() || "neuer Ablage" : zielName}“
           </span>
           <div className="qv-actions">
             <button className="btn" disabled={laeuft} onClick={onClose}>
@@ -184,12 +184,12 @@ export default function Einfuhr({
                   sie der Inhalt der Ordnerseite.
                 </p>
                 <p>
-                  Damit lassen sich ein <strong>Obsidian</strong>-Tresor, eine{" "}
-                  <strong>Notion</strong>-Ausfuhr (die Kennung im Dateinamen fällt weg) und ein{" "}
-                  <strong>Confluence</strong>-Export aus HTML-Dateien einlesen.
+                  Damit lassen sich ein <strong>Obsidian</strong>-Tresor, ein{" "}
+                  <strong>Notion</strong>-Export (die Kennung im Dateinamen fällt weg) und ein{" "}
+                  <strong>Confluence</strong>-Export aus HTML-Dateien importieren.
                 </p>
                 <p>
-                  Verweise zwischen eingeführten Dateien werden zu{" "}
+                  Verweise zwischen importierten Dateien werden zu{" "}
                   <code>[[Seitentitel]]</code> und zählen damit für Rückverweise und das
                   Wissensnetz. Bilder und andere Dateien aus dem Archiv werden Anhänge der Seite,
                   die sie verwendet.
