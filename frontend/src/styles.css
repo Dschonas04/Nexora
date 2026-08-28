@@ -238,16 +238,20 @@ a {
   font-weight: 500;
 }
 
+/* Das Dreieck einer Seitenzeile. Es stand auf 10px und war damit eher zu ahnen
+   als zu treffen; die Fläche darum bleibt so breit, dass die Einrückung der
+   Ebenen unverändert bleibt. */
 .tree-caret {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--muted);
   border-radius: 4px;
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 17px;
+  line-height: 1;
 }
 
 .tree-caret:hover {
@@ -2231,10 +2235,10 @@ textarea::placeholder {
   background: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 18px;
+  font-size: 22px;
   line-height: 1;
-  width: 22px;
-  flex: 0 0 22px;
+  width: 26px;
+  flex: 0 0 26px;
   padding: 0;
   text-align: left;
 }
