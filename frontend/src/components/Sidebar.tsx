@@ -619,7 +619,7 @@ export default function Sidebar(props: Props) {
             + Seite
           </button>
           <button className="text-btn" title="Neue Ablage anlegen" onClick={onCreateSpace}>
-            + Space
+            + Ablage
           </button>
           {/* Labelled instead of an arrow: an icon alone does not say that a
               whole archive can be read in here, and since the import can create
@@ -907,7 +907,7 @@ export default function Sidebar(props: Props) {
                       {frei("gruppen") && sp.darfVerwalten && (
                         <button
                           className="icon-btn"
-                          title="Rechte an diesem Space"
+                          title="Rechte an dieser Ablage"
                           onClick={() => setRechteFuer({ id: sp.id, name: sp.name })}
                         >
                           ⚿
