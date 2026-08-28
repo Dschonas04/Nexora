@@ -15,6 +15,7 @@ import { useLizenz } from "../lizenz";
 import { schriftAuf } from "../farbe";
 import LocalGraph from "../components/LocalGraph";
 import { useEingabe } from "../components/Rueckfrage";
+import { useAussenklick } from "../klappen";
 
 interface Props {
   allTags: Tag[];
@@ -106,6 +107,11 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   const [anhangTick, setAnhangTick] = useState(0);
   const [exportOffen, setExportOffen] = useState(false);
   const [breiteOffen, setBreiteOffen] = useState(false);
+  // Auch hier: ein Klick daneben und Escape machen zu. Ein offenes Menü über
+  // dem Text ist schlimmer als eines in der Leiste, denn darunter liegt der
+  // Editor.
+  const exportBereich = useAussenklick<HTMLDivElement>(exportOffen, () => setExportOffen(false));
+  const breiteBereich = useAussenklick<HTMLDivElement>(breiteOffen, () => setBreiteOffen(false));
   // Refs rather than state: changing either must not trigger a render. The timer
   // drives the debounced autosave, the editor handle is needed for the markdown
   // export.
@@ -430,7 +436,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                 Die Wahl hängt an der Seite: eine Tabellenseite soll jeder so
                 sehen, wie ihr Verfasser sie gesetzt hat. */}
             {canEdit && (
-              <div className="exportmenue">
+              <div className="exportmenue" ref={breiteBereich}>
                 <button
                   className="btn"
                   title="Wie breit der Text auf dieser Seite steht"
@@ -473,7 +479,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
             {/* A menu instead of three buttons: the header is full already, and
                 three formats side by side say no more than one with a
                 choice. */}
-            <div className="exportmenue">
+            <div className="exportmenue" ref={exportBereich}>
               <button className="btn" onClick={() => setExportOffen((v) => !v)}>
                 Export ▾
               </button>

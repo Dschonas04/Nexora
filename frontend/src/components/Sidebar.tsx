@@ -7,6 +7,7 @@ import { PageMeta, SearchHit, Space, SuchFilter, Tag, api } from "../api/client"
 import { useLizenz } from "../lizenz";
 import { useAuth } from "../auth";
 import PageTree, { TreeGap } from "./PageTree";
+import { useAussenklick } from "../klappen";
 import SpaceRechte from "./SpaceRechte";
 import Einfuhr from "./Einfuhr";
 
@@ -247,6 +248,22 @@ export default function Sidebar(props: Props) {
   const [einfuhrOffen, setEinfuhrOffen] = useState(false);
   const [ausfuhrOffen, setAusfuhrOffen] = useState(false);
   const [exportFuer, setExportFuer] = useState<string | null>(null);
+  // Ein Klick daneben und Escape schließen die beiden Menüs. Ohne das blieben
+  // sie über dem Seitenbaum stehen, sobald man sie öffnete, ohne sie zu
+  // berühren -- und fingen dort die Klicks ab.
+  // Nur was auch Seiten enthält. Eine leere Ablage auszugeben endete auf einer
+  // rohen Fehlerseite des Servers -- der Sprung auf die Adresse verlässt die
+  // Anwendung, und wo eine Datei kommen sollte, stand dann {"error": ...}.
+  // Seiten ohne Ablage kommen als eigener Eintrag dazu; der Server kennt sie
+  // unter "ohne", angeboten wurden sie nie.
+  const ausgebbar = spaces.filter((sp) => pages.some((p) => (p.spaceId ?? null) === sp.id));
+  const ohneAblage = pages.some((p) => (p.spaceId ?? null) === null);
+
+  const einfuhrBereich = useAussenklick<HTMLDivElement>(einfuhrOffen, () => setEinfuhrOffen(false));
+  const ausfuhrBereich = useAussenklick<HTMLDivElement>(ausfuhrOffen, () => {
+    setAusfuhrOffen(false);
+    setExportFuer(null);
+  });
   // Ziel der Einfuhr, solange ihr Kasten offen steht.
   const [einfuhrZiel, setEinfuhrZiel] = useState<
     { ziel: { parentId?: string; spaceId?: string }; name: string } | null
@@ -605,7 +622,7 @@ export default function Sidebar(props: Props) {
           {/* Einlesen fragt zuerst, wohin. Frueher hing an jeder Ablage ein
               eigener Pfeil dafuer; die Frage ist dieselbe, sie steht jetzt nur
               einmal da statt an jeder Ueberschrift. */}
-          <div className="klappmenue">
+          <div className="klappmenue" ref={einfuhrBereich}>
             <button
               className="text-btn"
               title="Markdown, HTML oder ein ZIP einlesen, wahlweise als eigene Ablage"
@@ -647,8 +664,8 @@ export default function Sidebar(props: Props) {
               Browser den Dateinamen aus dem Content-Disposition-Kopf und
               schreibt den Strom direkt auf die Platte, statt ihn erst in den
               Speicher zu ziehen. */}
-          {frei("export") && spaces.length > 0 && (
-            <div className="klappmenue">
+          {frei("export") && (ausgebbar.length > 0 || ohneAblage) && (
+            <div className="klappmenue" ref={ausfuhrBereich}>
               <button
                 className="text-btn"
                 title="Eine ganze Ablage ausgeben, als ZIP, PDF oder Word"
@@ -671,7 +688,7 @@ export default function Sidebar(props: Props) {
                   {exportFuer === null ? (
                     <>
                       <div className="klappliste-titel">Welche Ablage</div>
-                      {spaces.map((sp) => (
+                      {ausgebbar.map((sp) => (
                         <button
                           key={sp.id}
                           className="klappeintrag"
@@ -680,11 +697,19 @@ export default function Sidebar(props: Props) {
                           {sp.name}
                         </button>
                       ))}
+                      {ohneAblage && (
+                        <button className="klappeintrag" onClick={() => setExportFuer("ohne")}>
+                          Seiten ohne Ablage
+                        </button>
+                      )}
                     </>
                   ) : (
                     <>
                       <div className="klappliste-titel">
-                        {spaces.find((sp) => sp.id === exportFuer)?.name ?? "Ablage"} ausgeben
+                        {exportFuer === "ohne"
+                          ? "Seiten ohne Ablage"
+                          : (spaces.find((sp) => sp.id === exportFuer)?.name ?? "Ablage")}{" "}
+                        ausgeben
                       </div>
                       {(
                         [
