@@ -1264,18 +1264,23 @@ textarea::placeholder {
   color: var(--muted);
   margin-bottom: 8px;
 }
-.local-graph-svg {
-  max-width: 560px;
-  display: block;
+/* Der kleine Graf ist ein Bild in der Seite, kein Fenster: ein Rahmen darum
+   sagt, wo er anfängt und aufhört, sonst schwebten die Punkte im Text. */
+.local-graph .graph-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--flaeche);
+  max-width: 720px;
 }
-.local-node {
-  cursor: pointer;
-}
-.local-node:hover circle {
-  fill: #1a73d0;
-}
-.local-node:hover text {
-  fill: #2383e2;
+/* Der Hinweis steht hier kleiner und blasser als im großen Bild: dort ist er
+   die Bedienungsanleitung der Ansicht, hier eine Fußnote. */
+.local-graph .graph-hint {
+  top: 8px;
+  left: 10px;
+  font-size: 11px;
+  background: none;
+  border: none;
+  padding: 0;
 }
 .tree-row.drop-target,
 .sidebar-section-title.drop-target {
