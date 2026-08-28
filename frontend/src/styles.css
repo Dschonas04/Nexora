@@ -1949,6 +1949,16 @@ textarea::placeholder {
 .sidebar-werkzeuge {
   position: relative;
 }
+/* Das Einklappen beginnt eine eigene Zeile. Es entsteht nichts damit, es
+   schaltet nur die Ansicht -- und ohne die feste Trennung hinge es je nach
+   Breite der Leiste mal hinter dem Export, mal darunter. */
+.sidebar-werkzeuge .klapp-alles {
+  flex-basis: 100%;
+  /* Über die ganze Breite, also muss die Ausrichtung gesagt werden: ein Knopf
+     richtet seine Beschriftung sonst mittig aus, und das Wort stünde als
+     einziges in der Leiste in der Mitte. */
+  text-align: left;
+}
 .sidebar-werkzeuge .klappmenue,
 .sidebar-werkzeuge .exportmenue {
   position: static;
@@ -2889,7 +2899,7 @@ textarea::placeholder {
      sonst der Pfeil ueber sein Wort und das Werkzeug sieht zerbrochen aus.
      Deshalb hier wrap und beim Knopf nowrap. */
   flex-wrap: wrap;
-  gap: 4px 10px;
+  gap: 4px 8px;
   padding: 2px 12px 6px;
 }
 
