@@ -46,7 +46,10 @@ export default function LocalGraph({ graph, pageId, onOpen }: Props) {
         onOeffnen={onOpen}
         mitte={pageId}
         physik={PHYSIK_KLEIN}
-        hoehe={300}
+        // Die Höhe wächst mit: bei zwei Knoten stand die untere Hälfte des
+        // Kastens leer, bei zwölf wurde es eng. Nach oben gedeckelt, damit der
+        // Graf ein Bild in der Seite bleibt und keine zweite Ansicht.
+        hoehe={Math.min(340, 150 + knoten.length * 22)}
         // Am Rad wird die Seite gescrollt, nicht gezoomt: ein Graf, der beim
         // Vorbeiscrollen den Text festhält und sich selbst zusammenzieht, ist
         // eine Falle mitten in der Seite.
