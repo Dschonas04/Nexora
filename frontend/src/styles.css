@@ -2899,8 +2899,11 @@ textarea::placeholder {
      sonst der Pfeil ueber sein Wort und das Werkzeug sieht zerbrochen aus.
      Deshalb hier wrap und beim Knopf nowrap. */
   flex-wrap: wrap;
-  gap: 4px 8px;
-  padding: 2px 12px 6px;
+  /* Eng gesetzt, weil vier Wörter in eine 260px breite Leiste müssen: mit
+     dem weiteren Abstand von vorher fiel der Export in die nächste Zeile,
+     sobald aus dem Space eine Ablage wurde. */
+  gap: 4px 6px;
+  padding: 2px 10px 6px;
 }
 
 /* First start: no tree, no empty headings, only the next step. */
