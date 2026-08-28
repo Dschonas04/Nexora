@@ -81,10 +81,6 @@ type createPageReq struct {
 	Title    string  `json:"title"`
 	ParentID *string `json:"parentId"`
 	SpaceID  *string `json:"spaceId"`
-	// VorlageID copies the content of a template into the new page. Copied, not
-	// linked: a template changed later leaves existing pages alone. That is what
-	// one expects from the word "template" and not from the word "link".
-	VorlageID string `json:"vorlageId"`
 }
 
 // CreatePage adds an empty page. A decode error is tolerated because an empty
@@ -105,19 +101,13 @@ func (s *Server) CreatePage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Content from the template, if one was given. If it is not readable or not
-	// a template at all, the page is created empty; that is more harmless than
-	// letting the call fail.
-	inhalt, icon := s.inhaltAusVorlage(r, uid, req.VorlageID)
-	if len(inhalt) == 0 {
-		inhalt = json.RawMessage("[]")
-	}
+	inhalt := json.RawMessage("[]")
 
 	var id string
 	err := s.Pool.QueryRow(r.Context(),
-		`INSERT INTO pages (owner_id, parent_id, space_id, title, content, icon, content_text)
-		 VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7) RETURNING id`,
-		uid, req.ParentID, req.SpaceID, req.Title, string(inhalt), icon,
+		`INSERT INTO pages (owner_id, parent_id, space_id, title, content, content_text)
+		 VALUES ($1, $2, $3, $4, $5::jsonb, $6) RETURNING id`,
+		uid, req.ParentID, req.SpaceID, req.Title, string(inhalt),
 		textAusInhalt(inhalt),
 	).Scan(&id)
 	if err != nil {

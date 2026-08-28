@@ -76,12 +76,8 @@ export default function Workspace() {
 
   // Navigate to the new page only after the tree has been refreshed, otherwise
   // the sidebar would briefly show no entry for the page now open.
-  const createPage = async (
-    parentId: string | null,
-    spaceId: string | null = null,
-    vorlageId?: string,
-  ) => {
-    const p = await api.createPage(parentId, spaceId, vorlageId);
+  const createPage = async (parentId: string | null, spaceId: string | null = null) => {
+    const p = await api.createPage(parentId, spaceId);
     await refreshPages();
     nav(`/page/${p.id}`);
   };
@@ -197,7 +193,7 @@ export default function Workspace() {
         spaces={spaces}
         activeId={activeId}
         onSelect={(id) => nav(`/page/${id}`)}
-        onCreateRoot={(vorlageId?: string) => createPage(null, null, vorlageId)}
+        onCreateRoot={() => createPage(null, null)}
         onCreateChild={(pid) => createPage(pid)}
         onCreateInSpace={(sid) => createPage(null, sid)}
         onDelete={deletePage}

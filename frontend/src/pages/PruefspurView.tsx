@@ -39,8 +39,12 @@ const BESCHRIFTUNG: Record<string, string> = {
   "einstellung.zurueckgesetzt": "Einstellung zurückgesetzt",
   "suchindex.neu": "Suchindex neu aufgebaut",
   "lizenz.geladen": "Lizenz geladen",
-  "vorlage.gesetzt": "Als Vorlage gesetzt",
-  "vorlage.aufgehoben": "Vorlage aufgehoben",
+  // Die Vorlagen gibt es nicht mehr. Die beiden Namen bleiben trotzdem stehen:
+  // in einer Prüfspur, die Jahre zurückreicht, stehen sie weiterhin, und eine
+  // Zeile, die nur noch ihren rohen Schlüssel zeigt, ist genau dort unlesbar,
+  // wo jemand nachschlägt.
+  "vorlage.gesetzt": "Als Vorlage gesetzt (Funktion entfernt)",
+  "vorlage.aufgehoben": "Vorlage aufgehoben (Funktion entfernt)",
   "space.exportiert": "Ablage exportiert",
   "space.oeffentlich": "Ablage-Sichtbarkeit geändert",
   "gruppe.angelegt": "Gruppe angelegt",

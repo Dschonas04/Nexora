@@ -442,7 +442,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                   Breite ▾
                 </button>
                 {breiteOffen && (
-                  <div className="vorlagenliste" onMouseLeave={() => setBreiteOffen(false)}>
+                  <div className="klappliste" onMouseLeave={() => setBreiteOffen(false)}>
                     {(
                       [
                         ["normal", "Normal", "Zum Lesen gesetzt"],
@@ -452,7 +452,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                     ).map(([wert, titel, erklaerung]) => (
                       <button
                         key={wert}
-                        className={"vorlageneintrag" + (page.breite === wert ? " gewaehlt" : "")}
+                        className={"klappeintrag" + (page.breite === wert ? " gewaehlt" : "")}
                         onClick={async () => {
                           setBreiteOffen(false);
                           // Erst anzeigen, dann speichern: die Breite ist ein
@@ -463,7 +463,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                         }}
                       >
                         {titel}
-                        <span className="vorlageneintrag-hinweis">{erklaerung}</span>
+                        <span className="klappeintrag-hinweis">{erklaerung}</span>
                       </button>
                     ))}
                   </div>
@@ -478,8 +478,8 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                 Export ▾
               </button>
               {exportOffen && (
-                <div className="vorlagenliste" onMouseLeave={() => setExportOffen(false)}>
-                  <button className="vorlageneintrag" onClick={() => exportieren("markdown")}>
+                <div className="klappliste" onMouseLeave={() => setExportOffen(false)}>
+                  <button className="klappeintrag" onClick={() => exportieren("markdown")}>
                     Markdown (.md)
                   </button>
                   {/* PDF and Word belong to the paid extras. Markdown does not:
@@ -487,10 +487,10 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                       licence. */}
                   {frei("export") && (
                     <>
-                      <button className="vorlageneintrag" onClick={() => exportieren("pdf")}>
+                      <button className="klappeintrag" onClick={() => exportieren("pdf")}>
                         PDF (.pdf)
                       </button>
-                      <button className="vorlageneintrag" onClick={() => exportieren("word")}>
+                      <button className="klappeintrag" onClick={() => exportieren("word")}>
                         Word (.docx)
                       </button>
                     </>
@@ -498,26 +498,6 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                 </div>
               )}
             </div>
-            {/* Only the owner decides. Declaring somebody else's page a template
-                would make it appear in every colleague's new menu, which would
-                be a change to another person's property. */}
-            {page.isOwner && frei("vorlagen") && (
-              <button
-                className={"btn" + (page.istVorlage ? " active" : "")}
-                title={
-                  page.istVorlage
-                    ? "Diese Seite dient als Vorlage für neue Seiten"
-                    : "Diese Seite als Vorlage anbieten"
-                }
-                onClick={async () => {
-                  const r = await api.vorlageUmschalten(page.id);
-                  setPage({ ...page, istVorlage: r.istVorlage });
-                  onMetaChange();
-                }}
-              >
-                {page.istVorlage ? "Vorlage" : "Als Vorlage"}
-              </button>
-            )}
             {page.isOwner && frei("freigeben") && (
               <button className={"btn" + (page.isPublic ? " active" : "")} onClick={() => setShowShare(true)}>
                 Teilen

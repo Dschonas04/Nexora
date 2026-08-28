@@ -31,7 +31,6 @@ const (
 	LDAP        Funktion = "ldap"        // sign-in against LDAP or Active Directory
 	Anhangsuche Funktion = "anhangsuche" // full text search inside attachments
 	Export      Funktion = "export"      // exporting a whole space
-	Vorlagen    Funktion = "vorlagen"    // page templates
 	Kommentare  Funktion = "kommentare"  // comments on pages
 	Konflikte   Funktion = "konflikte"   // detecting concurrent edits
 )
@@ -40,7 +39,7 @@ const (
 // generator, so that both sides always agree on what exists.
 var Alle = []Funktion{
 	Versionen, Anhaenge, Freigeben,
-	Pruefspur, Gruppen, SSO, LDAP, Anhangsuche, Export, Vorlagen, Kommentare, Konflikte,
+	Pruefspur, Gruppen, SSO, LDAP, Anhangsuche, Export, Kommentare, Konflikte,
 }
 
 // Stufe is a bundle of features, the thing that is sold.
@@ -66,7 +65,7 @@ var StufenReihe = []Stufe{StufeFrei, StufeAdvanced, StufePro, StufeBusiness}
 // rearrangement one of them would no longer be right.
 var stufenZusatz = map[Stufe][]Funktion{
 	StufeFrei:     {},
-	StufeAdvanced: {Versionen, Anhaenge, Vorlagen, Kommentare},
+	StufeAdvanced: {Versionen, Anhaenge, Kommentare},
 	StufePro:      {Freigeben, Konflikte, Export, Anhangsuche},
 	StufeBusiness: {Gruppen, Pruefspur, SSO, LDAP},
 }

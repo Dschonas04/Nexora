@@ -62,7 +62,6 @@ const ZUSATZ: Record<string, string> = {
   ldap: "LDAP und Active Directory",
   anhangsuche: "Volltext in Anhängen",
   export: "Space-Export",
-  vorlagen: "Vorlagen",
   kommentare: "Kommentare",
   konflikte: "Konflikterkennung",
 };

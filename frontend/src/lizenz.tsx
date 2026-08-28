@@ -19,7 +19,6 @@ export type Extra =
   | "ldap"
   | "anhangsuche"
   | "export"
-  | "vorlagen"
   | "kommentare"
   | "konflikte";
 
