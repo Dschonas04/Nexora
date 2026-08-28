@@ -111,7 +111,7 @@ export default function GruppenView() {
     <div className="gruppenliste">
       <h3>Gruppen</h3>
       <p className="muted small">
-        Eine Gruppe bündelt Konten. Zugriff bekommt sie nicht hier, sondern an einem Space —
+        Eine Gruppe bündelt Konten. Zugriff bekommt sie nicht hier, sondern an einer Ablage —
         über das Schlüsselsymbol neben seinem Namen in der Seitenleiste.
       </p>
 

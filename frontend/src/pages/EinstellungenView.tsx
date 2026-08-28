@@ -40,7 +40,7 @@ const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
   // Both are administration and are rarely touched; they belong where one looks
   // anyway when one wants to set something.
   { id: "nutzer", titel: "Nutzer", unter: "Konten, Rollen, Zugänge" },
-  { id: "gruppen", titel: "Gruppen", unter: "Konten bündeln für Space-Rechte" },
+  { id: "gruppen", titel: "Gruppen", unter: "Konten bündeln für Ablage-Rechte" },
   { id: "sicherheit", titel: "Sicherheit", unter: "Registrierung, Laufzeiten, Administratoren" },
   { id: "sitzungen", titel: "Sitzungen", unter: "Angemeldete Geräte, einzeln beendbar" },
   { id: "datenbank", titel: "Datenbank", unter: "Größe, Tabellen, Belegung" },
@@ -57,11 +57,11 @@ const ZUSATZ: Record<string, string> = {
   anhaenge: "Anhänge",
   freigeben: "Teilen und öffentliche Links",
   pruefspur: "Protokoll",
-  gruppen: "Gruppen und Space-Rechte",
+  gruppen: "Gruppen und Ablage-Rechte",
   sso: "SSO über OIDC",
   ldap: "LDAP und Active Directory",
   anhangsuche: "Volltext in Anhängen",
-  export: "Space-Export",
+  export: "Ablage-Export",
   kommentare: "Kommentare",
   konflikte: "Konflikterkennung",
 };
