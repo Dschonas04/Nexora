@@ -123,10 +123,10 @@ func (s *Server) loadPage(ctx context.Context, viewerID, pageID string) (*models
 	var p models.Page
 	var content []byte
 	err := s.Pool.QueryRow(ctx,
-		`SELECT id, owner_id, parent_id, space_id, title, content, icon, is_public, public_token, ist_vorlage, created_at, updated_at
+		`SELECT id, owner_id, parent_id, space_id, title, content, icon, is_public, public_token, ist_vorlage, breite, created_at, updated_at
 		 FROM pages WHERE id = $1 AND deleted_at IS NULL`, pageID).Scan(
 		&p.ID, &p.OwnerID, &p.ParentID, &p.SpaceID, &p.Title, &content, &p.Icon,
-		&p.IsPublic, &p.PublicToken, &p.IstVorlage, &p.CreatedAt, &p.UpdatedAt,
+		&p.IsPublic, &p.PublicToken, &p.IstVorlage, &p.Breite, &p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
 		return nil, err

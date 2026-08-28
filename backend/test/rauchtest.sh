@@ -344,6 +344,31 @@ pruefe "leere Liste wird abgewiesen" "400" \
        "$(code -X PUT "$BASIS/api/spaces/reihenfolge" -H 'Content-Type: application/json' \
           -d '{"ids":[]}')"
 
+echo "== Satzspiegel einer Seite"
+BREIT=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
+        -d '{"title":"Breite Seite"}' | feld "['id']")
+pruefe "steht anfangs auf normal" "normal" "$(hole "$BASIS/api/pages/$BREIT" | feld "['breite']")"
+pruefe "auf breit gesetzt" "200" \
+       "$(code -X PUT "$BASIS/api/pages/$BREIT/breite" -H 'Content-Type: application/json' \
+          -d '{"breite":"breit"}')"
+pruefe "steht jetzt auf breit" "breit" "$(hole "$BASIS/api/pages/$BREIT" | feld "['breite']")"
+pruefe "Unsinn wird abgewiesen" "400" \
+       "$(code -X PUT "$BASIS/api/pages/$BREIT/breite" -H 'Content-Type: application/json' \
+          -d '{"breite":"riesig"}')"
+
+echo "== Was ohne Lizenz zu bleibt"
+# Anhänge, Freigaben, Kommentare und die Ausgabe einer ganzen Ablage sind
+# kostenpflichtige Zusätze. Ohne Lizenz lässt sich hier nichts davon
+# durchspielen; geprüft wird darum, dass die Wege verschlossen sind und nicht
+# etwa mit einem Fehler antworten, der nach einem Defekt aussieht.
+pruefe "Anhänge sind zu" "402" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" "$BASIS/api/pages/$BREIT/attachments")"
+pruefe "Freigabe ist zu" "402" "$(code -X POST "$BASIS/api/pages/$BREIT/share")"
+pruefe "die @-Liste ist zu" "402" "$(code "$BASIS/api/pages/$BREIT/erwaehnbare")"
+pruefe "die Ausgabe einer Ablage ist zu" "402" "$(code "$BASIS/api/spaces/$ABL_ID/export")"
+pruefe "der öffentliche Weg zu einer Datei ist zu" "402" \
+       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/public/egal/dateien/egal")"
+
 echo
 if [ "$fehler" -gt 0 ]; then
     echo "$fehler Prüfungen sind gefallen." >&2

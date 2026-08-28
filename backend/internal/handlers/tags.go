@@ -370,6 +370,7 @@ type publicPage struct {
 	Title     string          `json:"title"`
 	Content   json.RawMessage `json:"content"`
 	Icon      string          `json:"icon"`
+	Breite    string          `json:"breite"`
 	UpdatedAt time.Time       `json:"updatedAt"`
 }
 
@@ -377,16 +378,20 @@ type publicPage struct {
 // read endpoint outside the auth middleware. is_public is checked as well as
 // the token, so revoking a link takes effect even if the old token were reused.
 func (s *Server) GetPublicPage(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
 	var p publicPage
+	var seitenID string
 	var content []byte
 	err := s.Pool.QueryRow(r.Context(),
-		`SELECT title, content, icon, updated_at FROM pages
-		 WHERE public_token=$1 AND is_public=true`, chi.URLParam(r, "token")).
-		Scan(&p.Title, &content, &p.Icon, &p.UpdatedAt)
+		`SELECT id::text, title, content, icon, breite, updated_at FROM pages
+		 WHERE public_token=$1 AND is_public=true AND deleted_at IS NULL`, token).
+		Scan(&seitenID, &p.Title, &content, &p.Icon, &p.Breite, &p.UpdatedAt)
 	if err != nil {
 		writeErr(w, http.StatusNotFound, "not found")
 		return
 	}
-	p.Content = json.RawMessage(content)
+	// Bilder und Anhaenge auf den oeffentlichen Weg umschreiben, sonst zeigt die
+	// Seite dem Besucher lauter zerbrochene Bilder.
+	p.Content = adressenOeffnen(json.RawMessage(content), seitenID, token)
 	writeJSON(w, http.StatusOK, p)
 }

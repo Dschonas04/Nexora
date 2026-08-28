@@ -146,6 +146,11 @@ func main() {
 		// 402 without a license instead of serving the page.
 		r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
 			Get("/public/{token}", h.GetPublicPage)
+		// Die Bilder und Anhaenge einer geteilten Seite. Ohne diesen Weg zeigt
+		// eine bebilderte Seite dem Besucher nur zerbrochene Bilder, denn der
+		// gewoehnliche Anhangweg verlangt eine Sitzung.
+		r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
+			Get("/public/{token}/dateien/{attId}", h.OeffentlicheDatei)
 
 		// Everything below requires a valid session cookie. Ownership and sharing
 		// are checked per request inside the handlers, not here.
@@ -187,6 +192,9 @@ func main() {
 			// gesture. Registered before the wildcard routes below for the same
 			// reason as the static /pages/... ones above.
 			r.Put("/pages/{id}/reihenfolge", h.SeiteVerschieben)
+			// Der Satzspiegel einer Seite. Frei wie die Seite selbst: an den
+			// eigenen Text heranzukommen darf an keiner Lizenz haengen.
+			r.Put("/pages/{id}/breite", h.SetzeBreite)
 			r.Post("/pages/{id}/restore", h.RestorePage)
 			r.Delete("/pages/{id}/purge", h.PurgePage) // deletes for good, cascades to subpages
 			r.Post("/pages/{id}/favorite", h.AddFavorite)
@@ -263,6 +271,9 @@ func main() {
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Kommentare))
 				r.Get("/pages/{id}/kommentare", h.ListKommentare)
+				// Wen man hier mit @ ansprechen kann. Gehoert zu den
+				// Kommentaren und teilt darum deren Zusatz.
+				r.Get("/pages/{id}/erwaehnbare", h.ErwaehnbarePersonen)
 				r.Post("/pages/{id}/kommentare", h.CreateKommentar)
 				r.Put("/kommentare/{kommentarId}", h.UpdateKommentar)
 				r.Delete("/kommentare/{kommentarId}", h.DeleteKommentar)

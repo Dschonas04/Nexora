@@ -83,6 +83,8 @@ export interface Page {
   isOwner: boolean;
   /** Whether this page is offered as a template when creating new ones. */
   istVorlage: boolean;
+  /** Satzspiegel: "normal", "breit" oder "voll". Gehört zur Seite, nicht zum Leser. */
+  breite: Seitenbreite;
   createdAt: string;
   updatedAt: string;
 }
@@ -93,8 +95,13 @@ export interface PublicPage {
   title: string;
   content: unknown;
   icon: string;
+  breite: Seitenbreite;
   updatedAt: string;
 }
+
+/** Die drei Satzspiegel. Eine feste Liste: hinter den Namen stehen Werte im
+    Stilblatt, eine freie Pixelangabe wäre eine Zahl, die niemand mehr prüft. */
+export type Seitenbreite = "normal" | "breit" | "voll";
 
 // PageVersion is one entry in a page's history. content is optional because the
 // list endpoint omits it and only a single fetched version carries it.
@@ -224,6 +231,12 @@ export interface Spureintrag {
 
 // Kommentar is one entry on a page. A deleted one keeps its place in the thread
 // with an empty text, so replies hanging off it do not lose their context.
+/** Ein Konto, so wie es in der @-Auswahl steht. Nur der Name: eine Erwähnung
+    ist der Name im Text, und die Adresse ginge niemanden etwas an. */
+export interface Person {
+  name: string;
+}
+
 export interface Kommentar {
   id: string;
   elternId: string | null;
@@ -534,6 +547,9 @@ export const api = {
     ),
 
   kommentare: (pageId: string) => req<Kommentar[]>(`/pages/${pageId}/kommentare`),
+  // Wen man in einem Kommentar zu dieser Seite mit @ ansprechen kann: genau die
+  // Konten, die sie lesen dürfen. Die anderen bekämen ohnehin keine Nachricht.
+  erwaehnbare: (pageId: string) => req<Person[]>(`/pages/${pageId}/erwaehnbare`),
   kommentarAnlegen: (pageId: string, text: string, elternId?: string) =>
     req<Kommentar>(`/pages/${pageId}/kommentare`, {
       method: "POST",
@@ -580,6 +596,13 @@ export const api = {
     req<{ recht: string }>(`/spaces/${spaceId}/rechte`, {
       method: "PUT",
       body: JSON.stringify({ gruppeId: ziel.gruppeId ?? "", userId: ziel.userId ?? "", recht }),
+    }),
+  // Der Satzspiegel einer Seite. Wer schreiben darf, darf ihn setzen: es ist
+  // eine Eigenschaft des Textes, keine der Freigabe.
+  seiteBreite: (id: string, breite: Seitenbreite) =>
+    req<{ breite: Seitenbreite }>(`/pages/${id}/breite`, {
+      method: "PUT",
+      body: JSON.stringify({ breite }),
     }),
   vorlageUmschalten: (id: string) =>
     req<{ istVorlage: boolean }>(`/pages/${id}/vorlage`, { method: "POST" }),

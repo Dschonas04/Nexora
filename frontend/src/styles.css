@@ -363,10 +363,20 @@ a {
   overflow-y: auto;
 }
 
+/* Der Satzspiegel einer Seite.
+   Die Breite steht an der Seite und nicht am Konto, denn sie gehört zum Satz
+   des Textes: eine Tabelle mit zwölf Spalten braucht Platz, ein Merkzettel
+   nicht. 'breit' und 'voll' setzen den Wert um, 'normal' lässt ihn stehen. */
 .page {
-  max-width: 720px;
+  max-width: 860px;
   margin: 0 auto;
-  padding: 56px 56px 40vh;
+  padding: 56px 48px 40vh;
+}
+.page.breit {
+  max-width: 1200px;
+}
+.page.voll {
+  max-width: none;
 }
 
 .page-icon {
@@ -552,6 +562,15 @@ textarea::placeholder {
   background: transparent !important;
 }
 
+/* BlockNote setzt links und rechts 54 Pixel Rand, für den Anfasser am Block.
+   Zusammen mit dem Rand der Seite blieb vom Fenster über hundert Pixel
+   ungenutzt, und der Titel stand um genau diesen Betrag neben seinem Text.
+   Der Rand der Seite reicht dem Anfasser aus -- er sitzt ohnehin absolut
+   gesetzt links vom Block und wird nicht abgeschnitten. */
+.bn-editor {
+  padding-inline: 0 !important;
+}
+
 /* Added: spaces, sharing, versions, trash, graph */
 .text-btn {
   border: none;
@@ -624,9 +643,6 @@ textarea::placeholder {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-.page.wide {
-  max-width: 820px;
 }
 .view-title {
   font-size: 30px;
@@ -890,7 +906,7 @@ textarea::placeholder {
 .modal {
   background: var(--flaeche);
   border-radius: 10px;
-  width: 440px;
+  width: 480px;
   max-width: 92vw;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
   overflow: hidden;
@@ -919,23 +935,35 @@ textarea::placeholder {
   color: var(--muted);
   margin-bottom: 8px;
 }
+/* Feld, Auswahl und Knopf in einer Zeile -- solange sie hineinpassen.
+   Ohne den Umbruch stand der Knopf "Hinzufügen" halb hinter dem Rand des
+   Dialogs: die drei Mindestbreiten zusammen waren breiter als der Kasten, und
+   der Kasten schneidet ab, was übersteht. */
 .share-add {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 8px;
 }
 .share-add input {
-  flex: 1;
+  flex: 1 1 180px;
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 7px 10px;
   font-size: 13px;
   outline: none;
 }
+.share-add .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 .share-add input:focus {
   border-color: var(--accent);
 }
 .share-add select {
+  flex: 0 1 auto;
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0 6px;
@@ -1900,6 +1928,13 @@ textarea::placeholder {
 .vorlagenmenue {
   position: relative;
 }
+/* Der Knopf, unter dem eine dieser Listen aufgeht. Ohne die eigene Position
+   hängt die Liste am nächsten gesetzten Vorfahren und damit am Fensterrand,
+   statt unter dem Knopf, zu dem sie gehört. */
+.exportmenue {
+  position: relative;
+}
+
 .vorlagenliste {
   position: absolute;
   right: 0;
@@ -1934,6 +1969,24 @@ textarea::placeholder {
 }
 .vorlageneintrag:hover {
   background: var(--hover);
+}
+/* Der gewählte Eintrag einer Liste. Ein Haken davor und kein Farbklecks: die
+   Liste steht nur einen Wimpernschlag offen, in dieser Zeit muss man sehen, wo
+   man gerade steht. */
+.vorlageneintrag.gewaehlt {
+  font-weight: 600;
+}
+.vorlageneintrag.gewaehlt::before {
+  content: "✓ ";
+  color: var(--accent-lesbar);
+}
+/* Die Erklärung unter dem Namen. Klein und grau, damit sie den Namen nicht
+   überstimmt, den man eigentlich liest. */
+.vorlageneintrag-hinweis {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 1px;
 }
 
 /* Gruppen und Space-Rechte */
@@ -3090,4 +3143,83 @@ textarea::placeholder {
 
 .fehlergrenze-grund {
   word-break: break-word;
+}
+
+/* Die geteilte Seite.
+   Sie stand bisher nackt im Fenster: kein Kopf, kein Hinweis, woher sie kommt,
+   und der Titel begann um die 54 Pixel des Editors neben seinem eigenen Text.
+   Wer den Verweis bekam, sah eine Seite, die aussah wie ein Stück aus einer
+   halb geladenen Anwendung. */
+.oeffentlich {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg);
+}
+.oeffentlich-kopf {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--flaeche);
+  flex: 0 0 auto;
+}
+.oeffentlich-marke {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.oeffentlich-hinweis {
+  font-size: 12px;
+  color: var(--muted);
+}
+.oeffentlich-symbol {
+  margin-right: 10px;
+}
+/* Wann der Text zuletzt angefasst wurde. Bei einer weitergegebenen Seite ist
+   das die Frage, die als zweite kommt -- gleich nach der, was darauf steht. */
+.oeffentlich-fuss {
+  margin-top: 40px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Das Kommentarfeld mit der @-Auswahl.
+   Die Liste steht über dem Feld und nicht darunter: die Kommentarspalte endet
+   knapp unter dem Feld, und eine Liste darunter wäre halb abgeschnitten. */
+.erwaehnfeld {
+  position: relative;
+}
+.erwaehnfeld textarea {
+  width: 100%;
+}
+.erwaehnliste {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  margin-bottom: 4px;
+  z-index: 30;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--flaeche);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  padding: 4px;
+}
+/* Ein Name, der wirklich zu einem Konto gehört. Damit sieht man einem
+   abgeschickten Kommentar an, ob die Erwähnung angekommen ist; vorher war ein
+   Tippfehler im Namen von einer richtigen Erwähnung nicht zu unterscheiden. */
+/* Der Eintrag, auf dem der Zeiger steht. Kein Haken wie bei einer Auswahl:
+   hier ist nichts gesetzt, hier wird nur gerade hingezeigt. */
+.vorlageneintrag.hervor {
+  background: var(--hover);
+}
+
+.erwaehnung {
+  color: var(--accent-lesbar);
+  font-weight: 500;
 }

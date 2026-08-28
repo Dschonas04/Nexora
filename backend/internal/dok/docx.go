@@ -192,6 +192,29 @@ func tabelleXML(zeilen [][]string) string {
 	return b.String()
 }
 
+// koerperMitBildern setzt einen Absatz und legt ein Bild, wenn es eines ist,
+// zugleich als Teil des Archivs an.
+//
+// Die Bildteile wachsen dabei mit: der Text nennt sie ueber ihre
+// Beziehungskennung, und dieselbe Liste fuellt spaeter word/media und die rels.
+func koerperMitBildern(a Absatz, teile *[]wordBildTeil) string {
+	if a.Art == ArtDatei && len(a.BildDaten) > 0 {
+		if t, ok := bildTeilAnlegen(a.BildDaten, len(*teile)); ok {
+			*teile = append(*teile, t)
+			xml := bildXML(t, a.Stufe*360)
+			// Die Unterschrift darunter, klein und kursiv. Der Name steht schon
+			// im Bild und wird nicht wiederholt.
+			if u := bildUnterschrift(a.Text); u != "" {
+				xml += "<w:p><w:pPr>" +
+					fmt.Sprintf(`<w:ind w:left="%d"/><w:spacing w:after="160"/>`, a.Stufe*360) +
+					"</w:pPr>" + lauf(Stueck{Text: u, Kursiv: true}, 9, false) + "</w:p>"
+			}
+			return xml
+		}
+	}
+	return absatzXML(a)
+}
+
 // Word writes a document as .docx.
 func Word(d Dokument) ([]byte, error) {
 	return WordMehrere([]Dokument{d})
@@ -200,6 +223,9 @@ func Word(d Dokument) ([]byte, error) {
 // WordMehrere writes several pages into ONE document, separated by a page break.
 func WordMehrere(docs []Dokument) ([]byte, error) {
 	var koerper strings.Builder
+	// Die Bilder, die im Text vorkommen. Sie werden beim Setzen eingesammelt,
+	// weil erst dabei feststeht, welche sich ueberhaupt einbetten lassen.
+	var bilder []wordBildTeil
 	for i, d := range docs {
 		if i > 0 {
 			koerper.WriteString(`<w:p><w:r><w:br w:type="page"/></w:r></w:p>`)
@@ -214,7 +240,7 @@ func WordMehrere(docs []Dokument) ([]byte, error) {
 				lauf(Stueck{Text: d.Titel, Fett: true}, 24, false) + `</w:p>`)
 		}
 		for _, a := range d.Absatz {
-			koerper.WriteString(absatzXML(a))
+			koerper.WriteString(koerperMitBildern(a, &bilder))
 		}
 	}
 	// Page setup: A4 portrait with a 2 cm margin all round (in twips).
@@ -232,7 +258,7 @@ func WordMehrere(docs []Dokument) ([]byte, error) {
 <Default Extension="xml" ContentType="application/xml"/>
 <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
 <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
-</Types>`
+` + bildTypen(bilder) + `</Types>`
 
 	rels := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -242,7 +268,7 @@ func WordMehrere(docs []Dokument) ([]byte, error) {
 	dokRels := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-</Relationships>`
+` + bildBeziehungen(bilder) + `</Relationships>`
 
 	// Only the styles referred to above. Word adds whatever it misses when
 	// saving; what stands here has to be right though, a reference to a style that
@@ -276,6 +302,17 @@ func WordMehrere(docs []Dokument) ([]byte, error) {
 			return nil, err
 		}
 		if _, err := w.Write([]byte(teil.inhalt)); err != nil {
+			return nil, err
+		}
+	}
+	// Die Bilddateien selbst. Store und nicht Deflate: PNG und JPEG sind bereits
+	// gepackt, ein zweiter Durchgang kostet Zeit und bringt nichts.
+	for _, b := range bilder {
+		w, err := z.CreateHeader(&zip.FileHeader{Name: "word/media/" + b.name, Method: zip.Store})
+		if err != nil {
+			return nil, err
+		}
+		if _, err := w.Write(b.daten); err != nil {
 			return nil, err
 		}
 	}

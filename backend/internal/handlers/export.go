@@ -117,8 +117,11 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 	case "pdf", "word", "docx":
 		sort.Slice(seiten, func(i, j int) bool { return seiten[i].Titel < seiten[j].Titel })
 		docs := make([]dok.Dokument, 0, len(seiten))
+		// Eine Bildquelle fuer den ganzen Export: sie merkt sich, was sie schon
+		// gelesen hat, und ein Logo auf jeder Seite wird nur einmal geholt.
+		bilder := s.bildquelle(r.Context(), uid)
 		for _, p := range seiten {
-			docs = append(docs, dok.AusInhalt(p.Inhalt, p.Titel))
+			docs = append(docs, dok.AusInhaltMitBildern(p.Inhalt, p.Titel, bilder))
 		}
 		if r.URL.Query().Get("format") == "pdf" {
 			dateiKopf(w, "application/pdf", name, ".pdf")
@@ -159,18 +162,40 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 		return basis
 	}
 
+	// Die Anhaenge aller ausgegebenen Seiten. Sie werden vorher eingesammelt,
+	// weil schon der Text die Pfade im Archiv nennen muss.
+	kennungen := make([]string, 0, len(seiten))
+	for _, p := range seiten {
+		kennungen = append(kennungen, p.ID)
+	}
+	dateien := s.anhaengeSammeln(r.Context(), kennungen)
+	proSeite := map[string][]exportDatei{}
+	for _, d := range dateien {
+		proSeite[d.Seite] = append(proSeite[d.Seite], d)
+	}
+
 	var verzeichnis strings.Builder
 	verzeichnis.WriteString("# " + spaceName + "\n\n")
 	verzeichnis.WriteString(fmt.Sprintf("%d Seiten, ausgegeben am %s.\n\n",
 		len(seiten), time.Now().Format("02.01.2006 15:04")))
+	if len(dateien) > 0 {
+		verzeichnis.WriteString(fmt.Sprintf("Die Bilder und Anhänge liegen in %s/ und sind aus den Seiten heraus verknüpft.\n\n",
+			dateiOrdner))
+	}
 
 	sort.Slice(seiten, func(i, j int) bool { return seiten[i].Titel < seiten[j].Titel })
 
+	// Die Dateinamen stehen vor dem Verzeichnis fest, denn das Verzeichnis
+	// bildet den Seitenbaum ab und braucht auch den Namen einer Seite, die es
+	// erst weiter unten schreibt.
+	namen := map[string]string{}
 	for _, p := range seiten {
-		datei := eindeutig(dateiname(p.Titel)) + ".md"
+		namen[p.ID] = eindeutig(dateiname(p.Titel)) + ".md"
+	}
 
+	for _, p := range seiten {
 		kopf, err := zw.CreateHeader(&zip.FileHeader{
-			Name:     datei,
+			Name:     namen[p.ID],
 			Method:   zip.Deflate,
 			Modified: p.Geaendert,
 		})
@@ -182,15 +207,19 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 		if p.Titel != "" && !beginntMitUeberschrift(md, p.Titel) {
 			md = "# " + p.Titel + "\n\n" + md
 		}
+		md = adressenAufDateien(md, proSeite[p.ID])
+		md = anhangListe(md, proSeite[p.ID])
 		if _, err := io.WriteString(kopf, md); err != nil {
 			return
 		}
-
-		// Angle brackets around the target: a file name containing spaces would
-		// otherwise end the link after the first word. Percent encoding would work
-		// too but is unreadable, and this file is meant to be read.
-		verzeichnis.WriteString(fmt.Sprintf("- [%s](<%s>)\n", p.Titel, datei))
 	}
+
+	// Das Verzeichnis bildet den Seitenbaum ab und nicht eine Liste: eine Ablage
+	// mit fuenf Ebenen war bisher eine flache Aufzaehlung, aus der niemand mehr
+	// las, was unter was gehoert.
+	schreibeVerzeichnis(&verzeichnis, seiten, namen)
+
+	s.dateienSchreiben(r.Context(), zw, dateien)
 
 	// A table of contents on top. Without it an archive of a hundred files is a
 	// pile, not a document.
@@ -207,7 +236,7 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 
 	zw.Close()
 	s.spurAusRequest(r, AktExport, "space", spaceID, spaceName,
-		map[string]any{"seiten": len(seiten)})
+		map[string]any{"seiten": len(seiten), "dateien": len(dateien)})
 }
 
 // spaceBedingung returns the matching WHERE clause. Kept separate because
@@ -219,4 +248,42 @@ func spaceBedingung(spaceID string) string {
 		return "p.space_id IS NULL"
 	}
 	return "p.space_id = $3"
+}
+
+// schreibeVerzeichnis setzt den Seitenbaum als eingerueckte Liste.
+//
+// Die Ordnung kommt aus parent_id, nicht aus der Reihenfolge der Abfrage: eine
+// Unterseite kann in der alphabetischen Liste weit vor ihrer Mutter stehen.
+// Seiten, deren Mutter nicht mit ausgegeben wurde -- weil sie in einer anderen
+// Ablage liegt oder gesperrt ist -- stehen oben mit, statt zu fehlen.
+func schreibeVerzeichnis(b *strings.Builder, seiten []exportSeite, namen map[string]string) {
+	kinder := map[string][]exportSeite{}
+	dabei := map[string]bool{}
+	for _, p := range seiten {
+		dabei[p.ID] = true
+	}
+	for _, p := range seiten {
+		eltern := ""
+		if p.ParentID != nil && dabei[*p.ParentID] {
+			eltern = *p.ParentID
+		}
+		kinder[eltern] = append(kinder[eltern], p)
+	}
+
+	var stufe func(eltern string, tiefe int)
+	stufe = func(eltern string, tiefe int) {
+		for _, p := range kinder[eltern] {
+			titel := p.Titel
+			if strings.TrimSpace(titel) == "" {
+				titel = "Ohne Titel"
+			}
+			// Spitze Klammern um das Ziel: ein Dateiname mit Leerzeichen wuerde
+			// den Verweis sonst nach dem ersten Wort beenden. Prozentzeichen
+			// taeten es auch, sind aber unlesbar, und diese Datei will gelesen
+			// werden.
+			fmt.Fprintf(b, "%s- [%s](<%s>)\n", strings.Repeat("  ", tiefe), titel, namen[p.ID])
+			stufe(p.ID, tiefe+1)
+		}
+	}
+	stufe("", 0)
 }

@@ -29,7 +29,9 @@ func (s *Server) seiteAlsDokument(r *http.Request, id string) (dok.Dokument, boo
 		`SELECT title, content FROM pages WHERE id=$1`, id).Scan(&titel, &inhalt); err != nil {
 		return dok.Dokument{}, false
 	}
-	return dok.AusInhalt(json.RawMessage(inhalt), titel), true
+	// Mit den Bildern: ein PDF, das die Bilder der Seite weglaesst, ist eine
+	// Inhaltsangabe der Seite und nicht ihr Abbild.
+	return dok.AusInhaltMitBildern(json.RawMessage(inhalt), titel, s.bildquelle(r.Context(), uid)), true
 }
 
 // dateiKopf sets the type and the file name. Two entries on purpose: filename
