@@ -124,8 +124,11 @@ type Page struct {
 	CanEdit     bool            `json:"canEdit"` // false for read-only shares
 	IsOwner     bool            `json:"isOwner"`
 	IstVorlage  bool            `json:"istVorlage"`
-	CreatedAt   time.Time       `json:"createdAt"`
-	UpdatedAt   time.Time       `json:"updatedAt"`
+	// Breite: 'normal', 'breit' oder 'voll'. Gehoert zum Satz der Seite und
+	// haengt darum an ihr, nicht am Leser.
+	Breite    string    `json:"breite"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 // PageVersion is an immutable snapshot in a page's history.

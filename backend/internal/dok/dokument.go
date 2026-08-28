@@ -58,7 +58,14 @@ type Absatz struct {
 	// files keep their pictures inside the archive, so there is no address that
 	// could point at one; without this the picture would be lost on the way into
 	// the editor.
+	//
+	// Auf dem Weg nach draussen steht hier dasselbe: die Bytes des Bildes, damit
+	// PDF und Word es einbetten koennen statt nur seinen Namen zu nennen.
 	Bild string
+	// BildDaten sind die Bytes eines Bildes, wenn der Aufrufer sie beschaffen
+	// konnte. Ist das Feld leer, bleibt es bei der Verweiszeile -- ein Name mit
+	// Adresse ist ehrlicher als eine leere Flaeche.
+	BildDaten []byte
 }
 
 // Dokument is one page in typesetter form.
@@ -85,20 +92,35 @@ type stueckJSON struct {
 	Props   map[string]any  `json:"props"`
 }
 
+// Bildquelle beschafft die Bytes zu einer Bildadresse.
+//
+// Als Rueckruf und nicht als fertige Liste: die Adressen stehen im Dokument, und
+// nur der Aufrufer weiss, wie er an die Datei dahinter kommt -- ueber die
+// Ablage, ueber eine Datenadresse im Text, oder gar nicht. Ein nil-Rueckruf
+// heisst: keine Bilder, dann steht wie bisher die Verweiszeile da.
+type Bildquelle func(adresse string) ([]byte, bool)
+
 // AusInhalt reads in a stored document. As everywhere in this conversion: an
 // unknown block type becomes a paragraph, not an error. A document that exports
 // incompletely is worth more than one that refuses to export.
 func AusInhalt(roh json.RawMessage, titel string) Dokument {
+	return AusInhaltMitBildern(roh, titel, nil)
+}
+
+// AusInhaltMitBildern liest dasselbe Dokument, holt aber zu jedem Bild die
+// Bytes. Ein PDF ohne die Bilder der Seite ist kein Abbild der Seite, sondern
+// eine Inhaltsangabe davon.
+func AusInhaltMitBildern(roh json.RawMessage, titel string, hol Bildquelle) Dokument {
 	d := Dokument{Titel: titel}
 	var knoten []knoten
 	if err := json.Unmarshal(roh, &knoten); err != nil {
 		return d
 	}
-	d.Absatz = lies(knoten, 0)
+	d.Absatz = lies(knoten, 0, hol)
 	return d
 }
 
-func lies(knoten []knoten, tiefe int) []Absatz {
+func lies(knoten []knoten, tiefe int, hol Bildquelle) []Absatz {
 	var out []Absatz
 	nummer := 0
 	for _, k := range knoten {
@@ -165,8 +187,14 @@ func lies(knoten []knoten, tiefe int) []Absatz {
 			if name == "" {
 				name = k.Type
 			}
-			// Images are not embedded but named and linked. A placeholder saying
-			// what is missing and where it lies is more honest than an empty area.
+			// Das Bild selbst, wenn es zu beschaffen ist. Sonst bleibt es bei
+			// Name und Adresse: eine Zeile, die sagt, was fehlt und wo es liegt,
+			// ist ehrlicher als eine leere Flaeche.
+			if k.Type == "image" && hol != nil && adresse != "" {
+				if daten, ok := hol(adresse); ok {
+					a.BildDaten = daten
+				}
+			}
 			a.Text = []Stueck{{Text: name, Verweis: adresse}}
 			if unterschrift != "" && unterschrift != name {
 				a.Text = append(a.Text, Stueck{Text: " – " + unterschrift, Kursiv: true})
@@ -194,7 +222,7 @@ func lies(knoten []knoten, tiefe int) []Absatz {
 			case "bulletListItem", "numberedListItem", "checkListItem", "toggleListItem":
 				kindTiefe = tiefe + 1
 			}
-			out = append(out, lies(k.Children, kindTiefe)...)
+			out = append(out, lies(k.Children, kindTiefe, hol)...)
 		}
 	}
 	return out

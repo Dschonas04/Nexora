@@ -142,6 +142,10 @@ type setzer struct {
 	y      float64 // current baseline, measured from the top
 	titel  string
 	fuss   string
+	// Die Bilder in der Reihenfolge, in der sie gesetzt wurden. Ihre Nummer im
+	// Satz ist zugleich ihr Name im PDF (/Im0, /Im1 ...), und ihre Objekte
+	// stehen am Ende der Datei, hinter den Seiten.
+	bilder []*pdfBild
 }
 
 func neuerSetzer(titel, fuss string) *setzer {
@@ -440,6 +444,21 @@ func (s *setzer) absatzSetzen(a Absatz) {
 		s.y -= 8
 
 	case ArtDatei:
+		// Ein Bild, das sich einbetten laesst, wird gesetzt; darunter steht, wenn
+		// vorhanden, seine Unterschrift. Alles andere -- Ton, Video, ein Anhang,
+		// ein Bild, das sich nicht entpacken liess -- bleibt die Verweiszeile.
+		if len(a.BildDaten) > 0 {
+			if bild, ok := bildAufbereiten(a.BildDaten); ok {
+				s.bildSetzen(bild, einzug, breite)
+				if u := bildUnterschrift(a.Text); u != "" {
+					for _, z := range umbrechen([]wort{{u, fKursiv, 9, false, false, false}}, breite) {
+						s.zeileSetzen(z, einzug, 12)
+					}
+					s.y -= 6
+				}
+				return
+			}
+		}
 		w := alsWoerter(a.Text, grund, false)
 		w = append([]wort{{"Datei: ", fNormal, grund, false, false, false}}, w...)
 		for _, z := range umbrechen(w, breite) {
@@ -558,9 +577,11 @@ func (s *setzer) fertig() []byte {
 	out.WriteString("%\xe2\xe3\xcf\xd3\n")
 
 	anzahl := len(s.seiten)
-	// 1: catalog, 2: page tree, 3..: fonts, then page plus content per page.
+	// 1: catalog, 2: page tree, 3..: fonts, then page plus content per page,
+	// und ganz hinten die Bilder.
 	ersteSchrift := 3
 	ersteSeite := ersteSchrift + 6
+	erstesBild := ersteSeite + anzahl*2
 
 	objekt("<< /Type /Catalog /Pages 2 0 R >>")
 
@@ -585,7 +606,18 @@ func (s *setzer) fertig() []byte {
 	for i, f := range schriften {
 		fmt.Fprintf(&ressourcen, "/%s %d 0 R ", f.kennung, ersteSchrift+i)
 	}
-	ressourcen.WriteString(">> >>")
+	ressourcen.WriteString(">> ")
+	// Die Bilder stehen bei allen Seiten in den Betriebsmitteln, auch wenn eine
+	// Seite keines benutzt. Das kostet eine Zeile je Seite und erspart es, sich
+	// zu merken, welches Bild auf welcher Seite steht.
+	if len(s.bilder) > 0 {
+		ressourcen.WriteString("/XObject << ")
+		for i := range s.bilder {
+			fmt.Fprintf(&ressourcen, "/Im%d %d 0 R ", i, erstesBild+i)
+		}
+		ressourcen.WriteString(">> ")
+	}
+	ressourcen.WriteString(">>")
 
 	for i, seite := range s.seiten {
 		inhaltNr := ersteSeite + i*2 + 1
@@ -594,6 +626,13 @@ func (s *setzer) fertig() []byte {
 			seiteBreite, seiteHoehe, ressourcen.String(), inhaltNr))
 		gepackt := packen(seite.Bytes())
 		objektRoh(fmt.Sprintf("<< /Length %d /Filter /FlateDecode >>", len(gepackt)), gepackt)
+	}
+
+	for _, b := range s.bilder {
+		objektRoh(fmt.Sprintf(
+			"<< /Type /XObject /Subtype /Image /Width %d /Height %d "+
+				"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length %d >>",
+			b.breite, b.hoehe, len(b.strom)), b.strom)
 	}
 
 	xref := out.Len()
@@ -620,4 +659,27 @@ func kuerzen(s string, n int) string {
 		return s
 	}
 	return string(r[:n-1]) + "…"
+}
+
+// schreibeBild setzt den Aufruf eines Bildes in den Seitenstrom.
+//
+// Die Matrix ist die ganze Groesse: ein Bild ist im PDF ein Quadrat der
+// Kantenlaenge eins, und erst cm zieht es auf sein Mass und schiebt es an
+// seinen Platz.
+func (s *setzer) schreibeBild(nummer int, x, y, breite, hoehe float64) {
+	fmt.Fprintf(s.akt, "q %.2f 0 0 %.2f %.2f %.2f cm /Im%d Do Q\n",
+		breite, hoehe, x, y, nummer)
+}
+
+// bildUnterschrift zieht aus den Stuecken einer Dateizeile die Unterschrift.
+// Der Name selbst steht schon im Bild; ihn darunter zu wiederholen brauchte
+// niemand.
+func bildUnterschrift(st []Stueck) string {
+	var b strings.Builder
+	for _, s := range st {
+		if s.Kursiv {
+			b.WriteString(s.Text)
+		}
+	}
+	return strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(b.String()), "– "))
 }

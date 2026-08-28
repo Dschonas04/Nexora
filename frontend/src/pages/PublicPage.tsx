@@ -20,22 +20,60 @@ export default function PublicPage() {
       .catch(() => setErr(true));
   }, [token]);
 
+  // Der Name der Seite gehört in den Reiter des Browsers. Ohne das hießen zehn
+  // geteilte Seiten in zehn Reitern alle gleich, nämlich "Nexora", und niemand
+  // fand die wieder, die er suchte.
+  useEffect(() => {
+    if (!page) return;
+    const vorher = document.title;
+    document.title = page.title || "Ohne Titel";
+    return () => {
+      document.title = vorher;
+    };
+  }, [page]);
+
   // A revoked link and a token that never existed look the same on purpose, so
   // the page reveals nothing about what else is in the workspace.
   if (err) return <div className="empty-state">Diese Seite ist nicht verfügbar.</div>;
   if (!page) return <div className="empty-state spaet">Lädt…</div>;
 
+  const stand = new Date(page.updatedAt);
+
   return (
-    <div className="editor-scroll">
-      <div className="page">
-        <h1 className="page-title" style={{ cursor: "default" }}>
-          {page.title || "Ohne Titel"}
-        </h1>
-        {/* Same editor as inside the app, but read-only, so a public page
-            renders exactly like the original. */}
-        <Fehlergrenze text="Der Inhalt dieser Seite liess sich nicht anzeigen.">
-          <Editor initialContent={page.content} editable={false} />
-        </Fehlergrenze>
+    <div className="oeffentlich">
+      {/* Eine Zeile, die sagt, woran man ist: das hier ist eine einzelne,
+          weitergegebene Seite und keine Web-Seite, und mitschreiben kann man
+          nicht. Ohne sie stand der Text im leeren Fenster, und ein Besucher
+          sah ihm nicht an, ob er alles sieht. */}
+      <div className="oeffentlich-kopf">
+        <span className="oeffentlich-marke">Nexora</span>
+        <span className="oeffentlich-hinweis">Geteilte Seite, nur zum Lesen</span>
+      </div>
+
+      <div className="editor-scroll">
+        <div className={"page" + (page.breite && page.breite !== "normal" ? " " + page.breite : "")}>
+          <h1 className="page-title" style={{ cursor: "default" }}>
+            {page.icon && <span className="oeffentlich-symbol">{page.icon}</span>}
+            {page.title || "Ohne Titel"}
+          </h1>
+          {/* Same editor as inside the app, but read-only, so a public page
+              renders exactly like the original. */}
+          <Fehlergrenze text="Der Inhalt dieser Seite liess sich nicht anzeigen.">
+            <Editor
+              initialContent={page.content}
+              editable={false}
+              // Ein Verweis auf eine andere Seite dieses Wikis führt für einen
+              // Besucher nirgendwohin -- die Seite dahinter ist nicht geteilt.
+              // Er wird darum bloß erkennbar gesetzt, nicht anklickbar: sonst
+              // stünden im Text die eckigen Klammern roh da, als wäre etwas
+              // kaputt.
+              linkResolver={() => null}
+            />
+          </Fehlergrenze>
+          <div className="oeffentlich-fuss">
+            Stand: {stand.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
+          </div>
+        </div>
       </div>
     </div>
   );

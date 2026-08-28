@@ -105,6 +105,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
   // time the page is opened.
   const [anhangTick, setAnhangTick] = useState(0);
   const [exportOffen, setExportOffen] = useState(false);
+  const [breiteOffen, setBreiteOffen] = useState(false);
   // Refs rather than state: changing either must not trigger a render. The timer
   // drives the debounced autosave, the editor handle is needed for the markdown
   // export.
@@ -423,6 +424,52 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
                 Verlauf
               </button>
             )}
+            {/* Wie breit der Text stehen soll. Der Satzspiegel war fest, und
+                auf einem breiten Bildschirm blieb links und rechts eine
+                Handbreit Papier leer, während die Tabelle daneben umbrach.
+                Die Wahl hängt an der Seite: eine Tabellenseite soll jeder so
+                sehen, wie ihr Verfasser sie gesetzt hat. */}
+            {canEdit && (
+              <div className="exportmenue">
+                <button
+                  className="btn"
+                  title="Wie breit der Text auf dieser Seite steht"
+                  onClick={() => {
+                    setExportOffen(false);
+                    setBreiteOffen((v) => !v);
+                  }}
+                >
+                  Breite ▾
+                </button>
+                {breiteOffen && (
+                  <div className="vorlagenliste" onMouseLeave={() => setBreiteOffen(false)}>
+                    {(
+                      [
+                        ["normal", "Normal", "Zum Lesen gesetzt"],
+                        ["breit", "Breit", "Mehr Platz für Tabellen und Bilder"],
+                        ["voll", "Volle Breite", "So breit wie das Fenster"],
+                      ] as const
+                    ).map(([wert, titel, erklaerung]) => (
+                      <button
+                        key={wert}
+                        className={"vorlageneintrag" + (page.breite === wert ? " gewaehlt" : "")}
+                        onClick={async () => {
+                          setBreiteOffen(false);
+                          // Erst anzeigen, dann speichern: die Breite ist ein
+                          // Handgriff am Satz, und darauf zu warten, bis der
+                          // Server geantwortet hat, fühlte sich nach Ladezeit an.
+                          setPage({ ...page, breite: wert });
+                          await api.seiteBreite(page.id, wert).catch(() => {});
+                        }}
+                      >
+                        {titel}
+                        <span className="vorlageneintrag-hinweis">{erklaerung}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {/* A menu instead of three buttons: the header is full already, and
                 three formats side by side say no more than one with a
                 choice. */}
@@ -485,7 +532,7 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
         </div>
 
         <div className="editor-scroll">
-          <div className="page">
+          <div className={"page" + (page.breite !== "normal" ? " " + page.breite : "")}>
             <input
               className="page-title"
               value={page.title}

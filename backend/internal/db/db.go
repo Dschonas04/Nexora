@@ -387,6 +387,14 @@ CREATE INDEX IF NOT EXISTS sitzungen_user_idx ON sitzungen(user_id);
 -- everything, including the many valid ones.
 CREATE INDEX IF NOT EXISTS sitzungen_ablauf_idx ON sitzungen(laeuft_ab);
 
+-- Wie breit der Text einer Seite steht: 'normal', 'breit' oder 'voll'.
+--
+-- An der Seite und nicht am Konto: eine Tabelle mit zwoelf Spalten braucht die
+-- Breite, ein Merkzettel nicht, und beide liegen im selben Wiki. Wer sie
+-- umstellt, stellt sie fuer alle um, die diese Seite lesen -- das ist gewollt,
+-- denn die Breite gehoert zum Satz des Textes wie eine Ueberschrift.
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS breite text NOT NULL DEFAULT 'normal';
+
 CREATE TABLE IF NOT EXISTS einstellungen (
 	schluessel    text PRIMARY KEY,
 	wert          text NOT NULL,
