@@ -181,9 +181,12 @@ func typAusAngabeUndName(angabe, dateiname string) string {
 // DownloadAttachment streams a file back. Access is decided by the page, not by
 // the attachment, so revoking a share also cuts off its files.
 //
-// Content-Disposition is inline so images and PDFs preview in the browser. The
-// mime type is the one the uploader claimed, which is why a page should only be
-// shared with people who are trusted not to upload hostile content.
+// Angezeigt wird nur, was sich anzeigen laesst, ohne ein Dokument zu sein:
+// Bilder, Ton, Video, PDF, schlichter Text. Der Typ ist die Behauptung dessen,
+// der die Datei hochgeladen hat, und eine HTML- oder SVG-Datei, unveraendert
+// und "inline" ausgeliefert, waere Programmcode auf dem Ursprung dieser
+// Instanz. Alles ausserhalb der Liste geht darum als Download hinaus; siehe
+// anhangKopf.
 func (s *Server) DownloadAttachment(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -205,8 +208,7 @@ func (s *Server) DownloadAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	w.Header().Set("Content-Type", mime)
-	w.Header().Set("Content-Disposition", "inline; filename=\""+strings.ReplaceAll(filename, "\"", "")+"\"")
+	anhangKopf(w, mime, filename)
 	io.Copy(w, f)
 }
 

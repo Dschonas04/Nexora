@@ -72,8 +72,11 @@ func (s *Server) OeffentlicheDatei(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	w.Header().Set("Content-Type", mime)
-	w.Header().Set("Content-Disposition", "inline; filename=\""+strings.ReplaceAll(filename, "\"", "")+"\"")
+	// Ueber anhangKopf und nicht von Hand: der Typ ist die Behauptung dessen,
+	// der die Datei hochgeladen hat. Unveraendert und "inline" ausgeliefert
+	// waere eine HTML- oder SVG-Datei ein Dokument auf dem Ursprung dieser
+	// Instanz -- und hier reichte dafuer ein Fremder mit dem Verweis.
+	anhangKopf(w, mime, filename)
 	// Kein Suchmaschinenfutter: eine geteilte Seite ist nicht veroeffentlicht,
 	// sie ist weitergegeben.
 	w.Header().Set("X-Robots-Tag", "noindex")
