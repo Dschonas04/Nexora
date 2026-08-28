@@ -619,23 +619,23 @@ export default function Sidebar(props: Props) {
           {/* Labelled instead of an arrow: an icon alone does not say that a
               whole archive can be read in here, and since the import can create
               a space of its own, this is the way back out of an export. */}
-          {/* Einlesen fragt zuerst, wohin. Frueher hing an jeder Ablage ein
+          {/* Der Import fragt zuerst, wohin. Frueher hing an jeder Ablage ein
               eigener Pfeil dafuer; die Frage ist dieselbe, sie steht jetzt nur
               einmal da statt an jeder Ueberschrift. */}
           <div className="klappmenue" ref={einfuhrBereich}>
             <button
               className="text-btn"
-              title="Markdown, HTML oder ein ZIP einlesen, wahlweise als eigene Ablage"
+              title="Markdown, HTML oder ein ZIP importieren, wahlweise als eigene Ablage"
               onClick={() => {
                 setAusfuhrOffen(false);
                 setEinfuhrOffen((v) => !v);
               }}
             >
-              ↑ Einlesen
+              ↑ Import
             </button>
             {einfuhrOffen && (
               <div className="klappliste" onMouseLeave={() => setEinfuhrOffen(false)}>
-                <div className="klappliste-titel">Wohin einlesen</div>
+                <div className="klappliste-titel">Wohin importieren</div>
                 <button
                   className="klappeintrag"
                   onClick={() => {
@@ -668,14 +668,14 @@ export default function Sidebar(props: Props) {
             <div className="klappmenue" ref={ausfuhrBereich}>
               <button
                 className="text-btn"
-                title="Eine ganze Ablage ausgeben, als ZIP, PDF oder Word"
+                title="Eine ganze Ablage exportieren, als ZIP, PDF oder Word"
                 onClick={() => {
                   setEinfuhrOffen(false);
                   setExportFuer(null);
                   setAusfuhrOffen((v) => !v);
                 }}
               >
-                ↓ Ausgeben
+                ↓ Export
               </button>
               {ausfuhrOffen && (
                 <div
@@ -709,7 +709,7 @@ export default function Sidebar(props: Props) {
                         {exportFuer === "ohne"
                           ? "Seiten ohne Ablage"
                           : (spaces.find((sp) => sp.id === exportFuer)?.name ?? "Ablage")}{" "}
-                        ausgeben
+                        exportieren
                       </div>
                       {(
                         [
@@ -748,7 +748,7 @@ export default function Sidebar(props: Props) {
             title={alleZu ? "Alle Abschnitte wieder aufklappen" : "Alle Abschnitte zuklappen"}
             onClick={alleKlappen}
           >
-            {alleZu ? "▾ Alles" : "▸ Alles"}
+            {alleZu ? "▾ Ausklappen" : "▸ Einklappen"}
           </button>
         </div>
       )}
@@ -1127,7 +1127,7 @@ export default function Sidebar(props: Props) {
                   className="btn"
                   onClick={() => setEinfuhrZiel({ ziel: {}, name: "Seiten" })}
                 >
-                  Ablage einlesen
+                  Ablage importieren
                 </button>
               </div>
             )}
