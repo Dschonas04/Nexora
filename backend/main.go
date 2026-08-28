@@ -302,14 +302,6 @@ func main() {
 			r.With(handlers.VerlangeFunktion(lizenz.Export)).
 				Get("/spaces/{id}/export", h.ExportSpace)
 
-			// Templates, a paid extra. A template is an ordinary page with a flag
-			// on it; only creating and listing them is locked.
-			r.Group(func(r chi.Router) {
-				r.Use(handlers.VerlangeFunktion(lizenz.Vorlagen))
-				r.Get("/vorlagen", h.ListVorlagen)
-				r.Post("/pages/{id}/vorlage", h.SetzeVorlage)
-			})
-
 			// The audit trail, a paid extra. It is always WRITTEN, license or
 			// not: a trail with a hole exactly over the unlicensed period would
 			// be worthless. Only reading it costs money.

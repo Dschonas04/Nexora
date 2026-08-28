@@ -123,7 +123,6 @@ type Page struct {
 	IsFavorite  bool            `json:"isFavorite"`
 	CanEdit     bool            `json:"canEdit"` // false for read-only shares
 	IsOwner     bool            `json:"isOwner"`
-	IstVorlage  bool            `json:"istVorlage"`
 	// Breite: 'normal', 'breit' oder 'voll'. Gehoert zum Satz der Seite und
 	// haengt darum an ihr, nicht am Leser.
 	Breite    string    `json:"breite"`

@@ -199,6 +199,11 @@ a {
 
 .search-box {
   margin: 4px 6px 0;
+  /* Die Knöpfe liegen IM Feld, nicht darunter. Vorher stand das Zahnrad als
+     einzelnes Zeichen unter dem Kasten und sah aus wie hingefallen. */
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .search-box input {
@@ -1925,8 +1930,28 @@ textarea::placeholder {
 }
 
 /* Template menu in the head of the sidebar */
-.vorlagenmenue {
+.klappmenue {
   position: relative;
+}
+
+/* Menüs in der Leiste hängen an der LEISTE, nicht an ihrem Knopf.
+   Vorher stand die Liste mit right: 0 unter einem Knopf, der 76 Pixel breit
+   ist und 76 Pixel vom Rand entfernt steht: 200 Pixel Liste passten da nicht
+   hin, sie ragte 47 Pixel aus dem Fenster heraus, und "Als neue Ablage" war
+   auf "eue Ablage" beschnitten. So breit wie die Leiste kann sie dagegen
+   immer stehen, und beide Menüs der Werkzeugzeile öffnen an derselben
+   Kante. */
+.sidebar-werkzeuge {
+  position: relative;
+}
+.sidebar-werkzeuge .klappmenue,
+.sidebar-werkzeuge .exportmenue {
+  position: static;
+}
+.sidebar-werkzeuge .klappliste {
+  left: 6px;
+  right: 6px;
+  min-width: 0;
 }
 /* Der Knopf, unter dem eine dieser Listen aufgeht. Ohne die eigene Position
    hängt die Liste am nächsten gesetzten Vorfahren und damit am Fensterrand,
@@ -1935,7 +1960,7 @@ textarea::placeholder {
   position: relative;
 }
 
-.vorlagenliste {
+.klappliste {
   position: absolute;
   right: 0;
   top: 100%;
@@ -1949,12 +1974,12 @@ textarea::placeholder {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
   padding: 4px;
 }
-.vorlagenliste-titel {
+.klappliste-titel {
   font-size: 11px;
   color: var(--muted);
   padding: 6px 8px 4px;
 }
-.vorlageneintrag {
+.klappeintrag {
   display: block;
   width: 100%;
   text-align: left;
@@ -1967,22 +1992,22 @@ textarea::placeholder {
   border-radius: 5px;
   cursor: pointer;
 }
-.vorlageneintrag:hover {
+.klappeintrag:hover {
   background: var(--hover);
 }
 /* Der gewählte Eintrag einer Liste. Ein Haken davor und kein Farbklecks: die
    Liste steht nur einen Wimpernschlag offen, in dieser Zeit muss man sehen, wo
    man gerade steht. */
-.vorlageneintrag.gewaehlt {
+.klappeintrag.gewaehlt {
   font-weight: 600;
 }
-.vorlageneintrag.gewaehlt::before {
+.klappeintrag.gewaehlt::before {
   content: "✓ ";
   color: var(--accent-lesbar);
 }
 /* Die Erklärung unter dem Namen. Klein und grau, damit sie den Namen nicht
    überstimmt, den man eigentlich liest. */
-.vorlageneintrag-hinweis {
+.klappeintrag-hinweis {
   display: block;
   font-size: 11px;
   color: var(--muted);
@@ -2629,6 +2654,33 @@ textarea::placeholder {
   color: var(--accent);
 }
 
+/* Platz am rechten Rand des Feldes, sobald die Knöpfe da sind -- sonst
+   schriebe man unter ihnen weiter. */
+.search-box input.hat-knoepfe {
+  padding-right: 56px;
+}
+.such-knoepfe {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.such-knoepfe .icon-btn {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+.such-knoepfe .icon-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
 /* Postfach */
 
 .postfach-zaehler {
@@ -3215,7 +3267,7 @@ textarea::placeholder {
    Tippfehler im Namen von einer richtigen Erwähnung nicht zu unterscheiden. */
 /* Der Eintrag, auf dem der Zeiger steht. Kein Haken wie bei einer Auswahl:
    hier ist nichts gesetzt, hier wird nur gerade hingezeigt. */
-.vorlageneintrag.hervor {
+.klappeintrag.hervor {
   background: var(--hover);
 }
 

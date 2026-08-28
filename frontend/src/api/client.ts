@@ -81,8 +81,6 @@ export interface Page {
   isFavorite: boolean;
   canEdit: boolean;
   isOwner: boolean;
-  /** Whether this page is offered as a template when creating new ones. */
-  istVorlage: boolean;
   /** Satzspiegel: "normal", "breit" oder "voll". Gehört zur Seite, nicht zum Leser. */
   breite: Seitenbreite;
   createdAt: string;
@@ -564,17 +562,14 @@ export const api = {
   listPages: () => req<PageMeta[]>("/pages"),
   listShared: () => req<PageMeta[]>("/pages/shared"),
   listTrash: () => req<PapierkorbSeite[]>("/pages/trash"),
-  createPage: (parentId?: string | null, spaceId?: string | null, vorlageId?: string) =>
+  createPage: (parentId?: string | null, spaceId?: string | null) =>
     req<Page>("/pages", {
       method: "POST",
       body: JSON.stringify({
         parentId: parentId ?? null,
         spaceId: spaceId ?? null,
-        vorlageId: vorlageId ?? "",
       }),
     }),
-
-  vorlagen: () => req<PageMeta[]>("/vorlagen"),
 
   gruppen: () => req<Gruppe[]>("/gruppen"),
   gruppeAnlegen: (name: string, beschreibung: string) =>
@@ -604,8 +599,6 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ breite }),
     }),
-  vorlageUmschalten: (id: string) =>
-    req<{ istVorlage: boolean }>(`/pages/${id}/vorlage`, { method: "POST" }),
   getPage: (id: string) => req<Page>(`/pages/${id}`),
   backlinks: (id: string) => req<PageMeta[]>(`/pages/${id}/backlinks`),
 

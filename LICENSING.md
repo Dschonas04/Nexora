@@ -35,7 +35,6 @@ auch zur kommerziellen Bewertung.
 | LDAP und Active Directory | `ldap` | Anmeldung mit Passwort |
 | Volltext in Anhängen | `anhangsuche` | Suche über Seiten, nicht über Dateien |
 | Export als PDF und Word, Space-Export | `export` | Export je Seite als Markdown |
-| Vorlagen | `vorlagen` | leere Seiten |
 | Kommentare | `kommentare` | keine Kommentare |
 | Konflikterkennung | `konflikte` | letzter Schreibvorgang gewinnt |
 

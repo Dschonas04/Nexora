@@ -123,7 +123,7 @@ function Erwaehnfeld({
               // hervor und nicht gewaehlt: der Haken der anderen Listen sagt
               // "das ist der gesetzte Wert", hier heißt es bloß "hier steht
               // gerade der Zeiger".
-              className={"vorlageneintrag" + (i === gewaehlt ? " hervor" : "")}
+              className={"klappeintrag" + (i === gewaehlt ? " hervor" : "")}
               // onMouseDown und nicht onClick: der Klick käme erst, wenn das
               // Feld den Fokus schon verloren hat und die Liste zu ist.
               onMouseDown={(e) => {

@@ -317,14 +317,12 @@ ALTER TABLE attachments ADD COLUMN IF NOT EXISTS such_tsv tsvector
 	) STORED;
 CREATE INDEX IF NOT EXISTS attachments_such_idx ON attachments USING GIN (such_tsv);
 
--- Templates.
---
--- Deliberately a flag on the page instead of a table of its own: a template IS a
--- page. It is written in the same editor, lies in the same tree and can be read
--- like any other. A separate store would have dragged a second editing path and a
--- second notion of permissions along, without anybody gaining from it.
-ALTER TABLE pages ADD COLUMN IF NOT EXISTS ist_vorlage boolean NOT NULL DEFAULT false;
-CREATE INDEX IF NOT EXISTS pages_vorlage_idx ON pages(owner_id) WHERE ist_vorlage;
+-- Vorlagen gab es einmal: ein Haken an einer gewoehnlichen Seite, die damit im
+-- Baum zwischen dem echten Inhalt lag. Die Funktion ist entfernt, und mit ihr
+-- die Spalte -- die Seiten selbst bleiben unangetastet, sie sind wieder
+-- gewoehnliche Seiten.
+DROP INDEX IF EXISTS pages_vorlage_idx;
+ALTER TABLE pages DROP COLUMN IF EXISTS ist_vorlage;
 
 -- Groups and space rights.
 --

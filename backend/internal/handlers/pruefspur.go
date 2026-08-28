@@ -61,8 +61,6 @@ const (
 	AktEinstellungZurueck = "einstellung.zurueckgesetzt"
 	AktIndexNeu           = "suchindex.neu"
 	AktS3Test             = "objektspeicher.getestet"
-	AktVorlageAn          = "vorlage.gesetzt"
-	AktVorlageAus         = "vorlage.aufgehoben"
 	AktExport             = "space.exportiert"
 	AktGruppeAngelegt     = "gruppe.angelegt"
 	AktGruppeGeloescht    = "gruppe.geloescht"

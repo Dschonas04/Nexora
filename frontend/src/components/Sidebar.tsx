@@ -63,7 +63,7 @@ interface Props {
   spaces: Space[];
   activeId?: string;
   onSelect: (id: string) => void;
-  onCreateRoot: (vorlageId?: string) => void;
+  onCreateRoot: () => void;
   onCreateChild: (parentId: string) => void;
   onCreateInSpace: (spaceId: string) => void;
   onDelete: (id: string) => void;
@@ -237,8 +237,6 @@ export default function Sidebar(props: Props) {
 
   // Templates are fetched once, not every time the menu opens: the list is short
   // and rarely changes, one request per click would be a waste.
-  const [vorlagen, setVorlagen] = useState<PageMeta[]>([]);
-  const [vorlagenOffen, setVorlagenOffen] = useState(false);
   const [rechteFuer, setRechteFuer] = useState<{ id: string; name: string } | null>(null);
   // Id of the space whose visibility menu is open, at most one at a time, hence
   // a single value and not a set.
@@ -259,15 +257,23 @@ export default function Sidebar(props: Props) {
   // much is waiting there.
   const [alleSpaces, setAlleSpaces] = useState(false);
   const [alleTags, setAlleTags] = useState(false);
-  useEffect(() => {
-    if (!frei("vorlagen")) return;
-    api.vorlagen().then(setVorlagen).catch(() => setVorlagen([]));
-  }, [frei, pages]);
   const [results, setResults] = useState<SearchHit[] | null>(null);
   // Filter der Suche. Getrennt vom Suchwort, damit ein gesetzter Filter beim
   // Weitertippen stehen bleibt, man engt einmal ein und sucht dann mehrmals.
   const [filter, setFilter] = useState<SuchFilter>({});
   const [filterOffen, setFilterOffen] = useState(false);
+  const suchfeld = useRef<HTMLInputElement>(null);
+
+  // Suche wegwerfen: Wort, Filter und die Filterzeile zusammen. Nur das Wort zu
+  // löschen und den Filter stehen zu lassen hieße, dass die nächste Suche
+  // stillschweigend eingegrenzt ist, ohne dass man noch sieht wodurch -- die
+  // Filterzeile ist dann ja zu.
+  const suchtLoeschen = () => {
+    setQ("");
+    setFilter({});
+    setFilterOffen(false);
+    suchfeld.current?.focus();
+  };
   const filterAktiv = Boolean(filter.space || filter.tag || filter.tage || filter.wer);
   const [dragId, setDragId] = useState<string | null>(null);
   // One drop target for three kinds of destination, encoded as a string: a bare
@@ -485,36 +491,6 @@ export default function Sidebar(props: Props) {
         <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
           +
         </button>
-        {/* The second button appears only when there are templates at all.
-            Offering an empty menu would be a promise without content. */}
-        {frei("vorlagen") && vorlagen.length > 0 && (
-          <div className="vorlagenmenue">
-            <button
-              className="icon-btn"
-              title="Neue Seite aus Vorlage"
-              onClick={() => setVorlagenOffen((v) => !v)}
-            >
-              ▾
-            </button>
-            {vorlagenOffen && (
-              <div className="vorlagenliste">
-                <div className="vorlagenliste-titel">Aus Vorlage</div>
-                {vorlagen.map((v) => (
-                  <button
-                    key={v.id}
-                    className="vorlageneintrag"
-                    onClick={() => {
-                      setVorlagenOffen(false);
-                      onCreateRoot(v.id);
-                    }}
-                  >
-                    {v.title || "Ohne Titel"}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
         {/* Ganz rechts, weil er die Leiste als Ganzes betrifft und nicht das,
             was in ihr steht. */}
         <button
@@ -528,18 +504,38 @@ export default function Sidebar(props: Props) {
       </div>
 
       <div className="search-box">
-        <input placeholder="Suchen…" value={q} onChange={(e) => setQ(e.target.value)} />
-        {/* The button appears only while searching: without a search term there
-            would be nothing to narrow down. The dot beside it says that a filter
-            is set, otherwise one wonders about too few hits. */}
-        {q.trim() !== "" && (
-          <button
-            className={"icon-btn" + (filterAktiv ? " aktiv" : "")}
-            title={filterAktiv ? "Filter (aktiv)" : "Treffer eingrenzen"}
-            onClick={() => setFilterOffen((v) => !v)}
-          >
-            ⚙
-          </button>
+        <input
+          ref={suchfeld}
+          className={q !== "" ? "hat-knoepfe" : ""}
+          placeholder="Suchen…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          // Escape wirft die Suche weg, ohne dass man zum Kreuz greifen muss.
+          // Wer sucht, hat die Hände ohnehin auf der Tastatur.
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && q !== "") {
+              e.preventDefault();
+              suchtLoeschen();
+            }
+          }}
+        />
+        {/* Beide Knöpfe erscheinen nur, solange etwas im Feld steht: ohne
+            Suchwort gäbe es nichts wegzuwerfen und nichts einzugrenzen. */}
+        {q !== "" && (
+          <div className="such-knoepfe">
+            <button className="icon-btn" title="Suche leeren (Esc)" aria-label="Suche leeren" onClick={suchtLoeschen}>
+              ✕
+            </button>
+            {/* Der Punkt daneben sagt, dass ein Filter gesetzt ist -- sonst
+                wundert man sich über zu wenige Treffer. */}
+            <button
+              className={"icon-btn" + (filterAktiv ? " aktiv" : "")}
+              title={filterAktiv ? "Filter (aktiv)" : "Treffer eingrenzen"}
+              onClick={() => setFilterOffen((v) => !v)}
+            >
+              ⚙
+            </button>
+          </div>
         )}
       </div>
 
@@ -609,7 +605,7 @@ export default function Sidebar(props: Props) {
           {/* Einlesen fragt zuerst, wohin. Frueher hing an jeder Ablage ein
               eigener Pfeil dafuer; die Frage ist dieselbe, sie steht jetzt nur
               einmal da statt an jeder Ueberschrift. */}
-          <div className="vorlagenmenue">
+          <div className="klappmenue">
             <button
               className="text-btn"
               title="Markdown, HTML oder ein ZIP einlesen, wahlweise als eigene Ablage"
@@ -621,10 +617,10 @@ export default function Sidebar(props: Props) {
               ↑ Einlesen
             </button>
             {einfuhrOffen && (
-              <div className="vorlagenliste" onMouseLeave={() => setEinfuhrOffen(false)}>
-                <div className="vorlagenliste-titel">Wohin einlesen</div>
+              <div className="klappliste" onMouseLeave={() => setEinfuhrOffen(false)}>
+                <div className="klappliste-titel">Wohin einlesen</div>
                 <button
-                  className="vorlageneintrag"
+                  className="klappeintrag"
                   onClick={() => {
                     setEinfuhrOffen(false);
                     setEinfuhrZiel({ ziel: {}, name: "Seiten" });
@@ -635,7 +631,7 @@ export default function Sidebar(props: Props) {
                 {spaces.map((sp) => (
                   <button
                     key={sp.id}
-                    className="vorlageneintrag"
+                    className="klappeintrag"
                     onClick={() => {
                       setEinfuhrOffen(false);
                       setEinfuhrZiel({ ziel: { spaceId: sp.id }, name: sp.name });
@@ -652,7 +648,7 @@ export default function Sidebar(props: Props) {
               schreibt den Strom direkt auf die Platte, statt ihn erst in den
               Speicher zu ziehen. */}
           {frei("export") && spaces.length > 0 && (
-            <div className="vorlagenmenue">
+            <div className="klappmenue">
               <button
                 className="text-btn"
                 title="Eine ganze Ablage ausgeben, als ZIP, PDF oder Word"
@@ -666,7 +662,7 @@ export default function Sidebar(props: Props) {
               </button>
               {ausfuhrOffen && (
                 <div
-                  className="vorlagenliste"
+                  className="klappliste"
                   onMouseLeave={() => {
                     setAusfuhrOffen(false);
                     setExportFuer(null);
@@ -674,11 +670,11 @@ export default function Sidebar(props: Props) {
                 >
                   {exportFuer === null ? (
                     <>
-                      <div className="vorlagenliste-titel">Welche Ablage</div>
+                      <div className="klappliste-titel">Welche Ablage</div>
                       {spaces.map((sp) => (
                         <button
                           key={sp.id}
-                          className="vorlageneintrag"
+                          className="klappeintrag"
                           onClick={() => setExportFuer(sp.id)}
                         >
                           {sp.name}
@@ -687,7 +683,7 @@ export default function Sidebar(props: Props) {
                     </>
                   ) : (
                     <>
-                      <div className="vorlagenliste-titel">
+                      <div className="klappliste-titel">
                         {spaces.find((sp) => sp.id === exportFuer)?.name ?? "Ablage"} ausgeben
                       </div>
                       {(
@@ -699,7 +695,7 @@ export default function Sidebar(props: Props) {
                       ).map(([form, titel]) => (
                         <button
                           key={titel}
-                          className="vorlageneintrag"
+                          className="klappeintrag"
                           onClick={() => {
                             const id = exportFuer;
                             setAusfuhrOffen(false);
@@ -711,7 +707,7 @@ export default function Sidebar(props: Props) {
                           {titel}
                         </button>
                       ))}
-                      <button className="vorlageneintrag" onClick={() => setExportFuer(null)}>
+                      <button className="klappeintrag" onClick={() => setExportFuer(null)}>
                         ← Andere Ablage
                       </button>
                     </>
