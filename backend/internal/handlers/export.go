@@ -46,7 +46,9 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 
 	var spaceName string
 	if spaceID == "ohne" {
-		spaceName = "Ohne Space"
+		// "Ablage" und nicht "Space": in der Oberfläche heißt es überall so, und
+		// der Name steht im Dateinamen des Archivs.
+		spaceName = "Ohne Ablage"
 	} else {
 		// An admin may read every page, so they must also be allowed to export
 		// the space it sits in. The rule would otherwise contradict itself: the
