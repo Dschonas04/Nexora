@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -120,5 +121,49 @@ func TestNeueAngabeAlleinReicht(t *testing.T) {
 	k := Laden(schreibe(t, "sitzung_stunden = 4\n"))
 	if k.SitzungStunden != 4 {
 		t.Fatalf("vier Stunden erwartet, bekam %d", k.SitzungStunden)
+	}
+}
+
+// Without a setting of its own the attachments stay where they have always
+// been. An upgrade must not look for them in a different directory, otherwise
+// every file uploaded so far would be gone at once.
+func TestAnhangOrtFaelltAufDatenVerzeichnisZurueck(t *testing.T) {
+	k := Laden(schreibe(t, "daten_verzeichnis = /var/nexora\n"))
+	if k.AnhangOrt() != "/var/nexora" {
+		t.Fatalf("ohne anhang_verzeichnis gilt daten_verzeichnis, bekam %q", k.AnhangOrt())
+	}
+}
+
+// Set, it wins, and only for the attachments: the working directory stays
+// where it is, so the configuration backups do not wander along.
+func TestAnhangVerzeichnisSchlaegtDatenVerzeichnis(t *testing.T) {
+	k := Laden(schreibe(t, `
+daten_verzeichnis = /var/nexora
+anhang_verzeichnis = /mnt/ablage
+`))
+	if k.AnhangOrt() != "/mnt/ablage" {
+		t.Fatalf("anhang_verzeichnis erwartet, bekam %q", k.AnhangOrt())
+	}
+	if k.DatenVerzeich != "/var/nexora" {
+		t.Fatalf("daten_verzeichnis darf unberührt bleiben, bekam %q", k.DatenVerzeich)
+	}
+}
+
+// The disk as a stopgap for the object store is off unless it is asked for, and
+// asking for it is worth a warning: the attachments then lie in two places.
+func TestRueckfallAufDiePlatteIstAus(t *testing.T) {
+	k := Laden(schreibe(t, "s3_aktiv = ja\ns3_endpunkt = 10.0.0.9:9000\n"))
+	if k.S3Rueckfall {
+		t.Fatal("s3_rueckfall muss ohne Angabe aus sein")
+	}
+	mit := Laden(schreibe(t, "s3_aktiv = ja\ns3_endpunkt = 10.0.0.9:9000\ns3_rueckfall = ja\n"))
+	gewarnt := false
+	for _, w := range mit.Warnungen() {
+		if strings.Contains(w, "s3_rueckfall") {
+			gewarnt = true
+		}
+	}
+	if !gewarnt {
+		t.Fatalf("erwartete Warnung zum Rückfall, bekam %v", mit.Warnungen())
 	}
 }
