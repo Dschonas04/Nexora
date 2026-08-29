@@ -145,7 +145,27 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.redis.yml
 ```
 
 An existing MinIO or S3 is wired up through the `NEXORA_S3_*` settings instead
-of the third file.
+of the third file. An object store that has been configured and does not answer
+at startup stops the boot; `s3_rueckfall = ja` allows the disk as a stopgap.
+
+### Where the attachments lie
+
+The bytes of an attachment are the one part of Nexora that does not live in the
+database. By default they lie in a volume Docker manages, `nexora_files`. Two
+settings move them:
+
+```bash
+# a directory of the host, a disk of its own, a mount of the file server
+NEXORA_ANHANG_ORT=/srv/nexora/anhaenge     # .env: what gets mounted
+anhang_verzeichnis = /data/attachments     # config.conf: the path inside
+
+# or not on any disk at all: into a bucket
+s3_aktiv = ja
+```
+
+The directory has to belong to uid/gid `10001`, the account the service runs
+under in the container. Changing the setting does not move the files that are
+already there — carry them over first, then restart.
 
 The same instance also answers over TLS on **https://localhost:3443** with a
 certificate the container issues on first start (825 days, stored in a volume so
@@ -224,7 +244,7 @@ typo must not cause an outage.
 
 | Group | Keys |
 | --- | --- |
-| Server | `port`, `daten_verzeichnis`, `oeffentliche_url` |
+| Server | `port`, `daten_verzeichnis`, `anhang_verzeichnis`, `oeffentliche_url` |
 | Database | `datenbank_url` |
 | Sessions | `jwt_geheimnis`, `sitzung_tage` |
 | License | `lizenz` |
@@ -232,7 +252,7 @@ typo must not cause an outage.
 | Search | `such_woerterbuch` |
 | Attachments | `max_anhang_mb` |
 | Trash | `papierkorb_tage` |
-| Object storage | `s3_aktiv` and seven more |
+| Object storage | `s3_aktiv` and eight more |
 | LDAP / AD | `ldap_aktiv` and ten more |
 | OIDC | `oidc_aktiv` and eight more |
 

@@ -36,8 +36,15 @@ type Konfig struct {
 	Pfad string
 
 	// Server
-	Port            string
-	DatenVerzeich   string
+	Port          string
+	DatenVerzeich string
+	// AnhangVerzeich is where the uploaded files go, separately from the rest
+	// of the data directory. Attachments are the only part that grows without
+	// bound, so they often belong somewhere else than the handful of
+	// configuration backups: on a disk of their own, a share, a mounted volume.
+	// Empty means the same directory as before, so an existing installation
+	// still finds its files after an upgrade.
+	AnhangVerzeich  string
 	OeffentlicheURL string
 
 	// Datenbank
@@ -74,6 +81,12 @@ type Konfig struct {
 	S3Region    string
 	S3TLS       bool
 	S3Pfadstil  bool
+	// S3Rueckfall allows attachments to land on the disk after all when the
+	// object store does not answer at startup. The default is no: whoever set
+	// the store up wants the files there and nowhere else, and an instance
+	// quietly writing locally again spreads the attachments over two places
+	// without anybody noticing.
+	S3Rueckfall bool
 
 	// Redis
 	//
@@ -115,6 +128,7 @@ func Standard() Konfig {
 	return Konfig{
 		Port:            "8080",
 		DatenVerzeich:   "/data/attachments",
+		AnhangVerzeich:  "",
 		OeffentlicheURL: "",
 		DatenbankURL:    "postgres://nexora:nexora@localhost:5432/nexora?sslmode=disable",
 		JWTGeheimnis:    "change-me-in-production",
@@ -128,11 +142,12 @@ func Standard() Konfig {
 		MaxAnhangMB:     25,
 		PapierkorbTage:  30,
 
-		S3Aktiv:    false,
-		S3Bucket:   "nexora",
-		S3Region:   "us-east-1",
-		S3TLS:      false,
-		S3Pfadstil: true,
+		S3Aktiv:     false,
+		S3Bucket:    "nexora",
+		S3Region:    "us-east-1",
+		S3TLS:       false,
+		S3Pfadstil:  true,
+		S3Rueckfall: false,
 
 		RedisVorsilbe: "nexora",
 
@@ -235,6 +250,7 @@ func Laden(pfad string) Konfig {
 
 	text(&k.Port, "port", "PORT")
 	text(&k.DatenVerzeich, "daten_verzeichnis", "NEXORA_DATA_DIR")
+	text(&k.AnhangVerzeich, "anhang_verzeichnis", "NEXORA_ANHANG_PFAD")
 	text(&k.OeffentlicheURL, "oeffentliche_url", "NEXORA_PUBLIC_URL")
 	text(&k.DatenbankURL, "datenbank_url", "DATABASE_URL")
 	text(&k.JWTGeheimnis, "jwt_geheimnis", "JWT_SECRET")
@@ -264,6 +280,7 @@ func Laden(pfad string) Konfig {
 	text(&k.S3Region, "s3_region", "NEXORA_S3_REGION")
 	jaNein(&k.S3TLS, "s3_tls", "NEXORA_S3_TLS")
 	jaNein(&k.S3Pfadstil, "s3_pfadstil", "NEXORA_S3_PFADSTIL")
+	jaNein(&k.S3Rueckfall, "s3_rueckfall", "NEXORA_S3_RUECKFALL")
 
 	text(&k.RedisAdresse, "redis_adresse", "NEXORA_REDIS_ADRESSE")
 	text(&k.RedisPasswort, "redis_passwort", "NEXORA_REDIS_PASSWORT")
@@ -432,6 +449,19 @@ func Pruefen(inhalt string) []string {
 	return beanstandet
 }
 
+// AnhangOrt is the directory the attachments lie in.
+//
+// Two keys point at it: the new anhang_verzeichnis and, as it always has,
+// daten_verzeichnis. The second one is what every installation so far has set,
+// so it stays the fallback -- an upgrade must not move the files out from under
+// a running instance.
+func (k Konfig) AnhangOrt() string {
+	if strings.TrimSpace(k.AnhangVerzeich) != "" {
+		return strings.TrimSpace(k.AnhangVerzeich)
+	}
+	return k.DatenVerzeich
+}
+
 // Warnungen reports settings that are dangerous in production. They are logged
 // rather than fatal: a homelab install with the default secret should still
 // start, it should just be impossible to miss that it did.
@@ -451,6 +481,9 @@ func (k Konfig) Warnungen() []string {
 	}
 	if k.S3Aktiv && k.S3Endpunkt == "" {
 		w = append(w, "s3_aktiv ohne s3_endpunkt, Anhänge landen weiter auf der Platte")
+	}
+	if k.S3Aktiv && k.S3Rueckfall {
+		w = append(w, "s3_rueckfall=ja, bei einer Störung des Objektspeichers landen neue Anhänge doch auf der Platte")
 	}
 	if k.S3Aktiv && !k.S3TLS {
 		w = append(w, "S3 ohne TLS, Zugangsschlüssel und Dateien gehen unverschlüsselt über das Netz")

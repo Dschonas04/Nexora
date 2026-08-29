@@ -25,6 +25,12 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       PORT: "8080"
       NEXORA_DATA_DIR: /data/attachments
+      # Where the attachment bytes lie. Two halves belong together: this path is
+      # the one INSIDE the container, NEXORA_ANHANG_ORT below is what is mounted
+      # onto it — a named volume by default, a directory of the host or a share
+      # if that is set. Anybody moving the attachments changes the ort, not this
+      # path.
+      NEXORA_ANHANG_PFAD: ${NEXORA_ANHANG_PFAD:-/data/attachments}
       # Unlocks the paid extras. Leaving it empty means: Nexora runs with the
       # free scope, and locked calls answer with 402.
       NEXORA_LIZENZ: ${NEXORA_LIZENZ:-}
@@ -40,8 +46,12 @@ services:
       NEXORA_S3_REGION: ${NEXORA_S3_REGION:-}
       NEXORA_S3_TLS: ${NEXORA_S3_TLS:-}
       NEXORA_S3_PFADSTIL: ${NEXORA_S3_PFADSTIL:-}
+      # Whether a store that cannot be reached at startup may be replaced by the
+      # local disk. Empty means no, and then Nexora refuses to start rather than
+      # scattering the attachments over two places.
+      NEXORA_S3_RUECKFALL: ${NEXORA_S3_RUECKFALL:-}
     volumes:
-      - nexora_files:/data/attachments
+      - ${NEXORA_ANHANG_ORT:-nexora_files}:${NEXORA_ANHANG_PFAD:-/data/attachments}
       # This file does NOT lie in the directory, it is copied once from the
       # template:
       #
@@ -88,6 +98,8 @@ services:
 
 volumes:
   nexora_tls:
-  # Only the attachments on disk. The database's volume belongs to the side file
-  # that brings it along.
+  # Only the attachments on disk, and only as long as NEXORA_ANHANG_ORT is not
+  # set: with a path in there the bytes go to that directory and this volume
+  # stays empty. The database's volume belongs to the side file that brings it
+  # along.
   nexora_files:

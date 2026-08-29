@@ -35,7 +35,7 @@ func main() {
 	dbURL := k.DatenbankURL
 	secret := k.JWTGeheimnis
 	port := k.Port
-	dataDir := k.DatenVerzeich
+	anhangOrt := k.AnhangOrt()
 
 	// Startup budget for connecting and migrating. The pool itself outlives this
 	// context, only the setup below is bounded by it.
@@ -75,11 +75,13 @@ func main() {
 	// Choose where attachments live. The object store is the exception, the disk
 	// is the rule: whoever does not set up S3 should never notice it exists.
 	//
-	// An unreachable object store deliberately falls back to the disk rather
-	// than preventing startup. An instance that runs with its new attachments
-	// stored locally beats one that does not come up at all, and the fallback is
-	// reported loudly.
-	var speicher ablage.Ablage = ablage.NeuePlatte(dataDir)
+	// An object store that has been configured and does not answer stops the
+	// start. It used to fall back to the disk, which sounds friendlier than it
+	// is: the instance comes up, uploads work, and only weeks later does anyone
+	// notice that half the attachments lie in a directory nobody backs up while
+	// the other half is in the bucket. Whoever prefers the old behaviour sets
+	// s3_rueckfall.
+	var speicher ablage.Ablage = ablage.NeuePlatte(anhangOrt)
 	if k.S3Aktiv && k.S3Endpunkt != "" {
 		s3, err := ablage.NeuS3(ctx, ablage.Einstellungen{
 			Endpunkt:  k.S3Endpunkt,
@@ -90,10 +92,15 @@ func main() {
 			TLS:       k.S3TLS,
 			Pfadstil:  k.S3Pfadstil,
 		})
-		if err != nil {
-			log.Printf("ACHTUNG: Objektspeicher nicht erreichbar (%v). Anhänge liegen auf der Platte.", err)
-		} else {
+		switch {
+		case err == nil:
 			speicher = s3
+		case k.S3Rueckfall:
+			log.Printf("ACHTUNG: Objektspeicher nicht erreichbar (%v). Anhänge liegen auf der Platte: %s", err, anhangOrt)
+		default:
+			log.Fatalf("Objektspeicher nicht erreichbar: %v\n"+
+				"Nexora startet nicht, damit keine Anhänge auf der Platte landen. "+
+				"Setzen Sie s3_rueckfall = ja, wenn die Platte als Ausweichlager recht ist.", err)
 		}
 	}
 	log.Printf("Anhänge: %s", speicher.Name())

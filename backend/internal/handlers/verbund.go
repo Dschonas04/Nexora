@@ -142,7 +142,7 @@ func (s *Server) dienstAblage(ctx context.Context, k config.Konfig) Dienst {
 	if !k.S3Aktiv || k.S3Endpunkt == "" {
 		d.Name = "Platte"
 		d.Rolle = "Anhänge auf der Platte"
-		d.Adresse = k.DatenVerzeich
+		d.Adresse = k.AnhangOrt()
 		d.Zustand = "läuft"
 		d.Hinweis = "Kein Objektspeicher eingerichtet."
 		d.Notwendig = true
