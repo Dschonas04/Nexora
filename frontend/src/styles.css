@@ -3098,9 +3098,15 @@ textarea::placeholder {
 }
 
 /* Die Adresse ist die lange Spalte -- ohne den Umbruch im Wort schiebt eine
-   Datenbankadresse die Tabelle breiter als das Fenster. */
+   Datenbankadresse die Tabelle breiter als das Fenster. Das Mindestmass haelt
+   sie davon ab, in einem schmalen Fenster zu einer Buchstabensaeule zu werden:
+   enger als das rollt lieber der Rahmen. */
 .verbund-tabelle td code {
   overflow-wrap: anywhere;
+}
+
+.verbund-tabelle td:nth-child(3) {
+  min-width: 210px;
 }
 
 /* Der Zustand steht als Wort in der Spalte. Die Farbe an der Kante kommt dazu,
