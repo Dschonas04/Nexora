@@ -35,6 +35,7 @@ const (
 	AktKontoAngelegt  = "konto.angelegt"
 	AktKontoGeloescht = "konto.geloescht"
 	AktRolleGeaendert = "konto.rolle"
+	AktNameGeaendert  = "konto.benutzername"
 
 	AktSeiteAngelegt     = "seite.angelegt"
 	AktSeiteGeaendert    = "seite.geaendert"

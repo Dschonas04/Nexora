@@ -6,14 +6,16 @@
 import { useEffect, useState } from "react";
 import { User, api } from "../api/client";
 import { useAuth } from "../auth";
-import { useRueckfrage } from "../components/Rueckfrage";
+import { useEingabe, useRueckfrage } from "../components/Rueckfrage";
 
 export default function AdminView() {
   const frage = useRueckfrage();
+  const eingabeFragen = useEingabe();
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [benutzername, setBenutzername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("user");
   const [err, setErr] = useState("");
@@ -29,13 +31,35 @@ export default function AdminView() {
     refresh();
   };
 
+  // Der Anmeldename eines Kontos. Wird hier vergeben, weil er an Konten fehlen
+  // kann, die über das Verzeichnis oder in einer älteren Fassung entstanden
+  // sind -- die melden sich sonst weiter nur über ihre Adresse an.
+  const setBenutzernameVon = async (u: User) => {
+    const eingabe = await eingabeFragen({
+      titel: "Anmeldename",
+      text: `Womit sich ${u.name} statt mit der E-Mail-Adresse anmelden kann. Leer lassen entfernt ihn.`,
+      feld: "Benutzername",
+      vorgabe: u.benutzername,
+      bestaetigen: "Speichern",
+    });
+    if (eingabe === null) return;
+    setErr("");
+    try {
+      await api.benutzernameSetzen(u.id, eingabe.trim());
+      refresh();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
   const addUser = async () => {
     setErr("");
     setBusy(true);
     try {
-      await api.createUser(email.trim(), name.trim(), password, role);
+      await api.createUser(email.trim(), name.trim(), password, role, benutzername.trim());
       setEmail("");
       setName("");
+      setBenutzername("");
       setPassword("");
       setRole("user");
       refresh();
@@ -75,6 +99,11 @@ export default function AdminView() {
           <input placeholder="E-Mail" value={email} onChange={(e) => setEmail(e.target.value)} />
           <input placeholder="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
           <input
+            placeholder="Benutzername (optional)"
+            value={benutzername}
+            onChange={(e) => setBenutzername(e.target.value)}
+          />
+          <input
             type="password"
             placeholder="Passwort (mind. 6)"
             value={password}
@@ -97,8 +126,12 @@ export default function AdminView() {
           <div key={u.id} className="list-row">
             <span className="list-title">
               {u.name} <span className="muted small">{u.email}</span>
+              {u.benutzername && <span className="muted small"> @{u.benutzername}</span>}
             </span>
             <span className="row-actions">
+              <button className="btn" onClick={() => setBenutzernameVon(u)}>
+                {u.benutzername ? "Anmeldename" : "Anmeldename setzen"}
+              </button>
               <span className={"pill" + (u.role === "admin" ? " admin" : "")}>{u.role}</span>
               {/* Your own row is locked: an admin may not demote or delete
                   themselves, which also keeps the last admin in place. */}

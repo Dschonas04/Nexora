@@ -16,10 +16,11 @@ import (
 )
 
 type newUserReq struct {
-	Email    string `json:"email"`
-	Name     string `json:"name"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
+	Email        string `json:"email"`
+	Name         string `json:"name"`
+	Benutzername string `json:"benutzername"`
+	Password     string `json:"password"`
+	Role         string `json:"role"`
 }
 
 // CreateUser lets an admin add an account directly, including its role. The
@@ -54,6 +55,14 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if req.Role == "admin" {
 		role = "admin"
 	}
+	benutzername, err := benutzernamePruefen(req.Benutzername)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if benutzername == "" {
+		benutzername = s.freierBenutzername(r.Context(), benutzernameAusAdresse(req.Email))
+	}
 
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
@@ -63,13 +72,17 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	var u models.User
 	err = s.Pool.QueryRow(r.Context(),
-		`INSERT INTO users (email, name, password_hash, role) VALUES ($1, $2, $3, $4)
-		 RETURNING id, email, name, role, created_at`,
-		req.Email, req.Name, hash, role,
-	).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt)
+		`INSERT INTO users (email, name, benutzername, password_hash, role) VALUES ($1, $2, $3, $4, $5)
+		 RETURNING id, email, name, coalesce(benutzername, ''), role, created_at`,
+		req.Email, req.Name, leerAlsNull(benutzername), hash, role,
+	).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &u.Role, &u.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			if nameSchonVergeben(pgErr.ConstraintName) {
+				writeErr(w, http.StatusConflict, "dieser Benutzername ist schon vergeben")
+				return
+			}
 			writeErr(w, http.StatusConflict, "email already registered")
 			return
 		}

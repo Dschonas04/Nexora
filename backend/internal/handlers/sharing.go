@@ -137,7 +137,7 @@ func (s *Server) RemoveShare(w http.ResponseWriter, r *http.Request) {
 // public instance.
 func (s *Server) ListUsers(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.Pool.Query(r.Context(),
-		`SELECT id, email, name, role, created_at FROM users ORDER BY name`)
+		`SELECT id, email, name, coalesce(benutzername, ''), role, created_at FROM users ORDER BY name`)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "query failed")
 		return
@@ -147,7 +147,7 @@ func (s *Server) ListUsers(w http.ResponseWriter, r *http.Request) {
 	list := []models.User{}
 	for rows.Next() {
 		var u models.User
-		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt); err == nil {
+		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &u.Role, &u.CreatedAt); err == nil {
 			list = append(list, u)
 		}
 	}

@@ -6,8 +6,8 @@ import { api, User } from "./api/client";
 interface AuthCtx {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, name: string, password: string) => Promise<void>;
+  login: (kennung: string, password: string) => Promise<void>;
+  register: (email: string, name: string, password: string, benutzername?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -29,11 +29,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = async (email: string, password: string) => {
-    setUser(await api.login(email, password));
+  const login = async (kennung: string, password: string) => {
+    setUser(await api.login(kennung, password));
   };
-  const register = async (email: string, name: string, password: string) => {
-    setUser(await api.register(email, name, password));
+  const register = async (email: string, name: string, password: string, benutzername = "") => {
+    setUser(await api.register(email, name, password, benutzername));
   };
   // Clear the cookie first, then the local state, so a failing request leaves
   // the user signed in rather than showing a logged-out UI with a live session.

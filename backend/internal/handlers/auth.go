@@ -15,9 +15,10 @@ import (
 )
 
 type registerReq struct {
-	Email    string `json:"email"`
-	Name     string `json:"name"`
-	Password string `json:"password"`
+	Email        string `json:"email"`
+	Name         string `json:"name"`
+	Benutzername string `json:"benutzername"`
+	Password     string `json:"password"`
 }
 
 // Register creates an account and logs it straight in. Registration is open to
@@ -74,6 +75,19 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "password must be at least 6 characters")
 		return
 	}
+
+	// Der Benutzername ist freiwillig. Wer keinen angibt, bekommt einen aus dem
+	// vorderen Teil der Adresse: sonst haetten die meisten Konten keinen, und
+	// die Anmeldung mit Namen waere eine Einstellung, die niemand findet.
+	benutzername, err := benutzernamePruefen(req.Benutzername)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if benutzername == "" {
+		benutzername = s.freierBenutzername(r.Context(), benutzernameAusAdresse(req.Email))
+	}
+
 	hash, err := auth.HashPassword(req.Password)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "hash failed")
@@ -82,15 +96,19 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 
 	var u models.User
 	err = s.Pool.QueryRow(r.Context(),
-		`INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3)
-		 RETURNING id, email, name, role, created_at`,
-		req.Email, req.Name, hash,
-	).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt)
+		`INSERT INTO users (email, name, benutzername, password_hash) VALUES ($1, $2, $3, $4)
+		 RETURNING id, email, name, coalesce(benutzername, ''), role, created_at`,
+		req.Email, req.Name, leerAlsNull(benutzername), hash,
+	).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &u.Role, &u.CreatedAt)
 	if err != nil {
-		// 23505 is unique_violation, which here can only be the email index.
+		// 23505 is unique_violation: either the email or the username is taken.
 		// Catching it avoids a select-then-insert race between two signups.
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			if nameSchonVergeben(pgErr.ConstraintName) {
+				writeErr(w, http.StatusConflict, "dieser Benutzername ist schon vergeben")
+				return
+			}
 			writeErr(w, http.StatusConflict, "email already registered")
 			return
 		}
@@ -117,25 +135,39 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 type loginReq struct {
+	// Kennung ist Adresse oder Benutzername. Das Feld email bleibt daneben
+	// stehen, weil aeltere Fassungen der Oberflaeche und jedes Skript, das
+	// gegen diese Schnittstelle geschrieben wurde, es so schicken.
+	Kennung  string `json:"kennung"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 // Login checks the credentials and issues a session cookie.
+//
+// Angemeldet wird mit der Adresse ODER dem Benutzernamen. Beides in einem Feld
+// und nicht in zweien: an einer Anmeldemaske erst zu waehlen, womit man sich
+// gleich anmeldet, ist eine Frage, die niemand stellen muss -- ein @ im Text
+// beantwortet sie.
 func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginReq
 	if err := decode(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "invalid body")
 		return
 	}
-	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+	kennung := strings.ToLower(strings.TrimSpace(req.Kennung))
+	if kennung == "" {
+		kennung = strings.ToLower(strings.TrimSpace(req.Email))
+	}
 
 	var u models.User
 	var hash string
 	err := s.Pool.QueryRow(r.Context(),
-		`SELECT id, email, name, password_hash, role, created_at FROM users WHERE email = $1`,
-		req.Email,
-	).Scan(&u.ID, &u.Email, &u.Name, &hash, &u.Role, &u.CreatedAt)
+		`SELECT id, email, name, coalesce(benutzername, ''), password_hash, role, created_at
+		   FROM users
+		  WHERE email = $1 OR lower(benutzername) = $1`,
+		kennung,
+	).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &hash, &u.Role, &u.CreatedAt)
 	// One message for an unknown address and for a wrong password, so the
 	// response cannot be used to find out which addresses are registered.
 	if err != nil || !auth.CheckPassword(hash, req.Password) {
@@ -144,7 +176,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		// that was entered stands there in the clear, the password never.
 		s.spur(r.Context(), models.Spureintrag{
 			Aktion:      AktAnmeldungFehl,
-			AkteurEmail: req.Email,
+			AkteurEmail: kennung,
 			ObjektArt:   "konto",
 			IP:          absenderIP(r),
 		})
@@ -196,8 +228,8 @@ func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var u models.User
 	err := s.Pool.QueryRow(r.Context(),
-		`SELECT id, email, name, role, created_at FROM users WHERE id = $1`, uid,
-	).Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt)
+		`SELECT id, email, name, coalesce(benutzername, ''), role, created_at FROM users WHERE id = $1`, uid,
+	).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &u.Role, &u.CreatedAt)
 	if err != nil {
 		writeErr(w, http.StatusUnauthorized, "unauthorized")
 		return

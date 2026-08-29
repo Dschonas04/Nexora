@@ -8,6 +8,7 @@ export default function Register() {
   const { register } = useAuth();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [benutzername, setBenutzername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -17,7 +18,7 @@ export default function Register() {
     setBusy(true);
     setError("");
     try {
-      await register(email, name, password);
+      await register(email, name, password, benutzername);
     } catch (err) {
       setError((err as Error).message || "Registrierung fehlgeschlagen");
     } finally {
@@ -38,6 +39,19 @@ export default function Register() {
         <div className="field">
           <label>E-Mail</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>Benutzername</label>
+          <input
+            value={benutzername}
+            onChange={(e) => setBenutzername(e.target.value)}
+            placeholder="freiwillig, sonst aus der E-Mail"
+            autoComplete="username"
+          />
+          <div className="muted small">
+            Damit kannst du dich statt mit der E-Mail-Adresse anmelden. Kleinbuchstaben,
+            Ziffern, Punkt, Strich und Unterstrich.
+          </div>
         </div>
         <div className="field">
           <label>Passwort</label>
