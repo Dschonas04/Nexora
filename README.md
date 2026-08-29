@@ -99,6 +99,10 @@ license key. On 2030-08-19 the whole thing becomes Apache 2.0.
   lost device can be locked out without logging everyone else out. Sessions
   renew themselves while they are in use and expire when they are not; logging
   out revokes the token rather than only clearing the browser
+- **Sign in with a username**: an account has a login name next to its address
+  and either of the two gets you in — the `@` decides which one was typed. It is
+  handed out on registration, derived from the address when nobody picks one, so
+  the second way is there without anybody having to switch it on
 - **Sign in through Keycloak or a directory**: OIDC against any provider that
   publishes a discovery document, or a direct bind against LDAP / Active
   Directory. Both link by verified email address and never take over an account
@@ -292,7 +296,7 @@ repository:
 ## Data Model
 
 ```
-users        id, email, name, password_hash, role, created_at
+users        id, email, name, benutzername, password_hash, role, created_at
 spaces       id, owner_id, name, created_at
 pages        id, owner_id, parent_id, space_id, title, content (jsonb),
              content_text, such_tsv (generated), icon, is_public,
@@ -336,7 +340,7 @@ marked below.
 
 ```
 POST   /auth/register                     create account (first one becomes admin)
-POST   /auth/login                        sign in
+POST   /auth/login                        sign in ({kennung, password}: email or username)
 POST   /auth/logout                       sign out
 GET    /auth/me                           current user
 GET    /lizenz                            which extras are unlocked
@@ -444,6 +448,7 @@ GET    /users                             list accounts (admin only)
 POST   /users                             create an account (admin only)
 DELETE /users/{id}                        delete an account (admin only, not yourself)
 PUT    /users/{id}/role                   change role (admin only)
+PUT    /users/{id}/benutzername           set the login name (the account itself or an admin)
 
 GET    /favorites                         favorited pages
 GET    /search?q=                         search titles and content
@@ -492,6 +497,7 @@ backend/                       Go API
   internal/ablage              where attachments are stored: disk or S3
   internal/handlers
     auth.go                    register, login, logout, me
+    benutzername.go            the login name: rules, derivation, changing it
     pages.go                   CRUD, tree, trash, restore, purge, conflicts
     versions.go                snapshots and rollback
     attachments.go             upload, download, delete

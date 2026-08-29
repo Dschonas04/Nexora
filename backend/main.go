@@ -325,6 +325,9 @@ func main() {
 			r.Post("/users", h.CreateUser)
 			r.Delete("/users/{id}", h.DeleteUser)
 			r.Put("/users/{id}/role", h.SetUserRole)
+			// Den Anmeldenamen darf auch das Konto selbst setzen, deshalb
+			// steht die Pruefung im Handler und nicht in dieser Reihe.
+			r.Put("/users/{id}/benutzername", h.BenutzernameSetzen)
 
 			// Spaces
 			r.Get("/spaces", h.ListSpaces)

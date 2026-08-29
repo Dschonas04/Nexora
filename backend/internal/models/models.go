@@ -11,11 +11,14 @@ import (
 // User is the public view of an account. The password hash is deliberately
 // absent so it cannot leak through a handler that serialises this struct.
 type User struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name"`
-	Role      string    `json:"role"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID    string `json:"id"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
+	// Benutzername ist der zweite Weg an der Anmeldung und darf leer sein:
+	// Konten aus SSO und aus aelteren Fassungen haben keinen.
+	Benutzername string    `json:"benutzername"`
+	Role         string    `json:"role"`
+	CreatedAt    time.Time `json:"createdAt"`
 }
 
 // Space is a top-level container grouping pages beyond simple nesting.

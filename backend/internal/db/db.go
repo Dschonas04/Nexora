@@ -393,6 +393,44 @@ CREATE INDEX IF NOT EXISTS sitzungen_ablauf_idx ON sitzungen(laeuft_ab);
 -- denn die Breite gehoert zum Satz des Textes wie eine Ueberschrift.
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS breite text NOT NULL DEFAULT 'normal';
 
+-- Der Benutzername ist der zweite Weg an der Anmeldung: wer sich seine Adresse
+-- nicht merken mag, tippt ihn statt ihrer. Er darf leer bleiben, deshalb keine
+-- NOT-NULL-Spalte -- ein Konto aus SSO oder aus einer alten Fassung hat unter
+-- Umstaenden keinen, und ohne ihn muss die Anmeldung ueber die Adresse weiter
+-- gehen.
+--
+-- Eindeutig ohne Ruecksicht auf Gross- und Kleinschreibung: sonst waeren Anna
+-- und anna zwei Konten, und an der Anmeldung koennte niemand sagen, welches
+-- gemeint ist. NULL faellt aus dem Index heraus, beliebig viele Konten duerfen
+-- also ohne Namen bleiben.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS benutzername text;
+CREATE UNIQUE INDEX IF NOT EXISTS benutzer_name_einmalig
+	ON users (lower(benutzername)) WHERE benutzername IS NOT NULL;
+
+-- Bestandskonten bekommen einen Namen aus dem vorderen Teil ihrer Adresse:
+-- sonst haette nach der Umstellung nur wer sich neu anmeldet einen, und der
+-- neue Weg waere fuer alle anderen zu.
+--
+-- Was sich dabei doppeln wuerde, bleibt leer statt zu raten. Zwei Adressen bei
+-- verschiedenen Anbietern koennen denselben vorderen Teil haben, und dann ist
+-- anna@a.de nicht mehr "anna" als anna@b.de; wer von beiden ihn bekommt, waere
+-- Zufall. Diese Konten melden sich weiter mit ihrer Adresse an und koennen
+-- ihren Namen selbst setzen.
+UPDATE users u SET benutzername = k.name
+FROM (
+	SELECT id,
+	       regexp_replace(lower(split_part(email, '@', 1)), '[^a-z0-9._-]', '', 'g') AS name,
+	       count(*) OVER (
+	           PARTITION BY regexp_replace(lower(split_part(email, '@', 1)), '[^a-z0-9._-]', '', 'g')
+	       ) AS wieoft
+	FROM users
+	WHERE benutzername IS NULL
+) k
+WHERE u.id = k.id
+  AND k.wieoft = 1
+  AND length(k.name) BETWEEN 3 AND 32
+  AND NOT EXISTS (SELECT 1 FROM users x WHERE lower(x.benutzername) = k.name);
+
 CREATE TABLE IF NOT EXISTS einstellungen (
 	schluessel    text PRIMARY KEY,
 	wert          text NOT NULL,

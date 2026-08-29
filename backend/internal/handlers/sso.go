@@ -248,8 +248,8 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 	var u models.User
 	var hash string
 	err := s.Pool.QueryRow(ctx,
-		`SELECT id, email, name, password_hash, role, created_at FROM users WHERE email=$1`,
-		email).Scan(&u.ID, &u.Email, &u.Name, &hash, &u.Role, &u.CreatedAt)
+		`SELECT id, email, name, coalesce(benutzername, ''), password_hash, role, created_at FROM users WHERE email=$1`,
+		email).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &hash, &u.Role, &u.CreatedAt)
 
 	if err == nil {
 		// Only an account that was EXPLICITLY created through SSO is taken
@@ -297,11 +297,16 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 		rolle = "admin"
 	}
 
+	// Auch ein Konto aus dem Verzeichnis bekommt einen Benutzernamen, damit es
+	// spaeter nicht als einziges nur ueber die Adresse ansprechbar ist. Bleibt
+	// nichts Brauchbares uebrig, bleibt das Feld leer.
+	benutzername := s.freierBenutzername(ctx, benutzernameAusAdresse(email))
+
 	err = s.Pool.QueryRow(ctx,
-		`INSERT INTO users (email, name, password_hash, role)
-		 VALUES ($1, $2, $3, $4) RETURNING id, email, name, role, created_at`,
-		email, name, "sso:"+herkunft, rolle).
-		Scan(&u.ID, &u.Email, &u.Name, &u.Role, &u.CreatedAt)
+		`INSERT INTO users (email, name, benutzername, password_hash, role)
+		 VALUES ($1, $2, $3, $4, $5) RETURNING id, email, name, coalesce(benutzername, ''), role, created_at`,
+		email, name, leerAlsNull(benutzername), "sso:"+herkunft, rolle).
+		Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &u.Role, &u.CreatedAt)
 	if err != nil {
 		return u, errors.New("Konto konnte nicht angelegt werden.")
 	}

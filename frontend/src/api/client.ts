@@ -8,6 +8,9 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  // Der Anmeldename. Kann leer sein: Konten aus SSO und aus älteren Fassungen
+  // haben keinen, und angemeldet wird dann weiter über die Adresse.
+  benutzername: string;
   role: string;
   createdAt: string;
 }
@@ -453,10 +456,15 @@ export interface PagePatch {
 // than a generated client, so the API surface stays readable at a glance.
 export const api = {
   me: () => req<User>("/auth/me"),
-  login: (email: string, password: string) =>
-    req<User>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
-  register: (email: string, name: string, password: string) =>
-    req<User>("/auth/register", { method: "POST", body: JSON.stringify({ email, name, password }) }),
+  // kennung ist Adresse oder Benutzername; welches von beidem, entscheidet der
+  // Server am @.
+  login: (kennung: string, password: string) =>
+    req<User>("/auth/login", { method: "POST", body: JSON.stringify({ kennung, password }) }),
+  register: (email: string, name: string, password: string, benutzername = "") =>
+    req<User>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email, name, password, benutzername }),
+    }),
   logout: () => req<void>("/auth/logout", { method: "POST" }),
 
   // What the login page may offer. Public, because nobody is signed in here
@@ -728,14 +736,19 @@ export const api = {
   removeShare: (id: string, userId: string) =>
     req<void>(`/pages/${id}/shares/${userId}`, { method: "DELETE" }),
   listUsers: () => req<User[]>("/users"),
-  createUser: (email: string, name: string, password: string, role: string) =>
+  createUser: (email: string, name: string, password: string, role: string, benutzername = "") =>
     req<User>("/users", {
       method: "POST",
-      body: JSON.stringify({ email, name, password, role }),
+      body: JSON.stringify({ email, name, password, role, benutzername }),
     }),
   deleteUser: (id: string) => req<void>(`/users/${id}`, { method: "DELETE" }),
   setUserRole: (id: string, role: string) =>
     req<{ role: string }>(`/users/${id}/role`, { method: "PUT", body: JSON.stringify({ role }) }),
+  benutzernameSetzen: (id: string, benutzername: string) =>
+    req<{ benutzername: string }>(`/users/${id}/benutzername`, {
+      method: "PUT",
+      body: JSON.stringify({ benutzername }),
+    }),
 
   // Wartung: Konfigurationsdatei, Neustart, Papierkorb der Instanz
   konfigLesen: () => req<KonfigDatei>("/system/konfig"),

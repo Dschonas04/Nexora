@@ -7,7 +7,9 @@ import { useAuth } from "../auth";
 
 export default function Login() {
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
+  // Eine Zeile für beides. Was drin steht, entscheidet der Server am @: eine
+  // Auswahl davor wäre eine Frage, die niemand beantworten müsste.
+  const [kennung, setKennung] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,13 +39,13 @@ export default function Login() {
     setError("");
     try {
       if (ueberVerzeichnis) {
-        await api.ldapAnmelden(email, password);
+        await api.ldapAnmelden(kennung, password);
         // The session sits in the cookie; reloading lets AuthProvider read it
         // and switches over to the workspace.
         window.location.href = "/";
         return;
       }
-      await login(email, password);
+      await login(kennung, password);
     } catch (err) {
       setError((err as Error).message || "Anmeldung fehlgeschlagen");
     } finally {
@@ -58,11 +60,15 @@ export default function Login() {
         <p className="sub">Melde dich in deinem Workspace an</p>
         {error && <div className="error">{error}</div>}
         <div className="field">
-          <label>{ueberVerzeichnis ? "Benutzer" : "E-Mail"}</label>
+          <label>{ueberVerzeichnis ? "Benutzer" : "E-Mail oder Benutzername"}</label>
+          {/* type="text" auch ohne Verzeichnis: bei type="email" hält der
+              Browser jede Eingabe ohne @ für einen Tippfehler und lässt das
+              Formular gar nicht erst abschicken. */}
           <input
-            type={ueberVerzeichnis ? "text" : "email"}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            autoComplete="username"
+            value={kennung}
+            onChange={(e) => setKennung(e.target.value)}
             autoFocus
           />
         </div>
@@ -81,7 +87,7 @@ export default function Login() {
               onClick={() => setUeberVerzeichnis((v) => !v)}
             >
               {ueberVerzeichnis
-                ? "Stattdessen mit E-Mail und Passwort anmelden"
+                ? "Stattdessen mit Konto und Passwort anmelden"
                 : "Stattdessen über das Verzeichnis anmelden"}
             </button>
           </div>
