@@ -3090,8 +3090,17 @@ textarea::placeholder {
 /* Der Verbund steht als Tabelle, nicht als Kachelfeld: es sind immer dieselben
    Angaben je Dienst, und untereinander in Spalten liest man sie schneller, als
    wenn jede Angabe in jeder Kachel woanders anfaengt. */
-.verbund-tabelle {
+/* Sechs Spalten passen nicht in jedes Fenster. Statt die ganze Seite quer
+   laufen zu lassen, rollt die Tabelle in ihrem eigenen Rahmen. */
+.tabelle-rollen {
+  overflow-x: auto;
   margin-bottom: 28px;
+}
+
+/* Die Adresse ist die lange Spalte -- ohne den Umbruch im Wort schiebt eine
+   Datenbankadresse die Tabelle breiter als das Fenster. */
+.verbund-tabelle td code {
+  overflow-wrap: anywhere;
 }
 
 /* Der Zustand steht als Wort in der Spalte. Die Farbe an der Kante kommt dazu,

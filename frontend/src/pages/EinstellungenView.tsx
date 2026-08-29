@@ -1149,7 +1149,8 @@ export default function EinstellungenView() {
               Steuerkanal von Docker, und wer den hat, ist auf dem Wirt allmächtig. Eine
               Liste von Containern ist das nicht wert.
             </p>
-            <table className="tabelle verbund-tabelle">
+            <div className="tabelle-rollen">
+              <table className="tabelle verbund-tabelle">
               <thead>
                 <tr>
                   <th>Dienst</th>
@@ -1196,8 +1197,9 @@ export default function EinstellungenView() {
                     </td>
                   </tr>
                 )}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
 
             <h3>Nur beim Start änderbar</h3>
             <p className="muted small">
