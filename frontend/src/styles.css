@@ -3106,7 +3106,7 @@ textarea::placeholder {
 }
 
 .verbund-tabelle td:nth-child(3) {
-  min-width: 210px;
+  min-width: 140px;
 }
 
 /* Der Zustand steht als Wort in der Spalte. Die Farbe an der Kante kommt dazu,
