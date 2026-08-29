@@ -1151,54 +1151,54 @@ export default function EinstellungenView() {
             </p>
             <div className="tabelle-rollen">
               <table className="tabelle verbund-tabelle">
-              <thead>
-                <tr>
-                  <th>Dienst</th>
-                  <th>Rolle</th>
-                  <th>Adresse</th>
-                  <th>Zustand</th>
-                  <th>Fassung</th>
-                  <th>Antwort</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(z.verbund ?? []).map((d) => (
-                  <Fragment key={d.name}>
-                    <tr
-                      className={
-                        d.zustand === "läuft" ? "laeuft" : d.zustand === "fehlt" ? "fehlt" : "aus"
-                      }
-                    >
-                      <td>{d.name}</td>
-                      <td className="muted">{d.rolle}</td>
-                      <td>
-                        {d.adresse ? <code>{d.adresse}</code> : <span className="muted">keine</span>}
-                      </td>
-                      <td className="verbund-zustand einzeilig">
-                        {d.zustand}
-                        {d.zustand === "fehlt" && !d.notwendig && (
-                          <span className="muted"> — nicht schlimm</span>
-                        )}
-                      </td>
-                      <td className="muted">{d.fassung || "—"}</td>
-                      <td className="muted einzeilig">{d.antwort || "—"}</td>
-                    </tr>
-                    {d.hinweis && (
-                      <tr className="verbund-hinweis">
-                        <td colSpan={6}>{d.hinweis}</td>
-                      </tr>
-                    )}
-                  </Fragment>
-                ))}
-                {(z.verbund ?? []).length === 0 && (
+                <thead>
                   <tr>
-                    <td colSpan={6} className="muted">
-                      Kein Dienst gemeldet.
-                    </td>
+                    <th>Dienst</th>
+                    <th>Rolle</th>
+                    <th>Adresse</th>
+                    <th>Zustand</th>
+                    <th>Fassung</th>
+                    <th>Antwort</th>
                   </tr>
-                )}
-                </tbody>
-              </table>
+                </thead>
+                <tbody>
+                  {(z.verbund ?? []).map((d) => (
+                    <Fragment key={d.name}>
+                      <tr
+                        className={
+                          d.zustand === "läuft" ? "laeuft" : d.zustand === "fehlt" ? "fehlt" : "aus"
+                        }
+                      >
+                        <td>{d.name}</td>
+                        <td className="muted">{d.rolle}</td>
+                        <td>
+                          {d.adresse ? <code>{d.adresse}</code> : <span className="muted">keine</span>}
+                        </td>
+                        <td className="verbund-zustand einzeilig">
+                          {d.zustand}
+                          {d.zustand === "fehlt" && !d.notwendig && (
+                            <span className="muted"> — nicht schlimm</span>
+                          )}
+                        </td>
+                        <td className="muted">{d.fassung || "—"}</td>
+                        <td className="muted einzeilig">{d.antwort || "—"}</td>
+                      </tr>
+                      {d.hinweis && (
+                        <tr className="verbund-hinweis">
+                          <td colSpan={6}>{d.hinweis}</td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                  {(z.verbund ?? []).length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="muted">
+                        Kein Dienst gemeldet.
+                      </td>
+                    </tr>
+                  )}
+                  </tbody>
+                </table>
             </div>
 
             <h3>Nur beim Start änderbar</h3>
