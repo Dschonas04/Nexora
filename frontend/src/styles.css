@@ -1962,6 +1962,12 @@ textarea::placeholder {
 .sidebar-werkzeuge .klappmenue,
 .sidebar-werkzeuge .exportmenue {
   position: static;
+  /* Ein Block um den Knopf herum bekommt eine Textzeile mit Unterlänge und
+     ist damit höher als der Knopf selbst; Import und Export standen dadurch
+     zwei Pixel tiefer als die beiden Knöpfe ohne Hülle daneben. Als Flex
+     entsteht keine Textzeile, und alle vier sitzen auf derselben Höhe. */
+  display: flex;
+  align-items: center;
 }
 .sidebar-werkzeuge .klappliste {
   left: 6px;
