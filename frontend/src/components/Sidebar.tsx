@@ -236,8 +236,6 @@ export default function Sidebar(props: Props) {
   const [q, setQ] = useState("");
   const { frei } = useLizenz();
 
-  // Templates are fetched once, not every time the menu opens: the list is short
-  // and rarely changes, one request per click would be a waste.
   const [rechteFuer, setRechteFuer] = useState<{ id: string; name: string } | null>(null);
   // Id of the space whose visibility menu is open, at most one at a time, hence
   // a single value and not a set.
@@ -1075,8 +1073,6 @@ export default function Sidebar(props: Props) {
                   <span className="tag-anzahl muted small">{ungrouped.length}</span>
                 )}
                 <span className="tree-actions">
-                  {/* Without the arrow React would pass the click event as the
-                      first argument, and that would then be the template id. */}
                   <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
                     +
                   </button>

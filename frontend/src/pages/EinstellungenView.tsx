@@ -9,7 +9,7 @@
 // field: some values can be changed while the server runs, others are fixed at
 // start. Mixing them would produce switches that quietly do nothing, so the
 // fixed ones are always marked as belonging to config.conf.
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { Einstellung, KonfigDatei, Sitzung, SystemZustand, api } from "../api/client";
@@ -1149,30 +1149,55 @@ export default function EinstellungenView() {
               Steuerkanal von Docker, und wer den hat, ist auf dem Wirt allmächtig. Eine
               Liste von Containern ist das nicht wert.
             </p>
-            <div className="verbund">
-              {(z.verbund ?? []).map((d) => (
-                <div
-                  key={d.name}
-                  className={
-                    "verbund-karte" +
-                    (d.zustand === "läuft" ? " laeuft" : d.zustand === "fehlt" ? " fehlt" : " aus")
-                  }
-                >
-                  <div className="verbund-kopf">
-                    <span className="verbund-name">{d.name}</span>
-                    <span className="verbund-zustand">{d.zustand}</span>
-                  </div>
-                  <div className="verbund-rolle">{d.rolle}</div>
-                  <div className="verbund-adresse">{d.adresse || "keine Adresse"}</div>
-                  <div className="verbund-werte">
-                    {d.fassung && <span>Fassung {d.fassung}</span>}
-                    {d.antwort && <span>{d.antwort}</span>}
-                    {d.zustand === "fehlt" && !d.notwendig && <span>nicht schlimm</span>}
-                  </div>
-                  {d.hinweis && <div className="verbund-hinweis">{d.hinweis}</div>}
-                </div>
-              ))}
-            </div>
+            <table className="tabelle verbund-tabelle">
+              <thead>
+                <tr>
+                  <th>Dienst</th>
+                  <th>Rolle</th>
+                  <th>Adresse</th>
+                  <th>Zustand</th>
+                  <th>Fassung</th>
+                  <th>Antwort</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(z.verbund ?? []).map((d) => (
+                  <Fragment key={d.name}>
+                    <tr
+                      className={
+                        d.zustand === "läuft" ? "laeuft" : d.zustand === "fehlt" ? "fehlt" : "aus"
+                      }
+                    >
+                      <td>{d.name}</td>
+                      <td className="muted">{d.rolle}</td>
+                      <td>
+                        {d.adresse ? <code>{d.adresse}</code> : <span className="muted">keine</span>}
+                      </td>
+                      <td className="verbund-zustand einzeilig">
+                        {d.zustand}
+                        {d.zustand === "fehlt" && !d.notwendig && (
+                          <span className="muted"> — nicht schlimm</span>
+                        )}
+                      </td>
+                      <td className="muted">{d.fassung || "—"}</td>
+                      <td className="muted einzeilig">{d.antwort || "—"}</td>
+                    </tr>
+                    {d.hinweis && (
+                      <tr className="verbund-hinweis">
+                        <td colSpan={6}>{d.hinweis}</td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+                {(z.verbund ?? []).length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="muted">
+                      Kein Dienst gemeldet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
             <h3>Nur beim Start änderbar</h3>
             <p className="muted small">

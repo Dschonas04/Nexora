@@ -263,12 +263,6 @@ a {
   background: var(--hover);
 }
 
-.tree-icon {
-  width: 20px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
 .tree-label {
   flex: 1;
   overflow: hidden;
@@ -382,13 +376,6 @@ a {
 }
 .page.voll {
   max-width: none;
-}
-
-.page-icon {
-  font-size: 56px;
-  line-height: 1;
-  cursor: pointer;
-  margin-bottom: 8px;
 }
 
 .page-title {
@@ -1186,19 +1173,6 @@ textarea::placeholder {
   color: var(--fehler-text);
   background: rgba(224, 80, 122, 0.1);
 }
-.page-link-add {
-  border: 1px dashed var(--border);
-  background: transparent;
-  color: var(--muted);
-  border-radius: var(--radius);
-  padding: 4px 8px;
-  font-size: 13px;
-  cursor: pointer;
-}
-.page-link-add:hover {
-  border-color: var(--accent-lesbar);
-  color: var(--accent-lesbar);
-}
 .page-link-picker {
   position: relative;
   display: inline-block;
@@ -1721,12 +1695,6 @@ textarea::placeholder {
   margin-top: 2px;
 }
 
-.zusatzliste {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
-}
 /* Freigeschaltete Funktionen bekommen eine deutlich flachere Ecke als die
    runden Marken sonst. Eine Pille sagt "Etikett", ein fast eckiges Feld sagt
    "Zustand", und ein Zustand ist es hier: an oder aus. */
@@ -1934,7 +1902,8 @@ textarea::placeholder {
   cursor: pointer;
 }
 
-/* Template menu in the head of the sidebar */
+/* Die Huelle um einen Knopf, unter dem eine Liste aufgeht: Import und
+   Export in der Werkzeugzeile, die Ausfuhr an einer einzelnen Ablage. */
 .klappmenue {
   position: relative;
 }
@@ -3118,84 +3087,48 @@ textarea::placeholder {
    ungleich lang sind: die Datenbank nennt ihre Verbindungen, der Speicher seine
    Belegung, und mancher Dienst hat gar keinen Hinweis. Als Karte darf jeder so
    viel Platz nehmen, wie er braucht. */
-.verbund {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
+/* Der Verbund steht als Tabelle, nicht als Kachelfeld: es sind immer dieselben
+   Angaben je Dienst, und untereinander in Spalten liest man sie schneller, als
+   wenn jede Angabe in jeder Kachel woanders anfaengt. */
+.verbund-tabelle {
   margin-bottom: 28px;
 }
 
-.verbund-karte {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  background: var(--flaeche);
-  /* The stripe on the left carries the state. Colour alone would be no
-     information for half the people, so it also stands beside it as a word. */
-  border-left: 3px solid var(--border);
+/* Der Zustand steht als Wort in der Spalte. Die Farbe an der Kante kommt dazu,
+   sie ersetzt das Wort nicht: fuer einen Teil der Leute waere Farbe allein
+   ueberhaupt keine Angabe. */
+.verbund-tabelle tbody tr.laeuft td:first-child {
+  box-shadow: inset 3px 0 0 var(--erfolg-text);
 }
 
-.verbund-karte.laeuft {
-  border-left-color: var(--erfolg-text);
+.verbund-tabelle tbody tr.fehlt td:first-child {
+  box-shadow: inset 3px 0 0 var(--fehler-text);
 }
 
-.verbund-karte.fehlt {
-  border-left-color: var(--fehler-text);
-}
-
-.verbund-kopf {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.verbund-name {
-  font-weight: 600;
-  font-size: 15px;
-}
-
-.verbund-zustand {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.verbund-karte.laeuft .verbund-zustand {
+.verbund-tabelle tr.laeuft .verbund-zustand {
   color: var(--erfolg-text);
 }
 
-.verbund-karte.fehlt .verbund-zustand {
+.verbund-tabelle tr.fehlt .verbund-zustand {
   color: var(--fehler-text);
 }
 
-.verbund-rolle {
-  font-size: 13px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-.verbund-adresse {
-  margin-top: 8px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-  color: var(--text);
-  overflow-wrap: anywhere;
-}
-
-.verbund-werte {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.verbund-hinweis {
-  margin-top: 8px;
+/* Der Hinweis gehoert zur Zeile darueber und bekommt deshalb keine eigene
+   Trennlinie, sonst saehe er wie ein eigener Dienst aus. */
+.verbund-tabelle tr.verbund-hinweis td {
+  border-bottom: 1px solid var(--border);
+  padding-top: 0;
   font-size: 12px;
   line-height: 1.5;
   color: var(--muted);
+}
+
+.verbund-tabelle tbody tr:not(.verbund-hinweis) td {
+  border-bottom: 1px solid var(--border);
+}
+
+.verbund-tabelle tbody tr:not(.verbund-hinweis):has(+ tr.verbund-hinweis) td {
+  border-bottom: none;
 }
 
 /* What stands where a part of the view could not be drawn. Deliberately quiet:

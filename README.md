@@ -165,7 +165,7 @@ Four tiers, each containing the smaller ones:
 | Tier | adds |
 |---|---|
 | `free` | pages, search, trash, Markdown import and export |
-| `advanced` | version history, attachments, templates, comments |
+| `advanced` | version history, attachments, comments |
 | `pro` | sharing and public links, conflict detection, PDF/Word export, search inside attachments |
 | `business` | groups, audit trail, OIDC, LDAP |
 
@@ -468,6 +468,8 @@ backend/                       Go API
   internal/lizenz              the gate: asks whoever registered as verifier
   internal/middleware          cookie auth
   internal/einlesen            Markdown and HTML to editor blocks: the import side
+  internal/dok                 typesetting: PDF and .docx written by hand
+  internal/ablage              where attachments are stored: disk or S3
   internal/handlers
     auth.go                    register, login, logout, me
     pages.go                   CRUD, tree, trash, restore, purge, conflicts
@@ -488,17 +490,26 @@ backend/                       Go API
     sharing.go                 public links
     access.go                  per-user shares and permission checks
     links.go, backlinks.go     explicit page links
+    erwaehnungen.go            who may be named with @ in a comment
     graph.go                   graph nodes and edges
+    export.go, exportdateien.go  a whole space as ZIP, PDF or Word
+    oeffentlich.go             what a public link is allowed to show
+    dateiausgabe.go            the headers an attachment is handed out with
+    verbund.go                 the state of database, cache and file store
     spaces.go, tags.go         organisation and full text search
     users.go                   admin account management
 frontend/                      React SPA (Vite + TypeScript)
   src/api                      typed API client
   src/lizenz.tsx               which extras are unlocked, asked once
+  src/design.tsx               the three colour schemes
+  src/klappen.ts               closing a menu on a click outside it
   src/components               Sidebar, PageTree, Editor, Attachments,
-                               QuickView, Kommentare, VersionPanel,
-                               ShareDialog, LocalGraph, SpaceRechte, Einfuhr
+                               QuickView, Kommentare, VersionPanel, ShareDialog,
+                               Grafbild, LocalGraph, SpaceRechte, Einfuhr,
+                               Rueckfrage, Fehlergrenze
   src/pages                    Login, Register, Workspace, PageView, PostfachView,
-                               PublicPage, TrashView, GraphView, AdminView,
+                               PublicPage, TrashView, TagView, GraphView, AdminView,
+                               GruppenView, EinstellungenView,
                                PruefspurView (shown as "Protokoll")
 docker-compose.yml             backend + frontend
 docker-compose.db.yml          optional: bundled PostgreSQL
@@ -532,7 +543,7 @@ text search over pages, backlinks, knowledge graph, accounts and roles.
 
 **Needs a key:** version history, attachments, sharing and public links, audit
 trail, groups and space permissions, SSO via OIDC, LDAP/Active Directory,
-attachment search, space export, templates, comments, conflict detection.
+attachment search, space export, comments, conflict detection.
 
 Locked endpoints answer `402 Payment Required` and the browser hides the
 corresponding controls. Hiding is a courtesy to the reader — the refusal is
