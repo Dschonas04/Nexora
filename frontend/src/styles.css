@@ -3247,3 +3247,44 @@ textarea::placeholder {
   color: var(--accent-lesbar);
   font-weight: 500;
 }
+
+/* Die Übersicht stand einmal als Reihe von Kacheln da. Bei vierzehn Angaben ist
+   das keine Übersicht mehr: man sucht in einer Wand aus Kästchen nach der einen
+   Zahl. Untereinander, Beschriftung links und Wert rechts, liest man sie in
+   einem Durchgang. Der Wert steht rechts und nicht links, weil Zahlen so
+   untereinander stehen und sich von selbst vergleichen. */
+.uebersicht-tabelle td:first-child {
+  width: 60%;
+}
+.tabelle td.zahl {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ein Knopf, der wie ein Verweis aussieht. Für "ansehen" mitten im Satz: ein
+   richtiger Knopf würde den Satz zerreißen, ein <a> ginge woanders hin. */
+.btn-schlicht {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--akzent, #2383e2);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.btn-schlicht:hover {
+  opacity: 0.75;
+}
+
+/* Anmeldeversuche. Die Farbe an der Kante ist eine Zugabe, das Ergebnis steht
+   als Wort in der eigenen Spalte: Farbe allein wäre für einen Teil der Leute
+   überhaupt keine Angabe. */
+.anmelde-tabelle tbody tr.fehl td:first-child {
+  box-shadow: inset 3px 0 0 var(--fehler-text);
+}
+.anmelde-tabelle tbody tr.gelungen td:first-child {
+  box-shadow: inset 3px 0 0 var(--erfolg-text);
+}
+.anmelde-tabelle td code {
+  overflow-wrap: anywhere;
+}

@@ -169,27 +169,23 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		kennung,
 	).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &hash, &u.Role, &u.CreatedAt)
 	// One message for an unknown address and for a wrong password, so the
-	// response cannot be used to find out which addresses are registered.
+	// response cannot be used to find out which addresses are registered. The
+	// trail gets the distinction anyway, see anmeldungen.go.
 	if err != nil || !auth.CheckPassword(hash, req.Password) {
 		// The failed attempt is recorded; without it the audit trail would lack
 		// exactly those events one opens it for in the first place. The address
 		// that was entered stands there in the clear, the password never.
-		s.spur(r.Context(), models.Spureintrag{
-			Aktion:      AktAnmeldungFehl,
-			AkteurEmail: kennung,
-			ObjektArt:   "konto",
-			IP:          absenderIP(r),
-		})
+		grund := GrundPasswort
+		if err != nil {
+			grund = GrundUnbekannt
+		}
+		s.anmeldeSpur(r, WegPasswort, kennung, grund, nil)
 		writeErr(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
 
 	s.issueSession(w, r, u.ID)
-	s.spur(r.Context(), models.Spureintrag{
-		AkteurID: u.ID, AkteurName: u.Name, AkteurEmail: u.Email,
-		Aktion: AktAnmeldung, ObjektArt: "konto", ObjektID: u.ID,
-		ObjektTitel: u.Name, IP: absenderIP(r),
-	})
+	s.anmeldeSpur(r, WegPasswort, kennung, "", &u)
 	writeJSON(w, http.StatusOK, u)
 }
 

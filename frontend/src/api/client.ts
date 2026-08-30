@@ -322,6 +322,44 @@ export interface SystemZustand {
   warnungen: string[];
 }
 
+// Anmeldeversuch is one attempt to sign in, successful or not. Every way in
+// writes one: the password form, the directory, the identity provider.
+export interface Anmeldeversuch {
+  zeitpunkt: string;
+  erfolg: boolean;
+  kennung: string;
+  name: string;
+  kontoId: string;
+  ip: string;
+  weg: string;
+  grund: string;
+  browser: string;
+}
+
+// Herkunft is one address with its attempts summed up over the last week.
+export interface Herkunft {
+  ip: string;
+  versuche: number;
+  fehl: number;
+  konten: number;
+  letzter: string;
+}
+
+export interface Anmeldungen {
+  versuche: Anmeldeversuch[];
+  herkunft: Herkunft[];
+  tage: number;
+  zusammenfassung: {
+    erfolge24h: number;
+    fehl24h: number;
+    erfolge7t: number;
+    fehl7t: number;
+    adressen24h: number;
+    letzteAnmeldung: string | null;
+    letzterFehlversuch: string | null;
+  };
+}
+
 // Gruppe is a group of accounts. Groups belong to the installation, not to an
 // account: a department is not a private matter.
 export interface Gruppe {
@@ -532,6 +570,14 @@ export const api = {
       method: "DELETE",
     }),
   systemZustand: () => req<SystemZustand>("/system"),
+  anmeldungen: (p: { nur?: string; ip?: string; tage?: number; limit?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (p.nur) q.set("nur", p.nur);
+    if (p.ip) q.set("ip", p.ip);
+    if (p.tage !== undefined) q.set("tage", String(p.tage));
+    if (p.limit) q.set("limit", String(p.limit));
+    return req<Anmeldungen>(`/system/anmeldungen?${q.toString()}`);
+  },
   suchindexNeu: () => req<{ ohneSuchtext: number }>("/system/suchindex", { method: "POST" }),
   anhangindexNachziehen: () =>
     req<{ betrachtet: number; gelesen: number; ohneText: number }>("/system/anhangindex", {

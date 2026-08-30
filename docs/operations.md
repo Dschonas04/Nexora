@@ -143,7 +143,25 @@ is an admin-only API route as well ([API reference](api.md#administration)).
 | Rebuild the search index | Settings, or `POST /api/system/suchindex` |
 | Fill in attachment text for older uploads | `POST /api/system/anhangindex` |
 | See which surrounding services answer, and how fast | Settings → Verbund |
+| See who tried to sign in, from where, and why it failed | Settings → Anmeldungen (free) |
 | Read the audit trail | Protokoll (paid: `pruefspur`) |
+
+### Sign-in attempts
+
+**Settings → Anmeldungen** lists every attempt, successful or not, with the
+address it came from, the way in (password form, directory, identity provider),
+the browser, and on a failure the reason. It reads the audit trail but is not
+behind the `pruefspur` extra: an unlicensed instance still has to be able to see
+that somebody is knocking.
+
+Two things there answer most questions faster than the list itself. The summary
+compares 24 hours against 7 days, so a spike stands out without counting rows.
+The **Herkunft** table groups the week by address, most failures first, and shows
+how many distinct accounts each address tried — the shape of a password spray,
+which the single entries scrolling past do not show.
+
+Nothing here is ever deleted, and passwords are recorded nowhere, not even on a
+failed attempt.
 
 ### The system view
 
@@ -172,6 +190,10 @@ Before an instance is reachable by anyone but you:
 - [ ] `oeffentliche_url` set to the address the browser actually uses
 - [ ] `s3_tls` on if an object store is in use
 - [ ] LDAP with StartTLS or `ldaps://`, and certificate verification left on
+- [ ] After going live, look at **Settings → Anmeldungen** once. The Herkunft
+      table sums the week up by address; one address with many failures against
+      many different accounts is somebody working through a list, not a
+      colleague who forgot a password
 
 `chimw.RealIP` trusts `X-Forwarded-For`. That is correct behind a proxy you
 control and wrong when the container faces the internet directly — there, a

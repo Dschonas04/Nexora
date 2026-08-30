@@ -232,6 +232,47 @@ paid — a trail with a hole over exactly the unlicensed period would not be one
 
 ---
 
+## Sign-in attempts · admin only
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/system/anmeldungen` | Every attempt, successful or not, newest first, plus a summary and a per-address roll-up |
+
+Free of charge, unlike the rest of the audit trail: who is knocking at the door
+belongs to running an instance, not to reporting on it. Admin only all the same,
+because put together the entries are a map of who works here and when.
+
+| Parameter | Effect |
+|---|---|
+| `nur` | `fehl` for failures only, `erfolg` for successes only |
+| `ip` | Only attempts from this address |
+| `tage` | How far back, default 30, max 365, `0` for everything |
+| `limit` | Default 200, max 1000 |
+
+The answer carries three parts:
+
+- `versuche` — one row per attempt: `zeitpunkt`, `erfolg`, `kennung` (what was
+  typed; `typed → account` where the two differ, which is how signing in by user
+  name is told apart from signing in by address), `ip`, `weg`
+  (`passwort` | `ldap` | `sso`), `grund` on failures, and the user agent.
+- `zusammenfassung` — successes and failures over 24 hours and 7 days, plus how
+  many distinct addresses were seen.
+- `herkunft` — the last week grouped by address, most failures first, with how
+  many distinct accounts each address tried. Many failures from one address
+  against many accounts is the pattern this table exists for.
+
+`grund` is more precise than the response the caller got: the sign-in endpoint
+answers `invalid credentials` whether the account is unknown or the password was
+wrong, so it cannot be used to enumerate accounts, while the trail distinguishes
+`Kennung unbekannt` from `Passwort falsch`. A hundred attempts against one real
+account and a hundred against a hundred invented ones are different events.
+
+Attempts are stored as ordinary audit trail rows, so nothing here is a second
+record that could disagree with `/pruefspur`. Passwords are never recorded, on
+success or failure.
+
+---
+
 ## Import and export
 
 | Method | Path | Notes |
@@ -292,6 +333,7 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `POST` | `/system/ablage/test` | Try an object store's credentials before saving them |
 | `POST` | `/system/suchindex` | Rebuild the full text index — needed after changing `such_woerterbuch` |
 | `POST` | `/system/anhangindex` | Extract attachment text for files uploaded before the attachment index existed |
+| `GET` | `/system/anmeldungen` | Sign-in attempts, see above · admin |
 
 ### Maintenance
 
