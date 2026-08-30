@@ -12,11 +12,19 @@ open and the core may be run in production, commercially, without paying
 anyone. Twelve extras — audit trail, groups, SSO, LDAP and more — need a
 license key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
+## Documentation
+
+The [`docs/`](docs/README.md) directory carries the long form: the
+[architecture](docs/architecture.md) after arc42 with C4 diagrams, plus
+reference documents for the [API](docs/api.md), the
+[configuration](docs/configuration.md), the [data model](docs/data-model.md),
+[operations](docs/operations.md) and [development](docs/development.md).
+
 ## Stack
 
 | Layer    | Tech                                                     |
 | -------- | -------------------------------------------------------- |
-| Backend  | Go 1.22+, chi router, pgx, JWT (httpOnly cookie), bcrypt  |
+| Backend  | Go 1.25+, chi router, pgx, JWT (httpOnly cookie), bcrypt  |
 | Frontend | React 18, Vite, TypeScript, BlockNote editor             |
 | Database | PostgreSQL 16                                            |
 | Delivery | Docker Compose (nginx serves the SPA and proxies `/api`) |
@@ -250,7 +258,7 @@ typo must not cause an outage.
 | --- | --- |
 | Server | `port`, `daten_verzeichnis`, `anhang_verzeichnis`, `oeffentliche_url` |
 | Database | `datenbank_url` |
-| Sessions | `jwt_geheimnis`, `sitzung_tage` |
+| Sessions | `jwt_geheimnis`, `sitzung_stunden` |
 | License | `lizenz` |
 | Registration | `registrierung_offen`, `erlaubte_domaenen` |
 | Search | `such_woerterbuch` |
@@ -303,7 +311,7 @@ pages        id, owner_id, parent_id, space_id, title, content (jsonb),
              public_token, sort_order, deleted_at, created_at, updated_at
 page_versions  id, page_id, title, content, icon, author_id, created_at
 attachments    id, page_id, owner_id, filename, mime, size, created_at
-page_shares    page_id, user_id, permission ('read' | 'write'), created_at
+page_shares    page_id, user_id, permission ('read' | 'edit'), created_at
 page_links     source_id, target_id, created_at
 tags           per-user tags; page_tags joins them to pages
 favorites      per-user favorites
@@ -330,8 +338,9 @@ to its versions, attachments, shares, links and subpages.
 ## API
 
 Everything lives under `/api`. Authentication uses an httpOnly cookie set on login
-or register. `GET /api/public/{token}` and `/api/healthz` are the only unauthenticated
-endpoints.
+or register. Unauthenticated: the sign-in routes themselves, `GET /api/public/{token}`
+with its file route, and `/healthz`. The complete reference, including the routes this
+overview leaves out, is in [docs/api.md](docs/api.md).
 
 Paid endpoints answer `402 Payment Required` without a license key; they are
 marked below.
@@ -383,7 +392,7 @@ DELETE /pages/{id}/attachments/{attId}    delete
 POST   /pages/{id}/share                  publish read-only, returns a token
 DELETE /pages/{id}/share                  revoke the public link
 GET    /pages/{id}/shares                 who this page is shared with
-POST   /pages/{id}/shares                 share with a user ('read' or 'write')
+POST   /pages/{id}/shares                 share with a user ('read' or 'edit')
 DELETE /pages/{id}/shares/{userId}        revoke a user's access
 GET    /public/{token}                    read-only public page (no auth)
 ```
@@ -480,6 +489,8 @@ is paid. A trail with a hole over the unlicensed period would not be one.
 ```
 config.conf                    every setting, documented in place
 LICENSING.md                   what is free and what needs a key
+docs/                          architecture (arc42 + C4), API, configuration,
+                               data model, operations, development
 
 backend/                       Go API
   main.go                      router, route table, server bootstrap
