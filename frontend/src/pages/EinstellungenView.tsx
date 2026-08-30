@@ -12,7 +12,7 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { Einstellung, KonfigDatei, Sitzung, SystemZustand, api } from "../api/client";
+import { Anmeldungen, Einstellung, KonfigDatei, Sitzung, SystemZustand, api } from "../api/client";
 import { useAuth } from "../auth";
 import { useLizenz } from "../lizenz";
 import AdminView from "./AdminView";
@@ -25,6 +25,7 @@ type Bereich =
   | "nutzer"
   | "gruppen"
   | "sicherheit"
+  | "anmeldungen"
   | "sitzungen"
   | "datenbank"
   | "suche"
@@ -42,6 +43,7 @@ const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
   { id: "nutzer", titel: "Nutzer", unter: "Konten, Rollen, Zugänge" },
   { id: "gruppen", titel: "Gruppen", unter: "Konten bündeln für Ablage-Rechte" },
   { id: "sicherheit", titel: "Sicherheit", unter: "Registrierung, Laufzeiten, Administratoren" },
+  { id: "anmeldungen", titel: "Anmeldungen", unter: "Jeder Versuch, mit Adresse und Herkunft" },
   { id: "sitzungen", titel: "Sitzungen", unter: "Angemeldete Geräte, einzeln beendbar" },
   { id: "datenbank", titel: "Datenbank", unter: "Größe, Tabellen, Belegung" },
   { id: "suche", titel: "Suche", unter: "Wörterbuch und Suchindex" },
@@ -78,6 +80,14 @@ const ZAHL_TITEL: Record<string, string> = {
   ohneSuchtext: "ohne Suchtext",
 };
 
+// Die Wege, über die eine Anmeldung hereinkommt. Das Backend schreibt die
+// kurzen Namen, hier stehen die ausgeschriebenen.
+const WEG_TITEL: Record<string, string> = {
+  passwort: "Passwort",
+  ldap: "Verzeichnis",
+  sso: "SSO",
+};
+
 const GRUNDTOENE: { wert: string; titel: string; erklaerung: string }[] = [
   { wert: "grau", titel: "Gegrautes Weiß", erklaerung: "Vorgabe. Nimmt dem reinen Weiß die Härte, ohne dunkel zu wirken." },
   { wert: "weiss", titel: "Reines Weiß", erklaerung: "Maximaler Kontrast. Auf großen Bildschirmen auf Dauer anstrengend." },
@@ -92,6 +102,39 @@ const AKZENTE = [
   { wert: "#cf222e", titel: "Rot" },
   { wert: "#57606a", titel: "Graphit" },
 ];
+
+// Aus der Kennung des Browsers das eine Wort machen, das in einer Tabelle Platz
+// hat. Die volle Zeichenkette bleibt im title des Feldes stehen: für die Frage
+// "war ich das selbst" reicht "Firefox auf Linux", für alles darüber hinaus
+// braucht man ohnehin das Original.
+function geraet(ua: string): string {
+  if (!ua) return "";
+  const browser = /Edg\//.test(ua)
+    ? "Edge"
+    : /OPR\//.test(ua)
+      ? "Opera"
+      : /Firefox\//.test(ua)
+        ? "Firefox"
+        : /Chrome\//.test(ua)
+          ? "Chrome"
+          : /Safari\//.test(ua)
+            ? "Safari"
+            : /curl|wget|python|go-http/i.test(ua)
+              ? "Skript"
+              : "unbekannt";
+  const system = /Android/.test(ua)
+    ? "Android"
+    : /iPhone|iPad/.test(ua)
+      ? "iOS"
+      : /Windows/.test(ua)
+        ? "Windows"
+        : /Macintosh/.test(ua)
+          ? "macOS"
+          : /Linux/.test(ua)
+            ? "Linux"
+            : "";
+  return system ? `${browser} auf ${system}` : browser;
+}
 
 function bytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -206,6 +249,26 @@ export default function EinstellungenView() {
   useEffect(() => {
     if (bereich === "sitzungen") sitzungenLaden();
   }, [bereich, sitzungenLaden]);
+
+  // Anmeldeversuche. Wie die Sitzungen erst beim Öffnen geholt, und mit einem
+  // Filter daneben: die interessante Frage ist fast immer "nur die
+  // fehlgeschlagenen", und die Liste wird lang genug, dass man sie nicht von
+  // Hand durchsieht.
+  const [anmeldungen, setAnmeldungen] = useState<Anmeldungen | null>(null);
+  const [anmeldeFilter, setAnmeldeFilter] = useState<{ nur: string; ip: string; tage: number }>({
+    nur: "",
+    ip: "",
+    tage: 30,
+  });
+  const anmeldungenLaden = useCallback(() => {
+    api
+      .anmeldungen({ ...anmeldeFilter, limit: 300 })
+      .then(setAnmeldungen)
+      .catch(() => setAnmeldungen(null));
+  }, [anmeldeFilter]);
+  useEffect(() => {
+    if (bereich === "anmeldungen") anmeldungenLaden();
+  }, [bereich, anmeldungenLaden]);
 
   useEffect(() => {
     if (bereich !== "wartung" || konfig) return;
@@ -621,51 +684,90 @@ export default function EinstellungenView() {
         return <AdminView />;
       case "gruppen":
         return <GruppenView />;
-      case "uebersicht":
+      case "uebersicht": {
+        // Eine Tabelle statt einer Reihe von Kacheln. Kacheln sehen auf dem
+        // ersten Blick besser aus, aber vierzehn Stück davon sind keine
+        // Übersicht mehr, sondern eine Wand: man sucht darin nach der Zahl,
+        // die man wissen wollte. Untereinander mit Beschriftung links liest
+        // sich das in einem Durchgang.
+        const bestand: [string, React.ReactNode, string][] = [
+          ...Object.entries(z.zahlen ?? {}).map(
+            ([k, v]) => [ZAHL_TITEL[k] ?? k, v, k] as [string, React.ReactNode, string],
+          ),
+          ["Datenbank", z.datenbank?.groesse || "unbekannt", "db"],
+          ["Anhänge auf Platte", bytes(z.anhaengeBytes ?? 0), "anh"],
+        ];
+
+        const zustaende: [string, React.ReactNode, string][] = [
+          [
+            "Lizenz",
+            z.lizenz.gueltig ? (
+              `${z.lizenz.inhaber}, ${(z.lizenz.freigeschaltet ?? []).length} von ${z.lizenz.alle} Zusätzen frei`
+            ) : (
+              <span className="muted">keine gültige Lizenz, freier Umfang</span>
+            ),
+            "lizenz",
+          ],
+          ["Selbstregistrierung", sich?.registrierungOffen ? "offen" : "geschlossen", "reg"],
+          [
+            "Letzte Anmeldung",
+            sich?.letzteAnmeldung || <span className="muted">keine verzeichnet</span>,
+            "anm",
+          ],
+          [
+            "Fehlversuche in 24 Stunden",
+            sich?.fehlversuche24h ? (
+              <>
+                {sich.fehlversuche24h}{" "}
+                <button className="btn-schlicht" onClick={() => setBereich("anmeldungen")}>
+                  ansehen
+                </button>
+              </>
+            ) : (
+              "0"
+            ),
+            "fehl",
+          ],
+          ["PostgreSQL", z.datenbank?.version || "unbekannt", "pg"],
+          ["Ablage", ablage || <span className="muted">wird geladen</span>, "ablage"],
+          [
+            "Beim Start bemängelt",
+            (z.warnungen ?? []).length === 0 ? (
+              "nichts"
+            ) : (
+              <>
+                {(z.warnungen ?? []).length} Punkt(e){" "}
+                <button className="btn-schlicht" onClick={() => setBereich("system")}>
+                  ansehen
+                </button>
+              </>
+            ),
+            "warn",
+          ],
+        ];
+
+        const zeilen = (daten: [string, React.ReactNode, string][]) => (
+          <table className="tabelle uebersicht-tabelle">
+            <tbody>
+              {daten.map(([titel, wert, key]) => (
+                <tr key={key}>
+                  <td>{titel}</td>
+                  <td className="zahl">{wert}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        );
+
         return (
           <>
-            <h3>Übersicht</h3>
-            <div className="kachelreihe">
-              {Object.entries(z.zahlen ?? {}).map(([k, v]) => kachel(v, ZAHL_TITEL[k] ?? k, k))}
-              {kachel(z.datenbank?.groesse ?? "—", "Datenbank")}
-              {kachel(bytes(z.anhaengeBytes ?? 0), "Anhänge auf Platte")}
-            </div>
-
-            <h3>Kurz zusammengefasst</h3>
-            <table className="tabelle">
-              <tbody>
-                <tr>
-                  <td>Lizenz</td>
-                  <td>
-                    {z.lizenz.gueltig ? (
-                      <>
-                        {z.lizenz.inhaber} — {(z.lizenz.freigeschaltet ?? []).length} von {z.lizenz.alle} Zusätzen
-                      </>
-                    ) : (
-                      <span className="muted">keine gültige Lizenz</span>
-                    )}
-                  </td>
-                </tr>
-                <tr>
-                  <td>Selbstregistrierung</td>
-                  <td>{sich?.registrierungOffen ? "offen" : "geschlossen"}</td>
-                </tr>
-                <tr>
-                  <td>Letzte Anmeldung</td>
-                  <td>{sich?.letzteAnmeldung || <span className="muted">keine verzeichnet</span>}</td>
-                </tr>
-                <tr>
-                  <td>Fehlversuche letzte 24 h</td>
-                  <td>{sich?.fehlversuche24h ?? 0}</td>
-                </tr>
-                <tr>
-                  <td>PostgreSQL</td>
-                  <td>{z.datenbank?.version || "—"}</td>
-                </tr>
-              </tbody>
-            </table>
+            <h3>Bestand</h3>
+            {zeilen(bestand)}
+            <h3>Zustand</h3>
+            {zeilen(zustaende)}
           </>
         );
+      }
 
       case "sicherheit":
         return (
@@ -693,17 +795,200 @@ export default function EinstellungenView() {
             </table>
 
             <h3>Anmeldungen</h3>
-            <div className="kachelreihe">
-              {kachel(sich?.fehlversuche24h ?? 0, "Fehlversuche 24 h")}
-              {kachel(sich?.letzteAnmeldung || "—", "Letzte Anmeldung")}
-              {kachel(sich?.letzterFehlversuch || "—", "Letzter Fehlversuch")}
-            </div>
+            <table className="tabelle">
+              <tbody>
+                <tr>
+                  <td>Fehlversuche in 24 Stunden</td>
+                  <td className="zahl">{sich?.fehlversuche24h ?? 0}</td>
+                </tr>
+                <tr>
+                  <td>Letzte Anmeldung</td>
+                  <td className="zahl">
+                    {sich?.letzteAnmeldung || <span className="muted">keine verzeichnet</span>}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Letzter Fehlversuch</td>
+                  <td className="zahl">
+                    {sich?.letzterFehlversuch || <span className="muted">keiner verzeichnet</span>}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
             <p className="muted small">
-              Vollständig nachlesbar unter <strong>Protokoll</strong>. Passwörter werden dort
-              nie festgehalten, auch nicht bei einem Fehlversuch.
+              Jeder einzelne Versuch steht unter{" "}
+              <button className="btn-schlicht" onClick={() => setBereich("anmeldungen")}>
+                Anmeldungen
+              </button>
+              , mit Adresse und Grund. Passwörter werden nirgends festgehalten, auch nicht bei
+              einem Fehlversuch.
             </p>
           </>
         );
+
+      case "anmeldungen": {
+        const a = anmeldungen;
+        const zs = a?.zusammenfassung;
+        return (
+          <>
+            <h3>Letzte Woche</h3>
+            <table className="tabelle">
+              <tbody>
+                <tr>
+                  <td>Angemeldet, 24 Stunden</td>
+                  <td className="zahl">{zs?.erfolge24h ?? 0}</td>
+                </tr>
+                <tr>
+                  <td>Fehlgeschlagen, 24 Stunden</td>
+                  <td className="zahl">{zs?.fehl24h ?? 0}</td>
+                </tr>
+                <tr>
+                  <td>Angemeldet, 7 Tage</td>
+                  <td className="zahl">{zs?.erfolge7t ?? 0}</td>
+                </tr>
+                <tr>
+                  <td>Fehlgeschlagen, 7 Tage</td>
+                  <td className="zahl">{zs?.fehl7t ?? 0}</td>
+                </tr>
+                <tr>
+                  <td>Verschiedene Adressen, 24 Stunden</td>
+                  <td className="zahl">{zs?.adressen24h ?? 0}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3>Herkunft</h3>
+            <p className="muted small">
+              Die Adressen der letzten sieben Tage, die mit den meisten Fehlversuchen zuerst.
+              Viele Fehlversuche von einer Adresse auf viele verschiedene Konten sind das
+              Muster, nach dem man hier sucht.
+            </p>
+            <div className="tabelle-rollen">
+              <table className="tabelle">
+                <thead>
+                  <tr>
+                    <th>Adresse</th>
+                    <th>Versuche</th>
+                    <th>davon fehl</th>
+                    <th>Konten</th>
+                    <th>zuletzt</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {(a?.herkunft ?? []).map((h) => (
+                    <tr key={h.ip} className={h.fehl >= 10 ? "auffaellig" : undefined}>
+                      <td>
+                        <code>{h.ip}</code>
+                      </td>
+                      <td className="zahl">{h.versuche}</td>
+                      <td className="zahl">{h.fehl}</td>
+                      <td className="zahl">{h.konten}</td>
+                      <td className="einzeilig">{zeitpunkt(h.letzter)}</td>
+                      <td>
+                        <button
+                          className="btn-schlicht"
+                          onClick={() => setAnmeldeFilter({ ...anmeldeFilter, ip: h.ip })}
+                        >
+                          nur diese
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {(a?.herkunft ?? []).length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="muted">
+                        Kein Versuch in den letzten sieben Tagen.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <h3>Einzelne Versuche</h3>
+            <div className="pruefspur-filter">
+              <select
+                value={anmeldeFilter.nur}
+                onChange={(e) => setAnmeldeFilter({ ...anmeldeFilter, nur: e.target.value })}
+              >
+                <option value="">Alle Versuche</option>
+                <option value="fehl">Nur fehlgeschlagene</option>
+                <option value="erfolg">Nur gelungene</option>
+              </select>
+              <select
+                value={anmeldeFilter.tage}
+                onChange={(e) =>
+                  setAnmeldeFilter({ ...anmeldeFilter, tage: Number(e.target.value) })
+                }
+              >
+                <option value={1}>Letzte 24 Stunden</option>
+                <option value={7}>Letzte 7 Tage</option>
+                <option value={30}>Letzte 30 Tage</option>
+                <option value={365}>Letztes Jahr</option>
+                <option value={0}>Alles</option>
+              </select>
+              <input
+                placeholder="Adresse, etwa 10.0.2.43"
+                value={anmeldeFilter.ip}
+                onChange={(e) => setAnmeldeFilter({ ...anmeldeFilter, ip: e.target.value })}
+              />
+              <button className="btn" onClick={anmeldungenLaden}>
+                Neu laden
+              </button>
+            </div>
+
+            <div className="tabelle-rollen">
+              <table className="tabelle anmelde-tabelle">
+                <thead>
+                  <tr>
+                    <th>Zeitpunkt</th>
+                    <th>Ergebnis</th>
+                    <th>Kennung</th>
+                    <th>Adresse</th>
+                    <th>Weg</th>
+                    <th>Grund</th>
+                    <th>Gerät</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(a?.versuche ?? []).map((v, i) => (
+                    <tr key={i} className={v.erfolg ? "gelungen" : "fehl"}>
+                      <td className="einzeilig">{zeitpunkt(v.zeitpunkt)}</td>
+                      <td className="einzeilig">{v.erfolg ? "angemeldet" : "abgewiesen"}</td>
+                      <td>
+                        {v.kennung || <span className="muted">ohne Angabe</span>}
+                        {v.name && v.name !== v.kennung && (
+                          <div className="muted small">{v.name}</div>
+                        )}
+                      </td>
+                      <td>
+                        <code>{v.ip || "?"}</code>
+                      </td>
+                      <td className="muted">{WEG_TITEL[v.weg] ?? v.weg ?? ""}</td>
+                      <td className="muted">{v.grund}</td>
+                      <td className="muted small" title={v.browser}>
+                        {geraet(v.browser)}
+                      </td>
+                    </tr>
+                  ))}
+                  {(a?.versuche ?? []).length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="muted">
+                        {a ? "Kein Versuch im gewählten Zeitraum." : "Wird geladen…"}
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <p className="muted small">
+              Höchstens 300 Zeilen auf einmal. Ältere Einträge stehen weiter im Protokoll und
+              werden nie gelöscht. Was ein Konto danach getan hat, steht dort ebenfalls.
+            </p>
+          </>
+        );
+      }
 
       case "datenbank":
         return (
@@ -758,13 +1043,13 @@ export default function EinstellungenView() {
                 <div>
                   <div className="einstellung-titel">Suchindex neu aufbauen</div>
                   <div className="einstellung-erklaerung">
-                    Zieht den Fließtext aller Seiten neu aus dem Editor-Inhalt. Nötig nach
-                    einem Wechsel des Wörterbuchs, und sinnvoll, wenn die Suche etwas nicht
-                    findet, das offensichtlich dasteht.
+                    Zieht den Fließtext aller Seiten neu aus dem Editor-Inhalt. Nach einem
+                    Wechsel des Wörterbuchs ist das nötig. Sonst hilft es, wenn die Suche
+                    etwas nicht findet, das sichtbar auf der Seite steht.
                   </div>
                   <div className="einstellung-warnung">
-                    Läuft in Stapeln und blockiert nichts, kann bei vielen Seiten aber einen
-                    Moment dauern.
+                    Läuft in Stapeln und blockiert nichts. Bei vielen Seiten dauert es einen
+                    Moment.
                   </div>
                 </div>
                 <div className="einstellung-feld">
@@ -780,14 +1065,15 @@ export default function EinstellungenView() {
                 <div>
                   <div className="einstellung-titel">Volltext aus Anhängen nachziehen</div>
                   <div className="einstellung-erklaerung">
-                    Liest Anhänge, die noch keinen Suchtext haben, und gewinnt ihn nach.
-                    Betrifft alles, was vor dieser Funktion hochgeladen wurde. Gelesen
-                    werden Textdateien und PDF mit Textebene.
+                    Liest Anhänge, die noch keinen Suchtext haben, und holt ihn nach. Das
+                    betrifft alles, was vor dieser Funktion hochgeladen wurde. Gelesen werden
+                    Textdateien und PDF, sofern sie eine Textebene haben.
                   </div>
                   <div className="einstellung-warnung">
-                    Holt jede Datei einmal aus der Ablage zurück — bei einem Objektspeicher
-                    also übers Netz. Deshalb ein bewusster Knopf und nichts, was beim Start
-                    von allein läuft. Je Durchlauf werden bis zu 500 Anhänge bearbeitet.
+                    Jede Datei muss dafür einmal aus der Ablage zurückgeholt werden, bei einem
+                    Objektspeicher also übers Netz. Darum steht hier ein Knopf und läuft das
+                    nicht beim Start von allein. Pro Durchlauf werden bis zu 500 Anhänge
+                    bearbeitet.
                   </div>
                 </div>
                 <div className="einstellung-feld">
@@ -807,7 +1093,7 @@ export default function EinstellungenView() {
               {kachel(z.zahlen?.ohneSuchtext ?? 0, "ohne Suchtext")}
             </div>
             <p className="muted small">
-              Seiten ohne Suchtext sind in aller Regel leere Seiten. Bleibt die Zahl nach
+              Seiten ohne Suchtext sind meistens einfach leere Seiten. Bleibt die Zahl nach
               einem Neuaufbau hoch, stimmt etwas mit dem Editor-Inhalt nicht.
             </p>
           </>
@@ -1019,16 +1305,16 @@ export default function EinstellungenView() {
               <div className="warnkasten">
                 <strong>Keine gültige Lizenz</strong>
                 <div className="muted small">
-                  {z.lizenz.grund || "Kein Schlüssel hinterlegt."} Nexora läuft mit dem freien
-                  Umfang; gesperrte Aufrufe antworten mit 402.
+                  {z.lizenz.grund || "Kein Schlüssel hinterlegt."} Nexora läuft im freien
+                  Umfang. Aufrufe für gesperrte Funktionen antworten mit 402.
                 </div>
               </div>
             )}
             <h3>Stufen</h3>
             <p className="muted small">
-              Jede Stufe enthält die kleineren mit. Geprüft wird im Code immer gegen die
-              einzelne Funktion, nie gegen die Stufe — deshalb kann ein Schlüssel auch eine
-              Stufe plus einzelne Zusätze tragen.
+              Jede Stufe enthält die kleineren mit. Geprüft wird immer die einzelne Funktion
+              und nie die Stufe. Deshalb kann ein Schlüssel eine Stufe und zusätzlich
+              einzelne Funktionen tragen.
             </p>
             <table className="tabelle">
               <tbody>
@@ -1054,9 +1340,9 @@ export default function EinstellungenView() {
 
             <h3>Schlüssel einlesen</h3>
             <p className="muted small">
-              Wirkt sofort und überdauert den Neustart: der Schlüssel wird geprüft und in der
-              Datenbank abgelegt, wo er Vorrang vor <code>config.conf</code> hat. Ein leeres
-              Feld nimmt die Lizenz zurück.
+              Der Schlüssel wird geprüft und in der Datenbank abgelegt. Er wirkt sofort,
+              übersteht einen Neustart und hat Vorrang vor <code>config.conf</code>. Ein
+              leeres Feld nimmt die Lizenz wieder zurück.
             </p>
             <textarea
               className="konfig-feld"
@@ -1075,10 +1361,10 @@ export default function EinstellungenView() {
               <>
                 <h3>Schlüssel ausstellen</h3>
                 <p className="muted small">
-                  Möglich, weil auf dieser Installation ein privater Signierschlüssel
-                  hinterlegt ist (<code>NEXORA_SIGNIERSCHLUESSEL</code>). Auf einer
-                  gewöhnlichen Installation fehlt er, und dieser Abschnitt erscheint nicht —
-                  sonst könnte sich jeder seine Lizenz selbst schreiben.
+                  Das geht hier, weil auf dieser Installation ein privater Signierschlüssel
+                  hinterlegt ist (<code>NEXORA_SIGNIERSCHLUESSEL</code>). Auf einer normalen
+                  Installation fehlt er und dieser Abschnitt erscheint gar nicht. Sonst könnte
+                  sich jeder seine Lizenz selbst ausstellen.
                 </p>
                 <div className="knopfreihe">
                   <input
@@ -1111,9 +1397,9 @@ export default function EinstellungenView() {
                   </button>
                 </div>
                 <p className="muted small">
-                  Ohne Datum gilt ein Jahr; länger wird nicht ausgestellt. Geprüft wird
-                  offline, ein ausgegebener Schlüssel lässt sich also nicht zurückrufen — das
-                  Ablaufdatum ist der einzige Hebel.
+                  Ohne Datum gilt ein Jahr, länger wird nicht ausgestellt. Geprüft wird
+                  offline. Ein ausgegebener Schlüssel lässt sich deshalb nicht zurückrufen,
+                  das Ablaufdatum ist der einzige Hebel.
                 </p>
                 {ausgestellt && (
                   <textarea className="konfig-feld" rows={3} readOnly value={ausgestellt} />
@@ -1121,8 +1407,8 @@ export default function EinstellungenView() {
               </>
             ) : (
               <p className="muted small">
-                Schlüssel <strong>ausstellen</strong> kann diese Installation nicht: dafür
-                braucht es den privaten Signierschlüssel, und der gehört zum Herausgeber.
+                Schlüssel <strong>ausstellen</strong> kann diese Installation nicht. Dafür
+                braucht es den privaten Signierschlüssel, und der liegt beim Herausgeber.
               </p>
             )}
           </>
@@ -1144,10 +1430,10 @@ export default function EinstellungenView() {
 
             <h3>Verbund</h3>
             <p className="muted small">
-              Die Dienste, mit denen dieser hier spricht, samt Antwortzeit. Der
-              Docker-Verbund selbst steht nicht dabei: dafür bräuchte der Container den
-              Steuerkanal von Docker, und wer den hat, ist auf dem Wirt allmächtig. Eine
-              Liste von Containern ist das nicht wert.
+              Die Dienste, mit denen Nexora spricht, samt Antwortzeit. Die übrigen Container
+              des Docker-Verbunds stehen nicht dabei. Dafür bräuchte dieser Container den
+              Steuerkanal von Docker, und wer den hat, kann auf dem Wirt alles. So viel ist
+              eine Liste von Containern nicht wert.
             </p>
             <div className="tabelle-rollen">
               <table className="tabelle verbund-tabelle">
@@ -1177,7 +1463,7 @@ export default function EinstellungenView() {
                         <td className="verbund-zustand einzeilig">
                           {d.zustand}
                           {d.zustand === "fehlt" && !d.notwendig && (
-                            <span className="muted"> — nicht schlimm</span>
+                            <span className="muted"> (nicht schlimm)</span>
                           )}
                         </td>
                         <td className="muted">{d.fassung || "—"}</td>
@@ -1203,9 +1489,9 @@ export default function EinstellungenView() {
 
             <h3>Nur beim Start änderbar</h3>
             <p className="muted small">
-              Diese Werte stehen in <code>config.conf</code> oder in der Umgebung. Sie werden
-              gebraucht, bevor die Datenbank offen ist, und lassen sich deshalb nicht aus dem
-              Browser ändern.
+              Diese Werte stehen in <code>config.conf</code> oder in der Umgebung. Nexora
+              braucht sie schon, bevor die Datenbank offen ist. Aus dem Browser lassen sie
+              sich deshalb nicht ändern, wohl aber unter Wartung in der Datei selbst.
             </p>
             <table className="tabelle">
               <tbody>
@@ -1230,7 +1516,7 @@ export default function EinstellungenView() {
                   <td>
                     {z.nurInDerDatei.ldapAktiv ? (
                       <>
-                        an — <code>{z.nurInDerDatei.ldapServer || "kein Server angegeben"}</code>
+                        an, <code>{z.nurInDerDatei.ldapServer || "kein Server angegeben"}</code>
                       </>
                     ) : (
                       <span className="muted">aus</span>
@@ -1242,7 +1528,7 @@ export default function EinstellungenView() {
                   <td>
                     {z.nurInDerDatei.oidcAktiv ? (
                       <>
-                        an — <code>{z.nurInDerDatei.oidcAussteller || "kein Aussteller angegeben"}</code>
+                        an, <code>{z.nurInDerDatei.oidcAussteller || "kein Aussteller angegeben"}</code>
                       </>
                     ) : (
                       <span className="muted">aus</span>

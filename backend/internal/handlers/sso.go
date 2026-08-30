@@ -223,11 +223,7 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.issueSession(w, r, u.ID)
-	s.spur(r.Context(), models.Spureintrag{
-		AkteurID: u.ID, AkteurName: u.Name, AkteurEmail: u.Email,
-		Aktion: AktAnmeldung, ObjektArt: "konto", ObjektID: u.ID,
-		ObjektTitel: u.Name, IP: absenderIP(r),
-	})
+	s.anmeldeSpur(r, WegSSO, email, "", &u)
 
 	ziel := mit.Ziel
 	// Only targets inside this application. Anything else would be an open

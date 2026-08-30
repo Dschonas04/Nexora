@@ -260,6 +260,10 @@ func main() {
 			r.Put("/einstellungen", h.SetzeEinstellung)
 			r.Delete("/einstellungen", h.LoescheEinstellung)
 			r.Get("/system", h.SystemZustand)
+			// Sign-in attempts. Reading the rest of the audit trail is a paid
+			// extra, this is not: who is knocking at the door belongs to
+			// running the instance, not to reporting on it.
+			r.Get("/system/anmeldungen", h.ListAnmeldungen)
 			r.Post("/system/suchindex", h.IndexNeuAufbauen)
 			r.Post("/system/anhangindex", h.AnhangIndexNachziehen)
 			r.Get("/system/ablage", h.AblageZustand)

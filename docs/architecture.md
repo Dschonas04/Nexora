@@ -436,12 +436,12 @@ sequenceDiagram
     N->>H: proxy_pass
     H->>D: SELECT ... WHERE email = $1 OR lower(benutzername) = $1
     alt no row, or bcrypt mismatch
-        H->>D: INSERT pruefspur (anmeldung_fehlgeschlagen, kennung, ip)
+        H->>D: INSERT pruefspur (anmeldung_fehlgeschlagen, kennung, ip, weg, grund, browser)
         H-->>B: 401 "invalid credentials"
     else match
         H->>D: INSERT sitzungen (user_id, laeuft_ab, ip, browser) RETURNING id
         H->>H: JWT over {user id, session id}
-        H->>D: INSERT pruefspur (anmeldung)
+        H->>D: INSERT pruefspur (anmeldung, ip, weg, browser)
         H-->>B: 200 + Set-Cookie nexora_token (httpOnly, SameSite, Secure over TLS)
     end
 ```
@@ -903,6 +903,20 @@ one panel does not blank the page.
 
 `pruefspur` records sign-ins including the failed ones, account changes, page
 changes, trash, permanent deletion, shares and public links.
+
+**Sign-in attempts** are the one part of it that is free to read, through
+`/system/anmeldungen` rather than `/pruefspur`. Who is knocking at the door
+belongs to running an instance at all, not to reporting on it, so gating it
+behind the `pruefspur` extra would have meant an unlicensed installation cannot
+see that it is being attacked. All three ways in — password form, directory,
+identity provider — write through one function in `anmeldungen.go`, so a new way
+in cannot quietly record less than the others. Each entry carries the address,
+the way in, the user agent and, on a failure, why: `Kennung unbekannt` and
+`Passwort falsch` are different events even though the caller gets the same
+`invalid credentials` either way. Distinguishing them in the response would
+enumerate accounts; not distinguishing them in the trail would hide the
+difference between an attack on one real account and a spray across invented
+ones.
 
 It deliberately has **no foreign key with a cascade**. Actor name, actor address
 and object title are frozen copies, so an entry stays readable after the page or

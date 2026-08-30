@@ -22,7 +22,6 @@ import (
 	"github.com/go-ldap/ldap/v3"
 
 	"nexora/internal/lizenz"
-	"nexora/internal/models"
 )
 
 type ldapAnmeldeReq struct {
@@ -58,10 +57,7 @@ func (s *Server) LDAPAnmeldung(w http.ResponseWriter, r *http.Request) {
 		// The same message for "does not exist" and "wrong password": otherwise
 		// the directory could be enumerated through this endpoint.
 		log.Printf("LDAP-Anmeldung für %q gescheitert: %v", req.Benutzer, err)
-		s.spur(r.Context(), models.Spureintrag{
-			Aktion: AktAnmeldungFehl, AkteurEmail: req.Benutzer,
-			ObjektArt: "konto", IP: absenderIP(r),
-		})
+		s.anmeldeSpur(r, WegLDAP, req.Benutzer, GrundVerzeichn, nil)
 		writeErr(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
@@ -72,11 +68,7 @@ func (s *Server) LDAPAnmeldung(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.issueSession(w, r, u.ID)
-	s.spur(r.Context(), models.Spureintrag{
-		AkteurID: u.ID, AkteurName: u.Name, AkteurEmail: u.Email,
-		Aktion: AktAnmeldung, ObjektArt: "konto", ObjektID: u.ID,
-		ObjektTitel: u.Name, IP: absenderIP(r),
-	})
+	s.anmeldeSpur(r, WegLDAP, req.Benutzer, "", &u)
 	writeJSON(w, http.StatusOK, u)
 }
 

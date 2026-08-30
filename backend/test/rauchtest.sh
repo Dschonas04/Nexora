@@ -356,6 +356,49 @@ pruefe "Unsinn wird abgewiesen" "400" \
        "$(code -X PUT "$BASIS/api/pages/$BREIT/breite" -H 'Content-Type: application/json' \
           -d '{"breite":"riesig"}')"
 
+echo "== Anmeldeversuche"
+# Die Auswertung rechnet mit Intervallen aus einer Zahl und mit FILTER-Zählungen.
+# Beides fällt erst auf, wenn es wirklich gegen Postgres läuft, siehe der Kopf
+# dieser Datei. Ein Fehlversuch wird deshalb hier von Hand ausgelöst.
+curl -s -o /dev/null -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
+     -A "Mozilla/5.0 (X11; Linux x86_64) Firefox/141.0" \
+     -d '{"kennung":"rauch@test.invalid","password":"falsch"}'
+curl -s -o /dev/null -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
+     -d '{"kennung":"gibtesnicht@test.invalid","password":"egal"}'
+pruefe "Auswertung antwortet" "200" "$(code "$BASIS/api/system/anmeldungen")"
+pruefe "beide Fehlversuche stehen da" "2" \
+       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["versuche"]))')"
+pruefe "falsches Passwort wird als solches vermerkt" "Passwort falsch" \
+       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)["versuche"]
+print(next(v["grund"] for v in d if v["kennung"] == "rauch@test.invalid"))')"
+pruefe "unbekannte Kennung ebenso" "Kennung unbekannt" \
+       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)["versuche"]
+print(next(v["grund"] for v in d if v["kennung"] == "gibtesnicht@test.invalid"))')"
+pruefe "der Weg steht dabei" "passwort" \
+       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | feld "['versuche'][0]['weg']")"
+pruefe "die Adresse steht dabei" "127.0.0.1" \
+       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | feld "['versuche'][0]['ip']")"
+pruefe "der Browser steht dabei" "True" \
+       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)["versuche"]
+print(any("Firefox" in v["browser"] for v in d))')"
+pruefe "gelungene Anmeldungen sind auch verzeichnet" "True" \
+       "$(hole "$BASIS/api/system/anmeldungen?nur=erfolg" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["versuche"]) > 0)')"
+pruefe "Herkunft fasst die Adresse zusammen" "127.0.0.1" \
+       "$(hole "$BASIS/api/system/anmeldungen" | feld "['herkunft'][0]['ip']")"
+pruefe "die Zusammenfassung zählt die Fehlversuche" "2" \
+       "$(hole "$BASIS/api/system/anmeldungen" | feld "['zusammenfassung']['fehl24h']")"
+# tage=0 heißt "alles" und wird intern zu einer sehr großen Zahl. Genau daran
+# ist die Intervall-Rechnung schon einmal gescheitert.
+pruefe "tage=0 liefert alles" "200" "$(code "$BASIS/api/system/anmeldungen?tage=0")"
+pruefe "Filter nach Adresse greift" "0" \
+       "$(hole "$BASIS/api/system/anmeldungen?ip=10.9.9.9" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["versuche"]))')"
+
 echo "== Was ohne Lizenz zu bleibt"
 # Anhänge, Freigaben, Kommentare und die Ausgabe einer ganzen Ablage sind
 # kostenpflichtige Zusätze. Ohne Lizenz lässt sich hier nichts davon
