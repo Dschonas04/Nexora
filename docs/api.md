@@ -336,6 +336,9 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `GET` | `/system/anmeldungen` | Sign-in attempts, see above · admin |
 | `GET` | `/system/puls` | Live state, polled every two seconds by the system view: the last minute in one-second buckets, the connection pool, the process, the database · admin |
 | `POST` | `/system/grenzprobe` | Reads a body and discards it, answering with the byte count. The interface uses it to *measure* how large a transfer may really be: nginx in front has its own `client_max_body_size`, which Nexora cannot read and should not have to · admin |
+| `GET` | `/system/metriken` | Whether the metrics endpoint is on, when it was last scraped, and the ready-made `prometheus.yml` block with the token in it · admin |
+| `POST` | `/system/metriken/token` | Generate a token and store it, switching the endpoint on. A new one invalidates the old at once · admin |
+| `DELETE` | `/system/metriken/token` | Clear it; `/metrics` answers 404 again · admin |
 | `GET` | `/system/ldap` | How the directory is configured, read from `config.conf`. The service account's password is never in the answer, only whether one is set · admin |
 | `POST` | `/system/ldap/test` | Ask the directory about one account · admin · paid: `ldap` |
 

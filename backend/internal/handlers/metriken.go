@@ -46,6 +46,11 @@ func (s *Server) Metriken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Vermerken, dass abgeholt wurde. Die Verwaltung zeigt es an: ohne die
+	// Gegenprobe weiß niemand, ob die Verdrahtung sitzt, und man sucht den
+	// Fehler abwechselnd auf beiden Seiten.
+	metrikenAbgeholt()
+
 	var b strings.Builder
 	zeile := func(name, art, hilfe string, wert interface{}, marken string) {
 		fmt.Fprintf(&b, "# HELP %s %s\n# TYPE %s %s\n", name, hilfe, name, art)

@@ -5,23 +5,14 @@ auf einen Blick, Verkehr, die Datenbank, Bestand und Anmeldungen.
 
 ## Voraussetzung
 
-Ein Losungswort in `config.conf` oder in der Umgebung, sonst gibt es den Weg
-nicht:
+Unter **Einstellungen, Kennzahlen** einschalten. Dort wird ein Losungswort
+erzeugt, und der fertige Abschnitt für die `prometheus.yml` steht mit dem Wort
+darin gleich daneben, zum Kopieren. Dieselbe Seite zeigt, wann zuletzt abgeholt
+wurde: solange dort „noch nie“ steht, sitzt die Verdrahtung nicht.
 
-```
-metriken_token = <etwas Langes>
-```
-
-Dann in Prometheus:
-
-```yaml
-  - job_name: 'nexora'
-    metrics_path: /metrics
-    authorization:
-      credentials: '<dasselbe Losungswort>'
-    static_configs:
-      - targets: ['10.0.0.1:3000']
-```
+Wer die Instanz von außen konfiguriert, kann stattdessen `metriken_token` in
+`config.conf` oder `NEXORA_METRIKEN_TOKEN` setzen. Ohne beides gibt es den Weg
+nicht, er antwortet mit 404.
 
 ## Einspielen
 

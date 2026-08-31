@@ -18,6 +18,7 @@ import {
   KonfigDatei,
   LDAPEinrichtung,
   LDAPTestErgebnis,
+  MetrikenZustand,
   Puls,
   Sitzung,
   SystemZustand,
@@ -37,6 +38,7 @@ type Bereich =
   | "sicherheit"
   | "anmeldungen"
   | "ldap"
+  | "kennzahlen"
   | "sitzungen"
   | "datenbank"
   | "suche"
@@ -57,6 +59,7 @@ const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
   { id: "anmeldungen", titel: "Anmeldungen", unter: "Jeder Versuch, mit Adresse und Herkunft" },
   { id: "sitzungen", titel: "Sitzungen", unter: "Angemeldete Geräte, einzeln beendbar" },
   { id: "ldap", titel: "Verzeichnis", unter: "LDAP und Active Directory, mit Probe" },
+  { id: "kennzahlen", titel: "Kennzahlen", unter: "Prometheus abholen lassen, Grafana" },
   { id: "datenbank", titel: "Datenbank", unter: "Größe, Tabellen, Belegung" },
   { id: "suche", titel: "Suche", unter: "Wörterbuch und Suchindex" },
   { id: "anhaenge", titel: "Anhänge", unter: "Größenbegrenzung und Belegung" },
@@ -341,6 +344,39 @@ export default function EinstellungenView() {
     };
   }, [bereich]);
 
+  // Die Kennzahlen. Wird beim Öffnen geholt und nach jeder Änderung neu, damit
+  // "zuletzt abgeholt" nicht veraltet dasteht.
+  const [metriken, setMetriken] = useState<MetrikenZustand | null>(null);
+  const [kopiert, setKopiert] = useState("");
+  useEffect(() => {
+    if (bereich !== "kennzahlen") return;
+    let lebt = true;
+    const holen = () =>
+      api
+        .metriken()
+        .then((m) => lebt && setMetriken(m))
+        .catch(() => lebt && setMetriken(null));
+    holen();
+    // Alle fünf Sekunden nachsehen: wer gerade die prometheus.yml einträgt,
+    // soll den ersten Abruf hier eintreffen sehen, ohne neu zu laden.
+    const takt = window.setInterval(holen, 5000);
+    return () => {
+      lebt = false;
+      window.clearInterval(takt);
+    };
+  }, [bereich]);
+
+  const kopieren = async (text: string, was: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setKopiert(was);
+      window.setTimeout(() => setKopiert(""), 2000);
+    } catch {
+      // Ohne Erlaubnis für die Zwischenablage bleibt der Text zum Markieren da.
+      setMeldung({ text: "Kopieren nicht erlaubt. Der Text lässt sich markieren.", art: "fehler" });
+    }
+  };
+
   // Das Verzeichnis. Die Einrichtung steht in config.conf und ist von hier aus
   // nur zu lesen; was sich von hier aus tun lässt, ist sie auszuprobieren.
   const [ldap, setLdap] = useState<LDAPEinrichtung | null>(null);
@@ -351,6 +387,42 @@ export default function EinstellungenView() {
       api.ldapEinrichtung().then(setLdap).catch(() => setLdap(null));
     }
   }, [bereich, ldap]);
+
+  const tokenNeu = async () => {
+    setLaeuft("metriken");
+    try {
+      setMetriken(await api.metrikenTokenNeu());
+      setMeldung({
+        text: "Losungswort erzeugt. Der Abschnitt unten enthält es bereits.",
+        art: "ok",
+      });
+    } catch (e) {
+      setMeldung({ text: (e as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
+
+  const metrikenAus = async () => {
+    if (
+      !(await frage({
+        titel: "Kennzahlen abschalten",
+        text: "Der Weg /metrics antwortet danach wieder mit 404. Ein Sammler, der ihn abholt, bekommt nichts mehr und meldet den Auftrag als tot.",
+        bestaetigen: "Abschalten",
+        gefaehrlich: true,
+      }))
+    )
+      return;
+    setLaeuft("metriken");
+    try {
+      setMetriken(await api.metrikenAus());
+      setMeldung({ text: "Kennzahlen abgeschaltet.", art: "ok" });
+    } catch (e) {
+      setMeldung({ text: (e as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
 
   const ldapTesten = async () => {
     setLaeuft("ldap");
@@ -1131,6 +1203,136 @@ export default function EinstellungenView() {
               Höchstens 300 Zeilen auf einmal. Ältere Einträge stehen weiter im Protokoll und
               werden nie gelöscht. Was ein Konto danach getan hat, steht dort ebenfalls.
             </p>
+          </>
+        );
+      }
+
+      case "kennzahlen": {
+        const mz = metriken;
+        return (
+          <>
+            <h3>Kennzahlen für Prometheus</h3>
+            <p className="muted small">
+              Die Systemansicht zeigt die letzte Minute. Das beantwortet, was gerade ist, aber
+              nicht, was heute Nacht um drei war, und genau das ist die Frage, wenn sich jemand
+              über gestern beschwert. Dafür braucht es einen, der mitschreibt. Nexora liefert
+              die Zahlen unter <code>/metrics</code>, das Aufheben und Zeichnen übernimmt
+              Prometheus mit Grafana.
+            </p>
+
+            {!mz ? (
+              <p className="muted">Wird geladen…</p>
+            ) : (
+              <>
+                <table className="tabelle uebersicht-tabelle">
+                  <tbody>
+                    <tr>
+                      <td>Zustand</td>
+                      <td className="zahl">
+                        {mz.aktiv ? (
+                          "an"
+                        ) : (
+                          <span className="muted">aus, der Weg antwortet mit 404</span>
+                        )}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Zuletzt abgeholt</td>
+                      <td className="zahl">
+                        {mz.zuletztAbgeholt ? (
+                          <>
+                            vor {mz.vorSekunden} s{" "}
+                            <span className="muted">({mz.abholungen}× seit dem Start)</span>
+                          </>
+                        ) : (
+                          <span className="muted">noch nie</span>
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {mz.aktiv && !mz.zuletztAbgeholt && (
+                  <div className="warnkasten">
+                    <strong>Eingeschaltet, aber noch nichts abgeholt</strong>
+                    <div className="muted small">
+                      Der Weg steht offen, es hat ihn nur noch niemand benutzt. Solange hier
+                      „noch nie“ steht, fehlt der Abschnitt unten in der{" "}
+                      <code>prometheus.yml</code>, oder Prometheus kommt nicht an diese
+                      Instanz heran.
+                    </div>
+                  </div>
+                )}
+
+                <div className="knopfreihe">
+                  <button className="btn" disabled={laeuft === "metriken"} onClick={tokenNeu}>
+                    {mz.aktiv ? "Neues Losungswort" : "Einschalten"}
+                  </button>
+                  {mz.aktiv && (
+                    <button className="btn" disabled={laeuft === "metriken"} onClick={metrikenAus}>
+                      Abschalten
+                    </button>
+                  )}
+                </div>
+                <p className="muted small">
+                  Das Losungswort wird erzeugt und nicht eingetippt: ein ausgedachtes ist kurz
+                  und anderswo schon in Gebrauch. Merken muss es sich niemand, es wird in die{" "}
+                  <code>prometheus.yml</code> kopiert. Ein neues erzeugen macht das alte sofort
+                  ungültig, der Sammler bekommt dann 404, bis der Abschnitt nachgezogen ist.
+                </p>
+
+                {mz.ausDerDatei && (
+                  <div className="warnkasten">
+                    <strong>Ein Losungswort steht auch in der Datei</strong>
+                    <div className="muted small">
+                      <code>metriken_token</code> in <code>config.conf</code>. Was hier gesetzt
+                      wird, hat Vorrang, aber Abschalten wirkt nur bis zum Neustart: danach
+                      gilt wieder die Datei. Dauerhaft abschalten heißt, die Zeile dort zu
+                      entfernen.
+                    </div>
+                  </div>
+                )}
+
+                {mz.aktiv && (
+                  <>
+                    <h3>Für die prometheus.yml</h3>
+                    <p className="muted small">
+                      Unter <code>scrape_configs</code> einfügen, Prometheus neu laden. Die
+                      Adresse ist geraten, wenn keine öffentliche Adresse eingetragen ist;
+                      dann steht dort ein Platzhalter.
+                    </p>
+                    <textarea className="konfig-feld" rows={10} readOnly value={mz.prometheus} />
+                    <div className="knopfreihe">
+                      <button
+                        className="btn"
+                        onClick={() => kopieren(mz.prometheus, "abschnitt")}
+                      >
+                        {kopiert === "abschnitt" ? "Kopiert" : "Abschnitt kopieren"}
+                      </button>
+                      <button className="btn" onClick={() => kopieren(mz.token, "wort")}>
+                        {kopiert === "wort" ? "Kopiert" : "Nur das Losungswort"}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                <h3>Grafana</h3>
+                <p className="muted small">
+                  Ein fertiges Bild liegt im Quelltextbestand unter{" "}
+                  <code>grafana/nexora.json</code>. In Grafana über <em>Dashboards, New,
+                  Import</em> hochladen und die Prometheus-Datenquelle wählen. Vierzehn Felder
+                  in vier Reihen: auf einen Blick, Verkehr, die Datenbank, Bestand und
+                  Anmeldungen.
+                </p>
+                <p className="muted small">
+                  Das Feld, wegen dem es sich lohnt, heißt <em>Verbindungen zum Vorrat</em>.
+                  Klebt die Belegung an der gestrichelten Obergrenze, während daneben die
+                  Wartezeit steigt, ist eine Störung erklärt, die sonst niemand versteht: von
+                  außen sieht sie aus wie eine langsame Datenbank, obwohl die Datenbank
+                  Langeweile hat.
+                </p>
+              </>
+            )}
           </>
         );
       }
