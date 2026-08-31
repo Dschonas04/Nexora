@@ -3309,3 +3309,44 @@ textarea::placeholder {
 .fehler-text {
   color: var(--fehler-text);
 }
+
+/* Die letzte Minute als Balken, einer je Sekunde. Feste Hoehe, damit die Seite
+   nicht bei jedem Nachladen springt: der Inhalt aendert sich im Sekundentakt,
+   und ein Kasten, der dabei seine Groesse wechselt, macht jede Tabelle
+   darunter unlesbar. */
+.puls {
+  margin: 10px 0 18px;
+}
+.puls-balken {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 72px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--flaeche);
+}
+.puls-strich {
+  flex: 1;
+  min-height: 0;
+  border-radius: 1px 1px 0 0;
+  background: var(--accent, #2383e2);
+  opacity: 0.75;
+  transition: height 0.3s ease;
+}
+/* Abgewiesen und gescheitert sind zweierlei: 4xx heisst, jemand durfte nicht,
+   5xx heisst, etwas ist kaputt. Eine Instanz, die fleissig 401 verteilt, faerbt
+   sich sonst rot, obwohl sie genau das tut, was sie soll. */
+.puls-strich.abgelehnt {
+  background: var(--lesen-text);
+}
+.puls-strich.fehler {
+  background: var(--fehler-text);
+  opacity: 1;
+}
+.puls-fuss {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+}

@@ -14,6 +14,7 @@ import (
 
 	"nexora/internal/ablage"
 	"nexora/internal/models"
+	"nexora/internal/puls"
 )
 
 const (
@@ -41,6 +42,9 @@ type Server struct {
 	// Ablage decides where the bytes of an attachment lie: on disk or in an S3
 	// bucket. The handlers do not know the difference.
 	Ablage ablage.Ablage
+	// Puls zählt die Anfragen der letzten Minute. Darf nil sein; dann meldet
+	// die Systemansicht keine Live-Werte, und sonst ändert sich nichts.
+	Puls *puls.Messer
 }
 
 // writeJSON sends v as JSON. An encoding error is ignored on purpose: the

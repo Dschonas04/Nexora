@@ -399,6 +399,34 @@ pruefe "tage=0 liefert alles" "200" "$(code "$BASIS/api/system/anmeldungen?tage=
 pruefe "Filter nach Adresse greift" "0" \
        "$(hole "$BASIS/api/system/anmeldungen?ip=10.9.9.9" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["versuche"]))')"
 
+echo "== Puls"
+# Gezaehlt wird ohne Sperre auf dem heissen Weg, und die Faecher werden ueber
+# die Uhr gewechselt. Ob das im laufenden Dienst wirklich zusammenpasst, zeigt
+# sich erst hier: die Einheitspruefungen sehen nur das Paket, nicht die Kette.
+pruefe "Puls antwortet" "200" "$(code "$BASIS/api/system/puls")"
+pruefe "der Vorrat nennt seine Obergrenze" "True" \
+       "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(json.load(sys.stdin)["vorrat"]["hoechstens"] > 0)')"
+# Nicht die Zahl der Zugriffe ohne freie Verbindung: die steht auch auf einer
+# unbelasteten Instanz ueber null, weil der Vorrat beim Start leer ist und die
+# ersten Zugriffe ihre Verbindung erst aufbauen lassen. Aussagekraeftig ist die
+# mittlere Wartezeit, und die muss hier verschwindend sein.
+pruefe "kaum Wartezeit auf eine Verbindung" "True" \
+       "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(json.load(sys.stdin)["vorrat"]["mittelWarteMs"] < 1.0)')"
+pruefe "die Minute hat 59 Faecher" "59" \
+       "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["anfragen"]["minute"]))')"
+# Die vielen Aufrufe der Abschnitte davor muessen sich niedergeschlagen haben.
+pruefe "es wurde etwas gezaehlt" "True" \
+       "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(json.load(sys.stdin)["anfragen"]["gesamt"] > 50)')"
+# Der Abfrageweg zaehlt sich nicht selbst mit, sonst stuende er als
+# Grundrauschen in jeder Messung, die er anzeigen soll.
+VORHER=$(hole "$BASIS/api/system/puls" | feld "['anfragen']['gesamt']")
+hole "$BASIS/api/system/puls" >/dev/null
+hole "$BASIS/api/system/puls" >/dev/null
+pruefe "der Puls zaehlt sich nicht selbst" "$VORHER" \
+       "$(hole "$BASIS/api/system/puls" | feld "['anfragen']['gesamt']")"
+pruefe "ohne Anmeldung verschlossen" "401" \
+       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/puls")"
+
 echo "== Verzeichnis-Verwaltung"
 # Nachsehen darf ein Administrator immer, auch ohne Lizenz: sonst sieht eine
 # Instanz nicht einmal, dass da etwas eingerichtet ist, das nicht laeuft.

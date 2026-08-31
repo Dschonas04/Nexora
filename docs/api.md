@@ -334,6 +334,7 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `POST` | `/system/suchindex` | Rebuild the full text index — needed after changing `such_woerterbuch` |
 | `POST` | `/system/anhangindex` | Extract attachment text for files uploaded before the attachment index existed |
 | `GET` | `/system/anmeldungen` | Sign-in attempts, see above · admin |
+| `GET` | `/system/puls` | Live state, polled every two seconds by the system view: the last minute in one-second buckets, the connection pool, the process, the database · admin |
 | `POST` | `/system/grenzprobe` | Reads a body and discards it, answering with the byte count. The interface uses it to *measure* how large a transfer may really be: nginx in front has its own `client_max_body_size`, which Nexora cannot read and should not have to · admin |
 | `GET` | `/system/ldap` | How the directory is configured, read from `config.conf`. The service account's password is never in the answer, only whether one is set · admin |
 | `POST` | `/system/ldap/test` | Ask the directory about one account · admin · paid: `ldap` |
@@ -352,6 +353,31 @@ was fine, only the result is negative, and a status code would force the
 interface to guess whether the test failed or could not be run. `ok` is also
 false when the entry was found but carries nothing in the configured mail field,
 because no account can be made from it — `hinweis` says so.
+
+#### `GET /system/puls`
+
+Three sources the system view shows together, because none of them says much
+alone.
+
+`anfragen` is the last minute in **one-second buckets**, oldest first — count,
+mean and longest duration, 4xx and 5xx counted apart. Buckets rather than a
+running average: an average over the whole uptime dilutes every spike out of
+sight, and a minute in which nothing worked disappears into eight hours of
+normal service. The **current** second is left out, being only partly elapsed;
+it would read as a dip. The endpoint does not count itself, or it would be the
+background noise in every measurement it displays.
+
+`vorrat` is the pgx connection pool. Read `mittelWarteMs`, not `ohneFreie`: the
+latter counts every acquire that found no idle connection, which includes the
+first acquires after start when the pool is still empty, so it stands above zero
+on an instance that has never been under load. The mean wait has no such
+problem. This is the place an instance runs out first, and it does so
+deceptively: with every connection busy, each further request waits, which from
+outside looks like a slow database while the database is idle.
+
+`prozess` is heap, goroutines and cores. `datenbank` is size, cache hit ratio
+and total backends — the hit ratio being the number that says whether more
+`shared_buffers` would buy anything.
 
 ### Maintenance
 

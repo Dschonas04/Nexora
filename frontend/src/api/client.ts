@@ -394,6 +394,55 @@ export interface LDAPTestErgebnis {
   befund?: LDAPBefund;
 }
 
+// Puls ist der Live-Stand: die letzte Minute in Sekundenfächern, dazu der
+// Verbindungsvorrat und der Prozess. Die laufende Sekunde fehlt darin, sie ist
+// erst zum Teil vergangen.
+export interface PulsSekunde {
+  vorSekunden: number;
+  anfragen: number;
+  fehler: number;
+  abgelehnt: number;
+  mittelMs: number;
+  maxMs: number;
+}
+
+export interface Puls {
+  gemessenUm: string;
+  anfragen?: {
+    laufend: number;
+    gesamt: number;
+    laufzeitSek: number;
+    minute: PulsSekunde[];
+    proSekunde: number;
+    mittelMs: number;
+    spitzeMs: number;
+    fehler: number;
+    abgelehnt: number;
+  };
+  vorrat: {
+    hoechstens: number;
+    offen: number;
+    inBenutzung: number;
+    frei: number;
+    zugriffe: number;
+    ohneFreie: number;
+    mittelWarteMs: number;
+    imAufbau: number;
+  };
+  prozess: {
+    aufgaben: number;
+    speicherMB: number;
+    vomSystemMB: number;
+    aufraeumen: number;
+    kerne: number;
+  };
+  datenbank: {
+    groesse: string;
+    trefferquote: number | null;
+    verbindungen: number;
+  };
+}
+
 // Gruppe is a group of accounts. Groups belong to the installation, not to an
 // account: a department is not a private matter.
 export interface Gruppe {
@@ -604,6 +653,7 @@ export const api = {
       method: "DELETE",
     }),
   systemZustand: () => req<SystemZustand>("/system"),
+  puls: () => req<Puls>("/system/puls"),
   ldapEinrichtung: () => req<LDAPEinrichtung>("/system/ldap"),
   ldapTesten: (benutzer: string, passwort: string) =>
     req<LDAPTestErgebnis>("/system/ldap/test", {

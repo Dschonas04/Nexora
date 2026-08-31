@@ -18,6 +18,7 @@ import {
   KonfigDatei,
   LDAPEinrichtung,
   LDAPTestErgebnis,
+  Puls,
   Sitzung,
   SystemZustand,
   api,
@@ -147,6 +148,58 @@ function geraet(ua: string): string {
   return system ? `${browser} auf ${system}` : browser;
 }
 
+// Eine Laufzeit, wie man sie ausspricht.
+function laufzeit(sek: number): string {
+  if (sek < 60) return `${sek} s`;
+  if (sek < 3600) return `${Math.floor(sek / 60)} min`;
+  if (sek < 86400) return `${Math.floor(sek / 3600)} h ${Math.floor((sek % 3600) / 60)} min`;
+  return `${Math.floor(sek / 86400)} d ${Math.floor((sek % 86400) / 3600)} h`;
+}
+
+// Die letzte Minute als Balken, einer je Sekunde.
+//
+// Von Hand aus <div> gebaut und nicht mit einer Bibliothek: es sind neunundfünfzig
+// Rechtecke, und dafür ein Diagrammpaket zu laden hieße, das Bündel um ein
+// Vielfaches dessen zu vergrößern, was hier gezeichnet wird.
+//
+// Die Höhe ist auf die höchste Sekunde bezogen und nicht auf einen festen Wert.
+// Eine feste Achse wäre bei zwei Anfragen je Sekunde eine leere Fläche und bei
+// zweitausend ein Balken, der oben abgeschnitten ist. Was hier interessiert, ist
+// ohnehin die Form: gleichmäßig, eine Spitze, oder ein Loch.
+function balken(p: Puls) {
+  const minute = p.anfragen?.minute ?? [];
+  const hoechste = Math.max(1, ...minute.map((s) => s.anfragen));
+  const still = minute.every((s) => s.anfragen === 0);
+  return (
+    <div className="puls">
+      <div className="puls-balken">
+        {minute.map((s) => {
+          const anteil = (s.anfragen / hoechste) * 100;
+          const art = s.fehler > 0 ? "fehler" : s.abgelehnt > 0 ? "abgelehnt" : "gut";
+          return (
+            <div
+              key={s.vorSekunden}
+              className={"puls-strich " + art}
+              style={{ height: `${Math.max(s.anfragen > 0 ? 4 : 0, anteil)}%` }}
+              title={
+                `vor ${s.vorSekunden} s: ${s.anfragen} Anfragen` +
+                (s.anfragen > 0 ? `, im Mittel ${s.mittelMs.toFixed(1)} ms` : "") +
+                (s.abgelehnt > 0 ? `, ${s.abgelehnt} abgewiesen` : "") +
+                (s.fehler > 0 ? `, ${s.fehler} gescheitert` : "")
+              }
+            />
+          );
+        })}
+      </div>
+      <div className="puls-fuss muted small">
+        <span>vor einer Minute</span>
+        <span>{still ? "nichts los" : `Spitze ${hoechste} je Sekunde`}</span>
+        <span>jetzt</span>
+      </div>
+    </div>
+  );
+}
+
 function bytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
@@ -263,6 +316,30 @@ export default function EinstellungenView() {
     }
     setGrenze({ laeuft: "", wirksam: unten, eingestellt });
   };
+
+  // Der Live-Stand. Wird nur abgefragt, solange der Bereich offen ist: eine
+  // Abfrage je Sekunde ist nichts, eine Abfrage je Sekunde für immer, weil
+  // jemand den Reiter offen gelassen hat, ist Grundrauschen in jeder Messung.
+  const [puls, setPuls] = useState<Puls | null>(null);
+  useEffect(() => {
+    if (bereich !== "system") {
+      setPuls(null);
+      return;
+    }
+    let lebt = true;
+    const holen = () => {
+      api
+        .puls()
+        .then((p) => lebt && setPuls(p))
+        .catch(() => lebt && setPuls(null));
+    };
+    holen();
+    const takt = window.setInterval(holen, 2000);
+    return () => {
+      lebt = false;
+      window.clearInterval(takt);
+    };
+  }, [bereich]);
 
   // Das Verzeichnis. Die Einrichtung steht in config.conf und ist von hier aus
   // nur zu lesen; was sich von hier aus tun lässt, ist sie auszuprobieren.
@@ -1703,6 +1780,176 @@ export default function EinstellungenView() {
       case "system":
         return (
           <>
+            <h3>Gerade eben</h3>
+            <p className="muted small">
+              Die letzte Minute, im Sekundentakt nachgeladen, solange dieser Bereich offen
+              ist. Der eigene Abfrageweg zählt sich nicht mit. Die laufende Sekunde fehlt in
+              der Kurve: sie ist erst halb vergangen und sähe wie ein Einbruch aus.
+            </p>
+            {!puls ? (
+              <p className="muted">Wird gemessen…</p>
+            ) : (
+              <>
+                {balken(puls)}
+                <table className="tabelle uebersicht-tabelle">
+                  <tbody>
+                    <tr>
+                      <td>Anfragen je Sekunde</td>
+                      <td className="zahl">{(puls.anfragen?.proSekunde ?? 0).toFixed(1)}</td>
+                    </tr>
+                    <tr>
+                      <td>Gerade in Bearbeitung</td>
+                      <td className="zahl">{puls.anfragen?.laufend ?? 0}</td>
+                    </tr>
+                    <tr>
+                      <td>Mittlere Dauer, letzte Minute</td>
+                      <td className="zahl">{(puls.anfragen?.mittelMs ?? 0).toFixed(1)} ms</td>
+                    </tr>
+                    <tr>
+                      <td>Längste Antwort, letzte Minute</td>
+                      <td className="zahl">{(puls.anfragen?.spitzeMs ?? 0).toFixed(0)} ms</td>
+                    </tr>
+                    <tr>
+                      <td>Abgewiesen / gescheitert, letzte Minute</td>
+                      <td className="zahl">
+                        {puls.anfragen?.abgelehnt ?? 0} /{" "}
+                        <span className={(puls.anfragen?.fehler ?? 0) > 0 ? "fehler-text" : undefined}>
+                          {puls.anfragen?.fehler ?? 0}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Seit dem Start beantwortet</td>
+                      <td className="zahl">
+                        {(puls.anfragen?.gesamt ?? 0).toLocaleString("de-DE")}{" "}
+                        <span className="muted">
+                          in {laufzeit(puls.anfragen?.laufzeitSek ?? 0)}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <h3>Verbindungen zur Datenbank</h3>
+                <p className="muted small">
+                  Die Stelle, an der eine Instanz zuerst eng wird, und zwar unauffällig: sind
+                  alle Verbindungen belegt, wartet jede weitere Anfrage. Von außen sieht das
+                  aus wie eine langsame Datenbank, obwohl die Datenbank Langeweile hat.
+                  Anzusehen ist das der <em>mittleren Wartezeit</em>: bleibt sie unter einer
+                  Millisekunde, ist der Vorrat groß genug. Steigt sie, lässt er sich mit{" "}
+                  <code>pool_max_conns</code> in <code>DATABASE_URL</code> heben.
+                </p>
+                <table className="tabelle uebersicht-tabelle">
+                  <tbody>
+                    <tr>
+                      <td>In Benutzung</td>
+                      <td className="zahl">
+                        <span
+                          className={
+                            puls.vorrat.inBenutzung >= puls.vorrat.hoechstens
+                              ? "fehler-text"
+                              : undefined
+                          }
+                        >
+                          {puls.vorrat.inBenutzung} von {puls.vorrat.hoechstens}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Offen, davon frei</td>
+                      <td className="zahl">
+                        {puls.vorrat.offen}, davon {puls.vorrat.frei}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Mittlere Wartezeit auf eine Verbindung</td>
+                      <td className="zahl">
+                        <span
+                          className={puls.vorrat.mittelWarteMs > 1 ? "fehler-text" : undefined}
+                        >
+                          {puls.vorrat.mittelWarteMs < 0.01
+                            ? "unter 0,01 ms"
+                            : `${puls.vorrat.mittelWarteMs.toFixed(2)} ms`}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Zugriffe ohne freie Verbindung</td>
+                      <td className="zahl">
+                        {puls.vorrat.ohneFreie.toLocaleString("de-DE")}{" "}
+                        <span className="muted">
+                          von {puls.vorrat.zugriffe.toLocaleString("de-DE")}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Verbindungen an der Datenbank insgesamt</td>
+                      <td className="zahl">{puls.datenbank.verbindungen}</td>
+                    </tr>
+                    <tr>
+                      <td>Größe der Datenbank</td>
+                      <td className="zahl">{puls.datenbank.groesse || "unbekannt"}</td>
+                    </tr>
+                    <tr>
+                      <td>Aus dem Speicher beantwortet</td>
+                      <td className="zahl">
+                        {puls.datenbank.trefferquote === null ? (
+                          <span className="muted">noch nichts gelesen</span>
+                        ) : (
+                          `${puls.datenbank.trefferquote} %`
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                {puls.vorrat.mittelWarteMs > 1 && (
+                  <div className="warnkasten">
+                    <strong>Anfragen warten auf eine Verbindung</strong>
+                    <div className="muted small">
+                      Im Mittel {puls.vorrat.mittelWarteMs.toFixed(1)} ms, bevor eine Anfrage
+                      überhaupt mit der Datenbank sprechen darf. Der Vorrat steht auf{" "}
+                      {puls.vorrat.hoechstens}; ohne Angabe nimmt pgx eine Verbindung je Kern.
+                      Höher setzen mit <code>pool_max_conns</code> in <code>DATABASE_URL</code>
+                      , und unter <code>max_connections</code> von PostgreSQL bleiben.
+                    </div>
+                  </div>
+                )}
+                {puls.datenbank.trefferquote !== null && puls.datenbank.trefferquote < 95 && (
+                  <div className="warnkasten">
+                    <strong>PostgreSQL liest von der Platte</strong>
+                    <div className="muted small">
+                      Unter 95 % kommt ein spürbarer Teil der Antworten nicht mehr aus dem
+                      Speicher. Das ist der Punkt, ab dem sich mehr <code>shared_buffers</code>{" "}
+                      lohnt, und vorher nicht.
+                    </div>
+                  </div>
+                )}
+
+                <h3>Prozess</h3>
+                <table className="tabelle uebersicht-tabelle">
+                  <tbody>
+                    <tr>
+                      <td>Belegter Speicher</td>
+                      <td className="zahl">
+                        {puls.prozess.speicherMB.toFixed(1)} MB{" "}
+                        <span className="muted">
+                          von {puls.prozess.vomSystemMB.toFixed(0)} MB angefordert
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Nebenläufige Aufgaben</td>
+                      <td className="zahl">{puls.prozess.aufgaben}</td>
+                    </tr>
+                    <tr>
+                      <td>Kerne</td>
+                      <td className="zahl">{puls.prozess.kerne}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </>
+            )}
+
             {(z.warnungen ?? []).length > 0 && (
               <div className="warnkasten">
                 <strong>Beim Start bemängelt</strong>
