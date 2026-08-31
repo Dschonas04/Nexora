@@ -159,46 +159,107 @@ function laufzeit(sek: number): string {
   return `${Math.floor(sek / 86400)} d ${Math.floor((sek % 86400) / 3600)} h`;
 }
 
-// Die letzte Minute als Balken, einer je Sekunde.
+// Die letzte Minute als Fläche, nicht als Kamm.
 //
-// Von Hand aus <div> gebaut und nicht mit einer Bibliothek: es sind neunundfünfzig
-// Rechtecke, und dafür ein Diagrammpaket zu laden hieße, das Bündel um ein
-// Vielfaches dessen zu vergrößern, was hier gezeichnet wird.
+// Vorher standen hier neunundfünfzig einzelne Rechtecke nebeneinander. Das
+// zeigte zwar dieselben Zahlen, las sich aber wie ein Strichcode: bei Werten,
+// die sich im Sekundentakt ändern, springt jedes Rechteck für sich, und das
+// Auge sieht Flimmern statt Verlauf. Eine Fläche hat eine Silhouette, und die
+// bleibt auch dann lesbar, wenn sich die Zahlen darunter ändern.
 //
-// Die Höhe ist auf die höchste Sekunde bezogen und nicht auf einen festen Wert.
-// Eine feste Achse wäre bei zwei Anfragen je Sekunde eine leere Fläche und bei
-// zweitausend ein Balken, der oben abgeschnitten ist. Was hier interessiert, ist
-// ohnehin die Form: gleichmäßig, eine Spitze, oder ein Loch.
-function balken(p: Puls) {
+// Von Hand als SVG und nicht mit einer Bibliothek: es ist ein Polygon aus
+// neunundfünfzig Punkten. Eine Diagrammbibliothek dafür zu laden hieße, das
+// Bündel um ein Vielfaches dessen zu vergrößern, was gezeichnet wird.
+const KURVE_B = 300; // Einheiten im viewBox, nicht Bildpunkte
+const KURVE_H = 64;
+
+function verlauf(p: Puls) {
   const minute = p.anfragen?.minute ?? [];
+  // Mindestens zwei Punkte: bei einem teilte die x-Berechnung durch null, und
+  // ein NaN im Pfad zeichnet nicht etwa falsch, sondern gar nichts. Das Backend
+  // liefert immer neunundfünfzig, aber eine Kurve, die bei einem Punkt still
+  // verschwindet, wäre der unangenehmste Fehler von allen.
+  if (minute.length < 2) return null;
+
   const hoechste = Math.max(1, ...minute.map((s) => s.anfragen));
   const still = minute.every((s) => s.anfragen === 0);
+  const x = (i: number) => (i / (minute.length - 1)) * KURVE_B;
+  // Zwei Einheiten Luft oben, damit die Spitze nicht am Rand klebt.
+  const y = (v: number) => KURVE_H - 2 - (v / hoechste) * (KURVE_H - 6);
+
+  const punkte = minute.map((sek, i) => `${x(i).toFixed(1)},${y(sek.anfragen).toFixed(1)}`);
+  const linie = "M" + punkte.join(" L");
+  const flaeche = `${linie} L${KURVE_B},${KURVE_H} L0,${KURVE_H} Z`;
+
   return (
     <div className="puls">
-      <div className="puls-balken">
-        {minute.map((s) => {
-          const anteil = (s.anfragen / hoechste) * 100;
-          const art = s.fehler > 0 ? "fehler" : s.abgelehnt > 0 ? "abgelehnt" : "gut";
-          return (
-            <div
-              key={s.vorSekunden}
-              className={"puls-strich " + art}
-              style={{ height: `${Math.max(s.anfragen > 0 ? 4 : 0, anteil)}%` }}
-              title={
-                `vor ${s.vorSekunden} s: ${s.anfragen} Anfragen` +
-                (s.anfragen > 0 ? `, im Mittel ${s.mittelMs.toFixed(1)} ms` : "") +
-                (s.abgelehnt > 0 ? `, ${s.abgelehnt} abgewiesen` : "") +
-                (s.fehler > 0 ? `, ${s.fehler} gescheitert` : "")
-              }
-            />
-          );
-        })}
-      </div>
+      <svg
+        className="puls-kurve"
+        viewBox={`0 0 ${KURVE_B} ${KURVE_H}`}
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={
+          still
+            ? "Keine Anfragen in der letzten Minute"
+            : `Anfragen je Sekunde in der letzten Minute, Spitze ${hoechste}`
+        }
+      >
+        {/* Eine einzige Hilfslinie, auf halber Höhe. Ein volles Gitter wäre bei
+            vierundsechzig Einheiten Höhe mehr Linie als Inhalt. */}
+        <line x1="0" y1={y(hoechste / 2)} x2={KURVE_B} y2={y(hoechste / 2)}
+              className="puls-hilfslinie" />
+        <path d={flaeche} className="puls-flaeche" />
+        <path d={linie} className="puls-linie" vectorEffect="non-scaling-stroke" />
+        {/* Sekunden mit Fehlern als Strich auf der Grundlinie. Sie in die Fläche
+            zu färben ginge nicht, die Fläche ist eine Reihe; auf der Grundlinie
+            stehen sie dort, wo sie hingehören, ohne die Silhouette zu stören. */}
+        {minute.map((sek, i) =>
+          sek.fehler > 0 || sek.abgelehnt > 0 ? (
+            <rect
+              key={sek.vorSekunden}
+              x={x(i) - 1}
+              y={KURVE_H - 3}
+              width={2}
+              height={3}
+              className={sek.fehler > 0 ? "puls-marke fehler" : "puls-marke abgelehnt"}
+            >
+              <title>
+                {`vor ${sek.vorSekunden} s: ${sek.abgelehnt} abgewiesen, ${sek.fehler} gescheitert`}
+              </title>
+            </rect>
+          ) : null,
+        )}
+      </svg>
       <div className="puls-fuss muted small">
         <span>vor einer Minute</span>
-        <span>{still ? "nichts los" : `Spitze ${hoechste} je Sekunde`}</span>
+        <span>{still ? "nichts los" : `Spitze ${hoechste}/s`}</span>
         <span>jetzt</span>
       </div>
+    </div>
+  );
+}
+
+// Eine Kennzahl, groß gesetzt. Der Wert in proportionalen Ziffern, nicht in
+// gleich breiten: bei dieser Größe sieht "121" mit Tabellenziffern lückenhaft
+// aus. Gleich breite Ziffern gehören in Spalten, die untereinander stehen.
+function kennzahl(titel: string, wert: React.ReactNode, unten?: React.ReactNode, art?: string) {
+  return (
+    <div className={"kennzahl" + (art ? " " + art : "")} key={titel}>
+      <div className="kennzahl-titel">{titel}</div>
+      <div className="kennzahl-wert">{wert}</div>
+      <div className="kennzahl-fuss muted small">{unten ?? "\u00a0"}</div>
+    </div>
+  );
+}
+
+// Ein Füllstand. Die Farbe trägt den Ernst, die Bahn dahinter ist eine hellere
+// Stufe derselben Farbe, damit der Zustand über den ganzen Balken zu lesen ist
+// und nicht nur an seinem Ende.
+function fuellstand(anteil: number) {
+  const stufe = anteil >= 0.95 ? "eng" : anteil >= 0.7 ? "knapp" : "gut";
+  return (
+    <div className={"fuellstand " + stufe}>
+      <div className="fuellstand-fuellung" style={{ width: `${Math.min(100, anteil * 100)}%` }} />
     </div>
   );
 }
@@ -1983,88 +2044,93 @@ export default function EinstellungenView() {
         return (
           <>
             <h3>Gerade eben</h3>
-            <p className="muted small">
-              Die letzte Minute, im Sekundentakt nachgeladen, solange dieser Bereich offen
-              ist. Der eigene Abfrageweg zählt sich nicht mit. Die laufende Sekunde fehlt in
-              der Kurve: sie ist erst halb vergangen und sähe wie ein Einbruch aus.
-            </p>
             {!puls ? (
-              <p className="muted">Wird gemessen…</p>
+              <div className="kennzahlreihe">
+                {kennzahl("Anfragen je Sekunde", "—")}
+                {kennzahl("Antwortzeit", "—")}
+                {kennzahl("Gleichzeitig", "—")}
+                {kennzahl("Verbindungen", "—")}
+              </div>
             ) : (
               <>
-                {balken(puls)}
+                {/* Vier Zahlen groß, der Rest klein darunter. Die vier sind
+                    die, nach denen jemand sieht, während es hakt; alles
+                    Weitere liest man erst, wenn eine davon auffällt. */}
+                <div className="kennzahlreihe">
+                  {kennzahl(
+                    "Anfragen je Sekunde",
+                    (puls.anfragen?.proSekunde ?? 0).toFixed(1),
+                    `${(puls.anfragen?.gesamt ?? 0).toLocaleString("de-DE")} seit dem Start`,
+                  )}
+                  {kennzahl(
+                    "Antwortzeit",
+                    <>
+                      {(puls.anfragen?.mittelMs ?? 0).toFixed(0)}
+                      <span className="kennzahl-einheit">ms</span>
+                    </>,
+                    `längste ${(puls.anfragen?.spitzeMs ?? 0).toFixed(0)} ms`,
+                  )}
+                  {kennzahl(
+                    "Gleichzeitig",
+                    puls.anfragen?.laufend ?? 0,
+                    "gerade in Bearbeitung",
+                  )}
+                  {kennzahl(
+                    "Verbindungen",
+                    <>
+                      {puls.vorrat.inBenutzung}
+                      <span className="kennzahl-einheit">von {puls.vorrat.hoechstens}</span>
+                    </>,
+                    fuellstand(
+                      puls.vorrat.hoechstens > 0
+                        ? puls.vorrat.inBenutzung / puls.vorrat.hoechstens
+                        : 0,
+                    ),
+                  )}
+                </div>
+
+                {verlauf(puls)}
+
+                <p className="muted small">
+                  Die letzte Minute, alle zwei Sekunden nachgeladen, solange dieser Bereich
+                  offen ist. Der eigene Abfrageweg zählt sich nicht mit. Die laufende Sekunde
+                  fehlt in der Kurve: sie ist erst halb vergangen und sähe wie ein Einbruch
+                  aus. Striche auf der Grundlinie sind Sekunden mit abgewiesenen (gelb) oder
+                  gescheiterten (rot) Anfragen.
+                </p>
+
+                {(puls.anfragen?.fehler ?? 0) > 0 && (
+                  <div className="warnkasten">
+                    <strong>
+                      {puls.anfragen?.fehler} gescheiterte Anfragen in der letzten Minute
+                    </strong>
+                    <div className="muted small">
+                      Antwortstatus ab 500, also nicht abgewiesen, sondern kaputt. Im Protokoll
+                      des Containers steht, woran.
+                    </div>
+                  </div>
+                )}
+
+                <h3>Einzelheiten</h3>
                 <table className="tabelle uebersicht-tabelle">
                   <tbody>
-                    <tr>
-                      <td>Anfragen je Sekunde</td>
-                      <td className="zahl">{(puls.anfragen?.proSekunde ?? 0).toFixed(1)}</td>
-                    </tr>
-                    <tr>
-                      <td>Gerade in Bearbeitung</td>
-                      <td className="zahl">{puls.anfragen?.laufend ?? 0}</td>
-                    </tr>
-                    <tr>
-                      <td>Mittlere Dauer, letzte Minute</td>
-                      <td className="zahl">{(puls.anfragen?.mittelMs ?? 0).toFixed(1)} ms</td>
-                    </tr>
-                    <tr>
-                      <td>Längste Antwort, letzte Minute</td>
-                      <td className="zahl">{(puls.anfragen?.spitzeMs ?? 0).toFixed(0)} ms</td>
-                    </tr>
                     <tr>
                       <td>Abgewiesen / gescheitert, letzte Minute</td>
                       <td className="zahl">
                         {puls.anfragen?.abgelehnt ?? 0} /{" "}
-                        <span className={(puls.anfragen?.fehler ?? 0) > 0 ? "fehler-text" : undefined}>
+                        <span
+                          className={(puls.anfragen?.fehler ?? 0) > 0 ? "fehler-text" : undefined}
+                        >
                           {puls.anfragen?.fehler ?? 0}
                         </span>
                       </td>
                     </tr>
                     <tr>
-                      <td>Seit dem Start beantwortet</td>
-                      <td className="zahl">
-                        {(puls.anfragen?.gesamt ?? 0).toLocaleString("de-DE")}{" "}
-                        <span className="muted">
-                          in {laufzeit(puls.anfragen?.laufzeitSek ?? 0)}
-                        </span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <h3>Verbindungen zur Datenbank</h3>
-                <p className="muted small">
-                  Die Stelle, an der eine Instanz zuerst eng wird, und zwar unauffällig: sind
-                  alle Verbindungen belegt, wartet jede weitere Anfrage. Von außen sieht das
-                  aus wie eine langsame Datenbank, obwohl die Datenbank Langeweile hat.
-                  Anzusehen ist das der <em>mittleren Wartezeit</em>: bleibt sie unter einer
-                  Millisekunde, ist der Vorrat groß genug. Steigt sie, lässt er sich mit{" "}
-                  <code>pool_max_conns</code> in <code>DATABASE_URL</code> heben.
-                </p>
-                <table className="tabelle uebersicht-tabelle">
-                  <tbody>
-                    <tr>
-                      <td>In Benutzung</td>
-                      <td className="zahl">
-                        <span
-                          className={
-                            puls.vorrat.inBenutzung >= puls.vorrat.hoechstens
-                              ? "fehler-text"
-                              : undefined
-                          }
-                        >
-                          {puls.vorrat.inBenutzung} von {puls.vorrat.hoechstens}
-                        </span>
-                      </td>
+                      <td>Läuft seit</td>
+                      <td className="zahl">{laufzeit(puls.anfragen?.laufzeitSek ?? 0)}</td>
                     </tr>
                     <tr>
-                      <td>Offen, davon frei</td>
-                      <td className="zahl">
-                        {puls.vorrat.offen}, davon {puls.vorrat.frei}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Mittlere Wartezeit auf eine Verbindung</td>
+                      <td>Wartezeit auf eine Verbindung</td>
                       <td className="zahl">
                         <span
                           className={puls.vorrat.mittelWarteMs > 1 ? "fehler-text" : undefined}
@@ -2073,37 +2139,37 @@ export default function EinstellungenView() {
                             ? "unter 0,01 ms"
                             : `${puls.vorrat.mittelWarteMs.toFixed(2)} ms`}
                         </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Zugriffe ohne freie Verbindung</td>
-                      <td className="zahl">
-                        {puls.vorrat.ohneFreie.toLocaleString("de-DE")}{" "}
                         <span className="muted">
-                          von {puls.vorrat.zugriffe.toLocaleString("de-DE")}
+                          {" "}
+                          im Mittel über {puls.vorrat.zugriffe.toLocaleString("de-DE")} Zugriffe
                         </span>
                       </td>
                     </tr>
                     <tr>
-                      <td>Verbindungen an der Datenbank insgesamt</td>
-                      <td className="zahl">{puls.datenbank.verbindungen}</td>
-                    </tr>
-                    <tr>
-                      <td>Größe der Datenbank</td>
-                      <td className="zahl">{puls.datenbank.groesse || "unbekannt"}</td>
-                    </tr>
-                    <tr>
-                      <td>Aus dem Speicher beantwortet</td>
+                      <td>Datenbank</td>
                       <td className="zahl">
-                        {puls.datenbank.trefferquote === null ? (
-                          <span className="muted">noch nichts gelesen</span>
-                        ) : (
-                          `${puls.datenbank.trefferquote} %`
-                        )}
+                        {puls.datenbank.groesse || "unbekannt"}
+                        <span className="muted">
+                          {" "}
+                          {puls.datenbank.trefferquote === null
+                            ? ""
+                            : `· ${puls.datenbank.trefferquote} % aus dem Speicher`}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Speicher des Dienstes</td>
+                      <td className="zahl">
+                        {puls.prozess.speicherMB.toFixed(1)} MB
+                        <span className="muted">
+                          {" "}
+                          · {puls.prozess.aufgaben} Aufgaben auf {puls.prozess.kerne} Kernen
+                        </span>
                       </td>
                     </tr>
                   </tbody>
                 </table>
+
                 {puls.vorrat.mittelWarteMs > 1 && (
                   <div className="warnkasten">
                     <strong>Anfragen warten auf eine Verbindung</strong>
@@ -2126,29 +2192,6 @@ export default function EinstellungenView() {
                     </div>
                   </div>
                 )}
-
-                <h3>Prozess</h3>
-                <table className="tabelle uebersicht-tabelle">
-                  <tbody>
-                    <tr>
-                      <td>Belegter Speicher</td>
-                      <td className="zahl">
-                        {puls.prozess.speicherMB.toFixed(1)} MB{" "}
-                        <span className="muted">
-                          von {puls.prozess.vomSystemMB.toFixed(0)} MB angefordert
-                        </span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Nebenläufige Aufgaben</td>
-                      <td className="zahl">{puls.prozess.aufgaben}</td>
-                    </tr>
-                    <tr>
-                      <td>Kerne</td>
-                      <td className="zahl">{puls.prozess.kerne}</td>
-                    </tr>
-                  </tbody>
-                </table>
               </>
             )}
 
