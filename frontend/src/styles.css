@@ -3310,40 +3310,123 @@ textarea::placeholder {
   color: var(--fehler-text);
 }
 
-/* Die letzte Minute als Balken, einer je Sekunde. Feste Hoehe, damit die Seite
-   nicht bei jedem Nachladen springt: der Inhalt aendert sich im Sekundentakt,
-   und ein Kasten, der dabei seine Groesse wechselt, macht jede Tabelle
-   darunter unlesbar. */
-.puls {
-  margin: 10px 0 18px;
+/* Der Live-Block: vier Kennzahlen gross, darunter eine Kurve.
+   
+   Vorher standen hier fuenfzehn Tabellenzeilen und ein Streifen aus
+   neunundfuenfzig Rechtecken. Beides zeigte die richtigen Zahlen und war
+   trotzdem falsch: Werte, die sich im Sekundentakt aendern, liest niemand als
+   Liste, und einzelne Rechtecke springen jedes fuer sich, sodass das Auge
+   Flimmern sieht statt Verlauf. */
+.kennzahlreihe {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 12px 0;
 }
-.puls-balken {
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
+.kennzahl {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: var(--flaeche);
+  /* Feste Hoehe. Der Inhalt wechselt alle zwei Sekunden, und ein Kasten, der
+     dabei seine Groesse aendert, schiebt die halbe Seite hin und her. */
+  min-height: 84px;
+}
+.kennzahl-titel {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+.kennzahl-wert {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.15;
+  margin-top: 4px;
+  /* Proportionale Ziffern, ausdruecklich KEINE Tabellenziffern: die geben jeder
+     Ziffer die Breite einer Null, und in dieser Groesse sieht eine 1 daneben
+     wie eine Luecke aus. Gleich breite Ziffern gehoeren in Spalten. */
+  font-variant-numeric: proportional-nums;
+}
+.kennzahl-einheit {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 5px;
+}
+.kennzahl-fuss {
+  margin-top: 5px;
+  line-height: 1.3;
+}
+
+/* Der Fuellstand des Verbindungsvorrats. Die Farbe traegt den Ernst, die Bahn
+   dahinter ist eine hellere Stufe derselben Farbe: so ist der Zustand ueber den
+   ganzen Balken zu lesen und nicht nur an seinem Ende. */
+.fuellstand {
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 7px;
+}
+.fuellstand-fuellung {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.fuellstand.gut {
+  background: rgba(46, 160, 67, 0.18);
+}
+.fuellstand.gut .fuellstand-fuellung {
+  background: var(--erfolg-text);
+}
+.fuellstand.knapp {
+  background: rgba(217, 164, 6, 0.2);
+}
+.fuellstand.knapp .fuellstand-fuellung {
+  background: var(--lesen-text);
+}
+.fuellstand.eng {
+  background: rgba(207, 34, 46, 0.18);
+}
+.fuellstand.eng .fuellstand-fuellung {
+  background: var(--fehler-text);
+}
+
+/* Die Kurve der letzten Minute. */
+.puls {
+  margin: 4px 0 14px;
+}
+.puls-kurve {
+  display: block;
+  width: 100%;
   height: 72px;
-  padding: 6px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--flaeche);
 }
-.puls-strich {
-  flex: 1;
-  min-height: 0;
-  border-radius: 1px 1px 0 0;
-  background: var(--accent, #2383e2);
-  opacity: 0.75;
-  transition: height 0.3s ease;
+/* preserveAspectRatio steht auf none, die Flaeche wird also in der Breite
+   gedehnt. Die Linie darf das nicht mitmachen, sonst waere sie an flachen
+   Stellen duenner als an steilen -- dafuer non-scaling-stroke im Markup. */
+.puls-linie {
+  fill: none;
+  stroke: var(--accent, #2383e2);
+  stroke-width: 2;
+  stroke-linejoin: round;
 }
-/* Abgewiesen und gescheitert sind zweierlei: 4xx heisst, jemand durfte nicht,
-   5xx heisst, etwas ist kaputt. Eine Instanz, die fleissig 401 verteilt, faerbt
-   sich sonst rot, obwohl sie genau das tut, was sie soll. */
-.puls-strich.abgelehnt {
-  background: var(--lesen-text);
+.puls-flaeche {
+  fill: var(--accent, #2383e2);
+  opacity: 0.12;
+  stroke: none;
 }
-.puls-strich.fehler {
-  background: var(--fehler-text);
-  opacity: 1;
+.puls-hilfslinie {
+  stroke: var(--border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.puls-marke.abgelehnt {
+  fill: var(--lesen-text);
+}
+.puls-marke.fehler {
+  fill: var(--fehler-text);
 }
 .puls-fuss {
   display: flex;
