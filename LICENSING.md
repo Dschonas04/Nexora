@@ -77,6 +77,52 @@ fremden Rechnern läuft — pfSense, GitLab, Sentry und Elastic arbeiten alle so
 Was schützt, ist nicht die Technik, sondern die Lizenz: ein solcher Eingriff ist
 ein Lizenzverstoß, kein Kniff. Und wer ihn vornimmt, hätte ohnehin nicht bezahlt.
 
+## Fremde Bestandteile
+
+Nexora steht unter BUSL-1.1, ist aber nicht allein aus eigenem Quelltext gebaut.
+Was mitgeliefert wird und unter welcher Lizenz, steht vollständig in
+[THIRD-PARTY.md](THIRD-PARTY.md). Diese Datei wird erzeugt, und die CI prüft bei
+jedem Lauf, dass sie zum Stand der Abhängigkeiten passt: ein Hinweisdokument,
+das still veraltet, täuscht Sicherheit vor und ist schlimmer als keines.
+
+Zwei Punkte davon betreffen jeden, der Nexora weitergibt oder verkauft.
+
+**Der Editor steht unter MPL-2.0.** BlockNote ist dateiweises Copyleft. Der
+eigene Quelltext bleibt davon unberührt und das Erzeugnis darf verkauft werden;
+verlangt ist, dass der Lizenzhinweis die verteilte Form begleitet und dass
+Änderungen an den MPL-Dateien selbst unter MPL bleiben. Nexora benutzt sie
+unverändert. Den Hinweis trägt jedes erzeugte Bündel im Kopf, gesetzt in
+`frontend/vite.config.ts` — der Minimierer wirft die Lizenzköpfe der Pakete sonst
+weg, und dann ginge MPL-Quelltext ohne jeden Hinweis hinaus.
+
+**Das Laufzeit-Abbild enthält GPL-2.0-Programme.** `poppler-utils` liefert
+`pdftotext` für den Volltext aus PDF-Anhängen, dazu kommt busybox aus der
+Alpine-Grundlage. Nexora ruft sie als eigene Prozesse über eine Pipe auf und
+bindet nichts davon ein; das ist ein unabhängiger Aufruf und kein abgeleitetes
+Werk, das Go-Programm bleibt unter BUSL-1.1.
+
+Wer das **Abbild** weitergibt, verteilt aber diese Programme mit und schuldet
+dafür den zugehörigen Quelltext. Dieses Angebot gilt hiermit:
+
+> Der Quelltext aller GPL- und LGPL-lizenzierten Bestandteile der
+> Nexora-Abbilder ist bei Alpine Linux unter
+> <https://gitlab.alpinelinux.org/alpine/aports> zu beziehen, in den Fassungen,
+> die die Kennzeichnung des jeweiligen Abbilds nennt. Wer sie stattdessen direkt
+> vom Lizenzgeber möchte, wende sich an Jonas Groll; sie werden zu den
+> Selbstkosten des Datenträgers abgegeben.
+
+Beide Abbilder tragen diese Angaben als Kennzeichnung bei sich, damit sie auch
+dann noch mitreisen, wenn nur das Abbild weitergereicht wird:
+
+```bash
+docker inspect --format '{{json .Config.Labels}}' nexora-backend | python3 -m json.tool
+```
+
+Wer die GPL-Bestandteile vermeiden will, kann `poppler-utils` aus
+`backend/Dockerfile` streichen. Dann fällt der Volltext aus PDF-Anhängen weg;
+eine reine Go-Lösung scheitert an Schriftkodierungen, Spalten und eingebetteten
+Bildern in echten PDF-Dateien.
+
 ## Lizenz erwerben
 
 Für kommerzielle Lizenzen und abweichende Vereinbarungen wende dich an den
