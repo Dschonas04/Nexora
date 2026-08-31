@@ -427,6 +427,13 @@ pruefe "der Puls zaehlt sich nicht selbst" "$VORHER" \
 pruefe "ohne Anmeldung verschlossen" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/puls")"
 
+echo "== Kennzahlen"
+# Ohne Losungswort gibt es den Weg nicht, und zwar mit 404 und nicht mit 401:
+# dass es ihn gibt, braucht niemand zu erfahren, der ihn nicht abholen darf.
+pruefe "ohne Losungswort nicht vorhanden" "404" "$(code "$BASIS/metrics")"
+pruefe "auch mit erfundenem Losungswort nicht" "404" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer erfunden' "$BASIS/metrics")"
+
 echo "== Verzeichnis-Verwaltung"
 # Nachsehen darf ein Administrator immer, auch ohne Lizenz: sonst sieht eine
 # Instanz nicht einmal, dass da etwas eingerichtet ist, das nicht laeuft.

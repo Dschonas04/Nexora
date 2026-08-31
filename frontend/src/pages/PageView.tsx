@@ -23,6 +23,10 @@ interface Props {
   onFavChange: () => void;
   onTagsChange: () => void;
   onDelete: (id: string) => void;
+  // Legt eine Unterseite an und springt hinein. Die Seitenleiste kann das
+  // schon; hier oben steht dasselbe, weil man beim Schreiben merkt, dass eine
+  // Unterseite fehlt, und dann in der Seite ist und nicht in der Leiste.
+  onCreateChild: (parentId: string) => void;
 }
 
 // New tags get a random color from a fixed palette, so they are distinguishable
@@ -66,7 +70,14 @@ function Geruest() {
   );
 }
 
-export default function PageView({ allTags, onMetaChange, onFavChange, onTagsChange, onDelete }: Props) {
+export default function PageView({
+  allTags,
+  onMetaChange,
+  onFavChange,
+  onTagsChange,
+  onDelete,
+  onCreateChild,
+}: Props) {
   const { id } = useParams();
   const nav = useNavigate();
   const eingabe = useEingabe();
@@ -422,6 +433,17 @@ export default function PageView({ allTags, onMetaChange, onFavChange, onTagsCha
             {/* Say plainly that this is a read-only share, instead of leaving
                 the user to wonder why nothing saves. */}
             {!canEdit && <span className="pill readonly">Nur Lesen</span>}
+            {/* Die neue Seite entsteht UNTER dieser, nicht daneben. Wer sie
+                hier anlegt, ist gerade in einer Seite und meint eine
+                Unterseite; eine Seite auf der obersten Ebene legt man in der
+                Seitenleiste an, wo man die Ebenen sieht. Deshalb steht auch
+                "Unterseite" auf dem Knopf und nicht "Neue Seite": er soll
+                sagen, wo sie landet. */}
+            {canEdit && (
+              <button className="btn" onClick={() => onCreateChild(page.id)}>
+                Unterseite
+              </button>
+            )}
             <button className={"btn" + (page.isFavorite ? " active" : "")} onClick={toggleFav}>
               {page.isFavorite ? "Favorisiert" : "Favorit"}
             </button>

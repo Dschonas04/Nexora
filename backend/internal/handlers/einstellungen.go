@@ -180,6 +180,15 @@ func janein(b bool) string {
 // once, without a restart.
 func RegistrierungOffen() bool { return wert("registrierung_offen") == "ja" }
 
+// MetrikenToken ist das Losungswort für /metrics. Nur aus der Datei, nie aus
+// der Datenbank: es ist ein Geheimnis, und Geheimnisse in einer Datenbankzeile
+// nimmt jeder Dump mit.
+func MetrikenToken() string {
+	speicher.RLock()
+	defer speicher.RUnlock()
+	return speicher.basis.MetrikenToken
+}
+
 func ErlaubteDomaenen() []string {
 	var out []string
 	for _, t := range strings.Split(wert("erlaubte_domaenen"), ",") {

@@ -37,10 +37,12 @@ func (s *schreiberMitStatus) Write(b []byte) (int, error) {
 func Messen(m *puls.Messer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Der eigene Abfrageweg wird nicht mitgezählt. Die Oberfläche ruft
-			// ihn im Sekundentakt, und er stünde sonst als Grundrauschen in
-			// jeder Messung, die er anzeigen soll.
-			if r.URL.Path == "/api/system/puls" {
+			// Die beiden Wege, über die gemessen wird, zählen sich nicht selbst
+			// mit. Die Oberfläche ruft den einen im Sekundentakt ab und
+			// Prometheus den anderen alle fünfzehn; sie stünden sonst als
+			// Grundrauschen in jeder Messung, die sie anzeigen sollen, und die
+			// Rate der Anfragen wäre nie null, auch wenn niemand arbeitet.
+			if r.URL.Path == "/api/system/puls" || r.URL.Path == "/metrics" {
 				next.ServeHTTP(w, r)
 				return
 			}
