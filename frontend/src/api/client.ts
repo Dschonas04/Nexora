@@ -459,6 +459,9 @@ export interface MetrikenZustand {
 // einem Bestand von mehreren Gigabyte niemand den Knopf drücken und dann raten
 // soll, ob es hängt oder nur dauert.
 export interface SicherungUmfang {
+  tokenGesetzt: boolean;
+  token: string;
+  skript: string;
   datenbankBytes: number;
   anhaenge: number;
   anhaengeBytes: number;
@@ -680,6 +683,10 @@ export const api = {
   systemZustand: () => req<SystemZustand>("/system"),
   puls: () => req<Puls>("/system/puls"),
   sicherungUmfang: () => req<SicherungUmfang>("/system/sicherung/umfang"),
+  sicherungTokenNeu: () =>
+    req<SicherungUmfang>("/system/sicherung/token", { method: "POST" }),
+  sicherungTokenWeg: () =>
+    req<SicherungUmfang>("/system/sicherung/token", { method: "DELETE" }),
   // Kein req: die Antwort ist ein Archiv und kein JSON, und sie kann Gigabyte
   // groß sein. Der Browser lädt sie selbst herunter, der Keks geht mit.
   sicherungAdresse: "/api/system/sicherung",

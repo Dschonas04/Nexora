@@ -96,9 +96,32 @@ Check for the file `FERTIG` inside before trusting an archive — a backup that
 broke off mid-stream is still a valid ZIP, and half a backup would otherwise look
 exactly like a whole one. `LIESMICH.md` beside it carries the restore commands.
 
-This is the manual path, and it is deliberately manual: a browser download is not
-a backup *schedule*. For that, keep running `pg_dump` on a timer as below — and
-remember that a timer over the database alone does not cover the attachments.
+### On a schedule
+
+A button in a browser is an action, not a schedule. For a timer, a script needs a
+way in, and it has no cookie — so **Settings → Wartung → Regelmäßig sichern**
+generates a token for it and hands you the finished script, with the token and
+the address already in it:
+
+```sh
+curl -fsS --max-time 3600 -H "Authorization: Bearer $WORT" \
+     -o "$NAME" https://your-nexora/api/system/sicherung
+unzip -l "$NAME" | grep -q '/FERTIG$' || { echo "unvollständig" >&2; exit 1; }
+```
+
+The `FERTIG` check is the part not to skip: a backup that broke off mid-stream is
+still a valid ZIP, so without it a truncated archive lands in the rotation
+looking exactly like a good one.
+
+The token is separate from the metrics one because it is worth far more: it hands
+out the entire holding without a sign-in. Every fetch with it is written to the
+audit trail with its address. Remove it under the same heading when the script
+goes away — and check first that none is still running, or it will back up into
+nothing and say 401 to a log nobody reads.
+
+**Attachments come along**, whether they sit on disk or in an object store: they
+are read through the storage interface, so the same script covers both. That is
+the gap a `pg_dump` timer alone leaves.
 
 
 ```bash

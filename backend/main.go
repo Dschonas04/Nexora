@@ -155,6 +155,15 @@ func main() {
 	// 404, siehe metriken.go.
 	r.Get("/metrics", h.Metriken)
 
+	// Die vollständige Sicherung, außerhalb der Sitzungsgruppe.
+	//
+	// Sie muss auch ohne Keks erreichbar sein, denn ein Skript hat keinen; der
+	// eigene Filter lässt entweder ein Losungswort oder eine Sitzung durch,
+	// siehe sicherungszugang.go. Innerhalb der Gruppe käme ein Aufruf mit
+	// Losungswort nie beim Handler an, die Anmeldung wiese ihn vorher ab.
+	r.With(handlers.SicherungZugang([]byte(secret), h.SitzungGilt)).
+		Get("/api/system/sicherung", h.Sicherung)
+
 	r.Route("/api", func(r chi.Router) {
 		// Public: no session required. Registration is open, and the very first
 		// account created becomes the workspace admin.
@@ -289,10 +298,11 @@ func main() {
 			// derselben Karte wie die übrigen Einstellungen; ein eigener Weg,
 			// weil Einschalten allein nichts nützt und der fertige Abschnitt
 			// für prometheus.yml daneben gehört.
-			// Die vollständige Sicherung. Datenbank und Anhänge in einem
-			// Archiv, als Strom durch den Browser; siehe sicherung.go.
+			// Was in eine Sicherung ginge. Nur fürs Panel, deshalb hier
+			// drinnen; der Abruf selbst steht weiter unten, außerhalb.
 			r.Get("/system/sicherung/umfang", h.SicherungUmfang)
-			r.Get("/system/sicherung", h.Sicherung)
+			r.Post("/system/sicherung/token", h.SicherungTokenNeu)
+			r.Delete("/system/sicherung/token", h.SicherungTokenWeg)
 
 			r.Get("/system/metriken", h.MetrikenZustand)
 			r.Post("/system/metriken/token", h.MetrikenTokenNeu)

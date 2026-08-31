@@ -49,6 +49,12 @@ var bekannt = map[string]struct {
 	Erklaerung string
 	Warnung    string
 }{
+	"sicherung_token": {
+		Art:        "text",
+		Titel:      "Losungswort für die Sicherung",
+		Erklaerung: "Leer heißt: die Sicherung gibt es nur aus dem Panel heraus, mit Anmeldung. Gesetzt heißt: ein Skript kann sie abholen, indem es dieses Wort mitschickt.",
+		Warnung:    "Dieses Wort wiegt schwerer als jedes andere hier: es gibt den gesamten Bestand heraus, samt Passwort-Hashes und Freigabe-Tokens. Verwaltet wird es unter Wartung.",
+	},
 	"metriken_token": {
 		Art:        "text",
 		Titel:      "Losungswort für die Kennzahlen",
