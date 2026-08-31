@@ -17,6 +17,7 @@ import (
 	"nexora/internal/handlers"
 	"nexora/internal/lizenz"
 	"nexora/internal/middleware"
+	"nexora/internal/puls"
 )
 
 func main() {
@@ -131,8 +132,16 @@ func main() {
 	// config.conf says, because they were set later and on purpose.
 	h.EinstellungenLaden(ctx, k)
 
+	// Der Puls zählt die Anfragen der letzten Minute für die Systemansicht.
+	// Er wird vor dem Router angelegt, weil der Filter ihn braucht und die
+	// Handler ihn lesen.
+	h.Puls = puls.Neu()
+
 	r := chi.NewRouter()
 	r.Use(chimw.RealIP) // trust X-Forwarded-For, the SPA is served through nginx
+	// Ganz vorn, damit auch gezählt wird, was an der Anmeldung oder an der
+	// Lizenz scheitert: wer sucht, warum es hängt, will gerade die sehen.
+	r.Use(middleware.Messen(h.Puls))
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer) // a panicking handler must not take the process down
 	r.Use(chimw.Timeout(30 * time.Second))
@@ -264,6 +273,9 @@ func main() {
 			// extra, this is not: who is knocking at the door belongs to
 			// running the instance, not to reporting on it.
 			r.Get("/system/anmeldungen", h.ListAnmeldungen)
+			// Der Live-Stand, im Sekundentakt abgefragt. Zählt sich selbst
+			// nicht mit, siehe middleware/messen.go.
+			r.Get("/system/puls", h.PulsAnsicht)
 			r.Post("/system/suchindex", h.IndexNeuAufbauen)
 			r.Post("/system/anhangindex", h.AnhangIndexNachziehen)
 			// Nimmt einen Rumpf an und wirft ihn weg. Damit misst die
