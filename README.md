@@ -22,8 +22,8 @@ reference documents for the [API](docs/api.md), the
 
 Licensing is in [LICENSING.md](LICENSING.md); what Nexora ships from other
 people, and under which terms, is listed in
-[THIRD-PARTY.md](THIRD-PARTY.md) — generated, and checked by CI on every run so
-it cannot quietly go stale.
+[THIRD-PARTY.md](THIRD-PARTY.md), which also carries the commands to verify the
+inventory yourself.
 
 ## Stack
 

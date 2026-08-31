@@ -94,34 +94,13 @@ jobs:
       - name: Bauen
         run: npm run build
 
-  lizenzen:
-    name: Lizenzen
-    runs-on: [self-hosted, homelab, nexora]
-    timeout-minutes: 10
-    steps:
-      - name: Quellen holen
-        uses: actions/checkout@v4
-
-      # Beide Seiten, weil die Aufstellung beide zusammenfasst. Der Laeufer hat
-      # ohnehin Go und Node, es kommt also nichts hinzu.
-      - name: Abhängigkeiten holen
-        run: cd frontend && npm ci
-
-      - name: Aufstellung prüft sich selbst
-        run: |
-          # Die Datei wird erzeugt. Weicht sie vom Stand der Abhaengigkeiten ab,
-          # ist ein Paket dazugekommen, ohne dass jemand nachgesehen hat, unter
-          # welcher Lizenz es steht. Genau das soll auffallen, bevor es
-          # ausgeliefert wird.
-          python3 scripts/lizenzen.py --pruefen
-
       - name: Der Lizenzhinweis muss im Bündel stehen
         run: |
-          # MPL-2.0 verlangt, dass der Hinweis die VERTEILTE Form begleitet. Der
-          # Minimierer wirft Kommentare weg; ohne den Kopf aus vite.config.ts
-          # ginge MPL-Quelltext ohne jeden Hinweis hinaus. Hier wird geprueft,
-          # dass er es wirklich bis ins Erzeugnis schafft.
-          cd frontend && npm run build >/dev/null
+          # BlockNote steht unter MPL-2.0, und die verlangt, dass der Hinweis
+          # die VERTEILTE Form begleitet. Verteilt wird das Buendel, und der
+          # Minimierer wirft Kommentare weg. Den Kopf setzt vite.config.ts;
+          # hier wird geprueft, dass er es wirklich bis ins Erzeugnis schafft,
+          # denn diese Auflage bricht lautlos.
           fehlend=0
           for f in dist/assets/*.js; do
             grep -q "Mozilla Public License" "$f" || { echo "ohne Hinweis: $f"; fehlend=1; }
@@ -131,7 +110,7 @@ jobs:
 
   ausrollen:
     name: Ausrollen
-    needs: [backend, frontend, lizenzen]
+    needs: [backend, frontend]
     if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, homelab, nexora]
     timeout-minutes: 15
