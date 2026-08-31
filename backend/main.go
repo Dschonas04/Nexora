@@ -146,6 +146,12 @@ func main() {
 	r.Use(chimw.Recoverer) // a panicking handler must not take the process down
 	r.Use(chimw.Timeout(30 * time.Second))
 
+	// Kennzahlen für Prometheus. Außerhalb von /api, weil dort der Anmeldefilter
+	// hängt und ein Sammler keinen Keks mitbringt; ausgewiesen wird er über ein
+	// Losungswort aus config.conf. Ohne das Losungswort antwortet der Weg mit
+	// 404, siehe metriken.go.
+	r.Get("/metrics", h.Metriken)
+
 	r.Route("/api", func(r chi.Router) {
 		// Public: no session required. Registration is open, and the very first
 		// account created becomes the workspace admin.

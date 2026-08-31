@@ -97,6 +97,11 @@ type Konfig struct {
 	RedisDatenbank int
 	RedisVorsilbe  string
 
+	// Kennzahlen für Prometheus. Leer heißt: den Weg gibt es nicht. Ein
+	// Losungswort und kein Ja/Nein, weil die Zahlen verraten, wie viele Leute
+	// hier arbeiten und wann; wer sie abholt, soll sich ausweisen.
+	MetrikenToken string
+
 	// LDAP / Active Directory
 	LDAPAktiv          bool
 	LDAPServer         string
@@ -286,6 +291,8 @@ func Laden(pfad string) Konfig {
 	text(&k.RedisPasswort, "redis_passwort", "NEXORA_REDIS_PASSWORT")
 	zahl(&k.RedisDatenbank, "redis_datenbank", "NEXORA_REDIS_DATENBANK")
 	text(&k.RedisVorsilbe, "redis_vorsilbe", "NEXORA_REDIS_VORSILBE")
+
+	text(&k.MetrikenToken, "metriken_token", "NEXORA_METRIKEN_TOKEN")
 
 	jaNein(&k.LDAPAktiv, "ldap_aktiv", "NEXORA_LDAP_AKTIV")
 	text(&k.LDAPServer, "ldap_server", "NEXORA_LDAP_SERVER")

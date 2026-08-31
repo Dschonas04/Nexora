@@ -157,6 +157,35 @@ dump carries off.
 Redis is a cache, never the source of truth. A failure to connect is logged, not
 fatal.
 
+## Metrics for Prometheus
+
+| Key | Env | Default | Meaning |
+|---|---|---|---|
+| `metriken_token` | `NEXORA_METRIKEN_TOKEN` | *(empty)* | Bearer token for `GET /metrics`. Empty means the endpoint does not exist |
+
+Empty is the default and the endpoint then answers **404**, not 401: the figures
+say how many people work here and when, and that they exist is not something a
+caller who may not fetch them needs to learn. Set a token and Prometheus can
+scrape it:
+
+```yaml
+  - job_name: 'nexora'
+    metrics_path: /metrics
+    authorization:
+      credentials: 'the same token'
+    static_configs:
+      - targets: ['nexora-host:3000']
+```
+
+The endpoint sits outside `/api`, since a scraper brings no session cookie, and
+it does not count itself — otherwise the request rate would never be zero even
+when nobody is working. A ready-made Grafana dashboard is in
+[`grafana/nexora.json`](../grafana/nexora.json).
+
+The in-app system view covers the last minute and answers *what is happening
+now*. This covers *what happened at three in the morning*, which is the question
+one actually has when somebody complains about yesterday.
+
 ## LDAP / Active Directory · paid extra `ldap`
 
 | Key | Environment | Default | What it does |

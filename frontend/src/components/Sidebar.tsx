@@ -372,6 +372,38 @@ export default function Sidebar(props: Props) {
       return n;
     });
 
+  // Der Weg zur offenen Seite klappt von selbst auf.
+  //
+  // Ohne das liegt eine Seite hinter zugeklappten Vorfahren, und zwar genau
+  // dann, wenn man nicht über den Baum zu ihr gekommen ist: über die Suche,
+  // über eine Verknüpfung, oder weil man gerade eine Unterseite angelegt hat.
+  // Die neue Seite wäre dann angelegt, geöffnet und im Baum trotzdem nicht zu
+  // sehen, was aussieht, als sei nichts passiert.
+  //
+  // Aufgeklappt wird nur dazu, nie zugeklappt: was jemand von Hand geöffnet
+  // hat, soll offen bleiben.
+  useEffect(() => {
+    if (!activeId) return;
+    const eltern = new Map(pages.map((p) => [p.id, p.parentId ?? null]));
+    const weg: string[] = [];
+    let lauf = eltern.get(activeId) ?? null;
+    // Die Grenze fängt einen Kreis ab. Der sollte nicht entstehen, das Backend
+    // weist das Umhängen unter die eigene Unterseite ab; eine Endlosschleife in
+    // der Seitenleiste wäre aber ein eingefrorener Browser und nicht bloß ein
+    // falscher Baum.
+    for (let i = 0; lauf && i < 100; i++) {
+      weg.push(lauf);
+      lauf = eltern.get(lauf) ?? null;
+    }
+    if (weg.length === 0) return;
+    setExpanded((prev) => {
+      if (weg.every((id) => prev.has(id))) return prev;
+      const n = new Set(prev);
+      weg.forEach((id) => n.add(id));
+      return n;
+    });
+  }, [activeId, pages]);
+
   // Debounced search: 250 ms after the last keystroke. The cleanup cancels the
   // pending timer, so typing quickly fires exactly one request. A null result
   // means "not searching" and shows the normal tree again, which is different

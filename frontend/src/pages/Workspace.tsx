@@ -231,6 +231,7 @@ export default function Workspace() {
                   onFavChange={refreshFav}
                   onTagsChange={refreshTags}
                   onDelete={deletePage}
+                  onCreateChild={(pid) => createPage(pid)}
                 />
               }
             />
