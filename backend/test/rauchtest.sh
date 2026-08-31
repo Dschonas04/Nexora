@@ -399,6 +399,24 @@ pruefe "tage=0 liefert alles" "200" "$(code "$BASIS/api/system/anmeldungen?tage=
 pruefe "Filter nach Adresse greift" "0" \
        "$(hole "$BASIS/api/system/anmeldungen?ip=10.9.9.9" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["versuche"]))')"
 
+echo "== Verzeichnis-Verwaltung"
+# Nachsehen darf ein Administrator immer, auch ohne Lizenz: sonst sieht eine
+# Instanz nicht einmal, dass da etwas eingerichtet ist, das nicht laeuft.
+pruefe "Einrichtung ist lesbar" "200" "$(code "$BASIS/api/system/ldap")"
+pruefe "hier ist nichts eingerichtet" "False" "$(hole "$BASIS/api/system/ldap" | feld "['aktiv']")"
+pruefe "und nichts freigeschaltet" "False" "$(hole "$BASIS/api/system/ldap" | feld "['lizenziert']")"
+# Der Filter ist leer in der Konfiguration und darf trotzdem nicht leer
+# herauskommen: es greift dieselbe Vorgabe wie beim Anmelden.
+pruefe "der Filter zeigt die Vorgabe" "True" \
+       "$(hole "$BASIS/api/system/ldap" | python3 -c 'import json,sys;print("objectClass=person" in json.load(sys.stdin)["benutzerFilter"])')"
+pruefe "das Dienstkonto-Passwort steht nicht drin" "True" \
+       "$(hole "$BASIS/api/system/ldap" | python3 -c '
+import json, sys
+print("bindPasswort" not in json.load(sys.stdin))')"
+pruefe "Probieren ohne Lizenz weist ab" "402" \
+       "$(code -X POST "$BASIS/api/system/ldap/test" -H 'Content-Type: application/json' \
+          -d '{"benutzer":"wer"}')"
+
 echo "== Grenzprobe"
 # Der Weg nimmt einen Rumpf an und wirft ihn weg. Geprueft wird, dass er
 # wirklich zaehlt, was ankommt: die Oberflaeche schachtelt die Grenze anhand

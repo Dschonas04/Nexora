@@ -360,6 +360,40 @@ export interface Anmeldungen {
   };
 }
 
+// LDAPEinrichtung ist, wie das Verzeichnis in config.conf eingerichtet ist.
+// Das Passwort des Dienstkontos steht nicht dabei, nur ob eines gesetzt ist.
+export interface LDAPEinrichtung {
+  aktiv: boolean;
+  lizenziert: boolean;
+  server: string;
+  startTLS: boolean;
+  tlsPruefen: boolean;
+  bindDN: string;
+  bindPasswortDa: boolean;
+  basisDN: string;
+  benutzerFilter: string;
+  feldName: string;
+  feldEmail: string;
+  gruppeAdmin: string;
+  verschluesselt: boolean;
+}
+
+export interface LDAPBefund {
+  dn: string;
+  name: string;
+  email: string;
+  admin: boolean;
+  gruppen: string[];
+  passwortGeprueft: boolean;
+}
+
+export interface LDAPTestErgebnis {
+  ok: boolean;
+  fehler?: string;
+  hinweis?: string;
+  befund?: LDAPBefund;
+}
+
 // Gruppe is a group of accounts. Groups belong to the installation, not to an
 // account: a department is not a private matter.
 export interface Gruppe {
@@ -570,6 +604,12 @@ export const api = {
       method: "DELETE",
     }),
   systemZustand: () => req<SystemZustand>("/system"),
+  ldapEinrichtung: () => req<LDAPEinrichtung>("/system/ldap"),
+  ldapTesten: (benutzer: string, passwort: string) =>
+    req<LDAPTestErgebnis>("/system/ldap/test", {
+      method: "POST",
+      body: JSON.stringify({ benutzer, passwort }),
+    }),
   // Schickt so viele Megabyte los und meldet, ob sie ankommen. Nicht über req:
   // der Rumpf ist kein JSON, und eine abgeschnittene Verbindung ist hier ein
   // Ergebnis und kein Fehler.

@@ -12,7 +12,16 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { Anmeldungen, Einstellung, KonfigDatei, Sitzung, SystemZustand, api } from "../api/client";
+import {
+  Anmeldungen,
+  Einstellung,
+  KonfigDatei,
+  LDAPEinrichtung,
+  LDAPTestErgebnis,
+  Sitzung,
+  SystemZustand,
+  api,
+} from "../api/client";
 import { useAuth } from "../auth";
 import { useLizenz } from "../lizenz";
 import AdminView from "./AdminView";
@@ -26,6 +35,7 @@ type Bereich =
   | "gruppen"
   | "sicherheit"
   | "anmeldungen"
+  | "ldap"
   | "sitzungen"
   | "datenbank"
   | "suche"
@@ -45,6 +55,7 @@ const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
   { id: "sicherheit", titel: "Sicherheit", unter: "Registrierung, Laufzeiten, Administratoren" },
   { id: "anmeldungen", titel: "Anmeldungen", unter: "Jeder Versuch, mit Adresse und Herkunft" },
   { id: "sitzungen", titel: "Sitzungen", unter: "Angemeldete Geräte, einzeln beendbar" },
+  { id: "ldap", titel: "Verzeichnis", unter: "LDAP und Active Directory, mit Probe" },
   { id: "datenbank", titel: "Datenbank", unter: "Größe, Tabellen, Belegung" },
   { id: "suche", titel: "Suche", unter: "Wörterbuch und Suchindex" },
   { id: "anhaenge", titel: "Anhänge", unter: "Größenbegrenzung und Belegung" },
@@ -251,6 +262,29 @@ export default function EinstellungenView() {
       else oben = mitte;
     }
     setGrenze({ laeuft: "", wirksam: unten, eingestellt });
+  };
+
+  // Das Verzeichnis. Die Einrichtung steht in config.conf und ist von hier aus
+  // nur zu lesen; was sich von hier aus tun lässt, ist sie auszuprobieren.
+  const [ldap, setLdap] = useState<LDAPEinrichtung | null>(null);
+  const [ldapProbe, setLdapProbe] = useState({ benutzer: "", passwort: "" });
+  const [ldapErgebnis, setLdapErgebnis] = useState<LDAPTestErgebnis | null>(null);
+  useEffect(() => {
+    if (bereich === "ldap" && !ldap) {
+      api.ldapEinrichtung().then(setLdap).catch(() => setLdap(null));
+    }
+  }, [bereich, ldap]);
+
+  const ldapTesten = async () => {
+    setLaeuft("ldap");
+    setLdapErgebnis(null);
+    try {
+      setLdapErgebnis(await api.ldapTesten(ldapProbe.benutzer.trim(), ldapProbe.passwort));
+    } catch (e) {
+      setLdapErgebnis({ ok: false, fehler: (e as Error).message });
+    } finally {
+      setLaeuft(null);
+    }
   };
 
   // Maintenance. The file is fetched only when the section is opened: it
@@ -1024,6 +1058,168 @@ export default function EinstellungenView() {
         );
       }
 
+      case "ldap": {
+        const l = ldap;
+        if (!l) return <p className="muted">Wird geladen…</p>;
+
+        const zeile = (titel: string, wert: React.ReactNode) => (
+          <tr key={titel}>
+            <td>{titel}</td>
+            <td className="zahl">{wert}</td>
+          </tr>
+        );
+        const oderNichts = (v: string) =>
+          v ? <code>{v}</code> : <span className="muted">nicht gesetzt</span>;
+
+        return (
+          <>
+            <h3>Einrichtung</h3>
+            <p className="muted small">
+              Diese Werte stehen in <code>config.conf</code> und sind von hier aus nur zu
+              lesen. Ein Passwort für das Dienstkonto gehört in die Datei und nicht in eine
+              Datenbankzeile, die jeder Dump mitnimmt. Geändert wird es unter Wartung, wirksam
+              nach einem Neustart.
+            </p>
+            <table className="tabelle uebersicht-tabelle">
+              <tbody>
+                {zeile("Eingeschaltet", l.aktiv ? "ja" : <span className="muted">nein</span>)}
+                {zeile(
+                  "In der Lizenz enthalten",
+                  l.lizenziert ? "ja" : <span className="muted">nein</span>,
+                )}
+                {zeile("Server", oderNichts(l.server))}
+                {zeile(
+                  "Verbindung verschlüsselt",
+                  l.verschluesselt ? (
+                    l.startTLS ? "ja, StartTLS" : "ja, ldaps"
+                  ) : (
+                    <span className="fehler-text">nein</span>
+                  ),
+                )}
+                {zeile(
+                  "Zertifikat wird geprüft",
+                  l.tlsPruefen ? "ja" : <span className="fehler-text">nein</span>,
+                )}
+                {zeile("Dienstkonto", oderNichts(l.bindDN))}
+                {zeile(
+                  "Passwort dazu",
+                  l.bindPasswortDa ? "hinterlegt" : <span className="muted">keins</span>,
+                )}
+                {zeile("Suchwurzel", oderNichts(l.basisDN))}
+                {zeile("Filter", <code>{l.benutzerFilter}</code>)}
+                {zeile("Feld für den Namen", oderNichts(l.feldName))}
+                {zeile("Feld für die Adresse", oderNichts(l.feldEmail))}
+                {zeile("Gruppe für Administratoren", oderNichts(l.gruppeAdmin))}
+              </tbody>
+            </table>
+
+            {l.aktiv && !l.verschluesselt && (
+              <div className="warnkasten">
+                <strong>Die Verbindung ist unverschlüsselt</strong>
+                <div className="muted small">
+                  Ohne StartTLS und ohne <code>ldaps://</code> gehen die Zugangsdaten jedes
+                  Anmeldenden im Klartext über das Netz. Wer mitliest, liest sie mit.
+                </div>
+              </div>
+            )}
+            {l.aktiv && !l.lizenziert && (
+              <div className="warnkasten">
+                <strong>Eingeschaltet, aber nicht freigeschaltet</strong>
+                <div className="muted small">
+                  Die Einrichtung steht, die Anmeldung über das Verzeichnis antwortet aber mit
+                  402. So sieht es für den Benutzer nach einem Defekt aus.
+                </div>
+              </div>
+            )}
+
+            <h3>Probe</h3>
+            <p className="muted small">
+              Fragt das Verzeichnis nach einem Konto. Ohne Passwort wird nur gesucht, und
+              genau das ist der übliche Fall: damit lassen sich Verbindung, Dienstkonto,
+              Filter und Feldnamen prüfen, ohne dass jemand sein Passwort in ein fremdes
+              Formular tippt. Mit Passwort wird zusätzlich gebunden, dann ist die ganze Kette
+              geprüft. Ein Konto in Nexora entsteht dabei nicht.
+            </p>
+            <div className="einstellung">
+              <div className="s3-felder">
+                <label>
+                  <span>Benutzer</span>
+                  <input
+                    placeholder="Anmeldename oder Adresse"
+                    value={ldapProbe.benutzer}
+                    onChange={(e) => setLdapProbe({ ...ldapProbe, benutzer: e.target.value })}
+                  />
+                </label>
+                <label>
+                  <span>Passwort</span>
+                  <input
+                    type="password"
+                    placeholder="leer lassen: nur suchen"
+                    value={ldapProbe.passwort}
+                    onChange={(e) => setLdapProbe({ ...ldapProbe, passwort: e.target.value })}
+                  />
+                </label>
+              </div>
+              <div className="einstellung-aktionen">
+                <button
+                  className="btn"
+                  disabled={laeuft === "ldap" || !ldapProbe.benutzer.trim() || !l.aktiv}
+                  onClick={ldapTesten}
+                >
+                  {laeuft === "ldap" ? "Fragt…" : "Fragen"}
+                </button>
+              </div>
+
+              {!l.aktiv && (
+                <div className="einstellung-fuss muted small">
+                  Solange <code>ldap_aktiv</code> aus ist, gibt es nichts zu fragen.
+                </div>
+              )}
+
+              {ldapErgebnis && !ldapErgebnis.ok && (
+                <div className="fehler">{ldapErgebnis.fehler || ldapErgebnis.hinweis}</div>
+              )}
+              {ldapErgebnis?.ok && (
+                <div className="hinweis-ok">
+                  {ldapErgebnis.befund?.passwortGeprueft
+                    ? "Gefunden, und das Passwort wurde angenommen."
+                    : "Gefunden. Das Passwort wurde nicht geprüft."}
+                </div>
+              )}
+              {ldapErgebnis?.befund?.dn && (
+                <table className="tabelle uebersicht-tabelle">
+                  <tbody>
+                    {zeile("Eintrag", <code>{ldapErgebnis.befund.dn}</code>)}
+                    {zeile(
+                      "Name",
+                      ldapErgebnis.befund.name || <span className="muted">leer</span>,
+                    )}
+                    {zeile(
+                      "Adresse",
+                      ldapErgebnis.befund.email || <span className="muted">leer</span>,
+                    )}
+                    {zeile(
+                      "Würde Administrator",
+                      ldapErgebnis.befund.admin ? "ja" : <span className="muted">nein</span>,
+                    )}
+                    {zeile(
+                      "Gruppen",
+                      ldapErgebnis.befund.gruppen.length === 0 ? (
+                        <span className="muted">keine</span>
+                      ) : (
+                        <span className="ldap-gruppen">
+                          {ldapErgebnis.befund.gruppen.join(", ")}
+                        </span>
+                      ),
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </>
+        );
+      }
+
       case "datenbank":
         return (
           <>
@@ -1338,23 +1534,46 @@ export default function EinstellungenView() {
             <h3>Lizenz</h3>
             {z.lizenz.gueltig ? (
               <>
-                <div className="kachelreihe">
-                  {kachel(z.lizenz.inhaber, "Inhaber")}
-                  {kachel(z.lizenz.laeuftAb || "unbefristet", "Gültig bis")}
-                  {kachel(`${(z.lizenz.freigeschaltet ?? []).length} von ${z.lizenz.alle}`, "Zusätze frei")}
-                </div>
+                <table className="tabelle uebersicht-tabelle">
+                  <tbody>
+                    <tr>
+                      <td>Inhaber</td>
+                      <td className="zahl">{z.lizenz.inhaber}</td>
+                    </tr>
+                    <tr>
+                      <td>Gültig bis</td>
+                      <td className="zahl">{z.lizenz.laeuftAb || "unbefristet"}</td>
+                    </tr>
+                    <tr>
+                      <td>Freigeschaltete Funktionen</td>
+                      <td className="zahl">
+                        {(z.lizenz.freigeschaltet ?? []).length} von {z.lizenz.alle}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
                 <h3>Funktionen</h3>
+                {/* Frei oder gesperrt steht als Wort in der Spalte. Vorher war
+                    es ein Schild, das Gesperrte zusaetzlich durchgestrichen und
+                    halb durchsichtig: drei Mittel fuer eine Angabe, von denen
+                    zwei die Zeile nur schlechter lesbar machten. */}
                 <table className="tabelle">
+                  <thead>
+                    <tr>
+                      <th>Funktion</th>
+                      <th>Zustand</th>
+                      <th>Name im Schlüssel</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {Object.entries(ZUSATZ).map(([k, titel]) => {
                       const frei = (z.lizenz.freigeschaltet ?? []).includes(k);
                       return (
                         <tr key={k}>
                           <td>{titel}</td>
-                          <td>
-                            <span className={"pill " + (frei ? "frei" : "gesperrt")}>
-                              {frei ? "frei" : "gesperrt"}
-                            </span>
+                          <td className={frei ? undefined : "muted"}>
+                            {frei ? "frei" : "gesperrt"}
                           </td>
                           <td className="muted small">
                             <code>{k}</code>
@@ -1381,21 +1600,24 @@ export default function EinstellungenView() {
               einzelne Funktionen tragen.
             </p>
             <table className="tabelle">
+              <thead>
+                <tr>
+                  <th>Stufe</th>
+                  <th>Enthält</th>
+                  <th />
+                </tr>
+              </thead>
               <tbody>
                 {(lizenzJetzt?.stufen ?? []).map((st) => (
                   <tr key={st.name}>
-                    <td>
-                      <strong>{st.name}</strong>
-                      {lizenzJetzt?.stufe === st.name && (
-                        <span className="pill frei" style={{ marginLeft: 8 }}>
-                          in Betrieb
-                        </span>
-                      )}
-                    </td>
+                    <td>{st.name}</td>
                     <td className="muted small">
                       {st.funktionen.length === 0
                         ? "Grundumfang"
                         : st.funktionen.map((f) => ZUSATZ[f] ?? f).join(", ")}
+                    </td>
+                    <td className="einzeilig">
+                      {lizenzJetzt?.stufe === st.name && "in Betrieb"}
                     </td>
                   </tr>
                 ))}

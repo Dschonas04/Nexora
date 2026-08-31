@@ -3,6 +3,11 @@
 //
 // It is shown inside the settings and therefore no longer brings a frame of its
 // own; heading and spacing come from there.
+//
+// Die Konten stehen als Tabelle. Sie waren einmal eine Reihe von Zeilen, in
+// denen Name, Adresse und Anmeldename hintereinander weg liefen und jede Zeile
+// woanders anfing. Bei drei Konten geht das, bei dreissig sucht man. In Spalten
+// steht jede Angabe untereinander und laesst sich vergleichen.
 import { useEffect, useState } from "react";
 import { User, api } from "../api/client";
 import { useAuth } from "../auth";
@@ -93,66 +98,112 @@ export default function AdminView() {
         Administratoren können jede Seite im Arbeitsbereich lesen und bearbeiten.
       </p>
 
-      <div className="user-add">
-        <div className="modal-label">Nutzer hinzufügen</div>
-        <div className="user-add-row">
-          <input placeholder="E-Mail" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input placeholder="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} />
-          <input
-            placeholder="Benutzername (optional)"
-            value={benutzername}
-            onChange={(e) => setBenutzername(e.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Passwort (mind. 6)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addUser()}
-          />
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="user">Nutzer</option>
-            <option value="admin">Admin</option>
-          </select>
-          <button className="btn btn-primary" disabled={busy} onClick={addUser}>
-            {busy ? "…" : "Hinzufügen"}
+      <h3>Konto anlegen</h3>
+      <div className="einstellung">
+        <div className="s3-felder">
+          <label>
+            <span>E-Mail</span>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} />
+          </label>
+          <label>
+            <span>Name</span>
+            <input placeholder="optional" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label>
+            <span>Anmeldename</span>
+            <input
+              placeholder="optional"
+              value={benutzername}
+              onChange={(e) => setBenutzername(e.target.value)}
+            />
+          </label>
+          <label>
+            <span>Passwort</span>
+            <input
+              type="password"
+              placeholder="mindestens 6 Zeichen"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addUser()}
+            />
+          </label>
+          <label>
+            <span>Rolle</span>
+            <select value={role} onChange={(e) => setRole(e.target.value)}>
+              <option value="user">Nutzer</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+        </div>
+        <div className="einstellung-aktionen">
+          <button className="btn" disabled={busy || !email.trim()} onClick={addUser}>
+            {busy ? "Legt an…" : "Anlegen"}
           </button>
         </div>
-        {err && <div className="error">{err}</div>}
+        {err && <div className="fehler">{err}</div>}
       </div>
 
-      <div className="list" style={{ marginTop: 18 }}>
-        {users.map((u) => (
-          <div key={u.id} className="list-row">
-            <span className="list-title">
-              {u.name} <span className="muted small">{u.email}</span>
-              {u.benutzername && <span className="muted small"> @{u.benutzername}</span>}
-            </span>
-            <span className="row-actions">
-              <button className="btn" onClick={() => setBenutzernameVon(u)}>
-                {u.benutzername ? "Anmeldename" : "Anmeldename setzen"}
-              </button>
-              <span className={"pill" + (u.role === "admin" ? " admin" : "")}>{u.role}</span>
-              {/* Your own row is locked: an admin may not demote or delete
-                  themselves, which also keeps the last admin in place. */}
-              <select
-                value={u.role}
-                disabled={u.id === user?.id}
-                onChange={(e) => setUserRole(u.id, e.target.value)}
-              >
-                <option value="user">Nutzer</option>
-                <option value="admin">Admin</option>
-              </select>
-              <button
-                className="btn danger"
-                disabled={u.id === user?.id}
-                onClick={() => removeUser(u.id, u.email)}
-              >
-                Löschen
-              </button>
-            </span>
-          </div>
-        ))}
+      <h3>Vorhandene Konten</h3>
+      <div className="tabelle-rollen">
+        <table className="tabelle konten-tabelle">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>E-Mail</th>
+              <th>Anmeldename</th>
+              <th>Rolle</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id}>
+                <td>
+                  {u.name}
+                  {u.id === user?.id && <span className="muted"> (du)</span>}
+                </td>
+                <td className="muted">{u.email}</td>
+                <td className="muted">
+                  {u.benutzername || <span className="muted">nicht vergeben</span>}
+                </td>
+                <td>
+                  {/* Die eigene Zeile ist verriegelt: ein Administrator darf
+                      sich weder herabstufen noch loeschen. Das haelt nebenbei
+                      den letzten Administrator an seinem Platz. Ein Schild mit
+                      der Rolle steht nicht mehr daneben, das Auswahlfeld zeigt
+                      sie ja bereits an. */}
+                  <select
+                    value={u.role}
+                    disabled={u.id === user?.id}
+                    onChange={(e) => setUserRole(u.id, e.target.value)}
+                  >
+                    <option value="user">Nutzer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </td>
+                <td className="zeilen-aktionen">
+                  <button className="btn-schlicht" onClick={() => setBenutzernameVon(u)}>
+                    {u.benutzername ? "Anmeldename ändern" : "Anmeldename setzen"}
+                  </button>
+                  <button
+                    className="btn-schlicht gefaehrlich"
+                    disabled={u.id === user?.id}
+                    onClick={() => removeUser(u.id, u.email)}
+                  >
+                    Löschen
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {users.length === 0 && (
+              <tr>
+                <td colSpan={5} className="muted">
+                  Noch kein Konto angelegt.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </>
   );

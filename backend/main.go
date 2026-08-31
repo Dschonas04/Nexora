@@ -270,6 +270,13 @@ func main() {
 			// Oberfläche, wie groß eine Übertragung durch alles hindurch
 			// wirklich sein darf, siehe grenzprobe.go.
 			r.Post("/system/grenzprobe", h.Grenzprobe)
+
+			// Die LDAP-Verwaltung. Nachsehen darf jeder Administrator, auch
+			// ohne Lizenz: sonst sieht eine Instanz nicht einmal, dass dort
+			// etwas eingerichtet ist, das nicht laeuft. Das Ausprobieren
+			// spricht mit dem Verzeichnis und haengt deshalb am Zusatz.
+			r.Get("/system/ldap", h.LDAPEinrichtung)
+			r.Post("/system/ldap/test", h.LDAPTesten)
 			r.Get("/system/ablage", h.AblageZustand)
 			r.Post("/system/ablage/test", h.S3Testen)
 
