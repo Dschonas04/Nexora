@@ -70,6 +70,7 @@ const (
 	AktSpaceRecht         = "spacerecht.erteilt"
 	AktSpaceRechtWeg      = "spacerecht.entzogen"
 	AktAnhangIndex        = "anhangindex.nachgezogen"
+	AktLDAPTest           = "verzeichnis.geprueft"
 	AktSpaceOeffentlich   = "space.oeffentlich"
 	AktSpaceAngelegt      = "space.angelegt"
 	AktSpaceGeloescht     = "space.geloescht"

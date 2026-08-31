@@ -3,7 +3,7 @@
 // Groups exist because per-page sharing does not scale: letting fourteen
 // colleagues into an area means fourteen clicks per page. This page is where a
 // group is defined; where it is granted access is the space, not here.
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 
 import { Gruppe, Mitglied, api } from "../api/client";
 import { useAuth } from "../auth";
@@ -111,8 +111,8 @@ export default function GruppenView() {
     <div className="gruppenliste">
       <h3>Gruppen</h3>
       <p className="muted small">
-        Eine Gruppe bündelt Konten. Zugriff bekommt sie nicht hier, sondern an einer Ablage —
-        über das Schlüsselsymbol neben seinem Namen in der Seitenleiste.
+        Eine Gruppe bündelt Konten. Zugriff bekommt sie nicht hier, sondern an der Ablage
+        selbst, über das Schlüsselsymbol neben ihrem Namen in der Seitenleiste.
       </p>
 
       {meldung && (
@@ -149,50 +149,79 @@ export default function GruppenView() {
       </div>
 
       <h3>Vorhandene Gruppen</h3>
-      {gruppen.length === 0 && <p className="muted">Noch keine Gruppe angelegt.</p>}
-
-      {gruppen.map((g) => (
-        <div className="einstellung" key={g.id}>
-          <div className="einstellung-kopf">
-            <div>
-              <div className="einstellung-titel">{g.name}</div>
-              <div className="einstellung-erklaerung">
-                {g.beschreibung || <span className="muted">ohne Beschreibung</span>}
-              </div>
-              <div className="muted small" style={{ marginTop: 4 }}>
-                {g.mitglieder === 1 ? "1 Mitglied" : `${g.mitglieder} Mitglieder`}
-              </div>
-            </div>
-            <div className="einstellung-feld">
-              <button className="btn" onClick={() => oeffnen(g.id)}>
-                {offen === g.id ? "Schließen" : "Mitglieder"}
-              </button>
-              <button className="btn" onClick={() => loeschen(g)}>
-                Löschen
-              </button>
-            </div>
-          </div>
-
-          {offen === g.id && (
-            <div className="mitgliederliste">
-              <input
-                placeholder="Konto suchen…"
-                value={suche}
-                onChange={(e) => setSuche(e.target.value)}
-              />
-              {sichtbar.map((m) => (
-                <label key={m.id} className="mitglied">
-                  <input type="checkbox" checked={m.drin} onChange={() => umschalten(m)} />
-                  <span className="mitglied-name">{m.name}</span>
-                  <span className="muted small">{m.email}</span>
-                  {m.rolle === "admin" && <span className="pill klein">Admin</span>}
-                </label>
-              ))}
-              {sichtbar.length === 0 && <div className="muted small">Kein Treffer.</div>}
-            </div>
-          )}
-        </div>
-      ))}
+      {/* Als Tabelle, wie die Konten daneben. Jede Gruppe traegt dieselben drei
+          Angaben, und untereinander in Spalten sind sie zu vergleichen; als
+          Bloecke fing jede woanders an. Die Mitglieder klappen unter der Zeile
+          auf, zu der sie gehoeren, und nicht in einer zweiten Ansicht: wer sie
+          bearbeitet, will die Gruppe daneben sehen. */}
+      <div className="tabelle-rollen">
+        <table className="tabelle gruppen-tabelle">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Beschreibung</th>
+              <th>Mitglieder</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {gruppen.map((g) => (
+              <Fragment key={g.id}>
+                <tr>
+                  <td>{g.name}</td>
+                  <td className="muted">
+                    {g.beschreibung || <span className="muted">ohne Beschreibung</span>}
+                  </td>
+                  <td className="zahl">{g.mitglieder}</td>
+                  <td className="zeilen-aktionen">
+                    <button className="btn-schlicht" onClick={() => oeffnen(g.id)}>
+                      {offen === g.id ? "schließen" : "Mitglieder"}
+                    </button>
+                    <button className="btn-schlicht gefaehrlich" onClick={() => loeschen(g)}>
+                      Löschen
+                    </button>
+                  </td>
+                </tr>
+                {offen === g.id && (
+                  <tr className="gruppen-mitglieder">
+                    <td colSpan={4}>
+                      <input
+                        placeholder="Konto suchen…"
+                        value={suche}
+                        onChange={(e) => setSuche(e.target.value)}
+                      />
+                      <div className="mitgliederliste">
+                        {sichtbar.map((m) => (
+                          <label key={m.id} className="mitglied">
+                            <input
+                              type="checkbox"
+                              checked={m.drin}
+                              onChange={() => umschalten(m)}
+                            />
+                            <span className="mitglied-name">{m.name}</span>
+                            <span className="muted small">{m.email}</span>
+                            {m.rolle === "admin" && (
+                              <span className="muted small">Administrator</span>
+                            )}
+                          </label>
+                        ))}
+                        {sichtbar.length === 0 && <div className="muted small">Kein Treffer.</div>}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+            {gruppen.length === 0 && (
+              <tr>
+                <td colSpan={4} className="muted">
+                  Noch keine Gruppe angelegt.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

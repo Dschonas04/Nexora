@@ -334,6 +334,24 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `POST` | `/system/suchindex` | Rebuild the full text index — needed after changing `such_woerterbuch` |
 | `POST` | `/system/anhangindex` | Extract attachment text for files uploaded before the attachment index existed |
 | `GET` | `/system/anmeldungen` | Sign-in attempts, see above · admin |
+| `POST` | `/system/grenzprobe` | Reads a body and discards it, answering with the byte count. The interface uses it to *measure* how large a transfer may really be: nginx in front has its own `client_max_body_size`, which Nexora cannot read and should not have to · admin |
+| `GET` | `/system/ldap` | How the directory is configured, read from `config.conf`. The service account's password is never in the answer, only whether one is set · admin |
+| `POST` | `/system/ldap/test` | Ask the directory about one account · admin · paid: `ldap` |
+
+#### `POST /system/ldap/test`
+
+`{benutzer, passwort}`. Without a password the directory is only searched, which
+is the ordinary case: it checks the connection, the service account, the filter
+and the field names without anybody typing their password into someone else's
+form — and those four are where an LDAP setup actually fails. With a password
+the bind is attempted as well, which checks the whole chain. No account is
+created in Nexora either way; that happens only on a real sign-in.
+
+A failed probe answers **200** with `{ok: false, fehler}`, not a 4xx: the request
+was fine, only the result is negative, and a status code would force the
+interface to guess whether the test failed or could not be run. `ok` is also
+false when the entry was found but carries nothing in the configured mail field,
+because no account can be made from it — `hinweis` says so.
 
 ### Maintenance
 

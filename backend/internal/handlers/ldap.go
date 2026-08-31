@@ -72,8 +72,29 @@ func (s *Server) LDAPAnmeldung(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
-// ldapPruefen asks the directory. Returns name, email and whether admin.
-func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, error) {
+// ldapBefund ist, was das Verzeichnis über ein Konto gesagt hat.
+//
+// Mehr als die Anmeldung braucht: sie will Name und Adresse, die Verwaltung
+// will zusätzlich sehen, welcher Eintrag überhaupt getroffen wurde und in
+// welchen Gruppen er steht. Wenn LDAP nicht tut, was es soll, liegt es fast
+// immer an einem dieser beiden Punkte und nicht am Passwort.
+type ldapBefund struct {
+	DN               string   `json:"dn"`
+	Name             string   `json:"name"`
+	Email            string   `json:"email"`
+	Admin            bool     `json:"admin"`
+	Gruppen          []string `json:"gruppen"`
+	PasswortGeprueft bool     `json:"passwortGeprueft"`
+}
+
+// ldapAbfragen verbindet, sucht den Eintrag und prüft auf Wunsch das Passwort.
+//
+// Ohne Passwort hört die Abfrage nach der Suche auf. Das ist der Weg, den die
+// Verwaltung geht: Verbindung, Dienstkonto, Filter und Feldnamen lassen sich so
+// prüfen, ohne dass jemand sein Passwort in ein fremdes Formular tippt. Und
+// genau diese vier sind es, an denen eine LDAP-Einrichtung scheitert.
+func (s *Server) ldapAbfragen(benutzer, passwort string, mitPasswort bool) (ldapBefund, error) {
+	var b ldapBefund
 	k := s.SSO.Konf
 
 	verbindung, err := ldap.DialURL(k.LDAPServer, ldap.DialWithTLSConfig(&tls.Config{
@@ -82,7 +103,7 @@ func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, e
 		InsecureSkipVerify: !k.LDAPTLSPruefen,
 	}))
 	if err != nil {
-		return "", "", false, fmt.Errorf("Verbindung: %w", err)
+		return b, fmt.Errorf("Verbindung: %w", err)
 	}
 	defer verbindung.Close()
 	verbindung.SetTimeout(10 * time.Second)
@@ -91,7 +112,7 @@ func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, e
 	// hence only for ldap://.
 	if k.LDAPStartTLS && strings.HasPrefix(strings.ToLower(k.LDAPServer), "ldap://") {
 		if err := verbindung.StartTLS(&tls.Config{InsecureSkipVerify: !k.LDAPTLSPruefen}); err != nil {
-			return "", "", false, fmt.Errorf("StartTLS: %w", err)
+			return b, fmt.Errorf("StartTLS: %w", err)
 		}
 	}
 
@@ -99,7 +120,7 @@ func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, e
 	// one. If none is configured the search is anonymous, which some allow.
 	if k.LDAPBindDN != "" {
 		if err := verbindung.Bind(k.LDAPBindDN, k.LDAPBindPasswort); err != nil {
-			return "", "", false, fmt.Errorf("Dienstkonto: %w", err)
+			return b, fmt.Errorf("Dienstkonto: %w", err)
 		}
 	}
 
@@ -118,34 +139,47 @@ func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, e
 
 	antwort, err := verbindung.Search(suche)
 	if err != nil {
-		return "", "", false, fmt.Errorf("Suche: %w", err)
+		return b, fmt.Errorf("Suche: %w", err)
 	}
 	if len(antwort.Entries) != 1 {
 		// Abort on more than one hit as well: which one was meant cannot be
 		// decided, and guessing would mean signing somebody in as somebody
 		// else.
-		return "", "", false, errors.New("kein eindeutiger Eintrag")
+		return b, fmt.Errorf("kein eindeutiger Eintrag, %d Treffer", len(antwort.Entries))
 	}
 	eintrag := antwort.Entries[0]
 
-	// The actual check: bind as the user that was found.
-	if err := verbindung.Bind(eintrag.DN, passwort); err != nil {
-		return "", "", false, errors.New("Passwort abgelehnt")
-	}
-
-	name := eintrag.GetAttributeValue(k.LDAPFeldName)
-	email := strings.ToLower(strings.TrimSpace(eintrag.GetAttributeValue(k.LDAPFeldEmail)))
-	if email == "" {
-		return "", "", false, errors.New("kein E-Mail-Feld im Eintrag. Ohne Adresse lässt sich kein Konto anlegen.")
-	}
-
-	admin := false
+	b.DN = eintrag.DN
+	b.Name = eintrag.GetAttributeValue(k.LDAPFeldName)
+	b.Email = strings.ToLower(strings.TrimSpace(eintrag.GetAttributeValue(k.LDAPFeldEmail)))
+	b.Gruppen = eintrag.GetAttributeValues("memberOf")
 	if k.LDAPGruppeAdmin != "" {
-		for _, g := range eintrag.GetAttributeValues("memberOf") {
+		for _, g := range b.Gruppen {
 			if strings.EqualFold(g, k.LDAPGruppeAdmin) {
-				admin = true
+				b.Admin = true
 			}
 		}
 	}
-	return name, email, admin, nil
+
+	if mitPasswort {
+		// The actual check: bind as the user that was found.
+		if err := verbindung.Bind(eintrag.DN, passwort); err != nil {
+			return b, errors.New("Passwort abgelehnt")
+		}
+		b.PasswortGeprueft = true
+	}
+	return b, nil
+}
+
+// ldapPruefen ist der Weg der Anmeldung: Eintrag suchen, Passwort prüfen, und
+// ohne Adresse geht es nicht weiter.
+func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, error) {
+	b, err := s.ldapAbfragen(benutzer, passwort, true)
+	if err != nil {
+		return "", "", false, err
+	}
+	if b.Email == "" {
+		return "", "", false, errors.New("kein E-Mail-Feld im Eintrag. Ohne Adresse lässt sich kein Konto anlegen.")
+	}
+	return b.Name, b.Email, b.Admin, nil
 }

@@ -670,37 +670,6 @@ textarea::placeholder {
   font-size: 13px;
 }
 
-.user-add {
-  margin-top: 18px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--sidebar-bg);
-}
-.user-add-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-.user-add-row input,
-.user-add-row select {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 7px 10px;
-  font-size: 13px;
-  outline: none;
-  background: var(--flaeche);
-  color: inherit;
-}
-.user-add-row input {
-  flex: 1;
-  min-width: 140px;
-}
-.user-add-row input:focus {
-  border-color: var(--accent);
-}
-
 /* Right side panel (version history) */
 .side-panel {
   width: 300px;
@@ -1706,13 +1675,6 @@ textarea::placeholder {
   background: rgba(46, 160, 67, 0.14);
   border-color: rgba(46, 160, 67, 0.45);
   border-radius: 4px;
-}
-.pill.gesperrt {
-  border-radius: 4px;
-}
-.pill.gesperrt {
-  opacity: 0.5;
-  text-decoration: line-through;
 }
 
 /* Deliberately kept neutral instead of yellow: the box stays on the page as
@@ -3287,4 +3249,63 @@ textarea::placeholder {
 }
 .anmelde-tabelle td code {
   overflow-wrap: anywhere;
+}
+
+
+/* Knoepfe am Ende einer Tabellenzeile. Als Verweise gesetzt und nicht als
+   Kaesten: in einer Tabelle mit zwanzig Zeilen waeren vierzig Knoepfe die
+   auffaelligste Sache auf der Seite, und angesehen wird sie wegen der Namen
+   links, nicht wegen der Schaltflaechen rechts. */
+.zeilen-aktionen {
+  white-space: nowrap;
+  text-align: right;
+}
+.zeilen-aktionen .btn-schlicht + .btn-schlicht {
+  margin-left: 14px;
+}
+.btn-schlicht.gefaehrlich {
+  color: var(--fehler-text);
+}
+.btn-schlicht:disabled {
+  color: var(--muted);
+  cursor: default;
+  text-decoration: none;
+}
+
+/* Die Konten stehen in Spalten. Die Adresse ist die lange davon und darf im
+   Wort umbrechen, sonst schiebt eine lange Adresse die Tabelle breiter als das
+   Fenster. */
+.konten-tabelle td:nth-child(2) {
+  overflow-wrap: anywhere;
+}
+.konten-tabelle select {
+  font-size: 13px;
+}
+
+/* Die Mitglieder einer Gruppe klappen unter ihrer Zeile auf. Keine eigene
+   Trennlinie nach oben: sie gehoeren zu der Zeile darueber und saehen sonst wie
+   eine eigene Gruppe aus. */
+.gruppen-tabelle tr.gruppen-mitglieder > td {
+  padding-top: 0;
+  background: var(--sidebar-bg);
+}
+.gruppen-tabelle tr.gruppen-mitglieder input[type="text"],
+.gruppen-tabelle tr.gruppen-mitglieder input:not([type]) {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 8px;
+}
+
+/* Ein DN und eine Liste von Gruppen sind lang und enthalten keine Leerzeichen,
+   an denen ein Umbruch von selbst passieren wuerde. Ohne das hier schoebe ein
+   einziger Eintrag die Tabelle breiter als das Fenster. */
+.ldap-gruppen,
+.uebersicht-tabelle td code {
+  overflow-wrap: anywhere;
+}
+/* Ein Wert, der so nicht bleiben sollte: unverschluesselt, ungeprueft. Als Wort
+   in der Spalte wie jeder andere, nur in der Farbe, die der Rest der Oberflaeche
+   fuer einen Fehler benutzt. */
+.fehler-text {
+  color: var(--fehler-text);
 }
