@@ -163,6 +163,62 @@ which the single entries scrolling past do not show.
 Nothing here is ever deleted, and passwords are recorded nowhere, not even on a
 failed attempt.
 
+### When it gets slow
+
+Measured figures are in the [README](../README.md#capacity). The short version:
+throughput saturates at about 20 concurrent requests and holds around 4,600
+operations per second on a 12-core host, with no errors up to 3,200 concurrent.
+It queues under load rather than failing.
+
+If it does get slow, turn the knobs in this order.
+
+**The connection pool, first.** `DATABASE_URL` carries no `pool_max_conns`, so
+pgx defaults to one connection per core. Raising it to 50 measured 37 % more
+throughput at 100 concurrent requests:
+
+```
+DATABASE_URL=postgres://nexora:...@db:5432/nexora?sslmode=disable&pool_max_conns=50
+```
+
+Keep it under PostgreSQL's `max_connections` (100 by default), and leave room
+for the handful of connections that psql and backups take.
+
+**Memory, much later.** `shared_buffers` sits at the container default of 128 MB.
+That sounds small and usually is not: a Nexora database of a few thousand pages
+is a few tens of megabytes, and it fits many times over. Check before changing
+anything:
+
+```bash
+docker exec nexora-db-1 psql -U nexora -d nexora -tAc \
+  "SELECT pg_size_pretty(pg_database_size(current_database()))"
+docker exec nexora-db-1 psql -U nexora -d nexora -tAc \
+  "SELECT round(100.0*sum(blks_hit)/(sum(blks_hit)+sum(blks_read)),2) FROM pg_stat_database WHERE datname=current_database()"
+```
+
+While the hit ratio stays above 99 %, PostgreSQL is answering from memory and
+more of it buys nothing. When the database approaches a gigabyte, or the ratio
+falls below about 95 %, add memory in `docker-compose.db.yml`:
+
+```yaml
+command:
+  - postgres
+  - -c
+  - shared_buffers=1GB          # ~25 % of what the database may use
+  - -c
+  - effective_cache_size=3GB    # what the OS caches on top; a hint, not a reservation
+  - -c
+  - work_mem=32MB               # per sort, and there can be several per query
+```
+
+`shared_buffers` is reserved on start, `effective_cache_size` only informs the
+planner. `work_mem` is the one to be careful with: it applies per sorting step,
+so a large value times many concurrent queries is how a database gets itself
+killed by the kernel.
+
+**Attachments are not in the database.** They are files, and a slow object store
+shows up as slow uploads while everything else stays fast. Settings → Verbund
+carries the response time of each surrounding service.
+
 ### The system view
 
 Nexora has **no access to the Docker socket**, on purpose: whoever holds that
@@ -249,6 +305,10 @@ URL warns about exactly this.
 Check the system view first: it names which of the surrounding services answers
 slowly. If Redis is configured and down, everything still works and is merely
 slower — that is by design and not the fault you are looking for.
+
+If nothing there stands out, the knobs and the order to turn them are under
+[When it gets slow](#when-it-gets-slow). The connection pool is the first one
+and the memory setting is almost never the right one.
 
 ### The maintenance page says the config is read-only
 
