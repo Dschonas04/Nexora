@@ -436,12 +436,45 @@ having no account to read back later.
 
 | Method | Path | Notes |
 |---|---|---|
+| `POST` | `/system/wiederherstellung` | Upload an archive and restore it. multipart: `datei`, plus `bestaetigung=wiederherstellen` · admin |
 | `POST` | `/system/sicherung/token` | Generate the token, switching the script path on · admin |
 | `DELETE` | `/system/sicherung/token` | Clear it; only the signed-in route remains · admin |
 
 `/system/sicherung/umfang` returns a ready-made shell script with the token and
 address filled in. It checks for `FERTIG` before accepting an archive and prunes
 copies older than fourteen days.
+
+#### `POST /system/wiederherstellung`
+
+The most destructive route there is: it replaces the whole holding. Everything
+about it is built so that a mistake stays survivable.
+
+**It backs up first.** Before anything is overwritten, a dump of the current
+state is written into the data directory as `vor-wiederherstellung-<stamp>.sql`,
+and the response names it. If that dump fails, nothing is restored — no restore
+without a way back. Mistakes happen exactly here, because two archives look
+alike and differ only in a timestamp.
+
+**No `FERTIG`, no restore.** An archive that broke off mid-stream is a valid ZIP
+and opens fine; restoring it would lay half a holding over a whole one. Answered
+with 400, as is a missing `bestaetigung`.
+
+**`psql -v ON_ERROR_STOP=1`.** A restore that stumbles halfway and carries on
+leaves a database that is neither the old state nor the new one. Better to stop
+at the first error while the way back is still fresh beside it.
+
+**Attachments are written, never deleted.** Existing ones are overwritten; ones
+in storage that the archive does not mention stay. One file too many costs space,
+one too few costs content.
+
+**The process restarts afterwards.** The connection pool holds prepared
+statements against tables that no longer exist in that form, and the settings
+cache still has the old values. Both could be refreshed individually; a restart
+does it completely, and at this point nobody minds.
+
+Sessions come from the archive, so whoever restores an older backup is signed out
+by it. There is deliberately **no token path** here, unlike the backup: what
+replaces the holding should not be triggerable from a script.
 
 ### Maintenance
 

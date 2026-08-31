@@ -457,6 +457,44 @@ export default function EinstellungenView() {
     }
   }, [bereich, ldap]);
 
+  // Einspielen. Die gewählte Datei steht im Zustand, damit der Name vor dem
+  // Bestätigen sichtbar ist: wer zwei Archive nebeneinander hat, unterscheidet
+  // sie nur am Zeitstempel im Namen.
+  const [einspielDatei, setEinspielDatei] = useState<File | null>(null);
+  const [einspielErgebnis, setEinspielErgebnis] = useState<string>("");
+
+  const einspielen = async () => {
+    if (!einspielDatei) return;
+    if (
+      !(await frage({
+        titel: "Sicherung einspielen",
+        text:
+          `Der gesamte Bestand wird durch „${einspielDatei.name}“ ersetzt. Alles, was seit ` +
+          `dieser Sicherung entstanden ist, geht verloren. Vorher wird der jetzige Stand ` +
+          `automatisch als Rückweg im Datenverzeichnis abgelegt. Der Dienst startet danach neu, ` +
+          `und du musst dich neu anmelden.`,
+        bestaetigen: "Bestand ersetzen",
+        gefaehrlich: true,
+      }))
+    )
+      return;
+    setLaeuft("einspielen");
+    setEinspielErgebnis("");
+    try {
+      const e = await api.wiederherstellen(einspielDatei);
+      setEinspielErgebnis(
+        `Eingespielt. ${e.anhaenge} Anhänge geschrieben` +
+          (e.misslungen > 0 ? `, ${e.misslungen} misslungen` : "") +
+          `. Rückweg: ${e.rueckweg}. ${e.hinweis}`,
+      );
+      setMeldung({ text: "Eingespielt. Der Dienst startet neu.", art: "ok" });
+    } catch (e) {
+      setMeldung({ text: (e as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
+
   const sicherungTokenNeu = async () => {
     setLaeuft("sicherung");
     try {
@@ -2425,6 +2463,47 @@ export default function EinstellungenView() {
                   Der Suchindex ist nicht enthalten und muss es nicht sein: PostgreSQL
                   berechnet ihn beim Einspielen aus Titel und Text neu.
                 </p>
+
+                <h3>Sicherung einspielen</h3>
+                <div className="warnkasten">
+                  <strong>Das ersetzt den gesamten Bestand</strong>
+                  <div className="muted small">
+                    Alles, was seit der gewählten Sicherung entstanden ist, geht verloren.
+                    Bevor etwas überschrieben wird, legt Nexora den jetzigen Stand als
+                    Rückweg im Datenverzeichnis ab — wer die falsche Datei erwischt, kommt
+                    damit zurück. Ein Archiv ohne die Marke <code>FERTIG</code> wird
+                    abgelehnt: es wäre ein halber Bestand über einem ganzen.
+                  </div>
+                </div>
+                <div className="knopfreihe">
+                  <input
+                    type="file"
+                    accept=".zip,application/zip"
+                    onChange={(e) => {
+                      setEinspielDatei(e.target.files?.[0] ?? null);
+                      setEinspielErgebnis("");
+                    }}
+                  />
+                  <button
+                    className="btn danger"
+                    disabled={!einspielDatei || laeuft === "einspielen"}
+                    onClick={einspielen}
+                  >
+                    {laeuft === "einspielen" ? "Spielt ein…" : "Einspielen"}
+                  </button>
+                </div>
+                {einspielDatei && (
+                  <p className="muted small">
+                    Gewählt: <code>{einspielDatei.name}</code>, {bytes(einspielDatei.size)}
+                  </p>
+                )}
+                {laeuft === "einspielen" && (
+                  <p className="muted small">
+                    Läuft. Erst wird der jetzige Stand gesichert, dann eingespielt, dann die
+                    Anhänge geschrieben. Das Fenster bitte offen lassen.
+                  </p>
+                )}
+                {einspielErgebnis && <div className="hinweis-ok">{einspielErgebnis}</div>}
 
                 <h3>Regelmäßig sichern</h3>
                 <p className="muted small">

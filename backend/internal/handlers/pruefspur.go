@@ -72,6 +72,7 @@ const (
 	AktAnhangIndex        = "anhangindex.nachgezogen"
 	AktLDAPTest           = "verzeichnis.geprueft"
 	AktSicherung          = "sicherung.erstellt"
+	AktWiederherstellung  = "sicherung.eingespielt"
 	AktSpaceOeffentlich   = "space.oeffentlich"
 	AktSpaceAngelegt      = "space.angelegt"
 	AktSpaceGeloescht     = "space.geloescht"

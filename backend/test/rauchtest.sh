@@ -559,6 +559,62 @@ pruefe "und die Suche greift darauf" "t" \
              WHERE title <> '' AND such_tsv @@ plainto_tsquery('german', title)")"
 dropdb -h 127.0.0.1 -p "$PGPORT" -U nexora rueck
 
+echo "== Sicherung wieder einspielen"
+# Der eigentliche Beweis: sichern, etwas aendern, einspielen, und die Aenderung
+# muss weg sein. Alles darunter -- Marke, Rueckweg, Neustart -- haengt daran.
+curl -s -b "$KEKSE" "$BASIS/api/system/sicherung" -o "$ARBEIT/stand.zip"
+SEITEN_VORHER=$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc "SELECT count(*) FROM pages")
+# Eine Seite, die es in der Sicherung NICHT gibt.
+DANACH=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
+         -d '{"title":"Nach der Sicherung entstanden"}' | feld "['id']")
+pruefe "die neue Seite ist da" "200" "$(code "$BASIS/api/pages/$DANACH")"
+
+# Ein Archiv ohne die Marke muss abgelehnt werden. Es ist ein gueltiges ZIP,
+# und genau das ist die Falle: es liesse sich sonst einspielen und legte einen
+# halben Bestand ueber einen ganzen.
+python3 -c "
+import zipfile, shutil
+shutil.copy('$ARBEIT/stand.zip', '$ARBEIT/halb.zip')
+alt = zipfile.ZipFile('$ARBEIT/stand.zip')
+neu = zipfile.ZipFile('$ARBEIT/halb.zip', 'w')
+for n in alt.namelist():
+    if not n.endswith('/FERTIG'):
+        neu.writestr(n, alt.read(n))
+neu.close()"
+pruefe "ein Archiv ohne FERTIG wird abgelehnt" "400" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X POST "$BASIS/api/system/wiederherstellung" \
+          -F "datei=@$ARBEIT/halb.zip" -F "bestaetigung=wiederherstellen")"
+pruefe "ohne Bestaetigung ebenfalls" "400" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X POST "$BASIS/api/system/wiederherstellung" \
+          -F "datei=@$ARBEIT/stand.zip")"
+pruefe "die neue Seite steht immer noch" "200" "$(code "$BASIS/api/pages/$DANACH")"
+
+# Jetzt richtig.
+EINSPIEL=$(curl -s -b "$KEKSE" -X POST "$BASIS/api/system/wiederherstellung" \
+           -F "datei=@$ARBEIT/stand.zip" -F "bestaetigung=wiederherstellen")
+pruefe "eingespielt" "True" "$(printf '%s' "$EINSPIEL" | feld "['ok']")"
+RUECKWEG=$(printf '%s' "$EINSPIEL" | feld "['rueckweg']")
+pruefe "ein Rueckweg wurde abgelegt" "True" \
+       "$(python3 -c "
+import os
+p = os.path.join('$ARBEIT/anhaenge', '$RUECKWEG')
+print(os.path.exists(p) and os.path.getsize(p) > 1000)")"
+
+# Der Dienst beendet sich nach dem Einspielen selbst. Im Betrieb startet Docker
+# ihn neu; hier muss der Test das tun.
+sleep 3
+halte_dienst_an
+starte_dienst
+pruefe "die Seite von nach der Sicherung ist weg" "404" "$(code "$BASIS/api/pages/$DANACH")"
+pruefe "der Bestand entspricht wieder der Sicherung" "$SEITEN_VORHER" \
+       "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc "SELECT count(*) FROM pages")"
+pruefe "und die Anmeldung gilt noch" "200" "$(code "$BASIS/api/auth/me")"
+# Die Suche muss nach dem Einspielen von selbst wieder greifen, ohne dass
+# jemand den Index neu aufbaut.
+pruefe "die Suche greift ohne Zutun" "t" \
+       "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
+          "SELECT count(*) > 0 FROM pages WHERE title <> '' AND such_tsv @@ plainto_tsquery('german', title)")"
+
 echo "== Kennzahlen"
 # Ohne Losungswort gibt es den Weg nicht, und zwar mit 404 und nicht mit 401:
 # dass es ihn gibt, braucht niemand zu erfahren, der ihn nicht abholen darf.

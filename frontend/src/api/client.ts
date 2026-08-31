@@ -683,6 +683,27 @@ export const api = {
   systemZustand: () => req<SystemZustand>("/system"),
   puls: () => req<Puls>("/system/puls"),
   sicherungUmfang: () => req<SicherungUmfang>("/system/sicherung/umfang"),
+  // Einspielen. Kein req: der Rumpf ist multipart und kann Gigabyte gross
+  // sein, das gehoert nicht durch JSON.stringify.
+  wiederherstellen: async (datei: File) => {
+    const rumpf = new FormData();
+    rumpf.append("datei", datei);
+    rumpf.append("bestaetigung", "wiederherstellen");
+    const antwort = await fetch("/api/system/wiederherstellung", {
+      method: "POST",
+      credentials: "include",
+      body: rumpf,
+    });
+    const d = await antwort.json().catch(() => ({}));
+    if (!antwort.ok) throw new Error(d.error || `Fehler ${antwort.status}`);
+    return d as {
+      ok: boolean;
+      anhaenge: number;
+      misslungen: number;
+      rueckweg: string;
+      hinweis: string;
+    };
+  },
   sicherungTokenNeu: () =>
     req<SicherungUmfang>("/system/sicherung/token", { method: "POST" }),
   sicherungTokenWeg: () =>
