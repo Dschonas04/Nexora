@@ -64,6 +64,7 @@ var bekannt = map[string]struct {
 		Art:        "zahl",
 		Titel:      "Größte Datei je Anhang (MB)",
 		Erklaerung: "Die eigentliche Grenze ist der Platz auf der Platte hinter dem Datenverzeichnis.",
+		Warnung:    "Der nginx davor hat eine eigene Grenze. Ein hier erhöhter Wert bringt nichts, solange client_max_body_size im vorgeschalteten nginx kleiner ist: der bricht die Übertragung schon ab, bevor Nexora sie überhaupt sieht. Was von beidem wirklich gilt, sagt die Messung weiter unten.",
 	},
 	"sitzung_stunden": {
 		Art:        "zahl",

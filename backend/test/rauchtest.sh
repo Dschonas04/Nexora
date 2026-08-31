@@ -399,6 +399,22 @@ pruefe "tage=0 liefert alles" "200" "$(code "$BASIS/api/system/anmeldungen?tage=
 pruefe "Filter nach Adresse greift" "0" \
        "$(hole "$BASIS/api/system/anmeldungen?ip=10.9.9.9" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["versuche"]))')"
 
+echo "== Grenzprobe"
+# Der Weg nimmt einen Rumpf an und wirft ihn weg. Geprueft wird, dass er
+# wirklich zaehlt, was ankommt: die Oberflaeche schachtelt die Grenze anhand
+# dieser Antwort ein, eine geratene Zahl waere schlimmer als keine.
+head -c 1048576 /dev/zero > "$ARBEIT/ein-mb"
+pruefe "ein Megabyte kommt an" "1048576" \
+       "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/system/grenzprobe" \
+          -H 'Content-Type: application/octet-stream' \
+          --data-binary "@$ARBEIT/ein-mb" | feld "['bytes']")"
+pruefe "ein leerer Rumpf ist kein Fehler" "0" \
+       "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/system/grenzprobe" \
+          -H 'Content-Type: application/octet-stream' --data-binary '' | feld "['bytes']")"
+pruefe "ohne Anmeldung verschlossen" "401" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/system/grenzprobe" \
+          -H 'Content-Type: application/octet-stream' --data-binary '')"
+
 echo "== Was ohne Lizenz zu bleibt"
 # Anhänge, Freigaben, Kommentare und die Ausgabe einer ganzen Ablage sind
 # kostenpflichtige Zusätze. Ohne Lizenz lässt sich hier nichts davon
