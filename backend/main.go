@@ -311,6 +311,7 @@ func main() {
 			r.Get("/system/metriken", h.MetrikenZustand)
 			r.Post("/system/metriken/token", h.MetrikenTokenNeu)
 			r.Delete("/system/metriken/token", h.MetrikenAus)
+			r.Get("/system/metriken/grafana.json", h.GrafanaBild)
 			r.Post("/system/suchindex", h.IndexNeuAufbauen)
 			r.Post("/system/anhangindex", h.AnhangIndexNachziehen)
 			// Nimmt einen Rumpf an und wirft ihn weg. Damit misst die

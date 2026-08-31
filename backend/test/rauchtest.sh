@@ -650,6 +650,37 @@ pruefe "abgeschaltet" "200" "$(code -X DELETE "$BASIS/api/system/metriken/token"
 pruefe "danach gibt es den Weg nicht mehr" "404" \
        "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $NEU" "$BASIS/metrics")"
 
+hole "$BASIS/api/system/metriken/grafana.json" > "$ARBEIT/bild.json"
+MPROBE=$(hole -X POST "$BASIS/api/system/metriken/token" | feld "['token']")
+curl -s -H "Authorization: Bearer $MPROBE" "$BASIS/metrics" > "$ARBEIT/metriken.txt"
+hole -X DELETE "$BASIS/api/system/metriken/token" >/dev/null
+export ARBEIT
+pruefe "das Grafana-Bild kommt aus dem Abbild" "True" \
+       "$(hole "$BASIS/api/system/metriken/grafana.json" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+felder = [p for p in d["panels"] if p["type"] != "row"]
+print(len(felder) == 14 and d["title"] == "Nexora")')"
+# Jede Abfrage im Bild muss eine Kennzahl treffen, die es wirklich gibt. Ein
+# Bild, das leere Felder zeigt, ist schlimmer als keines: es sieht nach einer
+# kaputten Instanz aus, obwohl nur der Name veraltet ist.
+pruefe "alle Kennzahlen im Bild gibt es auch" "" \
+       "$(python3 - <<'PYEOF'
+import json, re, subprocess, os
+bild = json.load(open(os.environ["ARBEIT"] + "/bild.json"))
+namen = set()
+def geh(p):
+    for z in p.get("targets", []):
+        namen.update(re.findall(r"\bnexora_[a-z_]+", z.get("expr", "")))
+for p in bild["panels"]:
+    geh(p)
+vorhanden = set(re.findall(r"^(nexora_[a-z_]+)", open(os.environ["ARBEIT"] + "/metriken.txt").read(), re.M))
+fehlend = sorted(namen - vorhanden)
+print(", ".join(fehlend))
+PYEOF
+)"
+
+
 echo "== Verzeichnis-Verwaltung"
 # Nachsehen darf ein Administrator immer, auch ohne Lizenz: sonst sieht eine
 # Instanz nicht einmal, dass da etwas eingerichtet ist, das nicht laeuft.

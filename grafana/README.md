@@ -1,7 +1,8 @@
 # Grafana
 
-`nexora.json` ist ein fertiges Bild für Prometheus als Datenquelle. Vier Reihen:
-auf einen Blick, Verkehr, die Datenbank, Bestand und Anmeldungen.
+Das Bild liegt bei der Fassung, die es beschreibt: `backend/internal/handlers/bilder/grafana.json`,
+eingebettet ins Abbild und herunterzuladen unter **Einstellungen, Kennzahlen**.
+Vier Reihen: auf einen Blick, Verkehr, die Datenbank, Bestand und Anmeldungen.
 
 ## Voraussetzung
 
@@ -16,7 +17,7 @@ nicht, er antwortet mit 404.
 
 ## Einspielen
 
-In Grafana unter *Dashboards → New → Import* die Datei hochladen und die
+Im Panel herunterladen, in Grafana unter *Dashboards → New → Import* hochladen,
 Prometheus-Datenquelle wählen. Wer Grafana über Dateien versorgt, legt sie
 stattdessen in das bereitgestellte Verzeichnis und ersetzt `${DS_PROMETHEUS}`
 durch die Kennung der Datenquelle.
