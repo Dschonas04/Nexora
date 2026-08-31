@@ -42,6 +42,9 @@ type Server struct {
 	// Ablage decides where the bytes of an attachment lie: on disk or in an S3
 	// bucket. The handlers do not know the difference.
 	Ablage ablage.Ablage
+	// DatenbankURL ist die Adresse, mit der sich pg_dump verbinden kann. Nur
+	// dafür: alles andere geht über den Vorrat.
+	DatenbankURL string
 	// Puls zählt die Anfragen der letzten Minute. Darf nil sein; dann meldet
 	// die Systemansicht keine Live-Werte, und sonst ändert sich nichts.
 	Puls *puls.Messer

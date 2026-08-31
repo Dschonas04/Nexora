@@ -19,6 +19,7 @@ import {
   LDAPEinrichtung,
   LDAPTestErgebnis,
   MetrikenZustand,
+  SicherungUmfang,
   Puls,
   Sitzung,
   SystemZustand,
@@ -403,6 +404,13 @@ export default function EinstellungenView() {
       lebt = false;
       window.clearInterval(takt);
     };
+  }, [bereich]);
+
+  // Der Umfang einer Sicherung, beim Öffnen der Wartung geholt.
+  const [sicherung, setSicherung] = useState<SicherungUmfang | null>(null);
+  useEffect(() => {
+    if (bereich !== "wartung") return;
+    api.sicherungUmfang().then(setSicherung).catch(() => setSicherung(null));
   }, [bereich]);
 
   // Die Kennzahlen. Wird beim Öffnen geholt und nach jeder Änderung neu, damit
@@ -2321,6 +2329,72 @@ export default function EinstellungenView() {
       case "wartung":
         return (
           <>
+            <h3>Sicherung</h3>
+            <p className="muted small">
+              Datenbank und Anhänge in einem Archiv, als Strom durch den Browser. Beides
+              zusammen, weil die Datenbank nicht der ganze Bestand ist: Anhänge liegen als
+              Dateien daneben, und ein Dump allein hinterlässt Zeilen, die auf nichts mehr
+              zeigen. Wer das erst beim Zurückspielen merkt, merkt es zu spät.
+            </p>
+            {sicherung && (
+              <>
+                <table className="tabelle uebersicht-tabelle">
+                  <tbody>
+                    <tr>
+                      <td>Datenbank</td>
+                      <td className="zahl">{bytes(sicherung.datenbankBytes)}</td>
+                    </tr>
+                    <tr>
+                      <td>Anhänge</td>
+                      <td className="zahl">
+                        {sicherung.anhaenge} Dateien, {bytes(sicherung.anhaengeBytes)}{" "}
+                        <span className="muted">aus {sicherung.ablage}</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Archiv, geschätzt</td>
+                      <td className="zahl">{bytes(sicherung.geschaetztBytes)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {sicherung.bereit ? (
+                  <div className="knopfreihe">
+                    <a className="btn" href={api.sicherungAdresse}>
+                      Sicherung herunterladen
+                    </a>
+                  </div>
+                ) : (
+                  <div className="warnkasten">
+                    <strong>Sicherung nicht möglich</strong>
+                    <div className="muted small">{sicherung.fehler}</div>
+                  </div>
+                )}
+
+                <div className="warnkasten">
+                  <strong>Das Archiv enthält alles</strong>
+                  <div className="muted small">
+                    Passwort-Hashes, Sitzungen, Freigabe-Tokens, den gesamten Inhalt. Es ist
+                    die empfindlichste Datei, die diese Instanz herausgibt, und es liegt danach
+                    ungeschützt im Downloadordner. <code>config.conf</code> ist{" "}
+                    <strong>nicht</strong> dabei: sie steht auf dem Wirt und enthält eigene
+                    Geheimnisse.
+                  </div>
+                </div>
+
+                <p className="muted small">
+                  Im Archiv liegt eine <code>LIESMICH.md</code> mit den Befehlen zum
+                  Zurückspielen. Ganz am Ende steht eine Datei <code>FERTIG</code>: fehlt sie,
+                  ist die Sicherung mittendrin abgebrochen. Ein halbes ZIP bleibt nämlich ein
+                  gültiges ZIP und ließe sich sonst nicht von einem ganzen unterscheiden.
+                </p>
+                <p className="muted small">
+                  Der Suchindex ist nicht enthalten und muss es nicht sein: PostgreSQL
+                  berechnet ihn beim Einspielen aus Titel und Text neu.
+                </p>
+              </>
+            )}
+
             <h3>Konfigurationsdatei</h3>
             {konfig === null ? (
               <p className="muted">Wird geladen…</p>

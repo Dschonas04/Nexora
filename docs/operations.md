@@ -84,6 +84,23 @@ by binding a store from the settings page and testing it there before saving.
 
 ## Backup
 
+### From the settings page
+
+**Settings → Wartung → Sicherung** streams the whole instance as one ZIP:
+`pg_dump` plus every attachment, read through the storage interface so it works
+the same on disk and against an object store. It shows the sizes first, so
+nobody presses the button on a multi-gigabyte holding and then wonders whether
+it has hung.
+
+Check for the file `FERTIG` inside before trusting an archive — a backup that
+broke off mid-stream is still a valid ZIP, and half a backup would otherwise look
+exactly like a whole one. `LIESMICH.md` beside it carries the restore commands.
+
+This is the manual path, and it is deliberately manual: a browser download is not
+a backup *schedule*. For that, keep running `pg_dump` on a timer as below — and
+remember that a timer over the database alone does not cover the attachments.
+
+
 ```bash
 # database — the bulk of everything
 docker compose exec -T db pg_dump -U nexora nexora | gzip > nexora-$(date +%F).sql.gz

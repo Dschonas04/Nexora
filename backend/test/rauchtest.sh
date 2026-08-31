@@ -427,6 +427,90 @@ pruefe "der Puls zaehlt sich nicht selbst" "$VORHER" \
 pruefe "ohne Anmeldung verschlossen" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/puls")"
 
+echo "== Sicherung"
+# Der eigentliche Beweis ist nicht, dass ein Archiv herauskommt, sondern dass
+# sich das Ergebnis zurueckspielen laesst. Alles andere ist eine Behauptung.
+pruefe "Umfang ist lesbar" "200" "$(code "$BASIS/api/system/sicherung/umfang")"
+pruefe "die Instanz haelt sich fuer bereit" "True" \
+       "$(hole "$BASIS/api/system/sicherung/umfang" | feld "['bereit']")"
+# Der Stand VOR der Sicherung. Das Erstellen vermerkt sich selbst in der
+# Pruefspur, und zwar nachdem der Dump gezogen ist; ein Vergleich hinterher
+# waere um genau diesen einen Eintrag daneben und saehe wie Datenverlust aus.
+declare -A VORHER
+for T in pages users pruefspur attachments einstellungen; do
+    VORHER[$T]=$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc "SELECT count(*) FROM $T")
+done
+curl -s -b "$KEKSE" "$BASIS/api/system/sicherung" -o "$ARBEIT/sicherung.zip"
+pruefe "ein Archiv kam an" "True" \
+       "$(python3 -c "import os;print(os.path.getsize('$ARBEIT/sicherung.zip')>1000)")"
+pruefe "es ist ein gueltiges ZIP" "True" \
+       "$(python3 -c "import zipfile;print(zipfile.is_zipfile('$ARBEIT/sicherung.zip'))")"
+# Die Marke am Ende. Ohne sie waere ein mittendrin abgebrochenes Archiv nicht
+# von einem vollstaendigen zu unterscheiden, denn ein halbes ZIP ist ein
+# gueltiges ZIP.
+pruefe "die Marke FERTIG steht darin" "True" \
+       "$(python3 -c "
+import zipfile
+z = zipfile.ZipFile('$ARBEIT/sicherung.zip')
+print(any(n.endswith('/FERTIG') for n in z.namelist()))")"
+pruefe "Dump und Anleitung liegen darin" "True" \
+       "$(python3 -c "
+import zipfile
+n = zipfile.ZipFile('$ARBEIT/sicherung.zip').namelist()
+print(any(x.endswith('/datenbank.sql') for x in n) and any(x.endswith('/LIESMICH.md') for x in n))")"
+pruefe "der Dump ist nicht leer" "True" \
+       "$(python3 -c "
+import zipfile
+z = zipfile.ZipFile('$ARBEIT/sicherung.zip')
+d = next(n for n in z.namelist() if n.endswith('/datenbank.sql'))
+print(z.getinfo(d).file_size > 2000)")"
+# Der Suchindex gehoert NICHT hinein: such_tsv ist eine GENERATED-Spalte,
+# PostgreSQL rechnet sie beim Einspielen neu. Stuende sie im Dump, waere das
+# Zurueckspielen an genau dieser Stelle gescheitert.
+pruefe "die Suchspalte steht als Vorschrift darin, nicht als Daten" "True" \
+       "$(python3 -c "
+import zipfile
+z = zipfile.ZipFile('$ARBEIT/sicherung.zip')
+d = next(n for n in z.namelist() if n.endswith('/datenbank.sql'))
+t = z.read(d).decode('utf-8', 'replace')
+vorschrift = 'GENERATED ALWAYS AS' in t
+# In keiner COPY-Spaltenliste darf such_tsv auftauchen. Genau das ist die
+# Eigenschaft, auf die es ankommt; die Spaltenreihenfolge zu raten waere ein
+# Test, der beim naechsten ALTER TABLE grundlos faellt.
+inDaten = any(z.startswith('COPY public.') and 'such_tsv' in z.split(')')[0]
+              for z in t.splitlines())
+print(vorschrift and not inDaten)")"
+
+echo "== Sicherung laesst sich zurueckspielen"
+# Eine zweite Datenbank daneben, den Dump hinein, und nachzaehlen. Ohne diesen
+# Schritt ist eine Sicherung eine Vermutung.
+createdb -h 127.0.0.1 -p "$PGPORT" -U nexora rueck
+python3 -c "
+import zipfile
+z = zipfile.ZipFile('$ARBEIT/sicherung.zip')
+d = next(n for n in z.namelist() if n.endswith('/datenbank.sql'))
+open('$ARBEIT/rueck.sql','wb').write(z.read(d))"
+psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d rueck -q -f "$ARBEIT/rueck.sql" > "$ARBEIT/rueck.log" 2>&1
+pruefe "eingespielt ohne Fehler" "0" "$(grep -ci '^ERROR' "$ARBEIT/rueck.log" || true)"
+for T in pages users pruefspur attachments einstellungen; do
+    B=$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d rueck -tAc "SELECT count(*) FROM $T")
+    pruefe "$T vollstaendig" "${VORHER[$T]}" "$B"
+done
+# Und die Suche muss in der zurueckgespielten Datenbank von selbst wieder gehen.
+# psql schreibt Wahrheitswerte als t und f, nicht als True.
+pruefe "die Suchspalte wurde beim Einspielen neu berechnet" "t" \
+       "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d rueck -tAc \
+          "SELECT count(*) > 0 FROM pages WHERE such_tsv IS NOT NULL")"
+# Und die Suche muss darauf wirklich greifen, nicht bloss nicht null sein. Der
+# Vergleich geht gegen den eigenen Titel jeder Seite: ein festes Suchwort waere
+# ein Test, der davon abhaengt, welche Seiten die Abschnitte davor gerade
+# stehen lassen, und der Abschnitt Papierkorb entfernt eine davon endgueltig.
+pruefe "und die Suche greift darauf" "t" \
+       "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d rueck -tAc \
+          "SELECT count(*) > 0 FROM pages
+             WHERE title <> '' AND such_tsv @@ plainto_tsquery('german', title)")"
+dropdb -h 127.0.0.1 -p "$PGPORT" -U nexora rueck
+
 echo "== Kennzahlen"
 # Ohne Losungswort gibt es den Weg nicht, und zwar mit 404 und nicht mit 401:
 # dass es ihn gibt, braucht niemand zu erfahren, der ihn nicht abholen darf.
