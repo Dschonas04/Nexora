@@ -19,6 +19,7 @@ The [`docs/`](docs/README.md) directory carries the long form: the
 reference documents for the [API](docs/api.md), the
 [configuration](docs/configuration.md), the [data model](docs/data-model.md),
 [operations](docs/operations.md) and [development](docs/development.md).
+[Capacity](#capacity) below carries measured throughput and latency figures.
 
 Licensing is in [LICENSING.md](LICENSING.md); what Nexora ships from other
 people, and under which terms, is listed in
@@ -33,6 +34,50 @@ inventory yourself.
 | Frontend | React 18, Vite, TypeScript, BlockNote editor             |
 | Database | PostgreSQL 16                                            |
 | Delivery | Docker Compose (nginx serves the SPA and proxies `/api`) |
+
+## Capacity
+
+Measured on one 12-core host, backend and PostgreSQL 16 on the same machine,
+against a throwaway database seeded with 40 accounts and 2,000 pages.
+
+The unit is an **operation**, not a request: opening a page is three calls (the
+tree, the page, its backlinks), so an operation averages 2.3 HTTP requests. The
+mix is 50 % open a page, 18 % search, 14 % load the tree, 8 % browse tags and
+favourites, and **10 % save** — a save being the expensive one, since it
+snapshots the previous version, recomputes the search column and writes an audit
+row. Every account works on its own pages, so the permission check runs its full
+path rather than the shortcut an admin takes.
+
+| Concurrent in flight | Operations/s | p50 | p95 | Errors |
+| --- | --- | --- | --- | --- |
+| 1 | 213 | 5.2 ms | 8.8 ms | 0 |
+| 20 | 4,322 | 5.2 ms | 8.9 ms | 0 |
+| 100 | 4,293 | 31 ms | 39 ms | 0 |
+| 400 | 4,712 | 119 ms | 138 ms | 0 |
+| 1,600 | 4,635 | 496 ms | 554 ms | 0 |
+| 3,200 | 4,499 | 1.01 s | 1.14 s | 0 |
+
+Throughput is saturated at roughly 20 concurrent requests and holds at about
+4,600 operations per second from there on; beyond that, added concurrency only
+queues, and latency rises linearly with it. **No errors at any level**, up to
+3,200 concurrent — it gets slower under load, it does not fall over.
+
+Translated through a think time of 20 seconds between actions, that is tens of
+thousands of simultaneously active users on paper. Take the paper part
+seriously: this was measured over loopback without TLS, with a 2,000-page
+database that fits entirely in cache, and with the load generator competing for
+the same cores. What the figures do support is the modest claim: several hundred
+people working at the same time are unremarkable, and it takes more than 800
+concurrent requests before p95 passes 300 ms.
+
+**One tuning knob is worth knowing.** `DATABASE_URL` carries no
+`pool_max_conns`, so pgx defaults to one connection per core. Raising it to 50
+gives 5,895 operations/s at 100 concurrent instead of 4,293, with p95 dropping
+from 39 ms to 32 ms — 37 % more throughput for one query parameter. PostgreSQL
+allows 100 connections by default, so there is room. RAM is *not* the knob:
+`shared_buffers` sits at the 128 MB default and a real instance measured here
+held a 10 MB database at a 99.98 % cache hit ratio. Give PostgreSQL more memory
+when the database approaches a gigabyte, not before.
 
 ## Features
 
