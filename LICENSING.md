@@ -81,9 +81,8 @@ ein Lizenzverstoß, kein Kniff. Und wer ihn vornimmt, hätte ohnehin nicht bezah
 
 Nexora steht unter BUSL-1.1, ist aber nicht allein aus eigenem Quelltext gebaut.
 Was mitgeliefert wird und unter welcher Lizenz, steht vollständig in
-[THIRD-PARTY.md](THIRD-PARTY.md). Diese Datei wird erzeugt, und die CI prüft bei
-jedem Lauf, dass sie zum Stand der Abhängigkeiten passt: ein Hinweisdokument,
-das still veraltet, täuscht Sicherheit vor und ist schlimmer als keines.
+[THIRD-PARTY.md](THIRD-PARTY.md), samt der Befehle, mit denen sich der Stand
+jederzeit nachzählen lässt.
 
 Zwei Punkte davon betreffen jeden, der Nexora weitergibt oder verkauft.
 
@@ -93,7 +92,9 @@ verlangt ist, dass der Lizenzhinweis die verteilte Form begleitet und dass
 Änderungen an den MPL-Dateien selbst unter MPL bleiben. Nexora benutzt sie
 unverändert. Den Hinweis trägt jedes erzeugte Bündel im Kopf, gesetzt in
 `frontend/vite.config.ts` — der Minimierer wirft die Lizenzköpfe der Pakete sonst
-weg, und dann ginge MPL-Quelltext ohne jeden Hinweis hinaus.
+weg, und dann ginge MPL-Quelltext ohne jeden Hinweis hinaus. Weil diese Auflage
+lautlos bricht, prüft die CI beim Bauen, dass der Kopf wirklich in jedem Bündel
+ankommt.
 
 **Das Laufzeit-Abbild enthält GPL-2.0-Programme.** `poppler-utils` liefert
 `pdftotext` für den Volltext aus PDF-Anhängen, dazu kommt busybox aus der
