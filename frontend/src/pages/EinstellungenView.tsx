@@ -457,6 +457,39 @@ export default function EinstellungenView() {
     }
   }, [bereich, ldap]);
 
+  const sicherungTokenNeu = async () => {
+    setLaeuft("sicherung");
+    try {
+      setSicherung(await api.sicherungTokenNeu());
+      setMeldung({ text: "Losungswort erzeugt. Das Skript unten enthält es bereits.", art: "ok" });
+    } catch (e) {
+      setMeldung({ text: (e as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
+
+  const sicherungTokenWeg = async () => {
+    if (
+      !(await frage({
+        titel: "Losungswort entfernen",
+        text: "Ein Skript, das damit sichert, bekommt danach 401 und sichert ins Leere. Prüfe vorher, dass keines mehr läuft.",
+        bestaetigen: "Entfernen",
+        gefaehrlich: true,
+      }))
+    )
+      return;
+    setLaeuft("sicherung");
+    try {
+      setSicherung(await api.sicherungTokenWeg());
+      setMeldung({ text: "Losungswort entfernt.", art: "ok" });
+    } catch (e) {
+      setMeldung({ text: (e as Error).message, art: "fehler" });
+    } finally {
+      setLaeuft(null);
+    }
+  };
+
   const tokenNeu = async () => {
     setLaeuft("metriken");
     try {
@@ -2392,6 +2425,62 @@ export default function EinstellungenView() {
                   Der Suchindex ist nicht enthalten und muss es nicht sein: PostgreSQL
                   berechnet ihn beim Einspielen aus Titel und Text neu.
                 </p>
+
+                <h3>Regelmäßig sichern</h3>
+                <p className="muted small">
+                  Ein Knopf im Browser ist keine Sicherung, sondern eine Handlung. Für einen
+                  Zeitplan braucht ein Skript einen Weg herein, und einen Keks hat es nicht.
+                  Ein Losungswort ist dieser Weg.
+                </p>
+                <div className="warnkasten">
+                  <strong>Dieses Wort wiegt schwerer als jedes andere hier</strong>
+                  <div className="muted small">
+                    Es gibt den gesamten Bestand heraus, ohne Anmeldung. Es ist deshalb ein
+                    eigenes und nicht dasselbe wie bei den Kennzahlen: wer einen Sammler
+                    einrichtet, soll dabei nicht nebenbei einen Schlüssel zur ganzen Datenbank
+                    verteilen. Jeder Abruf damit steht mit seiner Adresse im Protokoll.
+                  </div>
+                </div>
+                <div className="knopfreihe">
+                  <button
+                    className="btn"
+                    disabled={laeuft === "sicherung"}
+                    onClick={sicherungTokenNeu}
+                  >
+                    {sicherung.tokenGesetzt ? "Neues Losungswort" : "Losungswort erzeugen"}
+                  </button>
+                  {sicherung.tokenGesetzt && (
+                    <button
+                      className="btn"
+                      disabled={laeuft === "sicherung"}
+                      onClick={sicherungTokenWeg}
+                    >
+                      Entfernen
+                    </button>
+                  )}
+                </div>
+
+                {sicherung.tokenGesetzt && (
+                  <>
+                    <p className="muted small">
+                      Fertiges Skript, mit dem Wort und der Adresse darin. Es prüft die Marke{" "}
+                      <code>FERTIG</code>, bevor es ein Archiv gelten lässt, und räumt Ältere
+                      nach vierzehn Tagen weg.
+                    </p>
+                    <textarea className="konfig-feld" rows={14} readOnly value={sicherung.skript} />
+                    <div className="knopfreihe">
+                      <button
+                        className="btn"
+                        onClick={() => kopieren(sicherung.skript, "skript")}
+                      >
+                        {kopiert === "skript" ? "Kopiert" : "Skript kopieren"}
+                      </button>
+                      <button className="btn" onClick={() => kopieren(sicherung.token, "sicherungswort")}>
+                        {kopiert === "sicherungswort" ? "Kopiert" : "Nur das Losungswort"}
+                      </button>
+                    </div>
+                  </>
+                )}
               </>
             )}
 

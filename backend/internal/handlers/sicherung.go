@@ -31,6 +31,8 @@ package handlers
 import (
 	"archive/zip"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -40,6 +42,7 @@ import (
 	"time"
 
 	"nexora/internal/middleware"
+	"nexora/internal/models"
 )
 
 // Der Suchindex bleibt draußen, und zwar von selbst: such_tsv ist eine
@@ -72,7 +75,43 @@ func (s *Server) SicherungUmfang(w http.ResponseWriter, r *http.Request) {
 		fehler = "Die Adresse der Datenbank ist nicht bekannt."
 	}
 
+	// Der fertige Befehl fürs Skript. Die Adresse kommt aus der Konfiguration,
+	// soweit eine eingetragen ist; sonst ein Platzhalter, der als solcher zu
+	// erkennen ist. Wer den Befehl abschreiben muss, schreibt ihn falsch ab.
+	ziel := "https://NEXORA-HOST"
+	if u := speicherOeffentlicheURL(); u != "" {
+		ziel = strings.TrimSuffix(u, "/")
+	}
+	token := SicherungToken()
+	wort := token
+	if wort == "" {
+		wort = "<erst ein Losungswort erzeugen>"
+	}
+	befehl := fmt.Sprintf(`#!/bin/sh
+# Nexora sichern. Taeglich per cron, etwa:  30 2 * * *  /pfad/zu/diesem/skript
+set -eu
+ZIEL=/var/backups/nexora
+WORT='%s'
+mkdir -p "$ZIEL"
+NAME="$ZIEL/nexora-$(date +%%Y-%%m-%%d_%%H%%M).zip"
+
+curl -fsS --max-time 3600      -H "Authorization: Bearer $WORT"      -o "$NAME"      %s/api/system/sicherung
+
+# Die Marke am Ende beweist, dass das Archiv vollstaendig ist. Ein halbes ZIP
+# ist ein gueltiges ZIP, ohne diese Pruefung faellt der Abbruch nicht auf.
+if unzip -l "$NAME" | grep -q '/FERTIG$'; then
+    echo "vollstaendig: $NAME"
+    find "$ZIEL" -name 'nexora-*.zip' -mtime +14 -delete
+else
+    echo "UNVOLLSTAENDIG, nicht verwenden: $NAME" >&2
+    exit 1
+fi
+`, wort, ziel)
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"tokenGesetzt":   token != "",
+		"token":          token,
+		"skript":         befehl,
 		"datenbankBytes": dbBytes,
 		"anhaenge":       anhaenge,
 		"anhaengeBytes":  anhangBytes,
@@ -85,10 +124,50 @@ func (s *Server) SicherungUmfang(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// SicherungTokenNeu erzeugt das Losungswort für den Abruf ohne Anmeldung.
+func (s *Server) SicherungTokenNeu(w http.ResponseWriter, r *http.Request) {
+	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
+		writeErr(w, http.StatusForbidden, "nur für Administratoren")
+		return
+	}
+	roh := make([]byte, 32)
+	if _, err := rand.Read(roh); err != nil {
+		writeErr(w, http.StatusInternalServerError, "Zufallsquelle nicht verfügbar")
+		return
+	}
+	if err := s.einstellungSchreiben(r.Context(), "sicherung_token", hex.EncodeToString(roh)); err != nil {
+		writeErr(w, http.StatusInternalServerError, "konnte nicht gespeichert werden")
+		return
+	}
+	s.spurAusRequest(r, AktEinstellung, "einstellung", "sicherung_token", "Sicherung",
+		map[string]interface{}{"aktion": "Losungswort erzeugt"})
+	s.SicherungUmfang(w, r)
+}
+
+// SicherungTokenWeg nimmt es zurück. Danach geht die Sicherung nur noch aus dem
+// Panel heraus.
+func (s *Server) SicherungTokenWeg(w http.ResponseWriter, r *http.Request) {
+	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
+		writeErr(w, http.StatusForbidden, "nur für Administratoren")
+		return
+	}
+	if err := s.einstellungSchreiben(r.Context(), "sicherung_token", ""); err != nil {
+		writeErr(w, http.StatusInternalServerError, "konnte nicht gespeichert werden")
+		return
+	}
+	s.spurAusRequest(r, AktEinstellung, "einstellung", "sicherung_token", "Sicherung",
+		map[string]interface{}{"aktion": "Losungswort entfernt"})
+	s.SicherungUmfang(w, r)
+}
+
 // Sicherung schreibt das Archiv in die Antwort.
 func (s *Server) Sicherung(w http.ResponseWriter, r *http.Request) {
+	// Zwei Wege herein, und nur zwei: ein angemeldeter Administrator, oder ein
+	// gültiges Losungswort. Der Filter davor hat bereits entschieden, welcher
+	// von beiden es war; hier bleibt die Rechteprüfung für den ersten.
 	uid := middleware.UserID(r)
-	if !s.isAdmin(r.Context(), uid) {
+	ueberToken := perToken(r)
+	if !ueberToken && !s.isAdmin(r.Context(), uid) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
 		return
 	}
@@ -186,8 +265,20 @@ func (s *Server) Sicherung(w http.ResponseWriter, r *http.Request) {
 	}
 	fertig = true
 
-	s.spurAusRequest(r, AktSicherung, "system", "", "Sicherung",
-		map[string]interface{}{"anhaenge": anzahl, "uebersprungen": uebersprungen})
+	// Jeder Abruf in die Prüfspur, mit der Adresse. Bei einem Skript ist das
+	// die einzige Spur, die es hinterlässt: es hat kein Konto, an dem sich
+	// später ablesen ließe, wer den ganzen Bestand abgeholt hat.
+	if ueberToken {
+		s.spur(ctx, models.Spureintrag{
+			Aktion: AktSicherung, ObjektArt: "system", ObjektTitel: "Sicherung",
+			AkteurName: "Skript mit Losungswort", IP: absenderIP(r),
+			Details: []byte(fmt.Sprintf(`{"anhaenge":%d,"uebersprungen":%d,"weg":"losungswort"}`,
+				anzahl, uebersprungen)),
+		})
+	} else {
+		s.spurAusRequest(r, AktSicherung, "system", "", "Sicherung",
+			map[string]interface{}{"anhaenge": anzahl, "uebersprungen": uebersprungen, "weg": "panel"})
+	}
 }
 
 func (s *Server) schreibeEintrag(archiv *zip.Writer, name string, inhalt []byte) error {

@@ -421,6 +421,28 @@ that does go away still ends it: writing to a closed connection fails and
 secrets. Everything else is: password hashes, sessions, share tokens. This is
 the most sensitive file the instance will ever hand out.
 
+**Two ways in, and only two.** A signed-in admin (the button in the settings), or
+`Authorization: Bearer <sicherung_token>` — a script has no cookie, and that is
+the whole point of automating it. This route therefore sits *outside* the session
+group; inside it, a token-authenticated call would be rejected by the sign-in
+check before ever reaching the handler.
+
+The backup token is **separate from the metrics token** on purpose. That one
+hands out a summary; this one hands out the entire holding without a sign-in.
+Whoever sets up a metrics scraper should not be handing out a key to the whole
+database as a side effect. Every fetch by token is written to the audit trail
+with the address it came from — for a script that is the only trace it leaves,
+having no account to read back later.
+
+| Method | Path | Notes |
+|---|---|---|
+| `POST` | `/system/sicherung/token` | Generate the token, switching the script path on · admin |
+| `DELETE` | `/system/sicherung/token` | Clear it; only the signed-in route remains · admin |
+
+`/system/sicherung/umfang` returns a ready-made shell script with the token and
+address filled in. It checks for `FERTIG` before accepting an archive and prunes
+copies older than fourteen days.
+
 ### Maintenance
 
 | Method | Path | Notes |

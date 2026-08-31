@@ -481,6 +481,54 @@ inDaten = any(z.startswith('COPY public.') and 'such_tsv' in z.split(')')[0]
               for z in t.splitlines())
 print(vorschrift and not inDaten)")"
 
+echo "== Sicherung fuer ein Skript"
+# Der Weg fuer die Automatisierung. Ein Skript hat keinen Keks; ohne
+# Losungswort darf es deshalb NICHTS bekommen, und mit dem richtigen alles.
+pruefe "ohne Anmeldung und ohne Wort verschlossen" "401" \
+       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/sicherung")"
+SWORT=$(hole -X POST "$BASIS/api/system/sicherung/token" | feld "['token']")
+pruefe "ein Losungswort wurde erzeugt" "64" "$(printf '%s' "$SWORT" | wc -c | tr -d ' ')"
+pruefe "damit geht es ohne Keks" "200" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SWORT" "$BASIS/api/system/sicherung")"
+pruefe "mit falschem Wort nicht" "401" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer falsch' "$BASIS/api/system/sicherung")"
+# Das Archiv aus dem Skript-Weg muss dasselbe sein wie aus dem Panel, und der
+# Abruf muss eine Spur hinterlassen. Gezaehlt wird die DIFFERENZ: die Zeilen
+# darueber haben schon einmal abgerufen, eine feste Summe haenge davon ab, wie
+# oft dieser Abschnitt zwischendurch etwas holt.
+spurZahl() {
+    psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
+        "SELECT count(*) FROM pruefspur WHERE aktion='sicherung.erstellt' AND akteur_name='Skript mit Losungswort'"
+}
+SPUR_VOR=$(spurZahl)
+curl -s -H "Authorization: Bearer $SWORT" "$BASIS/api/system/sicherung" -o "$ARBEIT/skript.zip"
+SPUR_NACH=$(spurZahl)
+pruefe "auch dieses Archiv ist vollstaendig" "True" \
+       "$(python3 -c "
+import zipfile
+z = zipfile.ZipFile('$ARBEIT/skript.zip')
+print(any(n.endswith('/FERTIG') for n in z.namelist()))")"
+pruefe "genau ein neuer Eintrag in der Pruefspur" "1" "$((SPUR_NACH - SPUR_VOR))"
+pruefe "und er traegt die Adresse" "127.0.0.1" \
+       "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
+          "SELECT ip FROM pruefspur WHERE akteur_name='Skript mit Losungswort' ORDER BY zeitpunkt DESC LIMIT 1")"
+# Das Wort der Kennzahlen darf hier NICHT gelten. Zwei Reichweiten, zwei
+# Woerter: das eine gibt eine Zusammenfassung heraus, das andere den ganzen
+# Bestand. Hier eigens erzeugt und gleich wieder entfernt, weil der Abschnitt
+# Kennzahlen erst weiter unten kommt und eine leere Variable hier alles
+# durchgehen liesse, ohne dass der Test es merkt.
+MWORT=$(hole -X POST "$BASIS/api/system/metriken/token" | feld "['token']")
+pruefe "das Kennzahlen-Wort ist ein anderes" "True" \
+       "$(python3 -c "print('$MWORT' != '$SWORT' and len('$MWORT') > 10)")"
+pruefe "und oeffnet die Sicherung nicht" "401" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $MWORT" "$BASIS/api/system/sicherung")"
+pruefe "umgekehrt oeffnet das Sicherungs-Wort die Kennzahlen nicht" "404" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SWORT" "$BASIS/metrics")"
+hole -X DELETE "$BASIS/api/system/metriken/token" >/dev/null
+pruefe "entfernt" "200" "$(code -X DELETE "$BASIS/api/system/sicherung/token")"
+pruefe "danach ist der Weg wieder zu" "401" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SWORT" "$BASIS/api/system/sicherung")"
+
 echo "== Sicherung laesst sich zurueckspielen"
 # Eine zweite Datenbank daneben, den Dump hinein, und nachzaehlen. Ohne diesen
 # Schritt ist eine Sicherung eine Vermutung.
