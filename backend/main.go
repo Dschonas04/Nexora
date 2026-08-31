@@ -112,11 +112,14 @@ func main() {
 	defer rd.Schliessen()
 
 	h := &handlers.Server{
-		Pool:      pool,
-		Secret:    []byte(secret),
-		Ablage:    speicher,
-		Sitzungen: handlers.NeuerSitzungsSpeicher(),
-		Redis:     rd,
+		Pool: pool,
+		// Nur für pg_dump bei der Sicherung; jede andere Abfrage geht über den
+		// Vorrat oben.
+		DatenbankURL: dbURL,
+		Secret:       []byte(secret),
+		Ablage:       speicher,
+		Sitzungen:    handlers.NeuerSitzungsSpeicher(),
+		Redis:        rd,
 		SSO: handlers.SSOEinstellungen{
 			Konf:            k,
 			OeffentlicheURL: k.OeffentlicheURL,
@@ -286,6 +289,11 @@ func main() {
 			// derselben Karte wie die übrigen Einstellungen; ein eigener Weg,
 			// weil Einschalten allein nichts nützt und der fertige Abschnitt
 			// für prometheus.yml daneben gehört.
+			// Die vollständige Sicherung. Datenbank und Anhänge in einem
+			// Archiv, als Strom durch den Browser; siehe sicherung.go.
+			r.Get("/system/sicherung/umfang", h.SicherungUmfang)
+			r.Get("/system/sicherung", h.Sicherung)
+
 			r.Get("/system/metriken", h.MetrikenZustand)
 			r.Post("/system/metriken/token", h.MetrikenTokenNeu)
 			r.Delete("/system/metriken/token", h.MetrikenAus)

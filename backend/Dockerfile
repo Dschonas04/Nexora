@@ -7,10 +7,20 @@ COPY . .
 RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -trimpath -o /nexora ./
 
 FROM alpine:3.19
-# poppler-utils supplies pdftotext for the full text in PDF attachments.
-# Extraction code purely in Go would manage without this dependency but fails on
-# many real PDFs: font encodings, columns, embedded images.
-RUN apk add --no-cache poppler-utils \
+# Zwei Werkzeuge, die der Dienst als eigene Prozesse aufruft.
+#
+# poppler-utils liefert pdftotext für den Volltext aus PDF-Anhängen. Rein in Go
+# ginge es ohne, scheitert aber an vielen echten PDF-Dateien: Schriftkodierungen,
+# Spalten, eingebettete Bilder.
+#
+# postgresql16-client liefert pg_dump für die Sicherung. Der Dump kommt aus dem
+# Werkzeug und nicht aus eigener SQL-Ausgabe: was gesichert wird, muss
+# zurückspielbar sein, und pg_dump erzeugt genau die Form, die psql wieder
+# einliest. Drei Megabyte im Abbild dafür.
+#
+# ACHTUNG bei der Hauptversion: pg_dump weigert sich, einen NEUEREN Server zu
+# sichern. Steht hier 16 und läuft die Datenbank auf 17, muss diese Zeile mit.
+RUN apk add --no-cache poppler-utils postgresql16-client \
  && adduser -D -u 10001 nexora \
  && mkdir -p /data/attachments \
  && chown -R nexora:nexora /data

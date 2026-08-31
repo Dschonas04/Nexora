@@ -336,6 +336,8 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `GET` | `/system/anmeldungen` | Sign-in attempts, see above · admin |
 | `GET` | `/system/puls` | Live state, polled every two seconds by the system view: the last minute in one-second buckets, the connection pool, the process, the database · admin |
 | `POST` | `/system/grenzprobe` | Reads a body and discards it, answering with the byte count. The interface uses it to *measure* how large a transfer may really be: nginx in front has its own `client_max_body_size`, which Nexora cannot read and should not have to · admin |
+| `GET` | `/system/sicherung/umfang` | What a backup would contain, and whether it can be made at all · admin |
+| `GET` | `/system/sicherung` | The whole instance as a streamed ZIP: `pg_dump` plus every attachment · admin |
 | `GET` | `/system/metriken` | Whether the metrics endpoint is on, when it was last scraped, and the ready-made `prometheus.yml` block with the token in it · admin |
 | `POST` | `/system/metriken/token` | Generate a token and store it, switching the endpoint on. A new one invalidates the old at once · admin |
 | `DELETE` | `/system/metriken/token` | Clear it; `/metrics` answers 404 again · admin |
@@ -381,6 +383,43 @@ outside looks like a slow database while the database is idle.
 `prozess` is heap, goroutines and cores. `datenbank` is size, cache hit ratio
 and total backends — the hit ratio being the number that says whether more
 `shared_buffers` would buy anything.
+
+#### `GET /system/sicherung`
+
+Database **and** attachments in one archive, because the database is not the
+whole holding: attachments are files beside it, and a dump alone leaves rows in
+`attachments` pointing at nothing. Whoever finds that out while restoring finds
+it out too late. Attachments are read through the storage interface, so the same
+backup works whether they sit on disk or in an object store.
+
+```
+nexora-sicherung-2026-08-31_1120/
+  LIESMICH.md        what this is and how to restore it
+  datenbank.sql      pg_dump --no-owner --no-privileges --clean --if-exists
+  anhaenge/<id>      one file per row in attachments, named by its id
+  FERTIG             written last
+```
+
+**Check for `FERTIG` before trusting the archive.** A backup that broke off
+mid-stream is still a *valid* ZIP and opens fine — half a backup would otherwise
+be indistinguishable from a whole one. The marker is the last entry written, so
+its presence means everything before it got through.
+
+The **search index is not in it and does not need to be**: `such_tsv` is a
+`GENERATED` column, so `pg_dump` writes its definition rather than its data and
+PostgreSQL recomputes it on restore. The same goes for the GIN index over it.
+
+The response is streamed rather than assembled, or the whole holding would sit in
+memory twice at exactly the size where a backup starts to matter. It is also
+detached from the router's 30-second timeout — watching `r.Context()` would be
+wrong here, since a client going away and that timeout are indistinguishable
+there, and the backup would break off after thirty seconds every time. A client
+that does go away still ends it: writing to a closed connection fails and
+`pg_dump` gets a broken pipe.
+
+`config.conf` is **not** included; it lives on the host and holds its own
+secrets. Everything else is: password hashes, sessions, share tokens. This is
+the most sensitive file the instance will ever hand out.
 
 ### Maintenance
 

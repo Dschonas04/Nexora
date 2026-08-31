@@ -455,6 +455,19 @@ export interface MetrikenZustand {
   prometheus: string;
 }
 
+// SicherungUmfang sagt vorher, was in eine Sicherung ginge. Vorher, weil bei
+// einem Bestand von mehreren Gigabyte niemand den Knopf drücken und dann raten
+// soll, ob es hängt oder nur dauert.
+export interface SicherungUmfang {
+  datenbankBytes: number;
+  anhaenge: number;
+  anhaengeBytes: number;
+  ablage: string;
+  geschaetztBytes: number;
+  bereit: boolean;
+  fehler: string;
+}
+
 // Gruppe is a group of accounts. Groups belong to the installation, not to an
 // account: a department is not a private matter.
 export interface Gruppe {
@@ -666,6 +679,10 @@ export const api = {
     }),
   systemZustand: () => req<SystemZustand>("/system"),
   puls: () => req<Puls>("/system/puls"),
+  sicherungUmfang: () => req<SicherungUmfang>("/system/sicherung/umfang"),
+  // Kein req: die Antwort ist ein Archiv und kein JSON, und sie kann Gigabyte
+  // groß sein. Der Browser lädt sie selbst herunter, der Keks geht mit.
+  sicherungAdresse: "/api/system/sicherung",
   metriken: () => req<MetrikenZustand>("/system/metriken"),
   metrikenTokenNeu: () => req<MetrikenZustand>("/system/metriken/token", { method: "POST" }),
   metrikenAus: () => req<MetrikenZustand>("/system/metriken/token", { method: "DELETE" }),
