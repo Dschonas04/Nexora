@@ -570,6 +570,24 @@ export const api = {
       method: "DELETE",
     }),
   systemZustand: () => req<SystemZustand>("/system"),
+  // Schickt so viele Megabyte los und meldet, ob sie ankommen. Nicht über req:
+  // der Rumpf ist kein JSON, und eine abgeschnittene Verbindung ist hier ein
+  // Ergebnis und kein Fehler.
+  grenzprobe: async (mb: number): Promise<boolean> => {
+    try {
+      const r = await fetch("/api/system/grenzprobe", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/octet-stream" },
+        body: new Blob([new Uint8Array(Math.round(mb * 1024 * 1024))]),
+      });
+      return r.ok;
+    } catch {
+      // nginx antwortet auf einen zu großen Rumpf nicht immer mit 413,
+      // sondern kappt die Verbindung. Für die Messung ist das dasselbe.
+      return false;
+    }
+  },
   anmeldungen: (p: { nur?: string; ip?: string; tage?: number; limit?: number } = {}) => {
     const q = new URLSearchParams();
     if (p.nur) q.set("nur", p.nur);

@@ -219,6 +219,40 @@ export default function EinstellungenView() {
     api.ablageZustand().then((a) => setAblage(a.ablage)).catch(() => setAblage(""));
   }, []);
 
+  // Die wirksame Grenze für eine Übertragung. Sie wird gemessen und nicht
+  // gelesen: was der nginx davor erlaubt, weiß Nexora nicht, siehe
+  // grenzprobe.go. Gemessen wird deshalb von hier aus, vom Browser, denn das
+  // ist die Strecke, auf der es später schiefgeht.
+  const [grenze, setGrenze] = useState<{
+    laeuft: string;
+    wirksam: number | null;
+    eingestellt: number;
+  } | null>(null);
+
+  const grenzeMessen = async () => {
+    const eingestellt = Number(entwurf["max_anhang_mb"]) || 25;
+    setGrenze({ laeuft: `${eingestellt} MB`, wirksam: null, eingestellt });
+
+    // Erst der eingestellte Wert. Kommt er durch, ist die Frage beantwortet und
+    // es braucht keine weitere Übertragung.
+    if (await api.grenzprobe(eingestellt)) {
+      setGrenze({ laeuft: "", wirksam: eingestellt, eingestellt });
+      return;
+    }
+
+    // Sonst einschachteln. Halbieren statt hochzählen: sechs Übertragungen
+    // reichen für ein halbes Megabyte genau, aufsteigend wären es fünfzig.
+    let unten = 0;
+    let oben = eingestellt;
+    while (oben - unten > 0.5) {
+      const mitte = Math.round(((unten + oben) / 2) * 10) / 10;
+      setGrenze({ laeuft: `${mitte} MB`, wirksam: null, eingestellt });
+      if (await api.grenzprobe(mitte)) unten = mitte;
+      else oben = mitte;
+    }
+    setGrenze({ laeuft: "", wirksam: unten, eingestellt });
+  };
+
   // Maintenance. The file is fetched only when the section is opened: it
   // contains credentials, masked though they are, and is none of the business of
   // somebody who only wanted to change the colours.
@@ -1108,13 +1142,43 @@ export default function EinstellungenView() {
               {kachel(z.zahlen?.anhaenge ?? 0, "Dateien")}
               {kachel(bytes(z.anhaengeBytes ?? 0), "Belegt")}
             </div>
-            <div className="warnkasten">
-              <strong>Der nginx davor hat eine eigene Grenze</strong>
-              <div className="muted small">
-                Ein hier erhöhter Wert bringt nichts, solange <code>client_max_body_size</code>{" "}
-                im vorgeschalteten nginx kleiner ist — der bricht die Übertragung dann schon
-                ab, bevor Nexora sie überhaupt sieht.
+            <div className="einstellung">
+              <div className="einstellung-kopf">
+                <div>
+                  <div className="einstellung-titel">Wirksame Grenze messen</div>
+                  <div className="einstellung-erklaerung">
+                    Schickt aus diesem Browser eine Übertragung von der eingestellten Größe
+                    los und sieht nach, ob sie ankommt. Kommt sie nicht durch, wird die
+                    Grenze eingeschachtelt, bis sie auf ein halbes Megabyte genau feststeht.
+                    Gemessen wird damit die ganze Strecke, also auch jeder nginx dazwischen.
+                  </div>
+                  <div className="einstellung-warnung">
+                    Dabei werden ein paar Dutzend Megabyte übertragen und sofort verworfen.
+                    Über eine langsame Leitung dauert das entsprechend.
+                  </div>
+                </div>
+                <div className="einstellung-feld">
+                  <button
+                    className="btn"
+                    disabled={!!grenze?.laeuft}
+                    onClick={grenzeMessen}
+                  >
+                    {grenze?.laeuft ? `Prüft ${grenze.laeuft}…` : "Messen"}
+                  </button>
+                </div>
               </div>
+              {grenze && !grenze.laeuft && grenze.wirksam !== null && (
+                <div
+                  className={
+                    grenze.wirksam >= grenze.eingestellt ? "hinweis-ok" : "fehler"
+                  }
+                >
+                  {grenze.wirksam >= grenze.eingestellt
+                    ? `${grenze.eingestellt} MB kommen durch. Der eingestellte Wert gilt wirklich.`
+                    : `Nur ${grenze.wirksam} MB kommen durch, eingestellt sind ${grenze.eingestellt} MB. ` +
+                      `Etwas auf der Strecke bricht vorher ab, in aller Regel client_max_body_size in einem nginx davor.`}
+                </div>
+              )}
             </div>
 
             <h3>Wo die Dateien liegen</h3>

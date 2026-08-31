@@ -266,6 +266,10 @@ func main() {
 			r.Get("/system/anmeldungen", h.ListAnmeldungen)
 			r.Post("/system/suchindex", h.IndexNeuAufbauen)
 			r.Post("/system/anhangindex", h.AnhangIndexNachziehen)
+			// Nimmt einen Rumpf an und wirft ihn weg. Damit misst die
+			// Oberfläche, wie groß eine Übertragung durch alles hindurch
+			// wirklich sein darf, siehe grenzprobe.go.
+			r.Post("/system/grenzprobe", h.Grenzprobe)
 			r.Get("/system/ablage", h.AblageZustand)
 			r.Post("/system/ablage/test", h.S3Testen)
 
