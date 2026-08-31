@@ -1458,12 +1458,15 @@ export default function EinstellungenView() {
 
                 <h3>Grafana</h3>
                 <p className="muted small">
-                  Ein fertiges Bild liegt im Quelltextbestand unter{" "}
-                  <code>grafana/nexora.json</code>. In Grafana über <em>Dashboards, New,
-                  Import</em> hochladen und die Prometheus-Datenquelle wählen. Vierzehn Felder
-                  in vier Reihen: auf einen Blick, Verkehr, die Datenbank, Bestand und
-                  Anmeldungen.
+                  Vierzehn Felder in vier Reihen: auf einen Blick, Verkehr, die Datenbank,
+                  Bestand und Anmeldungen. Herunterladen, in Grafana über <em>Dashboards,
+                  New, Import</em> hochladen, Prometheus als Datenquelle wählen.
                 </p>
+                <div className="knopfreihe">
+                  <a className="btn" href="/api/system/metriken/grafana.json">
+                    Grafana-Bild herunterladen
+                  </a>
+                </div>
                 <p className="muted small">
                   Das Feld, wegen dem es sich lohnt, heißt <em>Verbindungen zum Vorrat</em>.
                   Klebt die Belegung an der gestrichelten Obergrenze, während daneben die
