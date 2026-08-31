@@ -434,6 +434,34 @@ pruefe "ohne Losungswort nicht vorhanden" "404" "$(code "$BASIS/metrics")"
 pruefe "auch mit erfundenem Losungswort nicht" "404" \
        "$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer erfunden' "$BASIS/metrics")"
 
+# Einschalten aus dem Panel heraus. Das Losungswort wird erzeugt, nicht
+# eingetippt, und muss danach sofort gelten: es steht in der Datenbank, und
+# der Zwischenspeicher muss mitgezogen sein, sonst gaelte weiter der alte Wert.
+pruefe "Zustand ist lesbar" "200" "$(code "$BASIS/api/system/metriken")"
+pruefe "anfangs aus" "False" "$(hole "$BASIS/api/system/metriken" | feld "['aktiv']")"
+WORT=$(hole -X POST "$BASIS/api/system/metriken/token" | feld "['token']")
+pruefe "ein Losungswort wurde erzeugt" "48" "$(printf '%s' "$WORT" | wc -c | tr -d ' ')"
+pruefe "jetzt an" "True" "$(hole "$BASIS/api/system/metriken" | feld "['aktiv']")"
+pruefe "und der Weg antwortet" "200" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $WORT" "$BASIS/metrics")"
+pruefe "mit einem alten Wort nicht" "404" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer erfunden' "$BASIS/metrics")"
+pruefe "das Abholen wird vermerkt" "True" \
+       "$(hole "$BASIS/api/system/metriken" | python3 -c 'import json,sys;print(json.load(sys.stdin)["abholungen"] > 0)')"
+pruefe "der fertige Abschnitt traegt das Wort" "True" \
+       "$(hole "$BASIS/api/system/metriken" | WORT="$WORT" python3 -c '
+import json, os, sys
+print(os.environ["WORT"] in json.load(sys.stdin)["prometheus"])')"
+# Ein neues Wort macht das alte sofort ungueltig.
+NEU=$(hole -X POST "$BASIS/api/system/metriken/token" | feld "['token']")
+pruefe "das alte Wort gilt nicht mehr" "404" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $WORT" "$BASIS/metrics")"
+pruefe "das neue schon" "200" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $NEU" "$BASIS/metrics")"
+pruefe "abgeschaltet" "200" "$(code -X DELETE "$BASIS/api/system/metriken/token")"
+pruefe "danach gibt es den Weg nicht mehr" "404" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $NEU" "$BASIS/metrics")"
+
 echo "== Verzeichnis-Verwaltung"
 # Nachsehen darf ein Administrator immer, auch ohne Lizenz: sonst sieht eine
 # Instanz nicht einmal, dass da etwas eingerichtet ist, das nicht laeuft.

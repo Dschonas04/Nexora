@@ -49,6 +49,12 @@ var bekannt = map[string]struct {
 	Erklaerung string
 	Warnung    string
 }{
+	"metriken_token": {
+		Art:        "text",
+		Titel:      "Losungswort für die Kennzahlen",
+		Erklaerung: "Leer heißt: den Weg /metrics gibt es nicht, er antwortet mit 404. Gesetzt heißt: wer dieses Wort mitschickt, darf die Kennzahlen abholen.",
+		Warnung:    "Verwaltet wird das unter Kennzahlen und nicht hier: dort steht der fertige Abschnitt für prometheus.yml gleich daneben.",
+	},
 	"registrierung_offen": {
 		Art:        "janein",
 		Titel:      "Selbstregistrierung",
@@ -164,6 +170,8 @@ func ausDatei(schluessel string, k config.Konfig) string {
 		return "grau"
 	case "design_akzent":
 		return "#2383e2"
+	case "metriken_token":
+		return k.MetrikenToken
 	}
 	return ""
 }
@@ -180,14 +188,17 @@ func janein(b bool) string {
 // once, without a restart.
 func RegistrierungOffen() bool { return wert("registrierung_offen") == "ja" }
 
-// MetrikenToken ist das Losungswort für /metrics. Nur aus der Datei, nie aus
-// der Datenbank: es ist ein Geheimnis, und Geheimnisse in einer Datenbankzeile
-// nimmt jeder Dump mit.
-func MetrikenToken() string {
-	speicher.RLock()
-	defer speicher.RUnlock()
-	return speicher.basis.MetrikenToken
-}
+// MetrikenToken ist das Losungswort für /metrics. Datenbank vor Datei, wie bei
+// jeder anderen Einstellung.
+//
+// Damit weicht es von den übrigen Geheimnissen ab, die ausdrücklich nur in der
+// Datei stehen dürfen, und der Grund ist ein Unterschied in der Sache: das
+// Passwort des LDAP-Dienstkontos öffnet ein FREMDES System, ein Dump wäre also
+// ein Schlüssel zu etwas, das der Dump selbst nicht enthält. Dieses Wort
+// schützt dagegen nur eine Zusammenfassung dessen, was ohnehin in derselben
+// Datenbank steht. Wer den Dump hat, hat bereits mehr, als die Kennzahlen ihm
+// sagen könnten.
+func MetrikenToken() string { return wert("metriken_token") }
 
 func ErlaubteDomaenen() []string {
 	var out []string
@@ -444,6 +455,52 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 	s.spurAusRequest(r, AktEinstellung, "einstellung", req.Schluessel, b.Titel,
 		map[string]interface{}{"wert": wertNeu})
 	writeJSON(w, http.StatusOK, map[string]string{"wert": wertNeu})
+}
+
+// einstellungSchreiben legt einen Wert ab und zieht den Zwischenspeicher nach.
+//
+// Herausgezogen, weil neben SetzeEinstellung inzwischen ein zweiter Weg schreibt
+// (das erzeugte Losungswort für die Kennzahlen). Zweimal dasselbe INSERT wäre
+// zweimal die Gelegenheit, den Zwischenspeicher zu vergessen, und dann stünde
+// der neue Wert in der Datenbank und der alte gälte weiter.
+func (s *Server) einstellungSchreiben(ctx context.Context, schluessel, wertNeu string) error {
+	_, err := s.Pool.Exec(ctx,
+		`INSERT INTO einstellungen (schluessel, wert, geaendert_von) VALUES ($1, $2, $3)
+		 ON CONFLICT (schluessel) DO UPDATE
+		 SET wert = EXCLUDED.wert, geaendert_am = now(), geaendert_von = EXCLUDED.geaendert_von`,
+		schluessel, wertNeu, "")
+	if err != nil {
+		return err
+	}
+	speicher.Lock()
+	speicher.werte[schluessel] = wertNeu
+	speicher.Unlock()
+	return nil
+}
+
+// speicherBasisToken und speicherWertFehlt beantworten die eine Frage, die die
+// Verwaltung der Kennzahlen stellt: kommt das Wort aus der Datei? Dann lässt es
+// sich hier zwar überschreiben, aber nicht wirklich abschalten, denn nach einem
+// Neustart stünde die Datei wieder da.
+func speicherBasisToken() string {
+	speicher.RLock()
+	defer speicher.RUnlock()
+	return speicher.basis.MetrikenToken
+}
+
+func speicherWertFehlt(schluessel string) bool {
+	speicher.RLock()
+	defer speicher.RUnlock()
+	_, da := speicher.werte[schluessel]
+	return !da
+}
+
+// speicherOeffentlicheURL ist die Adresse, unter der die Instanz erreichbar
+// ist, soweit sie jemand eingetragen hat.
+func speicherOeffentlicheURL() string {
+	speicher.RLock()
+	defer speicher.RUnlock()
+	return speicher.basis.OeffentlicheURL
 }
 
 // LoescheEinstellung removes the override and lets the file value take over

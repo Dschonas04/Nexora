@@ -443,6 +443,18 @@ export interface Puls {
   };
 }
 
+// MetrikenZustand: ob die Kennzahlen an sind, wann zuletzt abgeholt wurde, und
+// der fertige Abschnitt für prometheus.yml mit dem Losungswort darin.
+export interface MetrikenZustand {
+  aktiv: boolean;
+  token: string;
+  abholungen: number;
+  ausDerDatei: boolean;
+  zuletztAbgeholt?: string;
+  vorSekunden?: number;
+  prometheus: string;
+}
+
 // Gruppe is a group of accounts. Groups belong to the installation, not to an
 // account: a department is not a private matter.
 export interface Gruppe {
@@ -654,6 +666,9 @@ export const api = {
     }),
   systemZustand: () => req<SystemZustand>("/system"),
   puls: () => req<Puls>("/system/puls"),
+  metriken: () => req<MetrikenZustand>("/system/metriken"),
+  metrikenTokenNeu: () => req<MetrikenZustand>("/system/metriken/token", { method: "POST" }),
+  metrikenAus: () => req<MetrikenZustand>("/system/metriken/token", { method: "DELETE" }),
   ldapEinrichtung: () => req<LDAPEinrichtung>("/system/ldap"),
   ldapTesten: (benutzer: string, passwort: string) =>
     req<LDAPTestErgebnis>("/system/ldap/test", {

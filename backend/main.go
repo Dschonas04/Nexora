@@ -282,6 +282,13 @@ func main() {
 			// Der Live-Stand, im Sekundentakt abgefragt. Zählt sich selbst
 			// nicht mit, siehe middleware/messen.go.
 			r.Get("/system/puls", h.PulsAnsicht)
+			// Die Kennzahlen an- und ausschalten. Das Losungswort steht in
+			// derselben Karte wie die übrigen Einstellungen; ein eigener Weg,
+			// weil Einschalten allein nichts nützt und der fertige Abschnitt
+			// für prometheus.yml daneben gehört.
+			r.Get("/system/metriken", h.MetrikenZustand)
+			r.Post("/system/metriken/token", h.MetrikenTokenNeu)
+			r.Delete("/system/metriken/token", h.MetrikenAus)
 			r.Post("/system/suchindex", h.IndexNeuAufbauen)
 			r.Post("/system/anhangindex", h.AnhangIndexNachziehen)
 			// Nimmt einen Rumpf an und wirft ihn weg. Damit misst die
