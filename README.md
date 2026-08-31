@@ -20,6 +20,11 @@ reference documents for the [API](docs/api.md), the
 [configuration](docs/configuration.md), the [data model](docs/data-model.md),
 [operations](docs/operations.md) and [development](docs/development.md).
 
+Licensing is in [LICENSING.md](LICENSING.md); what Nexora ships from other
+people, and under which terms, is listed in
+[THIRD-PARTY.md](THIRD-PARTY.md) — generated, and checked by CI on every run so
+it cannot quietly go stale.
+
 ## Stack
 
 | Layer    | Tech                                                     |
