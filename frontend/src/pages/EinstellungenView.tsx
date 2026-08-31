@@ -953,7 +953,7 @@ export default function EinstellungenView() {
                 </thead>
                 <tbody>
                   {(a?.versuche ?? []).map((v, i) => (
-                    <tr key={i} className={v.erfolg ? "gelungen" : "fehl"}>
+                    <tr key={i} className={v.erfolg ? undefined : "fehl"}>
                       <td className="einzeilig">{zeitpunkt(v.zeitpunkt)}</td>
                       <td className="einzeilig">{v.erfolg ? "angemeldet" : "abgewiesen"}</td>
                       <td>

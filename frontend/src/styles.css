@@ -3109,13 +3109,10 @@ textarea::placeholder {
   min-width: 140px;
 }
 
-/* Der Zustand steht als Wort in der Spalte. Die Farbe an der Kante kommt dazu,
-   sie ersetzt das Wort nicht: fuer einen Teil der Leute waere Farbe allein
-   ueberhaupt keine Angabe. */
-.verbund-tabelle tbody tr.laeuft td:first-child {
-  box-shadow: inset 3px 0 0 var(--erfolg-text);
-}
-
+/* Der Zustand steht als Wort in der Spalte. Eine Kante bekommt nur der Dienst,
+   der fehlt. Der Normalfall braucht keine Markierung: wenn alle acht Zeilen
+   einen gruenen Strich tragen, markiert der Strich nichts mehr, sondern
+   verrauscht die Tabelle. Auffallen soll die Ausnahme. */
 .verbund-tabelle tbody tr.fehlt td:first-child {
   box-shadow: inset 3px 0 0 var(--fehler-text);
 }
@@ -3276,14 +3273,13 @@ textarea::placeholder {
   opacity: 0.75;
 }
 
-/* Anmeldeversuche. Die Farbe an der Kante ist eine Zugabe, das Ergebnis steht
-   als Wort in der eigenen Spalte: Farbe allein wäre für einen Teil der Leute
-   überhaupt keine Angabe. */
+/* Anmeldeversuche. Eine Kante bekommt nur der fehlgeschlagene Versuch, aus
+   demselben Grund wie beim Verbund: die gelungenen sind die Mehrzahl, und was
+   in jeder Zeile steht, hebt keine hervor. Das Ergebnis steht ohnehin als Wort
+   in der eigenen Spalte, Farbe allein waere fuer einen Teil der Leute
+   ueberhaupt keine Angabe. */
 .anmelde-tabelle tbody tr.fehl td:first-child {
   box-shadow: inset 3px 0 0 var(--fehler-text);
-}
-.anmelde-tabelle tbody tr.gelungen td:first-child {
-  box-shadow: inset 3px 0 0 var(--erfolg-text);
 }
 .anmelde-tabelle td code {
   overflow-wrap: anywhere;
