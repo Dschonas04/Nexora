@@ -303,6 +303,10 @@ func main() {
 			r.Get("/system/sicherung/umfang", h.SicherungUmfang)
 			r.Post("/system/sicherung/token", h.SicherungTokenNeu)
 			r.Delete("/system/sicherung/token", h.SicherungTokenWeg)
+			// Das Gegenstück: eine Sicherung wieder einspielen. Nur mit
+			// Anmeldung, bewusst kein Losungswort — was den Bestand ersetzt,
+			// soll niemand aus einem Skript heraus anstoßen können.
+			r.Post("/system/wiederherstellung", h.Wiederherstellen)
 
 			r.Get("/system/metriken", h.MetrikenZustand)
 			r.Post("/system/metriken/token", h.MetrikenTokenNeu)

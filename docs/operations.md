@@ -96,6 +96,25 @@ Check for the file `FERTIG` inside before trusting an archive — a backup that
 broke off mid-stream is still a valid ZIP, and half a backup would otherwise look
 exactly like a whole one. `LIESMICH.md` beside it carries the restore commands.
 
+### Restoring one
+
+**Settings → Wartung → Sicherung einspielen**, pick the ZIP, confirm. Before
+anything is overwritten the current state is dumped into the data directory as
+`vor-wiederherstellung-<stamp>.sql` — that is the way back if the wrong archive
+was picked, and the restore refuses to run at all if that dump cannot be written.
+
+An archive without the `FERTIG` marker is rejected. The service restarts when it
+is done, and you will be signed out: the sessions now come from the archive.
+
+Attachments in the archive are written back through the storage interface, so it
+lands on disk or in the object store depending on how the target is configured —
+a backup taken from a disk instance restores into an S3 one and the other way
+round. Attachments already in storage that the archive does not mention are left
+alone.
+
+There is no token path for restoring, unlike for backing up. Replacing the whole
+holding should not be something a script can trigger.
+
 ### On a schedule
 
 A button in a browser is an action, not a schedule. For a timer, a script needs a
