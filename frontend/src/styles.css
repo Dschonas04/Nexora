@@ -1630,13 +1630,17 @@ textarea::placeholder {
   margin-top: 3px;
 }
 /* The warning stands directly under the explanation on purpose and not as an
-   icon beside it: what can go wrong belongs read, not skimmed. */
+   icon beside it: what can go wrong belongs read, not skimmed.
+
+   Ohne Balken an der Kante: der stand vor jeder Warnung, und was ueberall
+   steht, hebt nichts hervor. Abgesetzt ist sie jetzt durch den Abstand darueber
+   und dadurch, dass sie halbfett steht, waehrend die Erklaerung darueber im
+   gewoehnlichen Schnitt bleibt. */
 .einstellung-warnung {
   font-size: 12.5px;
   line-height: 1.5;
-  margin-top: 6px;
-  padding-left: 10px;
-  border-left: 3px solid var(--border);
+  margin-top: 8px;
+  font-weight: 500;
   color: var(--muted);
 }
 .einstellung-feld {
