@@ -109,7 +109,9 @@ export interface PublicPage {
 
 /** Die drei Satzspiegel. Eine feste Liste: hinter den Namen stehen Werte im
     Stilblatt, eine freie Pixelangabe wäre eine Zahl, die niemand mehr prüft. */
-export type Seitenbreite = "normal" | "breit" | "voll";
+// Der leere Wert heißt: keine eigene Wahl, es gilt die Vorgabe der Instanz aus
+// /design. Er ist der Ausgangszustand jeder Seite.
+export type Seitenbreite = "" | "normal" | "breit" | "voll";
 
 // PageVersion is one entry in a page's history. content is optional because the
 // list endpoint omits it and only a single fetched version carries it.
@@ -712,7 +714,7 @@ export const api = {
   },
   pruefspurAktionen: () => req<{ aktion: string; anzahl: number }[]>("/pruefspur/aktionen"),
 
-  design: () => req<{ grundton: string; akzent: string }>("/design"),
+  design: () => req<{ grundton: string; akzent: string; seitenbreite: string }>("/design"),
 
   einstellungen: () => req<Einstellung[]>("/einstellungen"),
   einstellungSetzen: (schluessel: string, wert: string) =>

@@ -102,6 +102,12 @@ var bekannt = map[string]struct {
 		Erklaerung: "Mehrere Konten schreiben gleichzeitig an derselben Seite, jeder sieht die Änderungen der anderen sofort. Wer mitschreiben darf, entscheidet die Freigabe der Seite: nur wer sie bearbeiten darf.",
 		Warnung:    "Aus heißt nicht abgeschaltet, sondern zurück auf das alte Verhalten: die Seite wird beim Speichern ganz geschrieben, und wer zuletzt speichert, gewinnt. Der Hinweis auf den Konflikt bleibt.",
 	},
+	"seitenbreite": {
+		Art:        "auswahl",
+		Titel:      "Breite einer Seite",
+		Erklaerung: "Wie breit der Text steht, wenn eine Seite nichts eigenes sagt. „voll“ nutzt das ganze Fenster, „normal“ hält einen schmalen Satzspiegel wie in einem Buch.",
+		Warnung:    "Eine Seite, an der jemand die Breite selbst gesetzt hat, behält sie. Diese Angabe gilt für alle übrigen.",
+	},
 	"design_grundton": {
 		Art:        "auswahl",
 		Titel:      "Grundton",
@@ -180,6 +186,8 @@ func ausDatei(schluessel string, k config.Konfig) string {
 		return k.SuchWoerterbuch
 	case "echtzeit":
 		return "ja"
+	case "seitenbreite":
+		return "voll"
 	case "design_grundton":
 		return "grau"
 	case "design_akzent":
@@ -206,6 +214,18 @@ func RegistrierungOffen() bool { return wert("registrierung_offen") == "ja" }
 // vorher, die Leitung fragt noch einmal: eine ausgeschaltete Funktion, die sich
 // über einen offen gelassenen Weg doch benutzen lässt, ist keine.
 func (s *Server) echtzeitAn() bool { return wert("echtzeit") == "ja" }
+
+// Seitenbreite ist die Vorgabe für Seiten, die selbst nichts sagen. Ein
+// unbekannter Wert wäre eine Klasse im Browser, die es nicht gibt, und damit
+// wieder der schmale Satzspiegel -- deshalb wird hier abgefangen und nicht
+// dort.
+func Seitenbreite() string {
+	b := wert("seitenbreite")
+	if !breiten[b] || b == "" {
+		return "voll"
+	}
+	return b
+}
 
 // MetrikenToken ist das Losungswort für /metrics. Datenbank vor Datei, wie bei
 // jeder anderen Einstellung.
@@ -295,6 +315,10 @@ func (s *Server) Design(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{
 		"grundton": wert("design_grundton"),
 		"akzent":   wert("design_akzent"),
+		// Die Breite steht hier und nicht bei den Einstellungen: die sind der
+		// Verwaltung vorbehalten, und diese Angabe braucht jeder, der eine
+		// Seite ansieht.
+		"seitenbreite": Seitenbreite(),
 	})
 }
 
@@ -340,6 +364,7 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 		"registrierung_offen", "erlaubte_domaenen",
 		"max_anhang_mb", "sitzung_stunden", "papierkorb_tage", "such_woerterbuch",
 		"echtzeit",
+		"seitenbreite",
 		"design_grundton", "design_akzent",
 	}
 
@@ -423,6 +448,12 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 	case "auswahl":
 		if req.Schluessel == "design_grundton" && !grundtoene[wertNeu] {
 			writeErr(w, http.StatusBadRequest, "erwartet weiss, grau oder dunkel")
+			return
+		}
+		// Die leere Breite gibt es nur an einer SEITE ("wie die Instanz es
+		// vorgibt"); als Vorgabe selbst wäre sie ein Verweis auf sich.
+		if req.Schluessel == "seitenbreite" && (wertNeu == "" || !breiten[wertNeu]) {
+			writeErr(w, http.StatusBadRequest, "erwartet normal, breit oder voll")
 			return
 		}
 	case "farbe":

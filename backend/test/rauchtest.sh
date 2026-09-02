@@ -347,7 +347,10 @@ pruefe "leere Liste wird abgewiesen" "400" \
 echo "== Satzspiegel einer Seite"
 BREIT=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
         -d '{"title":"Breite Seite"}' | feld "['id']")
-pruefe "steht anfangs auf normal" "normal" "$(hole "$BASIS/api/pages/$BREIT" | feld "['breite']")"
+# Leer heisst: keine eigene Wahl, es gilt die Vorgabe der Instanz.
+pruefe "steht anfangs auf der Vorgabe" "" "$(hole "$BASIS/api/pages/$BREIT" | feld "['breite']")"
+pruefe "und die ist volle Breite" "voll" \
+       "$(hole "$BASIS/api/design" | feld "['seitenbreite']")"
 pruefe "auf breit gesetzt" "200" \
        "$(code -X PUT "$BASIS/api/pages/$BREIT/breite" -H 'Content-Type: application/json' \
           -d '{"breite":"breit"}')"
@@ -355,6 +358,9 @@ pruefe "steht jetzt auf breit" "breit" "$(hole "$BASIS/api/pages/$BREIT" | feld 
 pruefe "Unsinn wird abgewiesen" "400" \
        "$(code -X PUT "$BASIS/api/pages/$BREIT/breite" -H 'Content-Type: application/json' \
           -d '{"breite":"riesig"}')"
+pruefe "zurueck auf die Vorgabe geht auch" "" \
+       "$(hole -X PUT "$BASIS/api/pages/$BREIT/breite" -H 'Content-Type: application/json' \
+          -d '{"breite":""}' | feld "['breite']")"
 
 echo "== Anmeldeversuche"
 # Die Auswertung rechnet mit Intervallen aus einer Zahl und mit FILTER-Zählungen.

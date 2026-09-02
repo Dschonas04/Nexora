@@ -14,6 +14,7 @@ import Attachments from "../components/Attachments";
 import Kommentare from "../components/Kommentare";
 import { useLizenz } from "../lizenz";
 import { useAuth } from "../auth";
+import { useDesign } from "../design";
 import { schriftAuf } from "../farbe";
 import LocalGraph from "../components/LocalGraph";
 import { useEingabe } from "../components/Rueckfrage";
@@ -108,6 +109,11 @@ export default function PageView({
   // Wer hier sitzt. Beim gemeinsamen Schreiben steht der Name am fremden
   // Cursor, damit man sieht, wem die Schreibmarke gehört, die da mitläuft.
   const { user } = useAuth();
+  // Die Vorgabe der Instanz für Seiten, die selbst nichts sagen.
+  const { design } = useDesign();
+  const vorgabe = design.seitenbreite || "voll";
+  const vorgabeName =
+    vorgabe === "normal" ? "normal" : vorgabe === "breit" ? "breit" : "volle Breite";
 
   // The state this editor starts from. As a ref, not as state: it is read while
   // saving but shall not trigger a new render.
@@ -484,6 +490,9 @@ export default function PageView({
   const sindDateien = (e: React.DragEvent) =>
     Array.from(e.dataTransfer.types).includes("Files");
 
+  // Die eigene Wahl der Seite schlägt die Vorgabe; leer heißt: keine Wahl.
+  const breiteWirksam = page.breite || vorgabe;
+
   return (
     <div
       className={"page-layout" + (ueberSeite > 0 ? " datei-abwurf" : "")}
@@ -587,6 +596,7 @@ export default function PageView({
                   <div className="klappliste" onMouseLeave={() => setBreiteOffen(false)}>
                     {(
                       [
+                        ["", "Vorgabe", `Wie die Instanz es setzt (${vorgabeName})`],
                         ["normal", "Normal", "Zum Lesen gesetzt"],
                         ["breit", "Breit", "Mehr Platz für Tabellen und Bilder"],
                         ["voll", "Volle Breite", "So breit wie das Fenster"],
@@ -594,7 +604,7 @@ export default function PageView({
                     ).map(([wert, titel, erklaerung]) => (
                       <button
                         key={wert}
-                        className={"klappeintrag" + (page.breite === wert ? " gewaehlt" : "")}
+                        className={"klappeintrag" + ((page.breite ?? "") === wert ? " gewaehlt" : "")}
                         onClick={async () => {
                           setBreiteOffen(false);
                           // Erst anzeigen, dann speichern: die Breite ist ein
@@ -654,7 +664,12 @@ export default function PageView({
         </div>
 
         <div className="editor-scroll">
-          <div className={"page" + (page.breite !== "normal" ? " " + page.breite : "")}>
+          {/* Ohne eigene Wahl gilt die Vorgabe der Instanz, und die steht auf
+              „voll“: der Satzspiegel war fest, und auf einem breiten Bildschirm
+              blieb links und rechts eine Handbreit Papier leer, während die
+              Tabelle daneben umbrach. Wer es schmal will, sagt es an der Seite
+              oder für die ganze Instanz. */}
+          <div className={"page" + (breiteWirksam !== "normal" ? " " + breiteWirksam : "")}>
             <input
               className="page-title"
               value={page.title}

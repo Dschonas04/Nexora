@@ -15,10 +15,12 @@ import { lesbarAuf, schriftAuf } from "./farbe";
 export interface Design {
   grundton: string;
   akzent: string;
+  /** Die Breite, in der eine Seite steht, die selbst nichts sagt. */
+  seitenbreite: string;
 }
 
 const Ctx = createContext<{ design: Design; neuLaden: () => void }>({
-  design: { grundton: "grau", akzent: "#2383e2" },
+  design: { grundton: "grau", akzent: "#2383e2", seitenbreite: "voll" },
   neuLaden: () => {},
 });
 
@@ -42,7 +44,11 @@ const GRUND: Record<string, string> = {
 //
 // Without that, white text stood on a light accent and a dark accent stood as a
 // link on a dark ground. Both were unreadable.
-export function anwenden(d: Design) {
+// Die Breite ist nicht Teil des Aussehens im engeren Sinn und wird hier auch
+// nicht angewandt -- sie steht nur mit im selben Abruf, weil sie dieselbe
+// Herkunft hat und jeder sie braucht. Deshalb nimmt anwenden nur, was es
+// wirklich setzt.
+export function anwenden(d: Pick<Design, "grundton" | "akzent">) {
   const wurzel = document.documentElement;
   wurzel.setAttribute("data-grundton", d.grundton);
 
@@ -53,7 +59,7 @@ export function anwenden(d: Design) {
 }
 
 export function DesignProvider({ children }: { children: ReactNode }) {
-  const [design, setDesign] = useState<Design>({ grundton: "grau", akzent: "#2383e2" });
+  const [design, setDesign] = useState<Design>({ grundton: "grau", akzent: "#2383e2", seitenbreite: "voll" });
   // Whose look is being asked for. /api/design needs a session, so before the
   // sign-in the call answers 401 -- and it has to be repeated afterwards.
   //
