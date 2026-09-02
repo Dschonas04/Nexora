@@ -5,7 +5,9 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 )
 
 // Eine Adresse ohne Port wird abgewiesen und nicht geraten: ein geratener Port
@@ -38,28 +40,6 @@ func TestZielPruefen(t *testing.T) {
 	}
 }
 
-// Der Port faellt weg, weil Prometheus den des Exporters fuehrt (9100) und die
-// Liste den, an dem angeklopft wird (22). Ohne das faende nichts zusammen.
-func TestInstanzSchluessel(t *testing.T) {
-	faelle := map[string]string{
-		"10.0.0.5:22":            "10.0.0.5",
-		"10.0.0.5:9100":          "10.0.0.5",
-		"http://10.0.0.5:9090":   "10.0.0.5",
-		"https://Nas.Fritz.Box/": "nas.fritz.box",
-		"nas":                    "nas",
-		"":                       "",
-	}
-	for ein, erwartet := range faelle {
-		if raus := instanzSchluessel("", ein); raus != erwartet {
-			t.Errorf("%q ergab %q, erwartet %q", ein, raus, erwartet)
-		}
-	}
-	// Die eingetragene Kennung schlaegt das Ziel.
-	if raus := instanzSchluessel("wirt-7:9100", "10.0.0.5:22"); raus != "wirt-7" {
-		t.Errorf("Kennung nicht bevorzugt: %q", raus)
-	}
-}
-
 // Anklopfen misst an einem offenen Port und an einem geschlossenen, damit beide
 // Zweige einmal wirklich gelaufen sind.
 func TestAnklopfen(t *testing.T) {
@@ -78,14 +58,14 @@ func TestAnklopfen(t *testing.T) {
 		}
 	}()
 
-	if da, _, hinweis := anklopfen(context.Background(), horcher.Addr().String()); !da {
-		t.Fatalf("offener Port gilt als still: %s", hinweis)
+	if m := anklopfen(context.Background(), horcher.Addr().String()); !m.Da {
+		t.Fatalf("offener Port gilt als still: %s", m.Hinweis)
 	}
 
 	// Ein Port, auf dem nichts horcht: derselbe Horcher, nachdem er zu ist.
 	zu := horcher.Addr().String()
 	horcher.Close()
-	if da, _, _ := anklopfen(context.Background(), zu); da {
+	if m := anklopfen(context.Background(), zu); m.Da {
 		t.Fatal("geschlossener Port gilt als erreichbar")
 	}
 }
@@ -98,11 +78,11 @@ func TestAnklopfenHTTPMitFehlerstatus(t *testing.T) {
 	}))
 	defer dienst.Close()
 
-	da, _, hinweis := anklopfen(context.Background(), dienst.URL)
-	if !da {
+	m := anklopfen(context.Background(), dienst.URL)
+	if !m.Da {
 		t.Fatal("404 gilt als still")
 	}
-	if hinweis == "" {
+	if m.Hinweis == "" {
 		t.Fatal("der Status fehlt im Hinweis")
 	}
 }
@@ -116,8 +96,8 @@ func TestAnklopfenNimmtSelbstUnterschriebenesZertifikat(t *testing.T) {
 	}))
 	defer dienst.Close()
 
-	if da, _, hinweis := anklopfen(context.Background(), dienst.URL); !da {
-		t.Fatalf("selbst unterschriebenes HTTPS gilt als still: %s", hinweis)
+	if m := anklopfen(context.Background(), dienst.URL); !m.Da {
+		t.Fatalf("selbst unterschriebenes HTTPS gilt als still: %s", m.Hinweis)
 	}
 }
 
@@ -131,8 +111,8 @@ func TestAnklopfenFolgtKeinerUmleitung(t *testing.T) {
 	}))
 	defer dienst.Close()
 
-	da, _, _ := anklopfen(context.Background(), dienst.URL)
-	if !da {
+	m := anklopfen(context.Background(), dienst.URL)
+	if !m.Da {
 		t.Fatal("eine Umleitung ist auch eine Antwort")
 	}
 	if besucht != 1 {
@@ -140,39 +120,108 @@ func TestAnklopfenFolgtKeinerUmleitung(t *testing.T) {
 	}
 }
 
-// Die Antwort des Prometheus wird nach dem Rechnernamen sortiert, und der Wert
-// steht in value[1] als Zeichenkette.
-func TestPrometheusFragen(t *testing.T) {
-	dienst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Query().Get("query") != "node_uname_info" {
-			t.Errorf("unerwartete Abfrage: %q", r.URL.Query().Get("query"))
-		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"success","data":{"resultType":"vector","result":[
-		  {"metric":{"__name__":"node_uname_info","instance":"10.0.0.5:9100","release":"6.1.0-38","sysname":"Linux"},
-		   "value":[1788000000,"1"]}]}}`))
-	}))
-	defer dienst.Close()
-
-	nach := prometheusFragen(context.Background(), dienst.URL, "node_uname_info")
-	reihe, ok := nach["10.0.0.5"]
-	if !ok {
-		t.Fatalf("Rechner nicht gefunden, bekam %v", nach)
+// Ein Dienst, der sich beim Verbindungsaufbau vorstellt -- wie es jeder
+// SSH-Dienst tut --, landet mit seiner Kennung in der Spalte. Das ist die
+// Antwort auf "welche Fassung laeuft da", ohne Anmeldung und ohne Prometheus.
+func TestAnklopfenLiestDieBegruessung(t *testing.T) {
+	horcher, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
 	}
-	if reihe.Labels["release"] != "6.1.0-38" || reihe.Wert != "1" {
-		t.Fatalf("falsch gelesen: %+v", reihe)
+	defer horcher.Close()
+	go func() {
+		c, err := horcher.Accept()
+		if err != nil {
+			return
+		}
+		c.Write([]byte("SSH-2.0-OpenSSH_9.2p1 Debian-2+deb12u6\r\n"))
+		c.Close()
+	}()
+
+	m := anklopfen(context.Background(), horcher.Addr().String())
+	if !m.Da {
+		t.Fatal("Dienst gilt als still")
+	}
+	if m.Fassung != "SSH-2.0-OpenSSH_9.2p1 Debian-2+deb12u6" {
+		t.Fatalf("Kennung falsch gelesen: %q", m.Fassung)
 	}
 }
 
-// Antwortet der Prometheus nicht, bleibt die Spalte leer und die Uebersicht
-// steht trotzdem. Eine Nebenquelle darf die Hauptaussage nicht mitreissen.
-func TestPrometheusStilleStoertNicht(t *testing.T) {
-	dienst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
+// Wer nichts sagt, sagt nichts: die Spalte bleibt leer, und die Messung haengt
+// nicht in der Frist fest.
+func TestStillerPortHatKeineKennung(t *testing.T) {
+	horcher, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer horcher.Close()
+	go func() {
+		for {
+			c, err := horcher.Accept()
+			if err != nil {
+				return
+			}
+			// Annehmen und schweigen, wie es etwa eine Datenbank tut.
+			defer c.Close()
+		}
+	}()
+
+	beginn := time.Now()
+	m := anklopfen(context.Background(), horcher.Addr().String())
+	if !m.Da || m.Fassung != "" {
+		t.Fatalf("erwartet erreichbar ohne Kennung, bekam %+v", m)
+	}
+	if time.Since(beginn) > 2*time.Second {
+		t.Fatalf("zu lange gewartet: %s", time.Since(beginn))
+	}
+}
+
+// Die Kopfzeile Server ist die Fassung, die ein Webdienst selbst nennt, und das
+// Zertifikat sagt, wie lange es noch gilt.
+func TestAnklopfenLiestServerUndZertifikat(t *testing.T) {
+	dienst := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Server", "nginx/1.27.4")
+		w.WriteHeader(http.StatusOK)
 	}))
 	defer dienst.Close()
 
-	if nach := prometheusFragen(context.Background(), dienst.URL, "node_os_info"); nach != nil {
-		t.Fatalf("aus einem Fehler wurde eine Antwort: %v", nach)
+	m := anklopfen(context.Background(), dienst.URL)
+	if m.Fassung != "nginx/1.27.4" {
+		t.Fatalf("Kennung falsch: %q", m.Fassung)
+	}
+	if m.Zertifikat == "" || m.Tage == nil {
+		t.Fatalf("kein Zertifikat gelesen: %+v", m)
+	}
+}
+
+// Was ein fremder Rechner schickt, gehoert beschnitten, bevor es in einer
+// Oberflaeche steht: eine Zeile, nur Druckbares, hoechstens sechzig Zeichen.
+func TestKurzeKennungBeschneidet(t *testing.T) {
+	if raus := kurzeKennung("SSH-2.0-OpenSSH_9.2\r\nzweite Zeile"); raus != "SSH-2.0-OpenSSH_9.2" {
+		t.Fatalf("zweite Zeile nicht abgeschnitten: %q", raus)
+	}
+	if raus := kurzeKennung("mit\x00Steuer\x07zeichen"); raus != "mitSteuerzeichen" {
+		t.Fatalf("Steuerzeichen blieben stehen: %q", raus)
+	}
+	lang := strings.Repeat("x", 200)
+	if raus := kurzeKennung(lang); len(raus) != 60 {
+		t.Fatalf("nicht auf 60 gekuerzt, sondern %d", len(raus))
+	}
+	if raus := kurzeKennung("   "); raus != "" {
+		t.Fatalf("Leerraum ergibt keine Kennung, bekam %q", raus)
+	}
+}
+
+// Ein abgelaufenes Zertifikat ist der haeufigste Grund, warum ein Dienst im
+// eigenen Haus ploetzlich nicht mehr erreichbar ist. Die Zahl steht daneben,
+// damit die Oberflaeche einfaerben kann, ohne Text auszuwerten.
+func TestZertifikatsAlter(t *testing.T) {
+	text, tage := zertifikatsAlter(time.Now().Add(48 * time.Hour))
+	if tage == nil || *tage != 1 || text == "" {
+		t.Fatalf("zwei Tage ergaben %q / %v", text, tage)
+	}
+	text, tage = zertifikatsAlter(time.Now().Add(-24 * time.Hour))
+	if tage == nil || *tage >= 0 || text != "abgelaufen" {
+		t.Fatalf("abgelaufen ergab %q / %v", text, tage)
 	}
 }

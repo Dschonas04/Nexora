@@ -128,21 +128,36 @@ then wins over the file — it was set later and on purpose.
 
 ## Watching other machines
 
-| Key | Environment | Default | What it does |
-|---|---|---|---|
-| `prometheus_adresse` | — | *(empty)* | Address of a Prometheus, e.g. `http://10.0.0.5:9090`. The machine list under **Settings, System** reads operating system (`node_os_info`), kernel (`node_uname_info`) and uptime (`node_boot_time_seconds`) from it. Empty means the list shows reachability only. Queried without credentials; behind a password the columns stay empty rather than wrong |
+A list of addresses kept under **Settings → System**: a name and an address per
+line, either `host:port` or a full `http(s)://` URL. Nexora knocks on them and
+reports what it saw itself. There is nothing to install and nothing to wire up —
+no monitoring system, no agent on the far side, no key to your machines. A wiki
+that may be reachable from outside is the wrong place to keep a general key to
+your network.
 
-The list itself is kept under Settings, System: a name and an address per line,
-either `host:port` or a full `http(s)://` URL. Nexora only knocks — a TCP
-connection that comes up, or an HTTP response that arrives. It holds no key to
-your machines on purpose: a wiki that may be reachable from outside is the wrong
-place for one, which is why versions come from Prometheus instead of from a
-login on each host. A host without a port is refused rather than guessed, since
-a guessed port reports a machine as silent that merely listens elsewhere. On
-an `https://` address the certificate is deliberately **not** verified: the
-question is whether something answers, nothing is read, and with verification
-every Proxmox, NAS and backup server in the house — all of them self-signed —
-would be reported as silent while running.
+Surprisingly much falls out of a knock alone. Whoever accepts a connection
+usually says who they are in the first breath: an SSH service names its version
+before anybody has been asked for a password, a web server names it in the
+`Server` header, and an encrypted service shows its certificate along with the
+date it expires. That is what the columns hold.
+
+| Column | Where it comes from |
+|---|---|
+| Zustand | A TCP connection that comes up, or an HTTP response that arrives |
+| Antwort | How long that took |
+| Fassung | The greeting a service sends on connect (`SSH-2.0-OpenSSH_9.2p1 …`), or the `Server` header. Whoever stays silent leaves the column empty — nothing is guessed |
+| Zertifikat | Days left on the certificate of an `https://` target. Under thirty the cell turns red: an expired certificate is the most common reason a service at home suddenly stops answering, and the only one you could have seen coming |
+
+A host without a port is refused rather than guessed, since a guessed port
+reports a machine as silent that merely listens elsewhere. On an `https://`
+address the certificate is deliberately **not** verified: the question is
+whether something answers, nothing is read, and with verification every
+Proxmox, NAS and backup server in the house — all of them self-signed — would be
+reported as silent while running. Redirects are not followed: a 301 is already
+an answer, and where it points is a different question.
+
+Measurements are at most 15 seconds old; a poll in between is answered from
+memory, so the page can refresh often without turning the overview into a load.
 
 ## Trash
 
@@ -305,7 +320,7 @@ on purpose:
 
 `registrierung_offen` · `erlaubte_domaenen` · `max_anhang_mb` ·
 `sitzung_stunden` · `papierkorb_tage` · `such_woerterbuch` · `echtzeit` ·
-`prometheus_adresse` · `design_grundton` (`weiss` | `grau` | `dunkel`) · `design_akzent` (a colour)
+`design_grundton` (`weiss` | `grau` | `dunkel`) · `design_akzent` (a colour)
 
 The database URL, the port and the JWT secret deliberately do **not** live here:
 they are needed before the database is open.

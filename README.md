@@ -479,10 +479,13 @@ DELETE /system/rechner/{id}               remove one
 Two lists in the settings under **System**. The first is what Nexora needs to
 run and therefore knows by itself — database, cache, object store, sign-in
 provider — each with its state, version and response time. The second is what you
-enter: the machines around it. Nexora only knocks on those, on the level where an
-answer is possible without credentials, and holds no key to them; the versions
-come from the Prometheus in `prometheus_adresse` rather than from a login on each
-host.
+enter: the machines around it.
+
+Nexora only knocks on those, and everything in the table is what it saw while
+doing so: whether something answers, how long that took, the version the service
+names itself (an SSH greeting, a `Server` header) and, on TLS targets, how many
+days its certificate still has. No monitoring system to set up, no agent on the
+far side, no key to your machines.
 
 ### Links and graph
 
@@ -624,7 +627,7 @@ backend/                       Go API
     oeffentlich.go             what a public link is allowed to show
     dateiausgabe.go            the headers an attachment is handed out with
     verbund.go                 the state of database, cache and file store
-    rechner.go                 the machine watch list: knock, and ask Prometheus for versions
+    rechner.go                 the machine watch list: knock, and read what comes back
     spaces.go, tags.go         organisation and full text search
     users.go                   admin account management
 frontend/                      React SPA (Vite + TypeScript)

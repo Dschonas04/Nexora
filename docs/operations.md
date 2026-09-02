@@ -300,12 +300,14 @@ a 301 is already an answer, and where it points is a different question — and 
 `https://` the certificate is not checked, since otherwise every self-signed
 appliance in the house would show up as silent while running.
 
-Operating system, kernel and uptime therefore come from a second source: the
-Prometheus you name in `prometheus_adresse`, whose `node_exporter` already knows
-all three. Without that address the list shows who answers and nothing more,
-which is still the question one usually has. Machines are matched by the host
-part of the `instance` label, with the port dropped on both sides — Prometheus
-carries the exporter's (9100), the list carries the one being knocked on.
+The version comes out of the knock itself. Whoever accepts a connection usually
+says who they are in the first breath: an SSH service names its version before
+anybody has been asked for a password, a web server names it in the `Server`
+header. On a TLS target the certificate is read too, and how many days it still
+has — under thirty the cell turns red, because an expired certificate is the
+most common reason a service at home suddenly stops answering, and the only one
+you could have seen coming. Whoever stays silent leaves the column empty;
+nothing is guessed, and nothing outside is asked.
 
 ---
 
@@ -430,10 +432,10 @@ port first — SSH is 22, a web service is whatever it publishes. The list refus
 an address without a port on purpose rather than guessing one, because a guessed
 port produces exactly this misleading answer.
 
-If the operating system and kernel columns stay empty, `prometheus_adresse` is
-unset, unreachable, or behind a password, or that machine carries no
-`node_exporter`. The column stays empty in all four cases; nothing is invented
-to fill it.
+If the Fassung column stays empty, that service simply does not introduce
+itself: PostgreSQL, a database or a plain forwarder say nothing on connect, and
+a web server may be configured to keep its `Server` header to itself. That is
+their right, and nothing is invented to fill the gap.
 
 ### After a rebuild nothing talks to anything any more
 

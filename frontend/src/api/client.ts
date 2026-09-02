@@ -412,26 +412,23 @@ export interface Rechner {
   name: string;
   ziel: string;
   notiz?: string;
-  instanz?: string;
   zustand: string;
   antwort?: string;
   hinweis?: string;
-  system?: string;
-  kern?: string;
-  laeuft?: string;
+  // Was der Rechner beim Anklopfen selbst gesagt hat.
+  fassung?: string;
+  zertifikat?: string;
+  tageBisAblauf?: number;
 }
 
 export interface RechnerEingabe {
   name: string;
   ziel: string;
   notiz?: string;
-  instanz?: string;
 }
 
 export interface RechnerListe {
   rechner: Rechner[];
-  prometheus?: string;
-  quelle?: string;
   geprueftUm?: string;
 }
 

@@ -442,7 +442,7 @@ export default function EinstellungenView() {
     };
   }, [bereich]);
 
-  const [neuerRechner, setNeuerRechner] = useState({ name: "", ziel: "", instanz: "", notiz: "" });
+  const [neuerRechner, setNeuerRechner] = useState({ name: "", ziel: "", notiz: "" });
   const [rechnerFehler, setRechnerFehler] = useState("");
 
   const rechnerAnlegen = async () => {
@@ -451,10 +451,9 @@ export default function EinstellungenView() {
       await api.rechnerAnlegen({
         name: neuerRechner.name.trim(),
         ziel: neuerRechner.ziel.trim(),
-        instanz: neuerRechner.instanz.trim(),
         notiz: neuerRechner.notiz.trim(),
       });
-      setNeuerRechner({ name: "", ziel: "", instanz: "", notiz: "" });
+      setNeuerRechner({ name: "", ziel: "", notiz: "" });
       rechnerLaden();
     } catch (e) {
       setRechnerFehler((e as Error).message);
@@ -2498,21 +2497,16 @@ export default function EinstellungenView() {
             <h3>Eigene Rechner</h3>
             <p className="muted small">
               Adressen, bei denen diese Instanz anklopft, damit an einer Stelle steht, wer im
-              Haus noch antwortet. Geprüft wird, was ohne Zugangsdaten geht: eine TCP-Verbindung
-              kommt zustande, oder eine Web-Adresse antwortet. Bei <code>https://</code> wird das
-              Zertifikat bewusst nicht geprüft, sonst stünde jedes selbst unterschriebene Gerät
-              im Haus als still da. Ein Schlüssel zu deinen Rechnern liegt hier ausdrücklich
-              nicht.{" "}
-              {rechner?.prometheus ? (
-                <>
-                  Betriebssystem, Kern und Laufzeit kommen aus <code>{rechner.prometheus}</code>.
-                </>
-              ) : (
-                <>
-                  Für Betriebssystem und Kern trag oben unter <em>Prometheus</em> die Adresse
-                  deines Prometheus ein; ohne sie steht hier nur, wer antwortet.
-                </>
-              )}
+              Haus noch antwortet. Gemessen wird ohne fremde Hilfe: keine Überwachung, die
+              erst eingerichtet sein will, kein Zugang zum fremden Rechner. Was hier steht,
+              hat Nexora selbst gesehen.
+            </p>
+            <p className="muted small">
+              Erstaunlich viel fällt dabei ab. Wer eine Verbindung annimmt, sagt meist im
+              ersten Atemzug, wer er ist: ein SSH-Dienst nennt seine Fassung, bevor überhaupt
+              jemand nach einem Passwort gefragt hat, ein Webserver nennt sie in der Kopfzeile{" "}
+              <code>Server</code>, und ein verschlüsselter Dienst zeigt sein Zertifikat samt
+              Ablauf. Wer schweigt, bleibt in der Spalte leer — geraten wird nichts.
             </p>
 
             <div className="tabelle-rollen">
@@ -2523,8 +2517,8 @@ export default function EinstellungenView() {
                     <th>Adresse</th>
                     <th>Zustand</th>
                     <th>Antwort</th>
-                    <th>System</th>
-                    <th>Läuft</th>
+                    <th>Fassung</th>
+                    <th>Zertifikat</th>
                     <th />
                   </tr>
                 </thead>
@@ -2544,11 +2538,21 @@ export default function EinstellungenView() {
                         <td className="muted einzeilig">{r.ziel}</td>
                         <td>{r.zustand}</td>
                         <td className="muted einzeilig">{r.antwort || "—"}</td>
-                        <td className="muted">
-                          {r.system || "—"}
-                          {r.kern && <span className="muted small"> · {r.kern}</span>}
+                        <td className="muted">{r.fassung || "—"}</td>
+                        {/* Unter dreißig Tagen wird die Zelle rot: ein
+                            abgelaufenes Zertifikat ist der häufigste Grund,
+                            warum ein Dienst im eigenen Haus plötzlich nicht
+                            mehr erreichbar ist, und der einzige, den man
+                            Wochen vorher sehen könnte. */}
+                        <td
+                          className={
+                            r.tageBisAblauf !== undefined && r.tageBisAblauf < 30
+                              ? "fehler-text einzeilig"
+                              : "muted einzeilig"
+                          }
+                        >
+                          {r.zertifikat || "—"}
                         </td>
-                        <td className="muted einzeilig">{r.laeuft || "—"}</td>
                         <td className="zeilen-aktionen">
                           <button
                             className="btn-schlicht gefaehrlich"
@@ -2591,18 +2595,10 @@ export default function EinstellungenView() {
                 <label>
                   <span>Adresse</span>
                   <input
-                    placeholder="10.0.0.5:22 oder http://10.0.0.5:9090"
+                    placeholder="10.0.0.5:22 oder https://10.0.0.5:8006"
                     value={neuerRechner.ziel}
                     onChange={(e) => setNeuerRechner({ ...neuerRechner, ziel: e.target.value })}
                     onKeyDown={(e) => e.key === "Enter" && rechnerAnlegen()}
-                  />
-                </label>
-                <label>
-                  <span>Kennung in Prometheus</span>
-                  <input
-                    placeholder="nur wenn sie abweicht"
-                    value={neuerRechner.instanz}
-                    onChange={(e) => setNeuerRechner({ ...neuerRechner, instanz: e.target.value })}
                   />
                 </label>
                 <label>

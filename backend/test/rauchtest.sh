@@ -834,10 +834,12 @@ pruefe "ein toter Port heißt still" "still" \
        "$(hole "$BASIS/api/system/rechner" | python3 -c '
 import json, sys
 print(next(r["zustand"] for r in json.load(sys.stdin)["rechner"] if r["name"] == "stiller"))')"
-pruefe "ohne Prometheus bleibt die Quelle leer" "" \
+# Der Dienst nennt sich selbst nicht in einer Kopfzeile Server, deshalb bleibt
+# die Spalte hier leer -- geraten wird nichts.
+pruefe "ohne Kennung bleibt die Spalte leer" "" \
        "$(hole "$BASIS/api/system/rechner" | python3 -c '
 import json, sys
-print(json.load(sys.stdin).get("quelle", ""))')"
+print(next((r.get("fassung", "") for r in json.load(sys.stdin)["rechner"] if r["name"] == "ich selbst"), "FEHLT"))')"
 pruefe "die Zeile lässt sich ändern" "anders benannt" \
        "$(hole -X PUT "$BASIS/api/system/rechner/$SELBST" -H 'Content-Type: application/json' \
           -d "{\"name\":\"anders benannt\",\"ziel\":\"127.0.0.1:$APIPORT\"}" | feld "['name']")"
@@ -845,7 +847,9 @@ pruefe "und entfernen" "True" \
        "$(hole -X DELETE "$BASIS/api/system/rechner/$SELBST" | feld "['ok']")"
 pruefe "danach steht nur noch der stille da" "1" \
        "$(hole "$BASIS/api/system/rechner" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["rechner"]))')"
-pruefe "die Einstellung für Prometheus steht in der Liste" "1" \
+# Und nichts von alledem braucht einen Prometheus: die Einstellung dafuer gibt
+# es nicht mehr, gemessen wird selbst.
+pruefe "keine Prometheus-Einstellung mehr" "0" \
        "$(hole "$BASIS/api/einstellungen" | python3 -c '
 import json, sys
 print(len([e for e in json.load(sys.stdin) if e["schluessel"] == "prometheus_adresse"]))')"
