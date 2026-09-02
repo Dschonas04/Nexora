@@ -93,7 +93,7 @@ restoring are gated.
 | Method | Path | Notes |
 |---|---|---|
 | `GET` | `/pages/{id}/attachments` | |
-| `POST` | `/pages/{id}/attachments` | multipart, field `file`. Capped by `max_anhang_mb` (25 by default) and by nginx's `client_max_body_size` |
+| `POST` | `/pages/{id}/attachments` | multipart, field `file`. Capped by `max_anhang_mb` (25 by default) and by nginx's `client_max_body_size`. Executables are refused with **415**: a file starting with the ELF magic (a Linux binary or shared object) is rejected whatever it is named, since the first four bytes are what the kernel reads and the extension is only a claim |
 | `GET` | `/pages/{id}/attachments/{attId}` | The bytes. Headers are decided by the server, not by the MIME type the uploader claimed |
 | `DELETE` | `/pages/{id}/attachments/{attId}` | Removes the row and the bytes |
 
@@ -120,6 +120,7 @@ restoring are gated.
 
 A public link is the only anonymous access there is, and it is read-only. Opening
 a **space** (`/spaces/{id}/oeffentlich`) opens it to signed-in accounts of the
+| `PUT` | `/spaces/{id}/farbe` | `{farbe}` as `#rrggbb`, or empty to reset. The colour the space wears in the graph. It sits on the space and not in the browser, so everybody sees the same picture · owner or admin |
 instance, never to the internet.
 
 ---

@@ -376,6 +376,16 @@ client can forge the IP that lands in the audit trail.
 An invalid licence key never stops the boot; it is logged and the free feature
 set applies.
 
+### An upload is refused as an executable
+
+A file whose first four bytes are the ELF magic is refused with 415, however it
+is named — a Linux binary or shared object. The extension plays no part in the
+decision: it is a claim by whoever uploads, while those four bytes are what the
+kernel reads when something is started. Scripts are **not** refused: `#!/bin/sh`
+is text, and a wiki that may no longer keep a documented backup script has lost
+one of its purposes. The same check runs on import from an archive, where such a
+file is skipped and named in the warnings rather than stopping the import.
+
 ### Uploads fail
 
 The attachment directory does not belong to uid/gid 10001, or the file is larger

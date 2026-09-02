@@ -432,7 +432,9 @@ GET    /pages/{id}/versions/{versionId}   read one snapshot
 POST   /pages/{id}/versions/{versionId}/restore   roll the page back
 
 GET    /pages/{id}/attachments            list files
-POST   /pages/{id}/attachments            upload (multipart field "file", max 25 MiB)
+POST   /pages/{id}/attachments            upload (multipart field "file", max 25 MiB;
+                                          Linux executables are refused, by their
+                                          first bytes and not by their name)
 GET    /pages/{id}/attachments/{attId}    download
 DELETE /pages/{id}/attachments/{attId}    delete
 ```
@@ -501,6 +503,7 @@ GET    /graph                             nodes and edges of the whole workspace
 
 ```
 GET    /spaces                            list spaces
+PUT    /spaces/{id}/farbe                 the colour the space wears in the graph
 POST   /spaces                            create
 PUT    /spaces/{id}                       rename
 DELETE /spaces/{id}                       delete (pages keep existing, space_id nulled)

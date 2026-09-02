@@ -854,6 +854,31 @@ pruefe "keine Prometheus-Einstellung mehr" "0" \
 import json, sys
 print(len([e for e in json.load(sys.stdin) if e["schluessel"] == "prometheus_adresse"]))')"
 
+echo "== Programme werden nicht angenommen"
+# Anhaenge sind ein Zusatz und ohne Lizenz zu; geprueft wird deshalb die
+# Erkennung selbst und die Ablehnung an dem Weg, der offen ist: die Einfuhr.
+# Ein Archiv mit einer ELF-Datei darf die Seite anlegen und die Datei nicht.
+PROG="$ARBEIT/programm"
+printf '\177ELF\002\001\001\000ohne alles' > "$PROG"
+python3 - "$ARBEIT" <<'PYTHON'
+import sys, zipfile
+arbeit = sys.argv[1]
+with zipfile.ZipFile(arbeit + "/programm.zip", "w") as z:
+    z.writestr("Notiz.md", "# Mit Beilage\n\n[Werkzeug](werkzeug)\n")
+    z.write(arbeit + "/programm", "werkzeug")
+PYTHON
+EINFUHR=$(hole -X POST "$BASIS/api/import" -F "file=@$ARBEIT/programm.zip")
+pruefe "die Seite kommt an" "1" "$(printf '%s' "$EINFUHR" | feld "['seiten']")"
+# Weiter kommt der Rauchtest hier nicht: Beilagen sind ein Zusatz und werden
+# ohne Lizenz gar nicht erst angefasst, das Programm faellt also schon eine
+# Stufe vorher heraus. Dass die vier Bytes am Anfang erkannt werden, prueft
+# TestLinuxProgrammWirdErkannt in internal/handlers.
+pruefe "ohne Lizenz kommt keine Beilage mit" "" \
+       "$(printf '%s' "$EINFUHR" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+print(d.get("beilagen", ""))')"
+
 echo "== Verschlüsselt sprechen"
 # Der Dienst kann selbst HTTPS. Geprueft wird an einem zweiten Start mit einem
 # eigens erzeugten Zertifikat: dass er die Datei annimmt, dass er wirklich

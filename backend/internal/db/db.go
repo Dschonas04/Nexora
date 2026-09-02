@@ -100,6 +100,10 @@ CREATE TABLE IF NOT EXISTS spaces (
 	created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS spaces_owner_idx ON spaces(owner_id);
+-- Die Farbe, in der die Ablage im Grafen erscheint. Leer heisst: die
+-- Oberflaeche vergibt eine aus ihrer Reihe, wie bisher. Eine Farbe steht an
+-- der Ablage und nicht am Browser, damit alle dasselbe Bild sehen.
+ALTER TABLE spaces ADD COLUMN IF NOT EXISTS farbe text NOT NULL DEFAULT '';
 
 -- A public space is visible to every logged in account of the instance without
 -- anybody having to grant a right one by one.

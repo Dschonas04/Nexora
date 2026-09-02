@@ -36,6 +36,9 @@ type Space struct {
 	// DarfVerwalten tells the interface whether to show buttons for changing
 	// things at all. The decision itself is made again in the backend.
 	DarfVerwalten bool `json:"darfVerwalten"`
+	// Farbe ist die Farbe der Ablage im Grafen, als #rrggbb. Leer heisst: die
+	// Oberflaeche nimmt eine aus ihrer Reihe.
+	Farbe string `json:"farbe,omitempty"`
 }
 
 // Tag is a colored label. Tags belong to one user, so two people can both have

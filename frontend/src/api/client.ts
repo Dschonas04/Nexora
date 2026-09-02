@@ -53,6 +53,8 @@ export interface Space {
   oeffentlich: "nein" | "lesen" | "schreiben";
   /** Ob dieses Konto die Ablage verwalten darf (Sichtbarkeit, Rechte). */
   darfVerwalten: boolean;
+  /** Farbe im Grafen als #rrggbb. Leer/fehlt: die Oberfläche vergibt eine. */
+  farbe?: string;
 }
 
 // PageMeta is the light shape used for the sidebar, search results and lists.
@@ -847,6 +849,13 @@ export const api = {
     req<{ drin: boolean }>(`/gruppen/${gruppeId}/mitglieder`, {
       method: "PUT",
       body: JSON.stringify({ userId, drin }),
+    }),
+
+  // Die Farbe einer Ablage im Grafen. Leer setzt zurück auf die Reihe.
+  spaceFarbe: (id: string, farbe: string) =>
+    req<{ farbe: string }>(`/spaces/${id}/farbe`, {
+      method: "PUT",
+      body: JSON.stringify({ farbe }),
     }),
 
   spaceRechte: (spaceId: string) => req<SpaceRecht[]>(`/spaces/${spaceId}/rechte`),

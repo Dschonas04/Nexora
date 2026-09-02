@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -706,7 +707,11 @@ func (s *Server) verweiseAufloesen(ctx context.Context, uid string, sp *einfuhrS
 		}
 		attID, err := s.anhangAnlegen(ctx, sp.id, uid, path.Base(b.pfad), b.inhalt)
 		if err != nil {
-			*warnungen = append(*warnungen, b.pfad+": Anhang nicht gespeichert")
+			grund := "Anhang nicht gespeichert"
+			if errors.Is(err, errProgrammdatei) {
+				grund = "übersprungen, ausführbares Programm"
+			}
+			*warnungen = append(*warnungen, b.pfad+": "+grund)
 			return ""
 		}
 		anzahl++
@@ -927,7 +932,11 @@ func (s *Server) beilagenNachtragen(ctx context.Context, uid string, seiten []*e
 		}
 		b := beilagen[p]
 		if _, err := s.anhangAnlegen(ctx, ziel.id, uid, path.Base(p), b.inhalt); err != nil {
-			*warnungen = append(*warnungen, p+": Anhang nicht gespeichert")
+			grund := "Anhang nicht gespeichert"
+			if errors.Is(err, errProgrammdatei) {
+				grund = "übersprungen, ausführbares Programm"
+			}
+			*warnungen = append(*warnungen, p+": "+grund)
 			continue
 		}
 		anzahl++
@@ -942,6 +951,12 @@ func (s *Server) beilagenNachtragen(ctx context.Context, uid string, seiten []*e
 func (s *Server) anhangAnlegen(ctx context.Context, seiteID, uid, dateiname string, inhalt []byte) (string, error) {
 	if dateiname == "" || dateiname == "." || dateiname == "/" {
 		dateiname = "datei"
+	}
+	// Dieselbe Grenze wie beim Hochladen von Hand, siehe programmdatei.go. Ein
+	// Archiv ist der bequemere Weg, ein Programm hereinzutragen, nicht der
+	// erlaubtere.
+	if istLinuxProgramm(inhalt) {
+		return "", errProgrammdatei
 	}
 	typ := typAusAngabeUndName("", dateiname)
 

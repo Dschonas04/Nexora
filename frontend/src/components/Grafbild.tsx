@@ -27,7 +27,12 @@ function ablageSchluessel(node: { spaceId: string | null }): string {
 
 // ablageFarben liefert die vorkommenden Ablagen in fester Reihenfolge und die
 // Farbe dazu, damit ein Knoten die Farbe seiner Ablage tragen kann.
-function ablageFarben(graph: Graph) {
+//
+// Eine selbst gewählte Farbe schlägt die Reihe. Die Reihe bleibt daneben
+// bestehen und wird auch weitergezählt, wenn eine Ablage ihre eigene Farbe
+// trägt: sonst rückten beim Setzen einer einzigen Farbe alle anderen um eine
+// Stelle weiter, und der Graf sähe nach jedem Klick anders aus.
+function ablageFarben(graph: Graph, eigene?: Record<string, string>) {
   const schluessel: string[] = [];
   for (const n of graph.nodes) {
     const k = ablageSchluessel(n);
@@ -36,7 +41,9 @@ function ablageFarben(graph: Graph) {
   const farbe: Record<string, string> = {};
   let i = 0;
   for (const k of schluessel) {
-    farbe[k] = k === "__none__" ? OHNE_ABLAGE_FARBE : ABLAGE_FARBEN[i++ % ABLAGE_FARBEN.length];
+    const ausReihe =
+      k === "__none__" ? OHNE_ABLAGE_FARBE : ABLAGE_FARBEN[i++ % ABLAGE_FARBEN.length];
+    farbe[k] = eigene?.[k] || ausReihe;
   }
   return farbe;
 }
@@ -149,6 +156,11 @@ interface Props {
   hinweis?: string;
   legende?: boolean;
   zentrieren?: boolean;
+  /** Selbst gewählte Farben je Ablage, Schlüssel ist die spaceId. */
+  eigeneFarben?: Record<string, string>;
+  /** Darf hier eine Farbe geändert werden? Dann trägt die Legende einen
+      Farbwähler. Ohne den Rückruf ist sie eine reine Beschriftung. */
+  onFarbe?: (spaceId: string, farbe: string) => void;
   /** Ob das Mausrad zoomt. In einer Seite nur mit Strg, sonst bliebe beim
       Scrollen der Text stehen und der Graf zöge sich zusammen. */
   radZoom?: "immer" | "mit-strg";
@@ -163,6 +175,8 @@ export default function Grafbild({
   hinweis,
   legende = false,
   zentrieren = false,
+  eigeneFarben,
+  onFarbe,
   radZoom = "immer",
 }: Props) {
   const rahmenRef = useRef<HTMLDivElement>(null);
@@ -181,7 +195,7 @@ export default function Grafbild({
   const mitteRef = useRef(mitte);
   mitteRef.current = mitte;
 
-  const farbe = ablageFarben(graph);
+  const farbe = ablageFarben(graph, eigeneFarben);
 
   // Abgeleitetes, das nur von der Knotenmenge abhängt: Grad (für die Größe),
   // Nachbarschaften (für das Hervorheben) und die Legende.
@@ -574,7 +588,23 @@ export default function Grafbild({
         <div className="graph-legend">
           {abgeleitet.legende.map((l) => (
             <span key={l.key} className="graph-legend-item">
-              <span className="graph-legend-dot" style={{ background: l.color }} />
+              {/* Der Punkt ist der Farbwähler: anklicken, Farbe aussuchen,
+                  fertig. Ein eigener Knopf daneben wäre eine Bedienung mehr
+                  für dieselbe Sache, und der Punkt ist genau das, was man
+                  ändern will. Bei "Keine Ablage" bleibt es beim Punkt -- es
+                  gibt keine Ablage, an der die Farbe stehen könnte. */}
+              {onFarbe && l.key !== "__none__" ? (
+                <label className="graph-legend-dot-wahl" title="Farbe dieser Ablage">
+                  <span className="graph-legend-dot" style={{ background: farbe[l.key] }} />
+                  <input
+                    type="color"
+                    value={farbe[l.key]}
+                    onChange={(e) => onFarbe(l.key, e.target.value)}
+                  />
+                </label>
+              ) : (
+                <span className="graph-legend-dot" style={{ background: farbe[l.key] }} />
+              )}
               {l.label}
             </span>
           ))}

@@ -154,10 +154,17 @@ The **bytes** are the one part of Nexora outside the database. See
 
 ### `spaces`, `space_reihenfolge`
 
-`spaces`: `id`, `owner_id`, `name`, `created_at`, plus `oeffentlich` — `nein`,
-`lesen` or `schreiben`, meaning open to every signed-in account of the instance.
+`spaces`: `id`, `owner_id`, `name`, `created_at`, `farbe`, plus `oeffentlich` —
+`nein`, `lesen` or `schreiben`, meaning open to every signed-in account of the
+instance.
 Not "public on the internet": anonymous access runs exclusively through a single
 page's share link. Partially indexed where `oeffentlich <> 'nein'`.
+
+`farbe` is the colour the space wears in the graph, `#rrggbb` or empty. Empty
+means the interface hands out one from its own row. Unlike the sidebar order
+below, this one **is** a column on `spaces` and shared by everyone: the graph is
+a picture people talk about together, and two people describing differently
+coloured clusters are describing different pictures.
 
 `space_reihenfolge` (`user_id`, `space_id`, `platz`) holds the sidebar order
 **per account**, deliberately not as a column on `spaces`. The sidebar is
