@@ -82,16 +82,28 @@ func (s *Server) setAuthCookieFuer(w http.ResponseWriter, r *http.Request, token
 	})
 }
 
-// ueberTLS recognises an encrypted request, also behind a proxy that decrypts
-// itself and says so in the X-Forwarded-Proto header.
+// ueberTLS sagt, ob der BROWSER verschlüsselt spricht -- nicht, ob diese eine
+// Verbindung verschlüsselt ist.
+//
+// Der Unterschied ist der Grund für diese Funktion. Seit der Innenverkehr des
+// Verbunds verschlüsselt ist, kommt jede Anfrage über TLS bei diesem Dienst an,
+// auch wenn davor jemand über gewöhnliches HTTP auf die Oberfläche zugreift.
+// Würde hier r.TLS entscheiden, bekäme dieser Jemand einen Keks mit dem
+// Merkmal Secure, sein Browser würde ihn über HTTP nicht zurückschicken, und er
+// wäre nach der Anmeldung sofort wieder abgemeldet. Genau das ist am 02.09.2026
+// passiert.
+//
+// Deshalb zählt X-Forwarded-Proto zuerst: das ist die Angabe des Gegenstücks
+// darüber, womit der Browser gekommen ist. Erst wenn niemand davorsteht, gilt
+// die eigene Verbindung.
 func ueberTLS(r *http.Request) bool {
 	if r == nil {
 		return false
 	}
-	if r.TLS != nil {
-		return true
+	if weg := r.Header.Get("X-Forwarded-Proto"); weg != "" {
+		return strings.EqualFold(weg, "https")
 	}
-	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+	return r.TLS != nil
 }
 
 // clearAuthCookie expires the cookie. The token itself stays valid until it
