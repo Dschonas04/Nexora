@@ -133,6 +133,9 @@ type wort struct {
 	verweis bool // set in colour and underlined
 	durch   bool
 	unter   bool
+	// Die Namen aus dem Editor, uebersetzt erst beim Zeichnen (farben.go).
+	farbe       string
+	hintergrund string
 }
 
 // setzer builds the content stream page by page.
@@ -177,9 +180,23 @@ func (s *setzer) zeileSetzen(woerter []wort, x, zeilenHoehe float64) {
 			continue
 		}
 		breite := textBreite(w.text, w.schrift, w.groesse)
+
+		// Die Markierung zuerst: sie liegt HINTER dem Text, also muss sie vor
+		// ihm gezeichnet werden. Der Kasten reicht etwas unter die Grundlinie
+		// und bis über die Oberlänge, sonst schnitte er die Buchstaben an.
+		if c, ok := hintergrundfarbe(w.hintergrund); ok {
+			fmt.Fprintf(s.akt, "%s %.2f %.2f %.2f %.2f re f 0 0 0 rg\n",
+				c.pdfFarbe(), lauf, s.y-w.groesse*0.24, breite, w.groesse*1.02)
+		}
+
+		gefaerbt := false
 		if w.verweis {
 			// 0.10 0.35 0.65: the same muted blue the interface uses.
 			fmt.Fprintf(s.akt, "0.10 0.35 0.65 rg\n")
+			gefaerbt = true
+		} else if c, ok := schriftfarbe(w.farbe); ok {
+			fmt.Fprintf(s.akt, "%s\n", c.pdfFarbe())
+			gefaerbt = true
 		}
 		fmt.Fprintf(s.akt, "BT /%s %.1f Tf %.2f %.2f Td %s Tj ET\n",
 			w.schrift, w.groesse, lauf, s.y, pdfZeichenkette(w.text))
@@ -191,7 +208,7 @@ func (s *setzer) zeileSetzen(woerter []wort, x, zeilenHoehe float64) {
 			fmt.Fprintf(s.akt, "%.2f %.2f %.2f %.2f re f\n",
 				lauf, s.y+w.groesse*0.28, breite, 0.6)
 		}
-		if w.verweis {
+		if gefaerbt {
 			fmt.Fprintf(s.akt, "0 0 0 rg\n")
 		}
 		lauf += breite
@@ -229,7 +246,7 @@ func umbrechen(stuecke []wort, breite float64) [][]wort {
 				for schnitt > 1 && textBreite(t[:schnitt], st.schrift, st.groesse) > breite {
 					schnitt--
 				}
-				zeile = append(zeile, wort{t[:schnitt], st.schrift, st.groesse, st.verweis, st.durch, st.unter})
+				zeile = append(zeile, wort{t[:schnitt], st.schrift, st.groesse, st.verweis, st.durch, st.unter, st.farbe, st.hintergrund})
 				neueZeile()
 				t = t[schnitt:]
 			}
@@ -240,7 +257,7 @@ func umbrechen(stuecke []wort, breite float64) [][]wort {
 				// No line may start with a space.
 				continue
 			}
-			zeile = append(zeile, wort{t, st.schrift, st.groesse, st.verweis, st.durch, st.unter})
+			zeile = append(zeile, wort{t, st.schrift, st.groesse, st.verweis, st.durch, st.unter, st.farbe, st.hintergrund})
 			lauf += textBreite(t, st.schrift, st.groesse)
 		}
 	}
@@ -302,12 +319,14 @@ func alsWoerter(st []Stueck, groesse float64, immerFett bool) []wort {
 			s.Fett = true
 		}
 		out = append(out, wort{
-			text:    s.Text,
-			schrift: schriftFuer(s),
-			groesse: groesse,
-			verweis: s.Verweis != "",
-			durch:   s.Durch,
-			unter:   s.Unter,
+			text:        s.Text,
+			schrift:     schriftFuer(s),
+			groesse:     groesse,
+			verweis:     s.Verweis != "",
+			durch:       s.Durch,
+			unter:       s.Unter,
+			farbe:       s.Farbe,
+			hintergrund: s.Hintergrund,
 		})
 	}
 	return out
@@ -334,7 +353,7 @@ func PDFMehrere(docs []Dokument, fuss string) []byte {
 		}
 		if d.Titel != "" {
 			s.y -= 6
-			for _, z := range umbrechen([]wort{{d.Titel, fFett, 24, false, false, false}}, satzBreite) {
+			for _, z := range umbrechen([]wort{{d.Titel, fFett, 24, false, false, false, "", ""}}, satzBreite) {
 				s.zeileSetzen(z, randLinks, 30)
 			}
 			s.y -= 14
@@ -385,7 +404,7 @@ func (s *setzer) absatzSetzen(a Absatz) {
 		zeilen := umbrechen(alsWoerter(a.Text, grund, false), breite-markenBreite)
 		for i, z := range zeilen {
 			if i == 0 {
-				z = append([]wort{{marke, fNormal, grund, false, false, false}}, z...)
+				z = append([]wort{{marke, fNormal, grund, false, false, false, "", ""}}, z...)
 				s.zeileSetzen(z, einzug, zeilenHoehe)
 			} else {
 				// Continuation lines align with the text column, not with the
@@ -451,7 +470,7 @@ func (s *setzer) absatzSetzen(a Absatz) {
 			if bild, ok := bildAufbereiten(a.BildDaten); ok {
 				s.bildSetzen(bild, einzug, breite)
 				if u := bildUnterschrift(a.Text); u != "" {
-					for _, z := range umbrechen([]wort{{u, fKursiv, 9, false, false, false}}, breite) {
+					for _, z := range umbrechen([]wort{{u, fKursiv, 9, false, false, false, "", ""}}, breite) {
 						s.zeileSetzen(z, einzug, 12)
 					}
 					s.y -= 6
@@ -460,7 +479,7 @@ func (s *setzer) absatzSetzen(a Absatz) {
 			}
 		}
 		w := alsWoerter(a.Text, grund, false)
-		w = append([]wort{{"Datei: ", fNormal, grund, false, false, false}}, w...)
+		w = append([]wort{{"Datei: ", fNormal, grund, false, false, false, "", ""}}, w...)
 		for _, z := range umbrechen(w, breite) {
 			s.zeileSetzen(z, einzug, zeilenHoehe)
 		}
@@ -508,7 +527,7 @@ func (s *setzer) tabelleSetzen(zeilen [][]string, x, breite float64) {
 				inhalt = z[i]
 			}
 			umbrochen[i] = [][]wort{}
-			for _, zz := range umbrechen([]wort{{inhalt, schrift, 9.5, false, false, false}}, spaltenBreite-8) {
+			for _, zz := range umbrechen([]wort{{inhalt, schrift, 9.5, false, false, false, "", ""}}, spaltenBreite-8) {
 				umbrochen[i] = append(umbrochen[i], zz)
 			}
 			if len(umbrochen[i]) > hoch {

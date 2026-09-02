@@ -55,6 +55,14 @@ func lauf(s Stueck, groesse int, immerFett bool) string {
 	}
 	if s.Verweis != "" {
 		eig.WriteString(`<w:color w:val="1A6FBF"/>`)
+	} else if c, ok := schriftfarbe(s.Farbe); ok {
+		fmt.Fprintf(&eig, `<w:color w:val="%s"/>`, c.hex())
+	}
+	// Word markiert nicht mit einem Farbwert, sondern mit einem Namen aus einer
+	// festen Palette. Deshalb die Zuordnung in farben.go statt des Hexwerts:
+	// ein freier Wert stuende hier zwar im XML, Word zeigte ihn aber nicht.
+	if marker, ok := wordMarker[s.Hintergrund]; ok {
+		fmt.Fprintf(&eig, `<w:highlight w:val="%s"/>`, marker)
 	}
 	// Half points: w:sz counts in half points.
 	fmt.Fprintf(&eig, `<w:sz w:val="%d"/><w:szCs w:val="%d"/>`, groesse*2, groesse*2)

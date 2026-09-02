@@ -302,7 +302,7 @@ success or failure.
 | Method | Path | Notes |
 |---|---|---|
 | `GET` | `/pages/{id}/markdown` | The page as Markdown. **Free forever** — getting your own content out must never depend on a licence |
-| `GET` | `/pages/{id}/pdf` | Typeset PDF · paid: `export` |
+| `GET` | `/pages/{id}/pdf` | Typeset PDF. Bold, italic, underline, strikethrough, **text colour and highlight** all travel · paid: `export` |
 | `GET` | `/pages/{id}/word` | `.docx` · paid: `export` |
 | `POST` | `/import` | Free, for the same reason the export is |
 
