@@ -6,23 +6,22 @@
 // kennt. Hier stehen die, die jemand einträgt, weil er sie im Blick behalten
 // will. Nexora weiß von denen nichts, außer was in der Zeile steht.
 //
-// Angeklopft wird auf der Ebene, auf der eine Aussage ohne Zugangsdaten möglich
-// ist: eine TCP-Verbindung, die zustande kommt, oder eine HTTP-Antwort, die
-// eintrifft. Mehr geht ohne Anmeldung am fremden Rechner nicht, und einen
-// Generalschlüssel zum eigenen Netz in einem Wiki abzulegen, das nach außen
-// erreichbar sein kann, wäre ein schlechter Tausch.
+// Gemessen wird ohne fremde Hilfe. Kein Prometheus, kein Grafana, kein Zugang
+// zum fremden Rechner: was in der Tabelle steht, hat diese Instanz selbst
+// gesehen, als sie angeklopft hat. Das ist weniger, als ein Überwacher mit
+// Agenten auf jedem Gerät wüsste, und es ist dafür sofort da und hängt an
+// nichts.
 //
-// Die Fassung kommt deshalb aus einer zweiten Quelle: aus dem Prometheus, den
-// die meisten ohnehin betreiben. Der node_exporter kennt Betriebssystem, Kern
-// und Startzeit jedes Rechners, und Nexora fragt ihn danach, statt sich selbst
-// irgendwo anzumelden. Ohne eingetragene Adresse bleibt die Spalte leer, und
-// die Erreichbarkeit steht trotzdem da.
+// Erstaunlich viel fällt dabei ohnehin ab. Wer eine Verbindung annimmt, sagt
+// meist im ersten Atemzug, wer er ist: ein SSH-Dienst nennt seine Fassung,
+// bevor überhaupt jemand nach einem Passwort gefragt hat, ein Webserver nennt
+// sie in der Kopfzeile Server, und ein verschlüsselter Dienst zeigt sein
+// Zertifikat samt Ablaufdatum. Genau das steht in den Spalten.
 package handlers
 
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"net"
 	"net/http"
@@ -53,11 +52,10 @@ const (
 // Rechner ist eine Zeile der Liste, wie die Oberfläche sie sieht: das
 // Eingetragene und das gerade Gemessene in einem Stück.
 type Rechner struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	Ziel    string `json:"ziel"`
-	Notiz   string `json:"notiz,omitempty"`
-	Instanz string `json:"instanz,omitempty"`
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Ziel  string `json:"ziel"`
+	Notiz string `json:"notiz,omitempty"`
 
 	// Gemessen: "antwortet", "still" oder "unbekannt", solange nichts geprüft
 	// wurde. Deutsch, weil es so angezeigt wird.
@@ -65,18 +63,19 @@ type Rechner struct {
 	Antwort string `json:"antwort,omitempty"`
 	Hinweis string `json:"hinweis,omitempty"`
 
-	// Aus Prometheus, wenn dort etwas über den Rechner steht.
-	System string `json:"system,omitempty"`
-	Kern   string `json:"kern,omitempty"`
-	Laeuft string `json:"laeuft,omitempty"`
+	// Was der Rechner beim Anklopfen von sich erzählt hat: die Kennung des
+	// Dienstes, und bei einer verschlüsselten Verbindung, wie lange sein
+	// Zertifikat noch gilt.
+	Fassung    string `json:"fassung,omitempty"`
+	Zertifikat string `json:"zertifikat,omitempty"`
+	// TageBisAblauf ist dieselbe Angabe als Zahl, damit die Oberfläche eine
+	// Zeile einfärben kann, ohne Text auszuwerten. Negativ heißt: abgelaufen.
+	TageBisAblauf *int `json:"tageBisAblauf,omitempty"`
 }
 
-// RechnerListe ist die Antwort samt dem, was zur Herkunft der Fassungen zu
-// sagen ist. Die Oberfläche soll erklären können, warum eine Spalte leer ist.
+// RechnerListe ist die Antwort: die Zeilen und wann zuletzt gemessen wurde.
 type RechnerListe struct {
 	Rechner    []Rechner `json:"rechner"`
-	Prometheus string    `json:"prometheus,omitempty"`
-	Quelle     string    `json:"quelle,omitempty"`
 	GeprueftUm string    `json:"geprueftUm,omitempty"`
 }
 
@@ -121,8 +120,19 @@ func zielPruefen(roh string) (string, error) {
 	return ziel, nil
 }
 
-// anklopfen misst, ob unter der Adresse jemand antwortet.
-func anklopfen(ctx context.Context, ziel string) (bool, time.Duration, string) {
+// messung ist, was ein einzelnes Anklopfen ergeben hat.
+type messung struct {
+	Da         bool
+	Dauer      time.Duration
+	Fassung    string
+	Zertifikat string
+	Tage       *int
+	Hinweis    string
+}
+
+// anklopfen misst, ob unter der Adresse jemand antwortet, und nimmt mit, was
+// er dabei von sich erzählt.
+func anklopfen(ctx context.Context, ziel string) messung {
 	ctx, abbruch := context.WithTimeout(ctx, rechnerGeduld)
 	defer abbruch()
 	beginn := time.Now()
@@ -130,30 +140,105 @@ func anklopfen(ctx context.Context, ziel string) (bool, time.Duration, string) {
 	if strings.HasPrefix(ziel, "http://") || strings.HasPrefix(ziel, "https://") {
 		anfrage, err := http.NewRequestWithContext(ctx, http.MethodGet, ziel, nil)
 		if err != nil {
-			return false, 0, kurz(err.Error())
+			return messung{Hinweis: kurz(err.Error())}
 		}
 		antwort, err := klopfer.Do(anfrage)
 		if err != nil {
-			return false, time.Since(beginn), kurz(err.Error())
+			return messung{Dauer: time.Since(beginn), Hinweis: kurz(err.Error())}
 		}
-		antwort.Body.Close()
+		defer antwort.Body.Close()
+
+		m := messung{Da: true, Dauer: time.Since(beginn)}
+		// Die Kopfzeile Server ist die Fassung, die der Dienst selbst nennt.
+		// Manche verschweigen sie, und das ist ihr gutes Recht -- dann bleibt
+		// die Spalte leer, statt dass hier etwas geraten wird.
+		m.Fassung = kurzeKennung(antwort.Header.Get("Server"))
 		// Auch eine 404 ist eine Antwort: gefragt ist, ob dort ein Dienst
 		// läuft, nicht ob er diesen einen Weg kennt. Der Status steht daneben,
 		// falls jemand mehr erwartet hat.
-		hinweis := ""
 		if antwort.StatusCode >= 400 {
-			hinweis = "antwortet mit " + strconv.Itoa(antwort.StatusCode)
+			m.Hinweis = "antwortet mit " + strconv.Itoa(antwort.StatusCode)
 		}
-		return true, time.Since(beginn), hinweis
+		if antwort.TLS != nil && len(antwort.TLS.PeerCertificates) > 0 {
+			m.Zertifikat, m.Tage = zertifikatsAlter(antwort.TLS.PeerCertificates[0].NotAfter)
+		}
+		return m
 	}
 
 	waehler := net.Dialer{Timeout: rechnerGeduld}
 	verbindung, err := waehler.DialContext(ctx, "tcp", ziel)
 	if err != nil {
-		return false, time.Since(beginn), kurz(err.Error())
+		return messung{Dauer: time.Since(beginn), Hinweis: kurz(err.Error())}
 	}
-	verbindung.Close()
-	return true, time.Since(beginn), ""
+	defer verbindung.Close()
+	m := messung{Da: true, Dauer: time.Since(beginn)}
+	m.Fassung = kurzeKennung(begruessung(verbindung))
+	return m
+}
+
+// begruessung liest, was ein Dienst von sich aus sagt, sobald die Verbindung
+// steht.
+//
+// Viele tun das: ein SSH-Dienst nennt seine Fassung, bevor irgendjemand nach
+// einem Passwort gefragt hat, ein Postfachdienst grüßt mit 220 und seinem
+// Namen. Genau das ist die Antwort auf "welche Fassung läuft da", ohne dass
+// sich Nexora irgendwo anmelden müsste.
+//
+// Wer nichts sagt, sagt nichts: die kurze Frist läuft ab, die Spalte bleibt
+// leer, und niemand hat gewartet. Geschrieben wird nie -- diese Prüfung klopft
+// an und tritt nicht ein.
+func begruessung(verbindung net.Conn) string {
+	if err := verbindung.SetReadDeadline(time.Now().Add(600 * time.Millisecond)); err != nil {
+		return ""
+	}
+	puffer := make([]byte, 256)
+	n, err := verbindung.Read(puffer)
+	if n <= 0 || (err != nil && n == 0) {
+		return ""
+	}
+	return string(puffer[:n])
+}
+
+// kurzeKennung macht aus dem, was hereinkam, eine Zeile für die Tabelle.
+//
+// Nur die erste Zeile, nur Druckbares, und bei sechzig Zeichen ist Schluss:
+// hier kommt an, was ein fremder Rechner sagen wollte, und das gehört
+// beschnitten, bevor es in einer Oberfläche steht. Ein Dienst, der statt einer
+// Kennung eine Seite Text schickt, soll die Tabelle nicht sprengen.
+func kurzeKennung(roh string) string {
+	roh = strings.SplitN(roh, "\n", 2)[0]
+	roh = strings.TrimSpace(strings.SplitN(roh, "\r", 2)[0])
+	var sauber strings.Builder
+	for _, z := range roh {
+		if z < 32 || z == 127 {
+			continue
+		}
+		sauber.WriteRune(z)
+		if sauber.Len() >= 60 {
+			break
+		}
+	}
+	return sauber.String()
+}
+
+// zertifikatsAlter sagt, wie lange das Zertifikat noch gilt.
+//
+// Die Zahl steht daneben, weil ein abgelaufenes Zertifikat der häufigste Grund
+// dafür ist, dass ein Dienst im eigenen Haus plötzlich nicht mehr erreichbar
+// ist -- und der einzige, den man Wochen vorher sehen könnte, wenn ihn nur
+// jemand anzeigte.
+func zertifikatsAlter(bis time.Time) (string, *int) {
+	tage := int(time.Until(bis).Hours() / 24)
+	switch {
+	case tage < 0:
+		return "abgelaufen", &tage
+	case tage == 0:
+		return "läuft heute ab", &tage
+	case tage == 1:
+		return "noch 1 Tag", &tage
+	default:
+		return "noch " + strconv.Itoa(tage) + " Tage", &tage
+	}
 }
 
 // klopfer ist der Browser dieser Prüfung, und er unterscheidet sich in zwei
@@ -196,10 +281,6 @@ func (s *Server) ListRechner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	antwort := RechnerListe{Rechner: s.rechnerMessen(r.Context(), eintraege)}
-	if adresse := prometheusAdresse(); adresse != "" {
-		antwort.Prometheus = adresse
-		antwort.Quelle = "Prometheus"
-	}
 	rechnerSpeicher.Lock()
 	if !rechnerSpeicher.geprüft.IsZero() {
 		antwort.GeprueftUm = rechnerSpeicher.geprüft.Format(time.RFC3339)
@@ -210,7 +291,7 @@ func (s *Server) ListRechner(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) rechnerLesen(ctx context.Context) ([]Rechner, error) {
 	rows, err := s.Pool.Query(ctx,
-		`SELECT id, name, ziel, notiz, instanz FROM rechner
+		`SELECT id, name, ziel, notiz FROM rechner
 		  ORDER BY reihenfolge, angelegt_am`)
 	if err != nil {
 		return nil, err
@@ -219,7 +300,7 @@ func (s *Server) rechnerLesen(ctx context.Context) ([]Rechner, error) {
 	liste := []Rechner{}
 	for rows.Next() {
 		var e Rechner
-		if err := rows.Scan(&e.ID, &e.Name, &e.Ziel, &e.Notiz, &e.Instanz); err == nil {
+		if err := rows.Scan(&e.ID, &e.Name, &e.Ziel, &e.Notiz); err == nil {
 			liste = append(liste, e)
 		}
 	}
@@ -240,7 +321,7 @@ func (s *Server) rechnerMessen(ctx context.Context, eintraege []Rechner) []Rechn
 		for _, e := range eintraege {
 			if alt, ok := rechnerSpeicher.stand[e.ID]; ok {
 				e.Zustand, e.Antwort, e.Hinweis = alt.Zustand, alt.Antwort, alt.Hinweis
-				e.System, e.Kern, e.Laeuft = alt.System, alt.Kern, alt.Laeuft
+				e.Fassung, e.Zertifikat, e.TageBisAblauf = alt.Fassung, alt.Zertifikat, alt.TageBisAblauf
 			} else {
 				e.Zustand = "unbekannt"
 			}
@@ -257,20 +338,19 @@ func (s *Server) rechnerMessen(ctx context.Context, eintraege []Rechner) []Rechn
 		warten.Add(1)
 		go func(i int, e Rechner) {
 			defer warten.Done()
-			da, gedauert, hinweis := anklopfen(ctx, e.Ziel)
-			if da {
+			m := anklopfen(ctx, e.Ziel)
+			if m.Da {
 				e.Zustand = "antwortet"
-				e.Antwort = dauer(gedauert)
+				e.Antwort = dauer(m.Dauer)
 			} else {
 				e.Zustand = "still"
 			}
-			e.Hinweis = hinweis
+			e.Fassung, e.Zertifikat, e.TageBisAblauf = m.Fassung, m.Zertifikat, m.Tage
+			e.Hinweis = m.Hinweis
 			fertig[i] = e
 		}(i, e)
 	}
 	warten.Wait()
-
-	ausPrometheus(ctx, fertig)
 
 	rechnerSpeicher.Lock()
 	rechnerSpeicher.stand = map[string]Rechner{}
@@ -282,141 +362,10 @@ func (s *Server) rechnerMessen(ctx context.Context, eintraege []Rechner) []Rechn
 	return fertig
 }
 
-// prometheusAdresse ist der Prometheus, den diese Instanz fragen darf. Leer
-// heißt: keine Fassungen, nur Erreichbarkeit.
-func prometheusAdresse() string {
-	return strings.TrimRight(strings.TrimSpace(wert("prometheus_adresse")), "/")
-}
-
-// ausPrometheus trägt Betriebssystem, Kern und Laufzeit nach.
-//
-// Drei Abfragen und nicht eine je Rechner: Prometheus antwortet auf eine Frage
-// mit allen Zeitreihen, die dazu passen, und die Zuordnung geschieht danach
-// hier. Bei fünfzig Rechnern ist das der Unterschied zwischen drei Anfragen und
-// hundertfünfzig.
-func ausPrometheus(ctx context.Context, liste []Rechner) {
-	adresse := prometheusAdresse()
-	if adresse == "" || len(liste) == 0 {
-		return
-	}
-	ctx, abbruch := context.WithTimeout(ctx, rechnerGeduld)
-	defer abbruch()
-
-	uname := prometheusFragen(ctx, adresse, "node_uname_info")
-	os := prometheusFragen(ctx, adresse, "node_os_info")
-	start := prometheusFragen(ctx, adresse, "node_boot_time_seconds")
-	if len(uname) == 0 && len(os) == 0 && len(start) == 0 {
-		return
-	}
-
-	for i := range liste {
-		schluessel := instanzSchluessel(liste[i].Instanz, liste[i].Ziel)
-		if schluessel == "" {
-			continue
-		}
-		if m, ok := uname[schluessel]; ok {
-			liste[i].Kern = m.Labels["release"]
-			if liste[i].System == "" && m.Labels["sysname"] != "" {
-				liste[i].System = m.Labels["sysname"]
-			}
-		}
-		if m, ok := os[schluessel]; ok {
-			if huebsch := m.Labels["pretty_name"]; huebsch != "" {
-				liste[i].System = huebsch
-			}
-		}
-		if m, ok := start[schluessel]; ok {
-			if sek, err := strconv.ParseFloat(m.Wert, 64); err == nil && sek > 0 {
-				liste[i].Laeuft = dauer(time.Since(time.Unix(int64(sek), 0)))
-			}
-		}
-	}
-}
-
-// instanzSchluessel bestimmt, unter welchem Namen ein Rechner in Prometheus zu
-// suchen ist: die eingetragene Kennung, sonst der Rechnername aus dem Ziel.
-// Der Port bleibt außen vor, denn in Prometheus steht der des Exporters (9100)
-// und hier der, an dem angeklopft wird (etwa 22).
-func instanzSchluessel(instanz, ziel string) string {
-	roh := instanz
-	if roh == "" {
-		roh = ziel
-	}
-	roh = strings.TrimSpace(roh)
-	if roh == "" {
-		return ""
-	}
-	if u, err := url.Parse(roh); err == nil && u.Host != "" {
-		roh = u.Host
-	}
-	if rechner, _, err := net.SplitHostPort(roh); err == nil {
-		roh = rechner
-	}
-	return strings.ToLower(roh)
-}
-
-// promReihe ist eine Zeitreihe, so weit sie hier gebraucht wird.
-type promReihe struct {
-	Labels map[string]string
-	Wert   string
-}
-
-// prometheusFragen stellt eine Sofortabfrage und ordnet die Antwort nach dem
-// Rechnernamen aus dem instance-Etikett.
-//
-// Fehler sind hier kein Fehler: antwortet der Prometheus nicht, bleiben die
-// Spalten leer, und die Erreichbarkeit steht trotzdem da. Eine Übersicht, die
-// ganz ausfällt, weil eine Nebenquelle klemmt, wäre der schlechtere Tausch.
-func prometheusFragen(ctx context.Context, adresse, abfrage string) map[string]promReihe {
-	ziel := adresse + "/api/v1/query?query=" + url.QueryEscape(abfrage)
-	anfrage, err := http.NewRequestWithContext(ctx, http.MethodGet, ziel, nil)
-	if err != nil {
-		return nil
-	}
-	antwort, err := http.DefaultClient.Do(anfrage)
-	if err != nil {
-		return nil
-	}
-	defer antwort.Body.Close()
-	if antwort.StatusCode != http.StatusOK {
-		return nil
-	}
-
-	var gelesen struct {
-		Data struct {
-			Result []struct {
-				Metric map[string]string `json:"metric"`
-				Value  []any             `json:"value"`
-			} `json:"result"`
-		} `json:"data"`
-	}
-	if err := json.NewDecoder(antwort.Body).Decode(&gelesen); err != nil {
-		return nil
-	}
-
-	nach := map[string]promReihe{}
-	for _, reihe := range gelesen.Data.Result {
-		schluessel := instanzSchluessel(reihe.Metric["instance"], "")
-		if schluessel == "" {
-			continue
-		}
-		eintrag := promReihe{Labels: reihe.Metric}
-		// value ist [zeit, "wert"], der Wert steht als Zeichenkette hinten.
-		if len(reihe.Value) == 2 {
-			if s, ok := reihe.Value[1].(string); ok {
-				eintrag.Wert = s
-			}
-		}
-		nach[schluessel] = eintrag
-	}
-	return nach
-}
-
 type rechnerReq struct {
-	Name    string `json:"name"`
-	Ziel    string `json:"ziel"`
-	Notiz   string `json:"notiz"`
-	Instanz string `json:"instanz"`
+	Name  string `json:"name"`
+	Ziel  string `json:"ziel"`
+	Notiz string `json:"notiz"`
 }
 
 // RechnerAnlegen trägt einen Rechner in die Liste ein.
@@ -452,11 +401,11 @@ func (s *Server) RechnerAnlegen(w http.ResponseWriter, r *http.Request) {
 
 	var e Rechner
 	err = s.Pool.QueryRow(r.Context(),
-		`INSERT INTO rechner (name, ziel, notiz, instanz, reihenfolge)
-		 VALUES ($1, $2, $3, $4, (SELECT coalesce(max(reihenfolge), 0) + 1 FROM rechner))
-		 RETURNING id, name, ziel, notiz, instanz`,
-		name, ziel, strings.TrimSpace(req.Notiz), strings.TrimSpace(req.Instanz)).
-		Scan(&e.ID, &e.Name, &e.Ziel, &e.Notiz, &e.Instanz)
+		`INSERT INTO rechner (name, ziel, notiz, reihenfolge)
+		 VALUES ($1, $2, $3, (SELECT coalesce(max(reihenfolge), 0) + 1 FROM rechner))
+		 RETURNING id, name, ziel, notiz`,
+		name, ziel, strings.TrimSpace(req.Notiz)).
+		Scan(&e.ID, &e.Name, &e.Ziel, &e.Notiz)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "konnte nicht angelegt werden")
 		return
@@ -491,10 +440,10 @@ func (s *Server) RechnerAendern(w http.ResponseWriter, r *http.Request) {
 
 	var e Rechner
 	err = s.Pool.QueryRow(r.Context(),
-		`UPDATE rechner SET name=$2, ziel=$3, notiz=$4, instanz=$5 WHERE id=$1
-		 RETURNING id, name, ziel, notiz, instanz`,
-		id, name, ziel, strings.TrimSpace(req.Notiz), strings.TrimSpace(req.Instanz)).
-		Scan(&e.ID, &e.Name, &e.Ziel, &e.Notiz, &e.Instanz)
+		`UPDATE rechner SET name=$2, ziel=$3, notiz=$4 WHERE id=$1
+		 RETURNING id, name, ziel, notiz`,
+		id, name, ziel, strings.TrimSpace(req.Notiz)).
+		Scan(&e.ID, &e.Name, &e.Ziel, &e.Notiz)
 	if err != nil {
 		writeErr(w, http.StatusNotFound, "nicht gefunden")
 		return

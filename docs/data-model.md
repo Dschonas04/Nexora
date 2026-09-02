@@ -280,21 +280,16 @@ does not belong here: it is needed before the database is open.
 
 Current keys: `registrierung_offen`, `erlaubte_domaenen`, `max_anhang_mb`,
 `sitzung_stunden`, `papierkorb_tage`, `such_woerterbuch`, `echtzeit`,
-`prometheus_adresse`, `design_grundton`, `design_akzent` — plus the imported
-licence key, which takes precedence over the one in the file.
+`design_grundton`, `design_akzent` — plus the imported licence key, which takes
+precedence over the one in the file.
 
 ### `rechner`
 
-`id` PK, `name`, `ziel`, `notiz`, `instanz`, `reihenfolge`, `angelegt_am`. The
-machines the settings page keeps an eye on. A pure lookup list: it holds **what**
-to probe, never the result. Reachability is measured on request and kept in
-memory for 15 seconds, so a restart honestly knows nothing rather than claiming
-a machine was up because it was two days ago.
-
-`instanz` is the name Prometheus files the machine under (`instance` label).
-Empty means: derive it from `ziel`, which is right in almost every case — the
-port is dropped on both sides, since Prometheus carries the exporter's (9100)
-and the list carries the one being knocked on (22, say).
+`id` PK, `name`, `ziel`, `notiz`, `reihenfolge`, `angelegt_am`. The machines the
+settings page keeps an eye on. A pure lookup list: it holds **what** to probe,
+never the result. Reachability, version and certificate age are measured on
+request and kept in memory for 15 seconds, so a restart honestly knows nothing
+rather than claiming a machine was up because it was two days ago.
 
 ---
 

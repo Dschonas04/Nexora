@@ -367,8 +367,8 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `POST` | `/system/metriken/token` | Generate a token and store it, switching the endpoint on. A new one invalidates the old at once · admin |
 | `DELETE` | `/system/metriken/token` | Clear it; `/metrics` answers 404 again · admin |
 | `GET` | `/system/metriken/grafana.json` | The ready-made Grafana dashboard for this version, as a download · admin |
-| `GET` | `/system/rechner` | The machines this instance keeps an eye on, each with a fresh probe: `zustand` is `antwortet`, `still` or `unbekannt`, plus the round trip time and — where a Prometheus is configured — operating system, kernel and uptime. Measurements are at most 15 seconds old; a poll in between is answered from memory · admin |
-| `POST` | `/system/rechner` | `{name, ziel, notiz?, instanz?}`. `ziel` is `host:port` or a full `http(s)://` address; a host without a port is refused rather than guessed · admin |
+| `GET` | `/system/rechner` | The machines this instance keeps an eye on, each with a fresh probe: `zustand` is `antwortet`, `still` or `unbekannt`, plus the round trip time, the version the service names itself (`fassung`, from its greeting or the `Server` header) and, on TLS targets, how long the certificate still has (`zertifikat`, `tageBisAblauf`). Nothing outside is asked — no monitoring system, no credentials. Measurements are at most 15 seconds old; a poll in between is answered from memory · admin |
+| `POST` | `/system/rechner` | `{name, ziel, notiz?}`. `ziel` is `host:port` or a full `http(s)://` address; a host without a port is refused rather than guessed · admin |
 | `PUT` | `/system/rechner/{id}` | Change one · admin |
 | `DELETE` | `/system/rechner/{id}` | Remove one from the list · admin |
 | `GET` | `/system/ldap` | How the directory is configured, read from `config.conf`. The service account's password is never in the answer, only whether one is set · admin |

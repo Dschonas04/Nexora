@@ -707,7 +707,7 @@ the wrong party, encrypted.
 | backend → PostgreSQL | `sslmode=verify-full&sslrootcert=…` in the connection string; pgx does the rest, no code of ours |
 | backend → MinIO | minio-go with a transport of our own carrying the root pool |
 | backend → Redis | `--port 0` on the server closes the plain door; the client verifies the name |
-| backend → everything else | The authority is installed into `http.DefaultTransport` once at start-up, so it covers the identity provider and the machine list's Prometheus as well |
+| backend → everything else | The authority is installed into `http.DefaultTransport` once at start-up, so it covers the identity provider and every other call the service makes |
 
 The authority is **added** to the public ones, never substituted (see
 `internal/vertrauen`). Replacing them would cost the service its trust in every

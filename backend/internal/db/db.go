@@ -446,9 +446,6 @@ CREATE TABLE IF NOT EXISTS rechner (
 	name         text NOT NULL,
 	ziel         text NOT NULL,
 	notiz        text NOT NULL DEFAULT '',
-	-- Die Kennung, unter der Prometheus den Rechner fuehrt (label instance).
-	-- Leer heisst: aus dem Ziel erraten, was in aller Regel stimmt.
-	instanz      text NOT NULL DEFAULT '',
 	reihenfolge  int NOT NULL DEFAULT 0,
 	angelegt_am  timestamptz NOT NULL DEFAULT now()
 );

@@ -102,12 +102,6 @@ var bekannt = map[string]struct {
 		Erklaerung: "Mehrere Konten schreiben gleichzeitig an derselben Seite, jeder sieht die Änderungen der anderen sofort. Wer mitschreiben darf, entscheidet die Freigabe der Seite: nur wer sie bearbeiten darf.",
 		Warnung:    "Aus heißt nicht abgeschaltet, sondern zurück auf das alte Verhalten: die Seite wird beim Speichern ganz geschrieben, und wer zuletzt speichert, gewinnt. Der Hinweis auf den Konflikt bleibt.",
 	},
-	"prometheus_adresse": {
-		Art:        "text",
-		Titel:      "Prometheus",
-		Erklaerung: "Adresse eines Prometheus, etwa http://10.0.0.5:9090. Daraus holt die Rechnerliste Betriebssystem, Kern und Laufzeit. Leer heißt: nur Erreichbarkeit, keine Fassungen.",
-		Warnung:    "Gefragt wird ohne Anmeldung. Steht der Prometheus hinter einem Passwort, bleibt die Spalte leer, statt dass etwas Falsches darin steht.",
-	},
 	"design_grundton": {
 		Art:        "auswahl",
 		Titel:      "Grundton",
@@ -192,8 +186,6 @@ func ausDatei(schluessel string, k config.Konfig) string {
 		return "#2383e2"
 	case "metriken_token":
 		return k.MetrikenToken
-	case "prometheus_adresse":
-		return ""
 	}
 	return ""
 }
@@ -348,7 +340,6 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 		"registrierung_offen", "erlaubte_domaenen",
 		"max_anhang_mb", "sitzung_stunden", "papierkorb_tage", "such_woerterbuch",
 		"echtzeit",
-		"prometheus_adresse",
 		"design_grundton", "design_akzent",
 	}
 
