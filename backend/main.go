@@ -461,6 +461,9 @@ func main() {
 			r.Delete("/spaces/{id}", h.DeleteSpace)
 			// Open a space to every signed-in account (not to the internet).
 			r.Put("/spaces/{id}/oeffentlich", h.SetSpaceOeffentlich)
+			// Die Farbe der Ablage im Grafen. Steht an der Ablage und nicht am
+			// Browser, damit alle dasselbe Bild sehen.
+			r.Put("/spaces/{id}/farbe", h.SetSpaceFarbe)
 
 			// Backlinks (pages linking here via [[wiki-link]] or manual links)
 			// Markdown export of one page. Done on the server so it works without

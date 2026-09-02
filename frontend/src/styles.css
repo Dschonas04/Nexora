@@ -900,6 +900,65 @@ textarea::placeholder {
    Ohne den Umbruch stand der Knopf "Hinzufügen" halb hinter dem Rand des
    Dialogs: die drei Mindestbreiten zusammen waren breiter als der Kasten, und
    der Kasten schneidet ab, was übersteht. */
+/* Die Kontenliste im Teilen-Fenster: ankreuzen statt abtippen. Eigene Hoehe
+   mit Rollbalken, damit ein Arbeitsbereich mit vierzig Konten das Fenster nicht
+   ueber den Bildschirm hinauswachsen laesst. */
+/* Der Punkt in der Legende ist der Farbwaehler. Das Eingabefeld selbst liegt
+   unsichtbar darueber: die eingebaute Farbflaeche der Browser sieht ueberall
+   anders aus, der Punkt ueberall gleich. */
+.graph-legend-dot-wahl {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+.graph-legend-dot-wahl input[type="color"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+}
+
+.konten-wahl {
+  margin: 8px 0;
+}
+.konten-suche {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 9px;
+  font-size: 13px;
+  margin-bottom: 6px;
+  outline: none;
+}
+.konten-liste {
+  max-height: 168px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.konten-zeile {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 9px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.konten-zeile:hover {
+  background: var(--hover);
+}
+.konten-zeile.schon-da {
+  opacity: 0.5;
+  cursor: default;
+}
+.konten-name {
+  font-weight: 500;
+}
+
 .share-add {
   display: flex;
   flex-wrap: wrap;

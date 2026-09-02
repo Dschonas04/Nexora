@@ -1,7 +1,7 @@
 // Sharing dialog. It covers the two independent mechanisms: naming individual
 // accounts, and a public link anyone can open. A page can use both at once.
 import { useEffect, useState } from "react";
-import { ShareEntry, api } from "../api/client";
+import { ShareEntry, User, api } from "../api/client";
 import { useLizenz } from "../lizenz";
 
 interface Props {
@@ -17,6 +17,14 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
   const [email, setEmail] = useState("");
   const [perm, setPerm] = useState("read");
   const [err, setErr] = useState("");
+  const [hinweis, setHinweis] = useState("");
+  const [laeuft, setLaeuft] = useState(false);
+  // Die vorhandenen Konten, wenn dieses Konto sie sehen darf. Die Liste ist
+  // Verwaltungssache; wer sie nicht bekommt, tippt Adressen ein und merkt von
+  // dieser Hälfte nichts.
+  const [konten, setKonten] = useState<User[] | null>(null);
+  const [gewaehlt, setGewaehlt] = useState<Set<string>>(new Set());
+  const [suche, setSuche] = useState("");
   // Wie viele gerade an dieser Seite sitzen. Wer teilt, will sehen, ob jemand
   // drin ist, bevor er ein Recht wegnimmt.
   const [dabei, setDabei] = useState<{ anzahl: number; moeglich: boolean } | null>(null);
@@ -47,15 +55,68 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId]);
 
+  useEffect(() => {
+    api
+      .listUsers()
+      .then(setKonten)
+      .catch(() => setKonten(null));
+  }, []);
+
+  // Mehrere auf einmal, und aus zwei Quellen zugleich: die angehakten Konten
+  // und was im Feld steht. Das Feld nimmt eine Adresse oder zwanzig, getrennt
+  // durch Komma, Semikolon, Leerzeichen oder Zeilenumbruch -- eine Liste aus
+  // einer Mail lässt sich so hineinkopieren, ohne sie vorher zu zerlegen.
+  const adressenAus = (roh: string) =>
+    roh
+      .split(/[\s,;]+/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+
   const add = async () => {
     setErr("");
-    try {
-      await api.addShare(pageId, email.trim(), perm);
-      setEmail("");
-      refresh();
-    } catch (e) {
-      setErr((e as Error).message);
+    setHinweis("");
+    const ausListe = (konten ?? []).filter((k) => gewaehlt.has(k.id)).map((k) => k.email);
+    const ausFeld = adressenAus(email);
+    // Doppelte fallen weg: wer jemanden anhakt und seine Adresse zusätzlich
+    // eintippt, meint einmal.
+    const alle = Array.from(new Set([...ausListe, ...ausFeld]));
+    if (alle.length === 0) {
+      setErr("Niemand ausgewählt.");
+      return;
     }
+
+    setLaeuft(true);
+    // Nacheinander und nicht alle auf einmal: jede Adresse bekommt ihre eigene
+    // Antwort, und eine, die scheitert, soll die anderen nicht mitreißen.
+    const gescheitert: string[] = [];
+    let geschafft = 0;
+    for (const adresse of alle) {
+      try {
+        await api.addShare(pageId, adresse, perm);
+        geschafft++;
+      } catch (e) {
+        gescheitert.push(`${adresse}: ${(e as Error).message}`);
+      }
+    }
+    setLaeuft(false);
+    setEmail("");
+    setGewaehlt(new Set());
+    if (geschafft > 0) {
+      setHinweis(
+        geschafft === 1 ? "Eine Person hinzugefügt." : `${geschafft} Personen hinzugefügt.`,
+      );
+    }
+    if (gescheitert.length > 0) setErr(gescheitert.join(" · "));
+    refresh();
+  };
+
+  const umschalten = (id: string) => {
+    setGewaehlt((vorher) => {
+      const neu = new Set(vorher);
+      if (neu.has(id)) neu.delete(id);
+      else neu.add(id);
+      return neu;
+    });
   };
 
   const remove = async (userId: string) => {
@@ -96,7 +157,7 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
           <div className="modal-label">Personen einladen</div>
           <div className="share-add">
             <input
-              placeholder="E-Mail-Adresse"
+              placeholder="E-Mail-Adressen, durch Komma getrennt"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && add()}
@@ -105,10 +166,66 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
               <option value="read">Kann ansehen</option>
               <option value="edit">Kann bearbeiten</option>
             </select>
-            <button className="btn btn-primary" onClick={add}>
-              Hinzufügen
+            <button className="btn btn-primary" disabled={laeuft} onClick={add}>
+              {laeuft ? "Fügt hinzu…" : "Hinzufügen"}
             </button>
           </div>
+
+          {/* Die Kontenliste, wenn dieses Konto sie sehen darf. Ankreuzen statt
+              abtippen: bei einem Dutzend Leuten ist das der Unterschied
+              zwischen einer Handbewegung und einer Fleißaufgabe. Wer schon
+              dabei ist, steht ausgegraut da und lässt sich nicht doppelt
+              vergeben. */}
+          {konten && konten.length > 0 && (
+            <div className="konten-wahl">
+              {konten.length > 8 && (
+                <input
+                  className="konten-suche"
+                  placeholder="In der Liste suchen"
+                  value={suche}
+                  onChange={(e) => setSuche(e.target.value)}
+                />
+              )}
+              <div className="konten-liste">
+                {konten
+                  .filter((k) => {
+                    const q = suche.toLowerCase().trim();
+                    if (!q) return true;
+                    return (
+                      (k.name || "").toLowerCase().includes(q) ||
+                      k.email.toLowerCase().includes(q)
+                    );
+                  })
+                  .map((k) => {
+                    const schonDa = shares.some((sh) => sh.userId === k.id);
+                    return (
+                      <label
+                        key={k.id}
+                        className={"konten-zeile" + (schonDa ? " schon-da" : "")}
+                        title={schonDa ? "Hat bereits Zugriff" : k.email}
+                      >
+                        <input
+                          type="checkbox"
+                          disabled={schonDa}
+                          checked={gewaehlt.has(k.id)}
+                          onChange={() => umschalten(k.id)}
+                        />
+                        <span className="konten-name">{k.name || k.email}</span>
+                        <span className="muted small">{k.email}</span>
+                      </label>
+                    );
+                  })}
+              </div>
+              {gewaehlt.size > 0 && (
+                <div className="muted small">
+                  {gewaehlt.size === 1 ? "Eine Person" : `${gewaehlt.size} Personen`} ausgewählt
+                  — <strong>{perm === "edit" ? "kann bearbeiten" : "kann ansehen"}</strong>
+                </div>
+              )}
+            </div>
+          )}
+
+          {hinweis && <div className="hinweis-ok">{hinweis}</div>}
           {err && <div className="error">{err}</div>}
 
           {frei("echtzeit") && (

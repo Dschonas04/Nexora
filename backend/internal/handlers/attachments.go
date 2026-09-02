@@ -5,6 +5,7 @@
 package handlers
 
 import (
+	"bufio"
 	"io"
 	"log"
 	"mime"
@@ -84,6 +85,18 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 	mime := typAusAngabeUndName(header.Header.Get("Content-Type"), filename)
 
+	// Die ersten Bytes ansehen, bevor irgendetwas geschrieben wird. Der Puffer
+	// steht danach wieder vollständig zur Verfügung, gelesen wird nichts
+	// doppelt: Peek gibt zurück, ohne zu verbrauchen.
+	gepuffert := bufio.NewReaderSize(file, 512)
+	anfang, _ := gepuffert.Peek(len(elfMagie))
+	if istLinuxProgramm(anfang) {
+		// 415: die Datei ist verstanden worden, sie ist nur nicht erwünscht.
+		// 400 hieße "kaputt", und das stimmt nicht.
+		writeErr(w, http.StatusUnsupportedMediaType, programmMeldung)
+		return
+	}
+
 	var attID string
 	if err := s.Pool.QueryRow(r.Context(),
 		`INSERT INTO attachments (page_id, owner_id, filename, mime, size)
@@ -99,7 +112,7 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	// The text extraction hooks into the stream: the file passes through anyway,
 	// and fetching it a second time to read it would be an avoidable round trip,
 	// with an object store even one across the network.
-	strom := &mitschnitt{quelle: file}
+	strom := &mitschnitt{quelle: gepuffert}
 	written, err := s.Ablage.Schreiben(r.Context(), attID, strom, header.Size, mime)
 	if err != nil {
 		// Remove the row again: an attachment row without a file would be an entry

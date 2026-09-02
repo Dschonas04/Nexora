@@ -6,6 +6,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -27,7 +28,7 @@ func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 	// spaces first -- they are the shared ground and therefore usually what one
 	// is looking for.
 	rows, err := s.Pool.Query(r.Context(),
-		`SELECT sp.id, sp.owner_id, sp.name, sp.created_at, sp.oeffentlich,
+		`SELECT sp.id, sp.owner_id, sp.name, sp.created_at, sp.oeffentlich, sp.farbe,
 		        (sp.owner_id <> $1) AS fremd,
 		        (sp.owner_id = $1
 		         OR EXISTS (SELECT 1 FROM users WHERE id = $1 AND role = 'admin')
@@ -59,7 +60,7 @@ func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var sp models.Space
 		if err := rows.Scan(&sp.ID, &sp.OwnerID, &sp.Name, &sp.CreatedAt,
-			&sp.Oeffentlich, &sp.Fremd, &sp.DarfVerwalten); err == nil {
+			&sp.Oeffentlich, &sp.Farbe, &sp.Fremd, &sp.DarfVerwalten); err == nil {
 			list = append(list, sp)
 		}
 	}
@@ -116,6 +117,50 @@ func (s *Server) RenameSpace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+type spaceFarbeReq struct {
+	Farbe string `json:"farbe"`
+}
+
+// SetSpaceFarbe setzt die Farbe, in der die Ablage im Grafen erscheint.
+//
+// Erlaubt ist es, wem die Ablage gehoert, und einer Verwaltung -- dieselbe
+// Leiter wie ueberall. Die Farbe steht an der Ablage und nicht am Browser: der
+// Graf soll bei allen gleich aussehen, sonst redet man ueber verschiedene
+// Bilder.
+//
+// Leer setzt zurueck. Dann vergibt die Oberflaeche wieder eine aus ihrer Reihe,
+// und das ist kein Sonderfall, sondern der Ausgangszustand.
+func (s *Server) SetSpaceFarbe(w http.ResponseWriter, r *http.Request) {
+	uid := middleware.UserID(r)
+	id := chi.URLParam(r, "id")
+
+	var req spaceFarbeReq
+	_ = decode(r, &req)
+	farbe := strings.ToLower(strings.TrimSpace(req.Farbe))
+	// Genauso eng wie beim Akzent der Oberflaeche, siehe einstellungen.go: der
+	// Wert landet in einem Attribut im Browser, und was dort ankommt, muss
+	// harmlos sein.
+	if farbe != "" && !istHexFarbe(farbe) {
+		writeErr(w, http.StatusBadRequest, "Farbe als #rrggbb, oder leer")
+		return
+	}
+
+	if !s.darfSpaceVerwalten(r.Context(), uid, id) {
+		writeErr(w, http.StatusForbidden, "nur wem die Ablage gehört")
+		return
+	}
+	tag, err := s.Pool.Exec(r.Context(), `UPDATE spaces SET farbe=$2 WHERE id=$1`, id, farbe)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "konnte nicht gesetzt werden")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeErr(w, http.StatusNotFound, "space not found")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"farbe": farbe})
 }
 
 // DeleteSpace removes a space. Its pages survive and fall back to "no space"
