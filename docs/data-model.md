@@ -113,7 +113,7 @@ the level it is granted on.
 | `content_text` | text | The prose pulled out of `content` on every save |
 | `such_tsv` | tsvector GENERATED | `setweight(title,'A') \|\| setweight(content_text,'B')`. GIN indexed |
 | `icon` | text | |
-| `breite` | text | `normal`, `breit` or `voll`. On the page, not the account: a twelve-column table needs the width and a scratch note does not, and both live in the same wiki. Width belongs to the typesetting of a text, like a heading |
+| `breite` | text | Empty, `normal`, `breit` or `voll`. Empty is the starting state and means "as the instance sets it" (`seitenbreite`, default `voll`); the other three are a choice made on this page. On the page, not the account: a twelve-column table needs the width and a scratch note does not, and both live in the same wiki. Width belongs to the typesetting of a text, like a heading |
 | `is_public`, `public_token` | boolean, text UNIQUE | The public read-only link |
 | `sort_order` | double precision | Order among siblings. A float, so a drag between two pages needs one update rather than renumbering the row |
 | `deleted_at` | timestamptz | **The trash.** NULL means live. Every page query has to filter on it |
@@ -287,7 +287,7 @@ does not belong here: it is needed before the database is open.
 
 Current keys: `registrierung_offen`, `erlaubte_domaenen`, `max_anhang_mb`,
 `sitzung_stunden`, `papierkorb_tage`, `such_woerterbuch`, `echtzeit`,
-`design_grundton`, `design_akzent` — plus the imported licence key, which takes
+`seitenbreite`, `design_grundton`, `design_akzent` — plus the imported licence key, which takes
 precedence over the one in the file.
 
 ### `rechner`

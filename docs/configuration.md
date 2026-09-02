@@ -113,6 +113,7 @@ then wins over the file — it was set later and on purpose.
 | Key | Environment | Default | What it does |
 |---|---|---|---|
 | `such_woerterbuch` | `NEXORA_SUCH_WOERTERBUCH` | `german` | The PostgreSQL text search configuration. `german` reaches across word forms in German text and costs a little precision in English; `simple` does neither. Changing it needs a reindex: `POST /api/system/suchindex` |
+| `seitenbreite` | — | `voll` | How wide a page is set when it says nothing itself. `voll` uses the whole window, `normal` keeps a narrow measure like a book, `breit` sits in between. A page with a width of its own keeps it. Database only, changeable under Settings, and readable by **everybody** through `/design` — without it the browser would not know how to set the text |
 
 ## Attachments
 
@@ -320,7 +321,7 @@ on purpose:
 
 `registrierung_offen` · `erlaubte_domaenen` · `max_anhang_mb` ·
 `sitzung_stunden` · `papierkorb_tage` · `such_woerterbuch` · `echtzeit` ·
-`design_grundton` (`weiss` | `grau` | `dunkel`) · `design_akzent` (a colour)
+`seitenbreite` · `design_grundton` (`weiss` | `grau` | `dunkel`) · `design_akzent` (a colour)
 
 The database URL, the port and the JWT secret deliberately do **not** live here:
 they are needed before the database is open.

@@ -453,6 +453,22 @@ CREATE TABLE IF NOT EXISTS rechner (
 	reihenfolge  int NOT NULL DEFAULT 0,
 	angelegt_am  timestamptz NOT NULL DEFAULT now()
 );
+
+-- Die Seitenbreite: '' heisst "wie die Instanz es vorgibt", die drei uebrigen
+-- Werte sind die eigene Wahl dieser Seite. Frueher stand hier ueberall
+-- 'normal', und das war nicht als Wahl gemeint, sondern war der Ausgangswert.
+-- Deshalb einmalig umgestellt, mit einer Marke dagegen, dass es beim naechsten
+-- Start noch einmal geschieht -- sonst wuerde eine spaeter getroffene Wahl
+-- "normal" jedes Mal wieder eingesammelt.
+ALTER TABLE pages ALTER COLUMN breite SET DEFAULT '';
+DO $$
+BEGIN
+	IF NOT EXISTS (SELECT 1 FROM einstellungen WHERE schluessel = 'breite_umgestellt') THEN
+		UPDATE pages SET breite = '' WHERE breite = 'normal';
+		INSERT INTO einstellungen (schluessel, wert, geaendert_von)
+		VALUES ('breite_umgestellt', 'ja', 'Umstellung beim Start');
+	END IF;
+END $$;
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

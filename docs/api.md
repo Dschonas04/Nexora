@@ -352,7 +352,7 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `GET` | `/einstellungen` | The runtime settings with their type, title, explanation and default · admin |
 | `PUT` | `/einstellungen` | Set one · admin |
 | `DELETE` | `/einstellungen` | Reset one to its default · admin |
-| `GET` | `/design` | The colour scheme. Readable by **everyone**, or an ordinary user would never see the configured colours, since the settings page itself is closed to them |
+| `GET` | `/design` | The colour scheme and the default page width (`seitenbreite`). Readable by **everyone**, or an ordinary user would never see the configured colours, since the settings page itself is closed to them |
 | `GET` | `/system` | The state of the stack: which surrounding services answer, how fast, which version they run, how much they hold. Nexora has no Docker socket on purpose, so this is what can be established over the network |
 | `GET` | `/system/ablage` | Where attachments currently live |
 | `POST` | `/system/ablage/test` | Try an object store's credentials before saving them |

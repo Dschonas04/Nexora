@@ -21,7 +21,11 @@ import (
 // breiten sind die erlaubten Werte. Eine feste Liste und keine Zahl: hinter den
 // Namen stehen Werte im Stilblatt, und eine freie Pixelangabe aus dem Browser
 // waere eine Zahl, die niemand mehr prueft.
-var breiten = map[string]bool{"normal": true, "breit": true, "voll": true}
+//
+// Der leere Wert gehoert dazu: er heisst "wie die Instanz es vorgibt" und ist
+// der Ausgangszustand jeder Seite. Ohne ihn waere jede Seite fuer immer auf das
+// festgelegt, was beim Anlegen gerade Vorgabe war.
+var breiten = map[string]bool{"": true, "normal": true, "breit": true, "voll": true}
 
 type breiteReq struct {
 	Breite string `json:"breite"`
