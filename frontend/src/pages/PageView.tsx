@@ -3,15 +3,17 @@
 // is where nearly every feature meets.
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { Block, BlockNoteEditor } from "@blocknote/core";
+import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
 import { Graph, Page, PageMeta, PagePatch, Tag, api } from "../api/client";
 import Editor from "../components/Editor";
+import { useMitschrift } from "../mitschrift";
 import VersionPanel from "../components/VersionPanel";
 import ShareDialog from "../components/ShareDialog";
 import Fehlergrenze from "../components/Fehlergrenze";
 import Attachments from "../components/Attachments";
 import Kommentare from "../components/Kommentare";
 import { useLizenz } from "../lizenz";
+import { useAuth } from "../auth";
 import { schriftAuf } from "../farbe";
 import LocalGraph from "../components/LocalGraph";
 import { useEingabe } from "../components/Rueckfrage";
@@ -70,6 +72,19 @@ function Geruest() {
   );
 }
 
+// istLeer sagt, ob ein Dokument noch nichts enthält. Nicht "keine Blöcke":
+// BlockNote legt in ein frisches Dokument von sich aus einen leeren Absatz, und
+// der zählt nicht als Inhalt.
+function istLeer(bloecke: Block[]): boolean {
+  return bloecke.every((b) => {
+    const inhalt = b.content as unknown;
+    if (Array.isArray(inhalt) && inhalt.length > 0) return false;
+    if (Array.isArray(b.children) && b.children.length > 0) return false;
+    // Ein Bild oder eine Datei hat keinen Textinhalt und ist trotzdem etwas.
+    return b.type === "paragraph" || b.type === "heading";
+  });
+}
+
 export default function PageView({
   allTags,
   onMetaChange,
@@ -90,6 +105,9 @@ export default function PageView({
   // becomes usable is noise. The backend refuses the same calls with 402
   // anyway, so this is about the interface not lying, not about protection.
   const { frei } = useLizenz();
+  // Wer hier sitzt. Beim gemeinsamen Schreiben steht der Name am fremden
+  // Cursor, damit man sieht, wem die Schreibmarke gehört, die da mitläuft.
+  const { user } = useAuth();
 
   // The state this editor starts from. As a ref, not as state: it is read while
   // saving but shall not trigger a new render.
@@ -129,6 +147,19 @@ export default function PageView({
   const saveTimer = useRef<number | undefined>(undefined);
   const editorRef = useRef<BlockNoteEditor | null>(null);
 
+  // Gemeinsames Schreiben. Es läuft nur, wenn an dieser Seite überhaupt mehr
+  // als ein Konto schreiben darf: das entscheidet der Dienst und sagt es in
+  // page.gemeinsam. Eine Seite, die nur ihrem Besitzer gehört, macht keine
+  // Sitzung auf, in der nie jemand zweites sitzen wird.
+  const mitschrift = useMitschrift(id, !!page?.gemeinsam && !!page?.canEdit, user);
+  // Für welche Seite die Saat schon gelegt wurde. Ohne das säte jeder Durchlauf
+  // erneut.
+  const saatRef = useRef<string | null>(null);
+  // Über eine Referenz, weil das verzögerte Speichern erst läuft, wenn der
+  // Durchlauf, der es angestoßen hat, längst vorbei ist.
+  const mitschriftRef = useRef(mitschrift);
+  mitschriftRef.current = mitschrift;
+
   // Reload everything when the route changes to another page. The cleanup
   // cancels a pending save, so a half-typed edit cannot land on the page that
   // was just left.
@@ -157,6 +188,48 @@ export default function PageView({
     return () => window.clearTimeout(saveTimer.current);
   }, [id]);
 
+  // Die erste Fassung in ein frisches gemeinsames Dokument legen.
+  //
+  // Ein Raum entsteht leer und stirbt, sobald der Letzte ihn verlässt. Der
+  // Text steht also nur in der Datenbank, und einer muss ihn hineintragen,
+  // sonst sitzen alle vor einer leeren Seite, die es gar nicht ist. Es tut der
+  // Führende, und er hinterlässt eine Marke im Dokument selbst: sie fährt
+  // mit zu jedem, der später dazukommt, und niemand trägt ein zweites Mal ein.
+  //
+  // Die kurze Wartezeit ist gegen den einen Fall, in dem beides schiefginge:
+  // zwei Browser öffnen die Seite in derselben Sekunde und wissen im Moment
+  // des Abgleichs noch nichts voneinander, halten sich also beide für den
+  // Führenden. Nach einem halben Augenblick kennen sie sich.
+  useEffect(() => {
+    if (!mitschrift?.bereit || !mitschrift.fuehrend || !page || !id) return;
+    if (saatRef.current === id) return;
+    const zeiger = window.setTimeout(() => {
+      const marke = mitschrift.doc.getMap<boolean>("nexora");
+      saatRef.current = id;
+      if (marke.get("gesaet")) return;
+      const ed = editorRef.current;
+      if (!ed) return;
+      // Nur in ein leeres Dokument. Ist schon Text da, hat ihn jemand anders
+      // eingetragen, und der zaehlt.
+      if (!istLeer(ed.document)) {
+        marke.set("gesaet", true);
+        return;
+      }
+      const inhalt = page.content;
+      if (Array.isArray(inhalt) && inhalt.length > 0) {
+        ed.replaceBlocks(ed.document, inhalt as PartialBlock[]);
+      }
+      marke.set("gesaet", true);
+    }, 500);
+    return () => window.clearTimeout(zeiger);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mitschrift?.bereit, mitschrift?.fuehrend, id, page?.id]);
+
+  // Beim Wechsel auf eine andere Seite faengt die Saat von vorn an.
+  useEffect(() => {
+    saatRef.current = null;
+  }, [id]);
+
   // Resolve a [[Title]] to a page id (case-insensitive) so wiki-links in the
   // editor become clickable.
   const titleToId = (() => {
@@ -181,7 +254,16 @@ export default function PageView({
       try {
         // basis carries the state this editor started from. The backend
         // compares and refuses if the page moved on.
-        const frisch = await api.updatePage(id, { ...patch, basis: basisRef.current });
+        // Ohne Basis, solange gemeinsam geschrieben wird: die beiden Fälle,
+        // die sie unterscheiden soll, gibt es dort nicht mehr. Gleichzeitige
+        // Änderungen sind bereits zusammengeführt, wenn sie hier ankommen, und
+        // wechselt die Führung, weil jemand seinen Reiter schließt, fängt der
+        // Nachrücker mit einer Basis von vorhin an und bekäme einen Konflikt
+        // gemeldet, den es nicht gibt.
+        const frisch = await api.updatePage(id, {
+          ...patch,
+          basis: mitschriftRef.current ? undefined : basisRef.current,
+        });
         // The base moves along: otherwise the next autosave would report a
         // conflict with its own previous save.
         basisRef.current = frisch.updatedAt;
@@ -228,8 +310,14 @@ export default function PageView({
     setPage({ ...page, title });
     scheduleSave({ title });
   };
+  // Beim gemeinsamen Schreiben speichert genau einer, und zwar der Führende.
+  // Sonst schickten drei Browser dieselbe Seite dreimal, jeder mit seinem
+  // eigenen Stand von vor einem Wimpernschlag, und die Prüfung auf den
+  // Konflikt schlüge bei zweien von ihnen an.
   const onContent = (blocks: Block[]) => {
-    if (canEdit) scheduleSave({ content: blocks });
+    if (!canEdit) return;
+    if (mitschrift && !mitschrift.fuehrend) return;
+    scheduleSave({ content: blocks });
   };
 
   const toggleFav = async () => {
@@ -433,6 +521,32 @@ export default function PageView({
             {/* Say plainly that this is a read-only share, instead of leaving
                 the user to wonder why nothing saves. */}
             {!canEdit && <span className="pill readonly">Nur Lesen</span>}
+            {/* Wer sonst noch an dieser Seite sitzt. Nur die anderen: den
+                eigenen Namen sieht man ohnehin an der eigenen Schreibmarke.
+                Steht die Leitung nicht, wird das gesagt, statt eine leere
+                Reihe zu zeigen, die nach "niemand da" aussieht und in
+                Wahrheit "ich weiß es nicht" heißt. */}
+            {mitschrift && !mitschrift.verbunden && (
+              <span className="pill readonly" title="Die Verbindung für das gemeinsame Bearbeiten steht gerade nicht. Getippt wird weiter, abgeglichen wird, sobald sie wieder steht.">
+                Nicht verbunden
+              </span>
+            )}
+            {mitschrift?.verbunden && mitschrift.anwesend.length > 1 && (
+              <span className="mitschreibende" title="Sitzen gerade mit an dieser Seite">
+                {mitschrift.anwesend
+                  .filter((a) => !a.ichSelbst)
+                  .map((a) => (
+                    <span
+                      key={a.kennung}
+                      className="mitschreibender"
+                      style={{ background: a.farbe, color: schriftAuf(a.farbe) }}
+                      title={a.name}
+                    >
+                      {(a.name.trim()[0] || "?").toUpperCase()}
+                    </span>
+                  ))}
+              </span>
+            )}
             {/* Die neue Seite entsteht UNTER dieser, nicht daneben. Wer sie
                 hier anlegt, ist gerade in einer Seite und meint eine
                 Unterseite; eine Seite auf der obersten Ebene legt man in der
@@ -575,11 +689,18 @@ export default function PageView({
                 window with it: React unmounts everything on an uncaught render
                 error. Here only the document goes, the page around it stays. */}
             <Fehlergrenze
-              key={`grenze:${page.id}:${editorKey}`}
+              key={`grenze:${page.id}:${editorKey}:${mitschrift ? "gemeinsam" : "allein"}`}
               text="Der Inhalt dieser Seite liess sich nicht anzeigen."
             >
               <Editor
-                key={`${page.id}:${editorKey}`}
+                /* Der Schlüssel trägt mit, ob gemeinsam geschrieben wird: der
+                   Editor wird einmal gebaut, und ob sein Text aus der Seite oder
+                   aus dem geteilten Dokument kommt, entscheidet sich beim Bauen.
+                   Die Leitung steht erst einen Wimpernschlag nach dem Öffnen,
+                   also fällt die Entscheidung ohne den Schlüssel immer auf
+                   "allein". */
+                key={`${page.id}:${editorKey}:${mitschrift ? "gemeinsam" : "allein"}`}
+                mitschrift={mitschrift ?? undefined}
                 initialContent={page.content}
                 editable={canEdit}
                 onChange={onContent}

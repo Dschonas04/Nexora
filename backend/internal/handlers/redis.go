@@ -12,7 +12,10 @@ package handlers
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"log"
+	"net"
 	"strings"
 	"time"
 
@@ -27,14 +30,27 @@ type RedisSpeicher struct {
 	vorsilbe string
 }
 
+// RedisTLS beschreibt, ob und wie verschlüsselt gesprochen wird. Nil heißt:
+// unverschlüsselt, wie es für einen Zwischenspeicher auf demselben Rechner in
+// Ordnung ist.
+//
+// Verschlüsselt gehört er, sobald er über ein Netz erreichbar ist: hier liegen
+// Sitzungskennungen, und wer eine mitliest, ist angemeldet.
+type RedisTLS struct {
+	Wurzeln *x509.CertPool
+	// Name ist der Name im Zertifikat. Leer heißt: der aus der Adresse, was
+	// stimmt, solange man den Dienst unter seinem Namen anspricht.
+	Name string
+}
+
 // NeuRedis connects. A failure here must never stop the service: the
 // application runs perfectly well without Redis.
-func NeuRedis(ctx context.Context, adresse, passwort string, datenbank int, vorsilbe string) *RedisSpeicher {
+func NeuRedis(ctx context.Context, adresse, passwort string, datenbank int, vorsilbe string, sicher *RedisTLS) *RedisSpeicher {
 	adresse = strings.TrimSpace(adresse)
 	if adresse == "" {
 		return nil
 	}
-	c := redis.NewClient(&redis.Options{
+	optionen := &redis.Options{
 		Addr:     adresse,
 		Password: passwort,
 		DB:       datenbank,
@@ -43,7 +59,23 @@ func NeuRedis(ctx context.Context, adresse, passwort string, datenbank int, vors
 		DialTimeout:  2 * time.Second,
 		ReadTimeout:  time.Second,
 		WriteTimeout: time.Second,
-	})
+	}
+	if sicher != nil {
+		name := sicher.Name
+		if name == "" {
+			if wirt, _, err := net.SplitHostPort(adresse); err == nil {
+				name = wirt
+			} else {
+				name = adresse
+			}
+		}
+		optionen.TLSConfig = &tls.Config{
+			RootCAs:    sicher.Wurzeln,
+			ServerName: name,
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+	c := redis.NewClient(optionen)
 	pruef, abbruch := context.WithTimeout(ctx, 3*time.Second)
 	defer abbruch()
 	if err := c.Ping(pruef).Err(); err != nil {
@@ -54,7 +86,11 @@ func NeuRedis(ctx context.Context, adresse, passwort string, datenbank int, vors
 	if vorsilbe == "" {
 		vorsilbe = "nexora"
 	}
-	log.Printf("Redis: %s, Namensraum %s", adresse, vorsilbe)
+	weg := "offen"
+	if sicher != nil {
+		weg = "verschlüsselt"
+	}
+	log.Printf("Redis: %s (%s), Namensraum %s", adresse, weg, vorsilbe)
 	return &RedisSpeicher{client: c, vorsilbe: vorsilbe}
 }
 
@@ -94,27 +130,4 @@ func (s *Server) redisSitzungMerken(sid string, gilt bool) {
 		dauer = 10 * time.Minute
 	}
 	s.Redis.client.Set(ctx, s.Redis.schluessel("sitzung", sid), wert, dauer)
-}
-
-// ZaehlerHoch counts an event and returns the tally inside the window.
-//
-// It allows sign-in attempts to be rate limited without keeping a table for it.
-// Without Redis it returns 0, which the caller treats as "no limit": a lockout
-// that fires at random depending on whether a cache happens to be there would
-// be worse than none at all.
-func (s *Server) ZaehlerHoch(art, id string, fenster time.Duration) int64 {
-	if s.Redis == nil {
-		return 0
-	}
-	ctx, abbruch := context.WithTimeout(context.Background(), time.Second)
-	defer abbruch()
-	sch := s.Redis.schluessel("zaehler:"+art, id)
-	n, err := s.Redis.client.Incr(ctx, sch).Result()
-	if err != nil {
-		return 0
-	}
-	if n == 1 {
-		s.Redis.client.Expire(ctx, sch, fenster)
-	}
-	return n
 }

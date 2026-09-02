@@ -84,6 +84,11 @@ export interface Page {
   isFavorite: boolean;
   canEdit: boolean;
   isOwner: boolean;
+  /**
+   * An dieser Seite darf mehr als ein Konto schreiben, und der Dienst laesst
+   * gemeinsames Bearbeiten zu. Erst dann öffnet der Browser die Leitung dafür.
+   */
+  gemeinsam: boolean;
   /** Satzspiegel: "normal", "breit" oder "voll". Gehört zur Seite, nicht zum Leser. */
   breite: Seitenbreite;
   createdAt: string;
@@ -397,6 +402,46 @@ export interface LDAPTestErgebnis {
 // Puls ist der Live-Stand: die letzte Minute in Sekundenfächern, dazu der
 // Verbindungsvorrat und der Prozess. Die laufende Sekunde fehlt darin, sie ist
 // erst zum Teil vergangen.
+// MitschriftZustand ist der Blick der Verwaltung auf das gemeinsame Schreiben:
+// welche Seiten gerade offen sind und wer daran sitzt. Nur der Augenblick,
+// nichts Gespeichertes — ein Raum endet, sobald der Letzte geht.
+// Ein Rechner der Übersicht: das Eingetragene und das gerade Gemessene in
+// einem Stück. Zustand ist "antwortet", "still" oder "unbekannt".
+export interface Rechner {
+  id: string;
+  name: string;
+  ziel: string;
+  notiz?: string;
+  instanz?: string;
+  zustand: string;
+  antwort?: string;
+  hinweis?: string;
+  system?: string;
+  kern?: string;
+  laeuft?: string;
+}
+
+export interface RechnerEingabe {
+  name: string;
+  ziel: string;
+  notiz?: string;
+  instanz?: string;
+}
+
+export interface RechnerListe {
+  rechner: Rechner[];
+  prometheus?: string;
+  quelle?: string;
+  geprueftUm?: string;
+}
+
+export interface MitschriftZustand {
+  an: boolean;
+  lizenziert: boolean;
+  hoechstens: number;
+  raeume: { seite: string; titel: string; anzahl: number; wer: string[] }[];
+}
+
 export interface PulsSekunde {
   vorSekunden: number;
   anfragen: number;
@@ -682,6 +727,9 @@ export const api = {
     }),
   systemZustand: () => req<SystemZustand>("/system"),
   puls: () => req<Puls>("/system/puls"),
+  mitschriftZustand: () => req<MitschriftZustand>("/system/mitschrift"),
+  mitschreibende: (id: string) =>
+    req<{ anzahl: number; moeglich: boolean }>(`/pages/${id}/mitschreibende`),
   sicherungUmfang: () => req<SicherungUmfang>("/system/sicherung/umfang"),
   // Einspielen. Kein req: der Rumpf ist multipart und kann Gigabyte gross
   // sein, das gehoert nicht durch JSON.stringify.
@@ -853,8 +901,6 @@ export const api = {
 
   // Version history
   listVersions: (id: string) => req<PageVersion[]>(`/pages/${id}/versions`),
-  getVersion: (id: string, versionId: string) =>
-    req<PageVersion>(`/pages/${id}/versions/${versionId}`),
   restoreVersion: (id: string, versionId: string) =>
     req<Page>(`/pages/${id}/versions/${versionId}/restore`, { method: "POST" }),
 
@@ -962,6 +1008,31 @@ export const api = {
     req<{ benutzername: string }>(`/users/${id}/benutzername`, {
       method: "PUT",
       body: JSON.stringify({ benutzername }),
+    }),
+
+  // Eigene Rechner: die Liste samt dem, was gerade von ihnen zu sehen ist.
+  rechner: () => req<RechnerListe>("/system/rechner"),
+  rechnerAnlegen: (r: RechnerEingabe) =>
+    req<Rechner>("/system/rechner", { method: "POST", body: JSON.stringify(r) }),
+  rechnerAendern: (id: string, r: RechnerEingabe) =>
+    req<Rechner>(`/system/rechner/${id}`, { method: "PUT", body: JSON.stringify(r) }),
+  rechnerLoeschen: (id: string) =>
+    req<{ ok: boolean }>(`/system/rechner/${id}`, { method: "DELETE" }),
+
+  // Das eigene Passwort. Die Antwort sagt, wie viele andere Sitzungen dabei
+  // beendet wurden -- das ist die Zahl, die jemand sehen will, der wechselt,
+  // weil ein fremdes Gerät im Spiel war.
+  passwortWechseln: (alt: string, neu: string) =>
+    req<{ ok: boolean; beendet: number }>("/auth/passwort", {
+      method: "POST",
+      body: JSON.stringify({ alt, neu }),
+    }),
+
+  // Zurücksetzen durch eine Verwaltung, für ein vergessenes Passwort.
+  passwortSetzen: (id: string, neu: string) =>
+    req<{ ok: boolean; beendet: number }>(`/users/${id}/passwort`, {
+      method: "PUT",
+      body: JSON.stringify({ neu }),
     }),
 
   // Wartung: Konfigurationsdatei, Neustart, Papierkorb der Instanz

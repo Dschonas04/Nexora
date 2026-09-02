@@ -37,6 +37,7 @@ auch zur kommerziellen Bewertung.
 | Export als PDF und Word, Space-Export | `export` | Export je Seite als Markdown |
 | Kommentare | `kommentare` | keine Kommentare |
 | Konflikterkennung | `konflikte` | letzter Schreibvorgang gewinnt |
+| Gemeinsames Bearbeiten | `echtzeit` | einer schreibt, die anderen sehen es beim Neuladen |
 
 Zwei davon zeichnen auch ohne Lizenz weiter auf: **Versionsverlauf** und
 **Prüfspur**. Andernfalls klaffte nach dem Freischalten eine Lücke genau über

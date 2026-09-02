@@ -24,6 +24,7 @@ export default function AdminView() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("user");
   const [err, setErr] = useState("");
+  const [hinweis, setHinweis] = useState("");
   const [busy, setBusy] = useState(false);
 
   const refresh = () => api.listUsers().then(setUsers).catch(() => setUsers([]));
@@ -52,6 +53,33 @@ export default function AdminView() {
     try {
       await api.benutzernameSetzen(u.id, eingabe.trim());
       refresh();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
+  // Ein vergessenes Passwort. Die Verwaltung setzt ein neues und beendet damit
+  // jede Sitzung des Kontos: wer ein Passwort zurücksetzen lässt, hat in aller
+  // Regel den Verdacht, dass jemand anders daran sitzt.
+  const passwortSetzenVon = async (u: User) => {
+    const neu = await eingabeFragen({
+      titel: "Passwort zurücksetzen",
+      text:
+        `Ein neues Passwort für ${u.name}. Alle Sitzungen dieses Kontos werden dabei ` +
+        `beendet, es muss sich überall neu anmelden. Sag es ihm auf einem anderen Weg als ` +
+        `per E-Mail, und lass es danach selbst eines wählen.`,
+      feld: "Neues Passwort",
+      art: "passwort",
+      bestaetigen: "Passwort setzen",
+    });
+    if (neu === null) return;
+    setErr("");
+    try {
+      const { beendet } = await api.passwortSetzen(u.id, neu);
+      setHinweis(
+        `Passwort für ${u.name} gesetzt` +
+          (beendet > 0 ? `, ${beendet} ${beendet === 1 ? "Sitzung" : "Sitzungen"} beendet` : ""),
+      );
     } catch (e) {
       setErr((e as Error).message);
     }
@@ -143,6 +171,8 @@ export default function AdminView() {
         {err && <div className="fehler">{err}</div>}
       </div>
 
+      {hinweis && <div className="hinweis-ok">{hinweis}</div>}
+
       <h3>Vorhandene Konten</h3>
       <div className="tabelle-rollen">
         <table className="tabelle konten-tabelle">
@@ -184,6 +214,22 @@ export default function AdminView() {
                 <td className="zeilen-aktionen">
                   <button className="btn-schlicht" onClick={() => setBenutzernameVon(u)}>
                     {u.benutzername ? "Anmeldename ändern" : "Anmeldename setzen"}
+                  </button>
+                  {/* Die eigene Zeile bleibt aus: dieser Weg beendet alle
+                      Sitzungen, und eine Verwaltung, die sich damit selbst
+                      aussperrt, hat nichts gewonnen. Das eigene Passwort
+                      wechselt man unten in der Leiste. */}
+                  <button
+                    className="btn-schlicht"
+                    disabled={u.id === user?.id}
+                    title={
+                      u.id === user?.id
+                        ? "Das eigene Passwort wechselt man unten in der Leiste"
+                        : undefined
+                    }
+                    onClick={() => passwortSetzenVon(u)}
+                  >
+                    Passwort zurücksetzen
                   </button>
                   <button
                     className="btn-schlicht gefaehrlich"

@@ -20,7 +20,8 @@ export type Extra =
   | "anhangsuche"
   | "export"
   | "kommentare"
-  | "konflikte";
+  | "konflikte"
+  | "echtzeit";
 
 interface Ctx {
   lizenz: Lizenz | null;

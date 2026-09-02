@@ -15,15 +15,42 @@
 # COMPOSE_FILE in the .env, see .env.example.
 #
 services:
+  # Die Zertifikate für den Innenverkehr. Läuft einmal, legt eine kleine eigene
+  # Zertifizierungsstelle und je ein Zertifikat für backend, db, minio und redis
+  # an, und ist dann fertig. Alle anderen warten auf sein Ende.
+  #
+  # Wiederholbar: was schon im Datenträger liegt, bleibt liegen. Siehe
+  # pki/erzeuge.sh.
+  pki:
+    build: ./pki
+    volumes:
+      - nexora_pki:/pki
+    restart: "no"
+
   backend:
     build: ./backend
+    depends_on:
+      pki:
+        condition: service_completed_successfully
     environment:
       # The database can be the one shipped along or an outside one. The default
       # points at the service from docker-compose.db.yml; whoever runs their own
       # sets DATABASE_URL in the .env and leaves the side file out.
       DATABASE_URL: ${DATABASE_URL:-postgres://nexora:${POSTGRES_PASSWORD:-nexora}@db:5432/nexora?sslmode=disable}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      PORT: "8080"
+      PORT: "8443"
+      # Verschlüsselt auch nach innen: die Oberfläche spricht den Dienst über
+      # HTTPS an und prüft dabei das Zertifikat gegen die eigene Stelle. Ohne
+      # das liefen Sitzungskeks, Passwort und jeder Seiteninhalt zwischen den
+      # beiden Containern im Klartext -- was auf einem Rechner niemanden stört
+      # und in dem Augenblick zum Problem wird, in dem das Docker-Netz über
+      # zwei Wirte gespannt ist.
+      NEXORA_TLS_ZERTIFIKAT: ${NEXORA_TLS_ZERTIFIKAT:-/pki/backend/backend.crt}
+      NEXORA_TLS_SCHLUESSEL: ${NEXORA_TLS_SCHLUESSEL:-/pki/backend/backend.key}
+      # Wem der Dienst seinerseits glaubt, wenn er hinausgeht: zusätzlich zu den
+      # öffentlichen Stellen die eigene, für Datenbank, Ablage und
+      # Zwischenspeicher.
+      NEXORA_TLS_WURZEL: ${NEXORA_TLS_WURZEL:-/pki/ca.crt}
       NEXORA_DATA_DIR: /data/attachments
       # Where the attachment bytes lie. Two halves belong together: this path is
       # the one INSIDE the container, NEXORA_ANHANG_ORT below is what is mounted
@@ -74,6 +101,9 @@ services:
       # Without this step the maintenance page shows the file and says that it
       # is read only. Whoever wants it that way appends a :ro as well.
       - ./config.conf:/etc/nexora/config.conf
+      # Nur lesend: hier liegen Schlüssel, und dieser Dienst braucht sie nicht
+      # zu ändern.
+      - nexora_pki:/pki:ro
     restart: unless-stopped
 
   frontend:
@@ -90,14 +120,28 @@ services:
       # name is used, which leads to a second warning in the browser.
       NEXORA_TLS_NAME: ${NEXORA_TLS_NAME:-nexora}
       NEXORA_TLS_IP: ${NEXORA_TLS_IP:-}
+      # Wie die Oberfläche den Dienst dahinter anspricht. Vorgabe: verschlüsselt
+      # und mit Prüfung des Zertifikats. Wer den Dienst ohne Zertifikat betreibt
+      # -- etwa ein eigenes Abbild ohne den PKI-Container --, setzt hier http
+      # und 8080.
+      NEXORA_DIENST_SCHEMA: ${NEXORA_DIENST_SCHEMA:-https}
+      NEXORA_DIENST_PORT: ${NEXORA_DIENST_PORT:-8443}
     volumes:
       - nexora_tls:/etc/nginx/tls
+      - nexora_pki:/pki:ro
     depends_on:
-      - backend
+      pki:
+        condition: service_completed_successfully
+      backend:
+        condition: service_started
     restart: unless-stopped
 
 volumes:
   nexora_tls:
+  # Die Zertifikate des Innenverkehrs. Ein eigener Datenträger, damit sie einen
+  # Neubau der Abbilder überleben: eine Stelle, die sich bei jedem Hochfahren
+  # ändert, wäre keine.
+  nexora_pki:
   # Only the attachments on disk, and only as long as NEXORA_ANHANG_ORT is not
   # set: with a path in there the bytes go to that directory and this volume
   # stays empty. The database's volume belongs to the side file that brings it

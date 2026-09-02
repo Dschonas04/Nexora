@@ -35,4 +35,29 @@ else
     echo "TLS: vorhandenes Zertifikat wird benutzt"
 fi
 
+# ── Wie der Dienst dahinter angesprochen wird ───────────────────────────────
+#
+# In der Vorlage stehen zwei Platzhalter, hier werden sie eingesetzt. Nur diese
+# zwei: nginx hat selbst Variablen in derselben Schreibweise ($host,
+# $request_uri), und ein envsubst ohne Liste fräse sie alle weg.
+#
+# Vorgabe ist verschlüsselt. Wer den Dienst ohne Zertifikat betreibt, setzt
+# NEXORA_DIENST_SCHEMA=http und NEXORA_DIENST_PORT=8080.
+export NEXORA_DIENST_SCHEMA="${NEXORA_DIENST_SCHEMA:-https}"
+export NEXORA_DIENST_PORT="${NEXORA_DIENST_PORT:-8443}"
+
+if [ -f /etc/nginx/vorlage.conf ]; then
+    envsubst '${NEXORA_DIENST_SCHEMA} ${NEXORA_DIENST_PORT}' \
+        < /etc/nginx/vorlage.conf > /etc/nginx/conf.d/default.conf
+    echo "Dienst: $NEXORA_DIENST_SCHEMA://backend:$NEXORA_DIENST_PORT"
+fi
+
+# Ohne die Stelle des Verbunds käme nginx nicht an den Dienst heran, und die
+# Meldung dazu stünde erst bei der ersten Anfrage im Protokoll. Lieber hier
+# sagen, woran es liegt.
+if [ "$NEXORA_DIENST_SCHEMA" = "https" ] && [ ! -f /pki/ca.crt ]; then
+    echo "ACHTUNG: /pki/ca.crt fehlt. Der Dienst ist verschlüsselt eingestellt," >&2
+    echo "         aber ohne die Stelle lässt sich sein Zertifikat nicht prüfen." >&2
+fi
+
 exec nginx -g 'daemon off;'

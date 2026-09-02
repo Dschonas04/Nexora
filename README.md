@@ -248,7 +248,7 @@ Four tiers, each containing the smaller ones:
 |---|---|
 | `free` | pages, search, trash, Markdown import and export |
 | `advanced` | version history, attachments, comments |
-| `pro` | sharing and public links, conflict detection, PDF/Word export, search inside attachments |
+| `pro` | sharing and public links, writing on a page together, conflict detection, PDF/Word export, search inside attachments |
 | `business` | groups, audit trail, OIDC, LDAP |
 
 Keys are Ed25519-signed and verified offline, which is why they carry an expiry
@@ -402,6 +402,7 @@ POST   /auth/register                     create account (first one becomes admi
 POST   /auth/login                        sign in ({kennung, password}: email or username)
 POST   /auth/logout                       sign out
 GET    /auth/me                           current user
+POST   /auth/passwort                     change your own password ({alt, neu})
 GET    /lizenz                            which extras are unlocked
 ```
 
@@ -446,6 +447,42 @@ POST   /pages/{id}/shares                 share with a user ('read' or 'edit')
 DELETE /pages/{id}/shares/{userId}        revoke a user's access
 GET    /public/{token}                    read-only public page (no auth)
 ```
+
+### Writing together
+
+```
+GET    /echtzeit/{id}                     WebSocket: the session for one page
+GET    /pages/{id}/mitschreibende         how many are sitting at this page
+GET    /system/mitschrift                 which pages are open, and who is in them
+```
+
+Whoever may **edit** a page shared with them writes on it at the same time as
+everyone else: the changes appear as they are typed, each with the name and the
+caret of the person making them. The service passes the packets on and keeps no
+document of its own; the browsers merge the text between them, so a restart
+costs nothing and two people in the same sentence both keep what they wrote.
+Saving to the database is done by exactly one of them, the one with the lowest
+client id in the room — and when that browser leaves, the next takes over.
+
+A proxy in front must pass WebSocket upgrades through to `/api/echtzeit/`.
+
+### Watching machines  ·  admin only
+
+```
+GET    /system                            the services around this one: reachable, version, latency
+GET    /system/rechner                    machines you keep an eye on, freshly probed
+POST   /system/rechner                    add one ({name, ziel}: host:port or http(s)://)
+PUT    /system/rechner/{id}               change one
+DELETE /system/rechner/{id}               remove one
+```
+
+Two lists in the settings under **System**. The first is what Nexora needs to
+run and therefore knows by itself — database, cache, object store, sign-in
+provider — each with its state, version and response time. The second is what you
+enter: the machines around it. Nexora only knocks on those, on the level where an
+answer is possible without credentials, and holds no key to them; the versions
+come from the Prometheus in `prometheus_adresse` rather than from a login on each
+host.
 
 ### Links and graph
 
@@ -508,6 +545,7 @@ POST   /users                             create an account (admin only)
 DELETE /users/{id}                        delete an account (admin only, not yourself)
 PUT    /users/{id}/role                   change role (admin only)
 PUT    /users/{id}/benutzername           set the login name (the account itself or an admin)
+PUT    /users/{id}/passwort              set a password for a forgotten one (admin only)
 
 GET    /favorites                         favorited pages
 GET    /search?q=                         search titles and content
@@ -551,6 +589,8 @@ backend/                       Go API
   internal/config              config.conf plus environment, with defaults
   internal/db                  connection pool, schema creation and migration
   internal/auth                JWT issuing and password hashing
+  internal/vertrauen           whom the service believes on the way out: the
+                               stack's own authority, added to the public ones
   internal/lizenz              the gate: asks whoever registered as verifier
   internal/middleware          cookie auth
   internal/einlesen            Markdown and HTML to editor blocks: the import side
@@ -559,6 +599,7 @@ backend/                       Go API
   internal/handlers
     auth.go                    register, login, logout, me
     benutzername.go            the login name: rules, derivation, changing it
+    passwort.go                changing your own password, and an admin resetting one
     pages.go                   CRUD, tree, trash, restore, purge, conflicts
     versions.go                snapshots and rollback
     attachments.go             upload, download, delete
@@ -583,6 +624,7 @@ backend/                       Go API
     oeffentlich.go             what a public link is allowed to show
     dateiausgabe.go            the headers an attachment is handed out with
     verbund.go                 the state of database, cache and file store
+    rechner.go                 the machine watch list: knock, and ask Prometheus for versions
     spaces.go, tags.go         organisation and full text search
     users.go                   admin account management
 frontend/                      React SPA (Vite + TypeScript)
@@ -593,12 +635,15 @@ frontend/                      React SPA (Vite + TypeScript)
   src/components               Sidebar, PageTree, Editor, Attachments,
                                QuickView, Kommentare, VersionPanel, ShareDialog,
                                Grafbild, LocalGraph, SpaceRechte, Einfuhr,
-                               Rueckfrage, Fehlergrenze
+                               Rueckfrage, PasswortDialog, Fehlergrenze
   src/pages                    Login, Register, Workspace, PageView, PostfachView,
                                PublicPage, TrashView, TagView, GraphView, AdminView,
                                GruppenView, EinstellungenView,
                                PruefspurView (shown as "Protokoll")
-docker-compose.yml             backend + frontend
+pki/                           the stack's own certificate authority
+  erzeuge.sh                   runs once at start-up, issues one certificate per
+                               service, and leaves alone what is already there
+docker-compose.yml             pki + backend + frontend
 docker-compose.db.yml          optional: bundled PostgreSQL
 docker-compose.minio.yml       optional: bundled MinIO for attachments
 docker-compose.redis.yml       optional: Redis as a cache (never the source of truth)
@@ -630,7 +675,8 @@ text search over pages, backlinks, knowledge graph, accounts and roles.
 
 **Needs a key:** version history, attachments, sharing and public links, audit
 trail, groups and space permissions, SSO via OIDC, LDAP/Active Directory,
-attachment search, space export, comments, conflict detection.
+attachment search, space export, comments, conflict detection, writing on a
+page together.
 
 Locked endpoints answer `402 Payment Required` and the browser hides the
 corresponding controls. Hiding is a courtesy to the reader — the refusal is

@@ -330,6 +330,7 @@ no licence code compiled in at all.
 | `internal/ablage` | `Ablage`: `Schreiben`, `Lesen`, `Loeschen`, `Name`. Implementations `platte.go` and `s3.go` | A failed write leaves nothing behind; deleting what is already gone is not an error |
 | `internal/einlesen` | Markdown and HTML into BlockNote blocks: `markdown.go`, `html.go`, `bloecke.go`, `inline.go` | The import side. Hand-written, tested against real Obsidian, Notion and Confluence exports |
 | `internal/dok` | Typesetting: `pdf.go`, `docx.go`, `word_lesen.go`, image embedding, font metrics | Written without a third-party library. The PDF uses base fonts and WinAnsi encoding, so umlauts survive |
+| `internal/vertrauen` | `Wurzeln(pfad)`: the system's certificate pool plus the stack's own authority | Added, never substituted. An empty path yields nil, which every caller reads as "take the system's" |
 | `internal/models` | The structs that cross the API boundary | |
 | `internal/handlers` | Everything else: one file per subject | Every handler is a method on `Server` and decides access itself through `access.go` |
 | `premium/lizenz` | Verifies an Ed25519-signed key against a public key baked into the source | Offline. No licence server exists |
@@ -339,14 +340,14 @@ no licence code compiled in at all.
 
 | Subject | Files |
 |---|---|
-| Sign-in and identity | `auth.go`, `benutzername.go`, `sso.go`, `sso_keks.go`, `ldap.go`, `sitzungen.go`, `sitzungsspeicher.go` |
+| Sign-in and identity | `auth.go`, `benutzername.go`, `passwort.go`, `sso.go`, `sso_keks.go`, `ldap.go`, `sitzungen.go`, `sitzungsspeicher.go` |
 | Pages | `pages.go`, `versions.go`, `reihenfolge.go`, `breite.go`, `papierkorb.go`, `markdown.go` |
 | Access | `access.go`, `sharing.go`, `oeffentlich.go`, `gruppen.go`, `users.go` |
 | Attachments | `attachments.go`, `dateiausgabe.go`, `anhangtext.go`, `anhangindex.go`, `word.go`, `s3einbindung.go` |
 | Organisation | `spaces.go`, `tags.go`, `volltext.go`, `volltext_nachziehen.go`, `links.go`, `backlinks.go`, `graph.go` |
 | Collaboration | `kommentare.go`, `erwaehnungen.go`, `postfach.go`, `pruefspur.go` |
 | In and out | `einfuhr.go`, `export.go`, `exportdateien.go`, `gesetzt.go`, `bildquelle.go` |
-| Operations | `wartung.go`, `einstellungen.go`, `verbund.go`, `redis.go`, `lizenz.go`, `lizenzverwaltung.go` |
+| Operations | `wartung.go`, `einstellungen.go`, `verbund.go`, `rechner.go`, `redis.go`, `lizenz.go`, `lizenzverwaltung.go` |
 | Shared | `server.go`, `leser.go` |
 
 ### 5.4 Level 3 — components of the frontend
@@ -651,12 +652,14 @@ until somebody empties it.
 ```mermaid
 graph TB
     subgraph host["One host — Docker Compose"]
+        pki["pki container<br/>runs once, then exits<br/>issues the stack's certificates"]
+        pkiv[("volume nexora_pki<br/>authority + one cert per service")]
         subgraph fe["frontend container"]
             nginx["nginx 1.27 alpine<br/>:80 :443<br/>SPA + proxy /api"]
             tlsv[("volume nexora_tls<br/>certificate and key")]
         end
         subgraph be["backend container"]
-            go["nexora binary<br/>:8080 · uid 10001"]
+            go["nexora binary<br/>:8443 TLS · uid 10001"]
             conf["bind mount<br/>./config.conf → /etc/nexora/config.conf"]
             filesv[("volume nexora_files<br/>or a host directory")]
         end
@@ -668,10 +671,16 @@ graph TB
     end
 
     browser["Browser"] -->|"PORT 3000 · PORT_TLS 3443"| nginx
-    nginx --> go
-    go --> db
-    go -.-> minio
-    go -.-> redis
+    nginx -->|"TLS, verified"| go
+    go -->|"TLS, verify-full"| db
+    go -.->|"TLS"| minio
+    go -.->|"TLS"| redis
+    pki --> pkiv
+    pkiv -.- nginx
+    pkiv -.- go
+    pkiv -.- db
+    pkiv -.- minio
+    pkiv -.- redis
     nginx --- tlsv
     go --- conf
     go --- filesv
@@ -683,6 +692,31 @@ graph TB
 | `nexora_tls` | Holds the certificate. Generated self-signed on first start, 825 days. Drop a real `zertifikat.pem` / `schluessel.pem` in and nothing is generated |
 | `nexora_files` | Attachment bytes, only while they are on disk. `NEXORA_ANHANG_ORT` replaces it with a host directory or a share — which then has to belong to uid/gid 10001 |
 | `config.conf` | Not tracked in git: it holds credentials and is edited from the maintenance page, so a tracked copy would be overwritten on every rollout. Mounted writable, and the file has to belong to gid 10001 for the maintenance page to save it |
+| `nexora_pki` | The stack's own authority and one certificate per service, ten years. Written once by the `pki` container, read-only everywhere else, and left alone on later starts — an authority that changed on every boot would be none |
+
+### 7.1a Encrypted inside, too
+
+Every hop between the containers is TLS and every one of them verifies the
+certificate. Encryption without verification would be a reassurance rather than
+a statement: whoever does not check who is on the other end may be talking to
+the wrong party, encrypted.
+
+| Hop | Mechanism |
+|---|---|
+| nginx → backend | `proxy_ssl_verify on` against `/pki/ca.crt`, with `proxy_ssl_name backend` — the target comes from a variable, so nginx does not take the name from the address by itself |
+| backend → PostgreSQL | `sslmode=verify-full&sslrootcert=…` in the connection string; pgx does the rest, no code of ours |
+| backend → MinIO | minio-go with a transport of our own carrying the root pool |
+| backend → Redis | `--port 0` on the server closes the plain door; the client verifies the name |
+| backend → everything else | The authority is installed into `http.DefaultTransport` once at start-up, so it covers the identity provider and the machine list's Prometheus as well |
+
+The authority is **added** to the public ones, never substituted (see
+`internal/vertrauen`). Replacing them would cost the service its trust in every
+public certificate — an identity provider behind Let's Encrypt would suddenly be
+unreachable, and nobody would connect that to having set up a local authority.
+
+Whoever runs the service elsewhere leaves `tls_zertifikat` empty and gets plain
+HTTP, which is right behind something on the same machine that terminates TLS
+and wrong as soon as a network lies in between.
 
 ### 7.2 Why the database is in a side file
 
@@ -820,7 +854,7 @@ graph TB
 
 | | |
 |---|---|
-| **Tiers** | `free` → `advanced` (versionen, anhaenge, kommentare) → `pro` (freigeben, konflikte, export, anhangsuche) → `business` (gruppen, pruefspur, sso, ldap). Each contains the smaller ones |
+| **Tiers** | `free` → `advanced` (versionen, anhaenge, kommentare) → `pro` (freigeben, konflikte, echtzeit, export, anhangsuche) → `business` (gruppen, pruefspur, sso, ldap). Each contains the smaller ones |
 | **A key** | `payload.signature`, Ed25519. Carries holder, tier and/or individual features, issue date, expiry. Verified against a public key compiled into `pruefer.go` |
 | **Offline** | No licence server is contacted, so an air-gapped installation works. The cost: an issued key cannot be revoked, which is why keys carry an expiry of at most a year |
 | **Precedence** | A key imported through the admin pages wins over the one in the config file. Otherwise a licence imported in the browser would revert on the next restart |
@@ -1144,15 +1178,22 @@ schema, the code and the JSON.
 | `freigeben` | Sharing (paid extra) |
 | `funktion` | One paid extra, by name |
 | `gesetzt` | Typeset — the PDF and Word export |
+| `leitung` | Line — the WebSocket carrying a collaborative session |
+| `mitschrift` | The shared writing on one page, and the code behind it |
 | `gruppen` | Groups, and with them space permissions (paid extra) |
 | `kennung` | The identifier typed at sign-in: address or login name |
 | `kommentare` | Comments (paid extra) |
+| `echtzeit` | Real time — several accounts writing on one page at once (paid extra) |
 | `konflikte` | Conflict detection (paid extra) |
 | `lizenz` | Licence |
 | `oeffentlich` | Public — of a space: `nein`, `lesen`, `schreiben` |
 | `papierkorb` | Trash |
 | `postfach` | Inbox |
 | `pruefspur` | Audit trail (reading it is a paid extra) |
+| `rechner` | Machine — one line of the watch list under Settings, System |
+| `vertrauen` | Trust — whom the service believes on the way out |
+| `wurzel` | Root — a certificate authority |
+| `zertifikat` | Certificate |
 | `rueckfall` | Fallback |
 | `schluessel` | Key — a licence key, or a settings key |
 | `sitzung`, `sitzungen` | Session(s) |

@@ -10,6 +10,7 @@ import PageTree, { TreeGap } from "./PageTree";
 import { useAussenklick } from "../klappen";
 import SpaceRechte from "./SpaceRechte";
 import Einfuhr from "./Einfuhr";
+import PasswortDialog from "./PasswortDialog";
 
 // Keys in the browser's storage. Collapsed is remembered, not open: that way a
 // newly created space is expanded by itself without having to be recorded
@@ -111,6 +112,7 @@ export default function Sidebar(props: Props) {
     ungelesen,
   } = props;
   const { user, logout } = useAuth();
+  const [passwortOffen, setPasswortOffen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // Eingeklappte Abschnitte der Leiste. Getrennt von `expanded`, das die
   // Verzweigungen INNERHALB eines Baums steuert, hier geht es um den
@@ -1303,10 +1305,21 @@ export default function Sidebar(props: Props) {
 
       <div className="sidebar-footer">
         <span className="tree-label">{user?.name}</span>
+        {/* Das eigene Passwort. Steht hier und nicht in den Einstellungen:
+            die sind der Verwaltung vorbehalten, das Passwort geht jeden an. */}
+        <button
+          className="btn-schlicht"
+          onClick={() => setPasswortOffen(true)}
+          title="Passwort ändern"
+        >
+          Passwort
+        </button>
         <button className="btn" onClick={logout}>
           Abmelden
         </button>
       </div>
+
+      {passwortOffen && <PasswortDialog onClose={() => setPasswortOffen(false)} />}
     </div>
   );
 }

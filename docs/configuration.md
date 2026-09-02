@@ -64,7 +64,7 @@ Without this it is shown read-only.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `port` | `PORT` | `8080` | The port the API listens on. In the compose setup this is the container-internal port; what you publish is `PORT` in `.env`, which maps to the *frontend* container |
+| `port` | `PORT` | `8080` | The port the API listens on. In the compose setup this is the container-internal port — `8443` there, because the service speaks TLS inside the stack; what you publish is `PORT` in `.env`, which maps to the *frontend* container |
 | `daten_verzeichnis` | `NEXORA_DATA_DIR` | `/data/attachments` | The data directory |
 | `anhang_verzeichnis` | `NEXORA_ANHANG_PFAD` | *(empty)* | Where attachment bytes go, if not the data directory. Attachments are the only part that grows without bound, so they often belong on a disk of their own. Empty means the same directory as before, so an upgrade does not move an existing installation's files |
 | `oeffentliche_url` | `NEXORA_PUBLIC_URL` | *(empty)* | The address the browser actually uses. Needed to build the OIDC callback and to name the right host in a public share link. Required as soon as `oidc_aktiv` is on |
@@ -73,7 +73,7 @@ Without this it is shown read-only.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `datenbank_url` | `DATABASE_URL` | `postgres://nexora:nexora@localhost:5432/nexora?sslmode=disable` | The connection string. The default password is warned about at every boot |
+| `datenbank_url` | `DATABASE_URL` | `postgres://nexora:nexora@localhost:5432/nexora?sslmode=disable` | The connection string. The default password is warned about at every boot. The bundled stack sets `sslmode=verify-full&sslrootcert=/pki/ca.crt` instead: encrypted **and** checked against the stack's own authority |
 
 **PostgreSQL fixes the password at first launch.** It is written into the data
 directory at initialisation, so changing it afterwards locks the backend out
@@ -118,13 +118,73 @@ then wins over the file — it was set later and on purpose.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `max_anhang_mb` | `NEXORA_MAX_ANHANG_MB` | `25` | Largest upload. nginx caps the body at 25 MiB too (`client_max_body_size`), so raising this alone is not enough |
+| `max_anhang_mb` | `NEXORA_MAX_ANHANG_MB` | `25` | Largest upload. The bundled nginx caps the body at 512 MiB (`client_max_body_size`), so this is the effective limit until it exceeds that; measure the real one under Settings, Attachments |
+
+## Collaboration
+
+| Key | Environment | Default | What it does |
+|---|---|---|---|
+| `echtzeit` | — | `ja` | Whether several accounts may write on one page at the same time. Database only, changeable under Settings, Zusammenarbeit. Off means the old behaviour: the page is written whole and the last save wins. Needs the `echtzeit` extra and a reverse proxy that passes WebSocket upgrades through to `/api/echtzeit/` |
+
+## Watching other machines
+
+| Key | Environment | Default | What it does |
+|---|---|---|---|
+| `prometheus_adresse` | — | *(empty)* | Address of a Prometheus, e.g. `http://10.0.0.5:9090`. The machine list under **Settings, System** reads operating system (`node_os_info`), kernel (`node_uname_info`) and uptime (`node_boot_time_seconds`) from it. Empty means the list shows reachability only. Queried without credentials; behind a password the columns stay empty rather than wrong |
+
+The list itself is kept under Settings, System: a name and an address per line,
+either `host:port` or a full `http(s)://` URL. Nexora only knocks — a TCP
+connection that comes up, or an HTTP response that arrives. It holds no key to
+your machines on purpose: a wiki that may be reachable from outside is the wrong
+place for one, which is why versions come from Prometheus instead of from a
+login on each host. A host without a port is refused rather than guessed, since
+a guessed port reports a machine as silent that merely listens elsewhere. On
+an `https://` address the certificate is deliberately **not** verified: the
+question is whether something answers, nothing is read, and with verification
+every Proxmox, NAS and backup server in the house — all of them self-signed —
+would be reported as silent while running.
 
 ## Trash
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
 | `papierkorb_tage` | `NEXORA_PAPIERKORB_TAGE` | `30` | After how many days a page in the trash disappears for good. `0` disables the sweep and pages stay until somebody empties it. The hourly sweep removes the attachment bytes too |
+
+## TLS inside the stack
+
+Everything between the containers is encrypted, and it takes no setting to get
+there: a one-shot service (`pki`) creates a small certificate authority of its
+own on the first start and issues one certificate per service into a volume.
+Interface → service, service → database, service → object store, service →
+cache: all four hops are TLS, and each one **verifies** the certificate against
+that authority. Encryption without verification would be a reassurance rather
+than a statement — whoever does not check who is on the other end may be
+talking to the wrong party, encrypted.
+
+The authority is internal on purpose. The names here are `backend`, `db`,
+`minio` — names from the stack's own network that exist nowhere else, and no
+public authority issues certificates for those, nor should it: these
+connections never leave the machine. The certificate the *browser* sees is a
+different one, see `PORT_TLS` below.
+
+| Key | Environment | Default | What it does |
+|---|---|---|---|
+| `tls_zertifikat` | `NEXORA_TLS_ZERTIFIKAT` | *(set by compose)* | Certificate for the service's own HTTPS listener. Empty, together with the key, means plain HTTP |
+| `tls_schluessel` | `NEXORA_TLS_SCHLUESSEL` | *(set by compose)* | Its private key. The file has to be readable by uid 10001, the account the service runs under |
+| `tls_wurzel` | `NEXORA_TLS_WURZEL` | *(set by compose)* | An **additional** authority for everything the service itself calls: database, object store, cache, and any HTTP request it makes. The public authorities stay valid alongside it, so an identity provider behind a Let's Encrypt certificate keeps working |
+| `redis_tls` | `NEXORA_REDIS_TLS` | `nein` | Talk to the cache over TLS. On in the bundled stack: session ids live there, and whoever reads one is signed in |
+
+Running the service somewhere else — bare metal, Kubernetes, behind a proxy of
+your own — you have two honest choices. Either it sits directly behind
+something on the *same* machine that terminates TLS, and then plain HTTP over
+those few centimetres costs nothing; or a network lies in between, and then
+`tls_zertifikat` and `tls_schluessel` belong set, because otherwise session
+cookies and whole pages travel that network in the clear.
+
+To use your own certificates instead of the generated ones, put them into the
+`nexora_pki` volume under the names the services expect
+(`backend/backend.crt`, `db/db.key`, `minio/public.crt`, …) — anything already
+there is left alone, the generator only fills in what is missing.
 
 ## Object storage (S3)
 
@@ -192,8 +252,8 @@ scrape it:
 The block above is what the settings page hands you, filled in. The endpoint
 sits outside `/api`, since a scraper brings no session cookie, and it does not
 count itself — otherwise the request rate would never be zero even
-when nobody is working. A ready-made Grafana dashboard is in
-[`grafana/nexora.json`](../grafana/nexora.json).
+when nobody is working. A ready-made Grafana dashboard is offered for download on the same settings
+page, under *Einstellungen, Kennzahlen*; see [`grafana/README.md`](../grafana/README.md).
 
 The in-app system view covers the last minute and answers *what is happening
 now*. This covers *what happened at three in the morning*, which is the question
@@ -244,8 +304,8 @@ These are changed at runtime from **Settings**, are stored in the
 on purpose:
 
 `registrierung_offen` · `erlaubte_domaenen` · `max_anhang_mb` ·
-`sitzung_stunden` · `papierkorb_tage` · `such_woerterbuch` ·
-`design_grundton` (`weiss` | `grau` | `dunkel`) · `design_akzent` (a colour)
+`sitzung_stunden` · `papierkorb_tage` · `such_woerterbuch` · `echtzeit` ·
+`prometheus_adresse` · `design_grundton` (`weiss` | `grau` | `dunkel`) · `design_akzent` (a colour)
 
 The database URL, the port and the JWT secret deliberately do **not** live here:
 they are needed before the database is open.
@@ -269,6 +329,8 @@ Compose reads `.env` for the values it needs before the backend starts.
 | `NEXORA_ANHANG_PFAD` | The path **inside** the container. Moving attachments changes the *Ort*, not this |
 | `NEXORA_TLS_NAME` | Name in the self-signed certificate. Without it the container's hostname is used, which produces a second browser warning |
 | `NEXORA_TLS_IP` | An IP for the certificate's SAN |
+| `NEXORA_DIENST_SCHEMA` | How the interface addresses the service behind it, `https` by default. Only needed when running the service without a certificate — then `http` |
+| `NEXORA_DIENST_PORT` | The port it listens on, `8443` by default (`8080` unencrypted) |
 | `NEXORA_S3_*` | Wire up an existing object store without the MinIO side file |
 
 A directory given as `NEXORA_ANHANG_ORT` has to belong to **uid/gid 10001**, the

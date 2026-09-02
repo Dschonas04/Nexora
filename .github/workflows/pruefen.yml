@@ -94,6 +94,16 @@ jobs:
       - name: Bauen
         run: npm run build
 
+      - name: Gemeinsames Bearbeiten, zwei Browser gegeneinander
+        run: |
+          # Die Typprüfung sagt nichts darüber, ob zwei Fassungen desselben
+          # Textes wirklich zusammenfinden. Die Probe stellt zwei Leitungen an
+          # denselben Verteiler und lässt sie gleichzeitig an derselben Stelle
+          # tippen.
+          npx esbuild test/eingang.ts --bundle --format=esm \
+            --outfile="$RUNNER_TEMP/mitschrift.mjs" --log-level=warning
+          node test/mitschrift-probe.mjs "$RUNNER_TEMP/mitschrift.mjs"
+
       - name: Der Lizenzhinweis muss im Bündel stehen
         run: |
           # BlockNote steht unter MPL-2.0, und die verlangt, dass der Hinweis

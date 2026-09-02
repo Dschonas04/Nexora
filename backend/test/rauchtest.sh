@@ -427,6 +427,41 @@ pruefe "der Puls zaehlt sich nicht selbst" "$VORHER" \
 pruefe "ohne Anmeldung verschlossen" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/puls")"
 
+echo "== Gemeinsames Bearbeiten"
+# Ohne Lizenz bleibt die Leitung zu, der Blick der Verwaltung darauf aber offen:
+# der Schalter im Panel soll auch dann etwas anzeigen, wenn der Zusatz nicht
+# freigeschaltet ist, sonst sieht die Seite kaputt aus statt verschlossen.
+pruefe "der Zustand ist abrufbar" "200" "$(code "$BASIS/api/system/mitschrift")"
+pruefe "er sagt, dass die Lizenz fehlt" "False" \
+       "$(hole "$BASIS/api/system/mitschrift" | feld "['lizenziert']")"
+pruefe "eingeschaltet ist es trotzdem" "True" \
+       "$(hole "$BASIS/api/system/mitschrift" | feld "['an']")"
+pruefe "es sitzt niemand in einem Raum" "0" \
+       "$(hole "$BASIS/api/system/mitschrift" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["raeume"]))')"
+pruefe "ohne Anmeldung verschlossen" "401" \
+       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/mitschrift")"
+# Die Leitung selbst und die Zahl der Mitschreibenden haengen am Zusatz.
+pruefe "die Leitung ist ohne Lizenz zu" "402" "$(code "$BASIS/api/echtzeit/$BREIT")"
+pruefe "die Zahl der Mitschreibenden ist zu" "402" \
+       "$(code "$BASIS/api/pages/$BREIT/mitschreibende")"
+# Und die Seite sagt es dem Browser: ohne Lizenz wird nicht gemeinsam
+# geschrieben, also macht er auch keine Sitzung dafuer auf.
+pruefe "die Seite meldet sich als nicht gemeinsam" "False" \
+       "$(hole "$BASIS/api/pages/$BREIT" | feld "['gemeinsam']")"
+# Der Schalter ist eine gewoehnliche Einstellung und laesst sich stellen.
+pruefe "die Einstellung steht in der Liste" "1" \
+       "$(hole "$BASIS/api/einstellungen" | python3 -c '
+import json, sys
+print(len([e for e in json.load(sys.stdin) if e["schluessel"] == "echtzeit"]))')"
+hole -X PUT "$BASIS/api/einstellungen" -H 'Content-Type: application/json' \
+     -d '{"schluessel":"echtzeit","wert":"nein"}' >/dev/null
+pruefe "ausgeschaltet meldet der Zustand es auch" "False" \
+       "$(hole "$BASIS/api/system/mitschrift" | feld "['an']")"
+hole -X PUT "$BASIS/api/einstellungen" -H 'Content-Type: application/json' \
+     -d '{"schluessel":"echtzeit","wert":"ja"}' >/dev/null
+pruefe "wieder eingeschaltet" "True" \
+       "$(hole "$BASIS/api/system/mitschrift" | feld "['an']")"
+
 echo "== Sicherung"
 # Der eigentliche Beweis ist nicht, dass ein Archiv herauskommt, sondern dass
 # sich das Ergebnis zurueckspielen laesst. Alles andere ist eine Behauptung.
@@ -727,6 +762,140 @@ pruefe "die @-Liste ist zu" "402" "$(code "$BASIS/api/pages/$BREIT/erwaehnbare")
 pruefe "die Ausgabe einer Ablage ist zu" "402" "$(code "$BASIS/api/spaces/$ABL_ID/export")"
 pruefe "der öffentliche Weg zu einer Datei ist zu" "402" \
        "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/public/egal/dateien/egal")"
+
+echo "== Passwort wechseln"
+# Das bisherige Passwort ist Pflicht, auch bei offener Sitzung: sonst genuegte
+# ein unbeaufsichtigter Browser, um das Konto zu uebernehmen.
+pruefe "falsches altes Passwort wird abgewiesen" "403" \
+       "$(code -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
+          -d '{"alt":"stimmt-nicht","neu":"neues-passwort"}')"
+pruefe "ein zu kurzes neues auch" "400" \
+       "$(code -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
+          -d '{"alt":"rauchtest-passwort","neu":"kurz"}')"
+pruefe "dasselbe noch einmal ist kein Wechsel" "400" \
+       "$(code -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
+          -d '{"alt":"rauchtest-passwort","neu":"rauchtest-passwort"}')"
+pruefe "der Wechsel geht durch" "True" \
+       "$(hole -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
+          -d '{"alt":"rauchtest-passwort","neu":"zweites-passwort"}' | feld "['ok']")"
+# Das eigene Geraet bleibt angemeldet, alles andere faellt. Ohne diese Zeile
+# waere der Wechsel eine Abmeldung.
+pruefe "dieses Gerät bleibt angemeldet" "200" "$(code "$BASIS/api/auth/me")"
+pruefe "das alte Passwort öffnet nicht mehr" "401" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/auth/login" \
+          -H 'Content-Type: application/json' \
+          -d '{"kennung":"rauch@test.invalid","password":"rauchtest-passwort"}')"
+pruefe "das neue öffnet" "200" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/auth/login" \
+          -H 'Content-Type: application/json' \
+          -d '{"kennung":"rauch@test.invalid","password":"zweites-passwort"}')"
+# Die Pruefspur ist ein Zusatz und ohne Lizenz nicht LESBAR; geschrieben wird
+# sie trotzdem, siehe main.go. Geprueft wird deshalb in der Datenbank.
+pruefe "der Wechsel steht im Protokoll" "1" \
+       "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
+          "SELECT count(*) FROM pruefspur WHERE aktion='konto.passwort'")"
+
+# Zuruecksetzen durch die Verwaltung, an einem zweiten Konto.
+ZWEITER=$(hole -X POST "$BASIS/api/users" -H 'Content-Type: application/json' \
+          -d '{"email":"zweiter@test.invalid","name":"Zweiter","password":"erstes-passwort"}' \
+          | feld "['id']")
+pruefe "das eigene Konto weist dieser Weg ab" "400" \
+       "$(code -X PUT "$BASIS/api/users/$(hole "$BASIS/api/auth/me" | feld "['id']")/passwort" \
+          -H 'Content-Type: application/json' -d '{"neu":"anderes-passwort"}')"
+pruefe "ein fremdes Konto lässt sich zurücksetzen" "True" \
+       "$(hole -X PUT "$BASIS/api/users/$ZWEITER/passwort" -H 'Content-Type: application/json' \
+          -d '{"neu":"gesetztes-passwort"}' | feld "['ok']")"
+pruefe "das gesetzte Passwort öffnet" "200" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/auth/login" \
+          -H 'Content-Type: application/json' \
+          -d '{"kennung":"zweiter@test.invalid","password":"gesetztes-passwort"}')"
+
+echo "== Eigene Rechner"
+pruefe "die Liste ist zunächst leer" "0" \
+       "$(hole "$BASIS/api/system/rechner" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["rechner"]))')"
+pruefe "ohne Port wird abgewiesen" "400" \
+       "$(code -X POST "$BASIS/api/system/rechner" -H 'Content-Type: application/json' \
+          -d '{"name":"ohne","ziel":"10.0.0.5"}')"
+pruefe "ein fremdes Schema auch" "400" \
+       "$(code -X POST "$BASIS/api/system/rechner" -H 'Content-Type: application/json' \
+          -d '{"name":"ssh","ziel":"ssh://10.0.0.5:22"}')"
+# Der Dienst klopft an sich selbst: eine Adresse, die im Rauchtest verlaesslich
+# antwortet, ohne dass ein zweiter Rechner im Spiel waere.
+SELBST=$(hole -X POST "$BASIS/api/system/rechner" -H 'Content-Type: application/json' \
+         -d "{\"name\":\"ich selbst\",\"ziel\":\"127.0.0.1:$APIPORT\"}" | feld "['id']")
+pruefe "der eigene Port antwortet" "antwortet" \
+       "$(hole "$BASIS/api/system/rechner" | python3 -c '
+import json, sys
+print(next(r["zustand"] for r in json.load(sys.stdin)["rechner"] if r["name"] == "ich selbst"))')"
+# Port 9 ist discard und in keinem Container belegt.
+hole -X POST "$BASIS/api/system/rechner" -H 'Content-Type: application/json' \
+     -d '{"name":"stiller","ziel":"127.0.0.1:9"}' >/dev/null
+pruefe "ein toter Port heißt still" "still" \
+       "$(hole "$BASIS/api/system/rechner" | python3 -c '
+import json, sys
+print(next(r["zustand"] for r in json.load(sys.stdin)["rechner"] if r["name"] == "stiller"))')"
+pruefe "ohne Prometheus bleibt die Quelle leer" "" \
+       "$(hole "$BASIS/api/system/rechner" | python3 -c '
+import json, sys
+print(json.load(sys.stdin).get("quelle", ""))')"
+pruefe "die Zeile lässt sich ändern" "anders benannt" \
+       "$(hole -X PUT "$BASIS/api/system/rechner/$SELBST" -H 'Content-Type: application/json' \
+          -d "{\"name\":\"anders benannt\",\"ziel\":\"127.0.0.1:$APIPORT\"}" | feld "['name']")"
+pruefe "und entfernen" "True" \
+       "$(hole -X DELETE "$BASIS/api/system/rechner/$SELBST" | feld "['ok']")"
+pruefe "danach steht nur noch der stille da" "1" \
+       "$(hole "$BASIS/api/system/rechner" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["rechner"]))')"
+pruefe "die Einstellung für Prometheus steht in der Liste" "1" \
+       "$(hole "$BASIS/api/einstellungen" | python3 -c '
+import json, sys
+print(len([e for e in json.load(sys.stdin) if e["schluessel"] == "prometheus_adresse"]))')"
+
+echo "== Verschlüsselt sprechen"
+# Der Dienst kann selbst HTTPS. Geprueft wird an einem zweiten Start mit einem
+# eigens erzeugten Zertifikat: dass er die Datei annimmt, dass er wirklich
+# verschluesselt antwortet, und dass ein Gegenueber, das die Stelle kennt, ihm
+# glaubt. Genau das tut die Oberflaeche im Verbund, siehe pki/erzeuge.sh.
+halte_dienst_an
+
+openssl req -x509 -newkey rsa:2048 -sha256 -days 2 -nodes \
+    -keyout "$ARBEIT/dienst.key" -out "$ARBEIT/dienst.crt" \
+    -subj "/CN=localhost" \
+    -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" >/dev/null 2>&1
+
+DATABASE_URL="postgres://nexora@127.0.0.1:${PGPORT}/nexora?sslmode=disable" \
+JWT_SECRET="rauchtest-geheimnis-lang-genug-fuer-hs256" \
+NEXORA_DATA_DIR="$ARBEIT/anhaenge" \
+PORT="$APIPORT" \
+NEXORA_CONFIG="/dev/null" \
+NEXORA_TLS_ZERTIFIKAT="$ARBEIT/dienst.crt" \
+NEXORA_TLS_SCHLUESSEL="$ARBEIT/dienst.key" \
+NEXORA_TLS_WURZEL="$ARBEIT/dienst.crt" \
+"$ARBEIT/nexora" >> "$ARBEIT/dienst.log" 2>&1 &
+DIENST_PID=$!
+
+SICHER="https://127.0.0.1:$APIPORT"
+for i in $(seq 1 40); do
+    sleep 0.5
+    curl -fsS --max-time 2 --cacert "$ARBEIT/dienst.crt" "$SICHER/healthz" >/dev/null 2>&1 && break
+done
+
+pruefe "verschlüsselt erreichbar, mit Prüfung des Zertifikats" "ok" \
+       "$(curl -s --max-time 3 --cacert "$ARBEIT/dienst.crt" "$SICHER/healthz")"
+# Wer die Stelle nicht kennt, kommt nicht durch. Ohne diese Zeile bewiese die
+# vorige nur, dass irgendetwas antwortet.
+pruefe "ohne die Stelle bleibt es zu" "000" \
+       "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "$SICHER/healthz")"
+# Und unverschluesselt geht nichts mehr durch: auf eine Anfrage im Klartext
+# antwortet Go mit 400 und der Bemerkung, hier werde TLS gesprochen -- nicht mit
+# der Seite. 400 ist hier also das gewuenschte Ergebnis und kein Fehler.
+pruefe "im Klartext kommt nichts mehr durch" "400" \
+       "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "$BASIS/healthz")"
+pruefe "und er sagt auch, warum" "1" \
+       "$(curl -s --max-time 3 "$BASIS/healthz" | grep -c 'HTTPS server')"
+pruefe "die Anmeldung geht auch verschlüsselt" "200" \
+       "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 --cacert "$ARBEIT/dienst.crt" \
+          -X POST "$SICHER/api/auth/login" -H 'Content-Type: application/json' \
+          -d '{"kennung":"rauch@test.invalid","password":"zweites-passwort"}')"
 
 echo
 if [ "$fehler" -gt 0 ]; then

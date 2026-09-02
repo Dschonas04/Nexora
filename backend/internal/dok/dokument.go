@@ -100,16 +100,11 @@ type stueckJSON struct {
 // heisst: keine Bilder, dann steht wie bisher die Verweiszeile da.
 type Bildquelle func(adresse string) ([]byte, bool)
 
-// AusInhalt reads in a stored document. As everywhere in this conversion: an
-// unknown block type becomes a paragraph, not an error. A document that exports
-// incompletely is worth more than one that refuses to export.
-func AusInhalt(roh json.RawMessage, titel string) Dokument {
-	return AusInhaltMitBildern(roh, titel, nil)
-}
-
-// AusInhaltMitBildern liest dasselbe Dokument, holt aber zu jedem Bild die
-// Bytes. Ein PDF ohne die Bilder der Seite ist kein Abbild der Seite, sondern
-// eine Inhaltsangabe davon.
+// AusInhaltMitBildern liest ein gespeichertes Dokument ein und holt zu jedem
+// Bild die Bytes. Wie ueberall in dieser Umwandlung gilt: ein unbekannter
+// Blocktyp wird zum Absatz und nicht zum Fehler, denn ein Dokument, das
+// unvollstaendig herauskommt, ist mehr wert als eines, das die Ausfuhr
+// verweigert. Ein nil-Rueckruf heisst: ohne Bilder.
 func AusInhaltMitBildern(roh json.RawMessage, titel string, hol Bildquelle) Dokument {
 	d := Dokument{Titel: titel}
 	var knoten []knoten

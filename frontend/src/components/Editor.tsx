@@ -7,6 +7,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import { locales } from "@blocknote/core";
 import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
+import type { XmlFragment } from "yjs";
 import { Extension, InputRule } from "@tiptap/core";
 import { Plugin } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
@@ -190,6 +191,7 @@ export default function Editor({
   onOpenLink,
   mentionTargets,
   dateiHochladen,
+  mitschrift,
 }: {
   initialContent: unknown;
   editable?: boolean;
@@ -206,6 +208,11 @@ export default function Editor({
   // its address. Without it the image block asks for a URL and nothing else,
   // which means an image has to live somewhere before it can be used here.
   dateiHochladen?: (datei: File) => Promise<string>;
+  // Gemeinsames Schreiben. Liegt es an, kommt der Text nicht mehr aus
+  // initialContent, sondern aus dem geteilten Dokument: die Seite wird nicht
+  // mehr als Ganzes gespeichert und wieder geladen, sondern zeichenweise
+  // zusammengeführt.
+  mitschrift?: { fragment: XmlFragment; provider: unknown; user: { name: string; color: string } };
 }) {
   const { design } = useDesign();
   const grundton = design.grundton;
@@ -214,8 +221,12 @@ export default function Editor({
   // Everything that does arrive is straightened out first: documents written by
   // an older import are missing the styles on their text pieces, and BlockNote
   // refuses the entire document over that.
+  //
+  // Beim gemeinsamen Schreiben bleibt es leer: der Inhalt steht dann im
+  // geteilten Dokument, und was hier zusätzlich hineingereicht würde, stünde
+  // hinterher doppelt da, einmal je Browser, der die Seite öffnet.
   const content =
-    Array.isArray(initialContent) && initialContent.length > 0
+    !mitschrift && Array.isArray(initialContent) && initialContent.length > 0
       ? (geradegeruecktes(initialContent) as PartialBlock[])
       : undefined;
 
@@ -246,6 +257,8 @@ export default function Editor({
       if (!laden) throw new Error("Hochladen ist hier nicht eingerichtet");
       return laden(datei);
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    collaboration: mitschrift as any,
     _tiptapOptions: {
       extensions: [verweisErweiterung(() => loeserRef.current), fettKursivErweiterung],
     },

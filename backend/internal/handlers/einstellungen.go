@@ -96,6 +96,18 @@ var bekannt = map[string]struct {
 		Erklaerung: "german, english oder simple. simple stemmt gar nicht und trifft dafür in keiner Sprache daneben.",
 		Warnung:    "Eine Änderung wirkt erst nach einem Neuaufbau des Suchindex. Die Spalte wurde mit dem alten Wörterbuch erzeugt.",
 	},
+	"echtzeit": {
+		Art:        "janein",
+		Titel:      "Gemeinsames Bearbeiten",
+		Erklaerung: "Mehrere Konten schreiben gleichzeitig an derselben Seite, jeder sieht die Änderungen der anderen sofort. Wer mitschreiben darf, entscheidet die Freigabe der Seite: nur wer sie bearbeiten darf.",
+		Warnung:    "Aus heißt nicht abgeschaltet, sondern zurück auf das alte Verhalten: die Seite wird beim Speichern ganz geschrieben, und wer zuletzt speichert, gewinnt. Der Hinweis auf den Konflikt bleibt.",
+	},
+	"prometheus_adresse": {
+		Art:        "text",
+		Titel:      "Prometheus",
+		Erklaerung: "Adresse eines Prometheus, etwa http://10.0.0.5:9090. Daraus holt die Rechnerliste Betriebssystem, Kern und Laufzeit. Leer heißt: nur Erreichbarkeit, keine Fassungen.",
+		Warnung:    "Gefragt wird ohne Anmeldung. Steht der Prometheus hinter einem Passwort, bleibt die Spalte leer, statt dass etwas Falsches darin steht.",
+	},
 	"design_grundton": {
 		Art:        "auswahl",
 		Titel:      "Grundton",
@@ -172,12 +184,16 @@ func ausDatei(schluessel string, k config.Konfig) string {
 		return strconv.Itoa(k.SitzungStunden)
 	case "such_woerterbuch":
 		return k.SuchWoerterbuch
+	case "echtzeit":
+		return "ja"
 	case "design_grundton":
 		return "grau"
 	case "design_akzent":
 		return "#2383e2"
 	case "metriken_token":
 		return k.MetrikenToken
+	case "prometheus_adresse":
+		return ""
 	}
 	return ""
 }
@@ -193,6 +209,11 @@ func janein(b bool) string {
 // handlers actually ask. They read from the cache so a change takes effect at
 // once, without a restart.
 func RegistrierungOffen() bool { return wert("registrierung_offen") == "ja" }
+
+// echtzeitAn sagt, ob gemeinsam geschrieben werden darf. Die Oberfläche fragt
+// vorher, die Leitung fragt noch einmal: eine ausgeschaltete Funktion, die sich
+// über einen offen gelassenen Weg doch benutzen lässt, ist keine.
+func (s *Server) echtzeitAn() bool { return wert("echtzeit") == "ja" }
 
 // MetrikenToken ist das Losungswort für /metrics. Datenbank vor Datei, wie bei
 // jeder anderen Einstellung.
@@ -326,6 +347,8 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 	reihenfolge := []string{
 		"registrierung_offen", "erlaubte_domaenen",
 		"max_anhang_mb", "sitzung_stunden", "papierkorb_tage", "such_woerterbuch",
+		"echtzeit",
+		"prometheus_adresse",
 		"design_grundton", "design_akzent",
 	}
 

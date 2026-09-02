@@ -23,18 +23,32 @@
 services:
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
-    command: server /data --console-address ":9001"
+    # Mit Zertifikat aus dem PKI-Container: MinIO sucht in dem genannten
+    # Verzeichnis public.crt und private.key und die fremden Stellen unter CAs,
+    # genau so legt erzeuge.sh sie ab. Ohne das liefen die Anhänge im Klartext
+    # zwischen den Containern hin und her.
+    command: server /data --console-address ":9001" --certs-dir /pki/minio
+    depends_on:
+      pki:
+        condition: service_completed_successfully
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?bitte in der .env setzen}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?bitte in der .env setzen, z.B. openssl rand -hex 24}
     volumes:
       - nexora_s3:/data
+      - nexora_pki:/pki:ro
     ports:
       # First number: the S3 interface. Second: the web interface.
       - "${MINIO_ADRESSE:-127.0.0.1}:${MINIO_PORT:-9010}:9000"
       - "${MINIO_ADRESSE:-127.0.0.1}:${MINIO_KONSOLE_PORT:-9011}:9001"
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      # Mit curl und nicht mit "mc ready local": mc sucht die fremden Stellen in
+      # seinem eigenen Verzeichnis und nicht in dem des Speichers, und meldete
+      # deshalb dauerhaft "not ready", während der Dienst längst antwortete.
+      # curl bekommt die Stelle genannt und prüft damit gleich mit, dass das
+      # Zertifikat stimmt. localhost statt des Dienstnamens: die Probe läuft im
+      # Container selbst, und der Name steht im Zertifikat.
+      test: ["CMD", "curl", "-fsS", "--cacert", "/pki/ca.crt", "https://localhost:9000/minio/health/live"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -54,6 +68,8 @@ services:
     depends_on:
       minio:
         condition: service_healthy
+    volumes:
+      - nexora_pki:/pki:ro
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?bitte in der .env setzen}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?bitte in der .env setzen}
@@ -65,7 +81,12 @@ services:
       - -c
       - |
         set -e
-        mc alias set eigen http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        # Die eigene Stelle bekannt machen, sonst traut mc dem Zertifikat des
+        # Speichers nicht. Ein --insecure täte es auch und wäre der schlechtere
+        # Weg: dann prüfte hier nie wieder jemand etwas.
+        mkdir -p /root/.mc/certs/CAs
+        cp /pki/ca.crt /root/.mc/certs/CAs/nexora.crt
+        mc alias set eigen https://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
         mc mb --ignore-existing eigen/"$$EIMER"
         cat > /tmp/regel.json <<REGEL
         {
@@ -95,7 +116,10 @@ services:
       # Here the container name counts, not the published port: the backend
       # talks to MinIO over the compound's network.
       NEXORA_S3_AKTIV: "ja"
-      NEXORA_S3_ENDPUNKT: ${NEXORA_S3_ENDPUNKT:-http://minio:9000}
+      NEXORA_S3_ENDPUNKT: ${NEXORA_S3_ENDPUNKT:-https://minio:9000}
+      # Verschlüsselt, und das Zertifikat wird gegen die eigene Stelle geprüft;
+      # der Dienst kennt sie über NEXORA_TLS_WURZEL.
+      NEXORA_S3_TLS: "ja"
       NEXORA_S3_BUCKET: ${NEXORA_S3_BUCKET:-nexora}
       # The restricted account from above, not the root one.
       NEXORA_S3_ZUGRIFFSSCHLUESSEL: ${NEXORA_S3_ZUGRIFFSSCHLUESSEL:?bitte in der .env setzen}

@@ -7,10 +7,10 @@ Aufgeführt ist, was **ausgeliefert** wird, und nicht, was in den Paketdateien
 steht. Der Unterschied ist nicht kosmetisch: `go.mod` nennt 48 Module,
 eingebunden werden 34. Die Differenz ist der Kerberos-Zweig von `go-ldap`, den
 kein Aufruf erreicht und der deshalb nicht mitkompiliert wird; mit ihm bleibt
-das einzige MPL-lizenzierte Go-Modul draußen. Auf der npm-Seite liegen 317
-Pakete im Verzeichnis, 162 landen im Bündel, der Rest sind Bauwerkzeuge.
+das einzige MPL-lizenzierte Go-Modul draußen. Auf der npm-Seite landen 173
+Pakete im Bündel, der Rest im Verzeichnis sind Bauwerkzeuge.
 
-Stand: 31.08.2026. Nachzählen lässt sich das jederzeit:
+Stand: 01.09.2026. Nachzählen lässt sich das jederzeit:
 
 ```bash
 cd backend  && go list -deps -f '{{if .Module}}{{.Module.Path}} {{.Module.Version}}{{end}}' ./... | sort -u
@@ -130,18 +130,18 @@ echten PDF-Dateien.
 | `golang.org/x/text` | v0.41.0 | BSD-3-Clause |
 | `gopkg.in/ini.v1` | v1.67.3 | Apache-2.0 |
 
-## npm, Produktivbaum (162)
+## npm, Produktivbaum (173)
 
 | Verteilung | |
 |---|---|
-| MIT | 156 |
+| MIT | 167 |
 | MPL-2.0 | 3 |
 | ISC | 1 |
 | 0BSD | 1 |
 | MIT oder CC0-1.0 | 1 |
 
-Alle 162 einzeln aufzuführen hieße, eine Liste zu pflegen, die beim nächsten
-`npm install` still veraltet. Namentlich stehen hier deshalb die acht direkten
+Alle 173 einzeln aufzuführen hieße, eine Liste zu pflegen, die beim nächsten
+`npm install` still veraltet. Namentlich stehen hier deshalb die elf direkten
 Abhängigkeiten und jedes Paket im Baum, das nicht MIT ist. Der Rest ist der
 übliche Unterbau von React und ProseMirror und durchgehend MIT; nachsehen lässt
 er sich mit dem Befehl oben.
@@ -155,9 +155,12 @@ er sich mit dem Befehl oben.
 | `@blocknote/react` | 0.15.11 | **MPL-2.0** |
 | `@tiptap/core` | 2.27.2 | MIT |
 | `@tiptap/pm` | 2.27.2 | MIT |
+| `lib0` | 0.2.117 | MIT |
 | `react` | 18.3.1 | MIT |
 | `react-dom` | 18.3.1 | MIT |
 | `react-router-dom` | 6.26.2 | MIT |
+| `y-protocols` | 1.0.7 | MIT |
+| `yjs` | 13.6.32 | MIT |
 
 **Alles Übrige im Baum, das nicht MIT ist:**
 

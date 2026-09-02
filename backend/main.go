@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
 	"net/http"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"nexora/internal/lizenz"
 	"nexora/internal/middleware"
 	"nexora/internal/puls"
+	"nexora/internal/vertrauen"
 )
 
 func main() {
@@ -73,6 +75,31 @@ func main() {
 		log.Printf("keine gültige Lizenz (%s). Zusatzfunktionen bleiben gesperrt.", z.Grund)
 	}
 
+	// Wem dieser Dienst beim Hinausgehen glaubt. Die eigene Stelle des Verbunds
+	// kommt zu den öffentlichen hinzu; ohne eingetragene Stelle bleibt es bei
+	// denen des Systems, siehe internal/vertrauen.
+	//
+	// Ein Fehler hier ist kein Grund aufzugeben: gemeint war eine Datei, und
+	// wenn sie fehlt, sollen die Verbindungen scheitern, die sie brauchen, und
+	// nicht der ganze Dienst.
+	wurzeln, err := vertrauen.Wurzeln(k.TLSWurzel)
+	if err != nil {
+		log.Printf("ACHTUNG: %v. Es gelten nur die öffentlichen Stellen.", err)
+	} else if wurzeln != nil {
+		// Einmal an zentraler Stelle, damit es für ALLES gilt, was dieser
+		// Dienst anspricht: den Anmeldedienst, den Prometheus der
+		// Rechnerliste, jeden Abruf, den irgendein Handler macht. Die
+		// Alternative wäre, den Vorrat durch jeden Aufruf durchzureichen und
+		// beim nächsten neuen Weg zu vergessen.
+		if transport, ok := http.DefaultTransport.(*http.Transport); ok {
+			if transport.TLSClientConfig == nil {
+				transport.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
+			}
+			transport.TLSClientConfig.RootCAs = wurzeln
+		}
+		log.Printf("TLS: eigene Zertifizierungsstelle aus %s wird zusätzlich anerkannt", k.TLSWurzel)
+	}
+
 	// Choose where attachments live. The object store is the exception, the disk
 	// is the rule: whoever does not set up S3 should never notice it exists.
 	//
@@ -92,6 +119,7 @@ func main() {
 			Region:    k.S3Region,
 			TLS:       k.S3TLS,
 			Pfadstil:  k.S3Pfadstil,
+			Wurzeln:   wurzeln,
 		})
 		switch {
 		case err == nil:
@@ -108,7 +136,11 @@ func main() {
 
 	// Redis is optional: without it everything keeps working, only without a
 	// shared cache. A failure to connect is therefore logged, not fatal.
-	rd := handlers.NeuRedis(ctx, k.RedisAdresse, k.RedisPasswort, k.RedisDatenbank, k.RedisVorsilbe)
+	var redisSicher *handlers.RedisTLS
+	if k.RedisTLS {
+		redisSicher = &handlers.RedisTLS{Wurzeln: wurzeln}
+	}
+	rd := handlers.NeuRedis(ctx, k.RedisAdresse, k.RedisPasswort, k.RedisDatenbank, k.RedisVorsilbe, redisSicher)
 	defer rd.Schliessen()
 
 	h := &handlers.Server{
@@ -192,6 +224,10 @@ func main() {
 			r.Use(middleware.Auth([]byte(secret), h.SitzungGilt))
 
 			r.Get("/auth/me", h.Me)
+			// Das eigene Passwort wechseln. Steht bei /auth und nicht bei
+			// /users, weil es keinen Kontonamen braucht: gemeint ist immer das
+			// Konto, das die Anfrage stellt.
+			r.Post("/auth/passwort", h.PasswortWechseln)
 
 			// Tells the interface what is unlocked so it never offers what is
 			// locked. Contains no secret.
@@ -267,6 +303,17 @@ func main() {
 				r.Delete("/pages/{id}/shares/{userId}", h.RemoveShare)
 			})
 
+			// Gemeinsames Schreiben an einer Seite, ein bezahlter Zusatz.
+			//
+			// Der Zeitbegrenzer des Routers gilt auch hier, er kappt aber nur
+			// den Kontext der Anfrage, und den liest die Leitung nicht: sie soll
+			// stundenlang offen bleiben dürfen. Wer sie öffnen darf, prüft der
+			// Handler selbst, mit derselben Frage wie beim Speichern.
+			r.With(handlers.VerlangeFunktion(lizenz.Echtzeit)).
+				Get("/echtzeit/{id}", h.Mitschrift)
+			r.With(handlers.VerlangeFunktion(lizenz.Echtzeit)).
+				Get("/pages/{id}/mitschreibende", h.Mitschreibende)
+
 			// Settings and system state. Administrators only, which the handlers
 			// check themselves, so there is no extra gate here, only the route.
 			// Anyone may read the appearance, otherwise an ordinary user would
@@ -294,6 +341,15 @@ func main() {
 			// Der Live-Stand, im Sekundentakt abgefragt. Zählt sich selbst
 			// nicht mit, siehe middleware/messen.go.
 			r.Get("/system/puls", h.PulsAnsicht)
+			r.Get("/system/mitschrift", h.MitschriftZustand)
+
+			// Eigene Rechner: die Liste und was gerade von ihnen zu sehen ist.
+			// Nur fuer Administratoren, was die Handler selbst pruefen -- ein
+			// Weg, der beliebige Adressen anklopft, gehoert niemand anderem.
+			r.Get("/system/rechner", h.ListRechner)
+			r.Post("/system/rechner", h.RechnerAnlegen)
+			r.Put("/system/rechner/{id}", h.RechnerAendern)
+			r.Delete("/system/rechner/{id}", h.RechnerLoeschen)
 			// Die Kennzahlen an- und ausschalten. Das Losungswort steht in
 			// derselben Karte wie die übrigen Einstellungen; ein eigener Weg,
 			// weil Einschalten allein nichts nützt und der fertige Abschnitt
@@ -391,6 +447,9 @@ func main() {
 			// Den Anmeldenamen darf auch das Konto selbst setzen, deshalb
 			// steht die Pruefung im Handler und nicht in dieser Reihe.
 			r.Put("/users/{id}/benutzername", h.BenutzernameSetzen)
+			// Zuruecksetzen durch eine Verwaltung, fuer ein vergessenes
+			// Passwort. Das eigene Konto weist der Handler ab, siehe passwort.go.
+			r.Put("/users/{id}/passwort", h.PasswortSetzen)
 
 			// Spaces
 			r.Get("/spaces", h.ListSpaces)
@@ -463,7 +522,30 @@ func main() {
 		Handler:           r,
 		ReadHeaderTimeout: 10 * time.Second, // guards against slow-header clients
 	}
-	log.Printf("nexora backend listening on :%s", port)
+
+	// Verschlüsselt, sobald ein Zertifikat dasteht.
+	//
+	// Beides leer heißt offen, und das ist kein Versehen: wer den Dienst hinter
+	// ein Gegenstück auf demselben Rechner stellt, hat nichts davon, dass die
+	// paar Zentimeter dazwischen auch noch verschlüsselt sind. Sobald aber ein
+	// Netz dazwischenliegt -- ein zweiter Wirt, ein Docker-Netz über mehrere
+	// Rechner --, laufen hier Sitzungskennungen und Seiteninhalte im Klartext
+	// vorbei, und dann gehört ein Zertifikat her.
+	if k.TLSZertifikat != "" && k.TLSSchluessel != "" {
+		srv.TLSConfig = &tls.Config{
+			// Nur die beiden Fassungen, die heute als in Ordnung gelten.
+			// Ältere anzubieten hieße, sie zu benutzen, sobald jemand danach
+			// fragt.
+			MinVersion: tls.VersionTLS12,
+		}
+		log.Printf("nexora backend listening on :%s (TLS, Zertifikat %s)", port, k.TLSZertifikat)
+		if err := srv.ListenAndServeTLS(k.TLSZertifikat, k.TLSSchluessel); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	log.Printf("nexora backend listening on :%s (offen)", port)
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}

@@ -34,6 +34,10 @@ export interface Eingabe {
   feld?: string;
   vorgabe?: string;
   bestaetigen?: string;
+  // "passwort" verdeckt die Eingabe und lässt sie ungetrimmt stehen: ein
+  // Leerzeichen am Ende eines Passworts gehört dazu, auch wenn es meist ein
+  // Versehen ist. Bei allem anderen wird getrimmt wie bisher.
+  art?: "text" | "passwort";
 }
 
 type Antwort = (a: boolean | string | null) => void;
@@ -42,6 +46,7 @@ interface Dialog extends Rueckfrage {
   mitFeld?: boolean;
   feld?: string;
   vorgabe?: string;
+  art?: "text" | "passwort";
 }
 
 const Ctx = createContext<{
@@ -82,6 +87,7 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
       vorgabe: e.vorgabe,
       mitFeld: true,
       bestaetigen: e.bestaetigen,
+      art: e.art,
     });
     return new Promise<string | null>((auf) => {
       antwortRef.current = auf as Antwort;
@@ -103,6 +109,11 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
     [offen],
   );
 
+  // Was aus dem Feld herauskommt: bei einem Passwort unverändert, sonst ohne
+  // Leerraum an den Rändern. An einer Stelle, damit Tastatur und Knopf nicht
+  // verschieden antworten.
+  const ausFeld = (roh: string) => (offen?.art === "passwort" ? roh : roh.trim());
+
   // The keyboard branch reads the field content through a reference: otherwise
   // the listener would have to be registered anew on every character.
   const wertRef = useRef("");
@@ -123,7 +134,7 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
         e.preventDefault();
         // With the field its content counts, and empty means: nothing to do.
         if (offen.mitFeld) {
-          const t = wertRef.current.trim();
+          const t = ausFeld(wertRef.current);
           if (t) schliessen(true, t);
         } else {
           schliessen(true);
@@ -158,6 +169,8 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
                   <input
                     ref={feldRef}
                     className="rueckfrage-feld"
+                    type={offen.art === "passwort" ? "password" : "text"}
+                    autoComplete={offen.art === "passwort" ? "new-password" : undefined}
                     value={wert}
                     onChange={(e) => setWert(e.target.value)}
                   />
@@ -171,8 +184,8 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
               <button
                 ref={jaRef}
                 className={"btn" + (offen.gefaehrlich ? " warnend" : " betont")}
-                disabled={offen.mitFeld && wert.trim() === ""}
-                onClick={() => schliessen(true, wert.trim())}
+                disabled={offen.mitFeld && ausFeld(wert) === ""}
+                onClick={() => schliessen(true, ausFeld(wert))}
               >
                 {offen.bestaetigen ?? "Fortfahren"}
               </button>

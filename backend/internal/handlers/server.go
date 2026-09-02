@@ -13,18 +13,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"nexora/internal/ablage"
+	"nexora/internal/lizenz"
 	"nexora/internal/models"
 	"nexora/internal/puls"
 )
 
-const (
-	cookieName = "nexora_token"
-	// Fallback when no setting applies. The actual duration comes from
-	// SitzungDauer and can be changed while running. Sessions themselves are kept
-	// in the database, so a token can be revoked and renewed; this value only
-	// says how long a freshly signed one stays valid.
-	tokenTTL = 7 * 24 * time.Hour
-)
+const cookieName = "nexora_token"
 
 // Server carries everything the handlers need. It is created once in main and
 // shared by all requests, so it must stay read-only after startup.
@@ -66,15 +60,6 @@ func writeErr(w http.ResponseWriter, status int, msg string) {
 
 func decode(r *http.Request, v interface{}) error {
 	return json.NewDecoder(r.Body).Decode(v)
-}
-
-// setAuthCookie installs the session cookie. It is httpOnly so page script
-// cannot read it, and SameSite=Lax keeps it off cross-site requests while still
-// surviving a normal link into the app. Secure is not set here because the
-// reverse proxy terminates TLS; behind plain HTTP the cookie would otherwise
-// never be sent at all.
-func (s *Server) setAuthCookie(w http.ResponseWriter, token string) {
-	s.setAuthCookieFuer(w, nil, token)
 }
 
 // setAuthCookieFuer sets the cookie and marks it Secure when the request came
@@ -122,6 +107,32 @@ func (s *Server) clearAuthCookie(w http.ResponseWriter) {
 	})
 }
 
+// gemeinsamBeschrieben sagt, ob an dieser Seite mehr als ein Konto schreiben
+// darf: durch eine Freigabe mit Bearbeitungsrecht, durch ein Recht auf ihrem
+// Bereich oder weil der Bereich für alle offen steht.
+//
+// Die Frage entscheidet, ob der Browser die Leitung zum gemeinsamen Schreiben
+// öffnet. Sie fällt bewusst hier und nicht dort: eine Seite, die nur ihrem
+// Besitzer gehört, soll gar nicht erst eine Sitzung aufmachen, in der nie
+// jemand zweites sitzen wird.
+func (s *Server) gemeinsamBeschrieben(ctx context.Context, pageID string) bool {
+	if !lizenz.Frei(lizenz.Echtzeit) || !s.echtzeitAn() {
+		return false
+	}
+	var mehrere bool
+	err := s.Pool.QueryRow(ctx, `
+		SELECT EXISTS (SELECT 1 FROM page_shares sh
+		                WHERE sh.page_id = p.id AND sh.permission = 'edit')
+		    OR EXISTS (SELECT 1 FROM spaces so
+		                WHERE so.id = p.space_id AND so.oeffentlich = 'schreiben')
+		    OR ($2 AND EXISTS (SELECT 1 FROM space_rechte sr
+		                        WHERE sr.space_id = p.space_id
+		                          AND sr.recht IN ('schreiben', 'verwalten')))
+		  FROM pages p WHERE p.id = $1`,
+		pageID, lizenz.Frei(lizenz.Gruppen)).Scan(&mehrere)
+	return err == nil && mehrere
+}
+
 // loadPage returns a full (non-deleted) page with tags and, for a logged-in
 // viewer, its favorite flag and permission flags. viewerID == "" is used for
 // public pages and skips per-user fields. Callers are responsible for checking
@@ -166,6 +177,7 @@ func (s *Server) loadPage(ctx context.Context, viewerID, pageID string) (*models
 		_ = s.Pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM favorites WHERE user_id=$1 AND page_id=$2)`,
 			viewerID, pageID).Scan(&exists)
 		p.IsFavorite = exists
+		p.Gemeinsam = canEdit && s.gemeinsamBeschrieben(ctx, pageID)
 	}
 	return &p, nil
 }

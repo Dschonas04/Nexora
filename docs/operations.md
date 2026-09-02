@@ -194,6 +194,9 @@ is an admin-only API route as well ([API reference](api.md#administration)).
 | Task | Where |
 |---|---|
 | Accounts, roles, deleting an account | Admin view |
+| Set a password for a forgotten one | Admin view → the account's row → *Passwort zurücksetzen* |
+| Change your own password | The bar at the bottom left → *Passwort* (every account, not just admins) |
+| Watch your own machines: reachable? which version? | Settings → System → Eigene Rechner |
 | Edit `config.conf`, with a checked draft and a timestamped backup | Settings → Wartung |
 | Restart the process (the only way a config change takes effect) | Settings → Wartung |
 | Empty the whole instance's trash | Settings → Wartung |
@@ -287,7 +290,44 @@ established without it — which services this one talks to, whether they answer
 how fast, which version they run, and how much they hold. Those are the
 questions people actually ask when something is stuck.
 
+Below it stands the second list, **Eigene Rechner**: machines you enter
+yourself, the ones around this service. The same restraint applies there and for
+the same reason — Nexora knocks, on the level where an answer needs no
+credentials (a TCP connection that comes up, an HTTP response that arrives), and
+holds no key to any of them. A wiki that may be reachable from outside is the
+wrong place to keep a general key to your network. Redirects are not followed —
+a 301 is already an answer, and where it points is a different question — and on
+`https://` the certificate is not checked, since otherwise every self-signed
+appliance in the house would show up as silent while running.
+
+Operating system, kernel and uptime therefore come from a second source: the
+Prometheus you name in `prometheus_adresse`, whose `node_exporter` already knows
+all three. Without that address the list shows who answers and nothing more,
+which is still the question one usually has. Machines are matched by the host
+part of the `instance` label, with the port dropped on both sides — Prometheus
+carries the exporter's (9100), the list carries the one being knocked on.
+
 ---
+
+### What is encrypted, and where
+
+| Hop | How |
+|---|---|
+| Browser → interface | The container's own certificate, self-signed on the first start (`PORT_TLS`, 3443). A real one goes into the `nexora_tls` volume under the same names |
+| Interface → service | HTTPS, certificate verified against the stack's own authority |
+| Service → database | `sslmode=verify-full`, the authority named in the connection string |
+| Service → object store | HTTPS, verified |
+| Service → cache | TLS, and the cache's plain port is closed (`--port 0`) rather than merely unused |
+
+The certificates for the last four come from the `pki` container, which runs
+once at start-up and then exits. It is idempotent: what is already in the volume
+stays, so the authority does not change under you on every boot. Ten years is
+its lifetime — long, deliberately: a certificate that expires in a home
+installation nobody watches produces an outage nobody can explain.
+
+Own certificates instead of the generated ones go into the `nexora_pki` volume
+under the names each service expects; the generator only fills in what is
+missing.
 
 ## Security checklist
 
@@ -301,9 +341,14 @@ Before an instance is reachable by anyone but you:
       before the first one
 - [ ] `erlaubte_domaenen` set if registration stays open
 - [ ] A real TLS certificate in the `nexora_tls` volume, or a reverse proxy that
-      terminates TLS
+      terminates TLS — and, if pages are written on together, one that passes
+      WebSocket upgrades through to `/api/echtzeit/`
 - [ ] `oeffentliche_url` set to the address the browser actually uses
-- [ ] `s3_tls` on if an object store is in use
+- [ ] `s3_tls` on if an object store is in use — on by default in the bundled
+      stack, where the store speaks TLS anyway
+- [ ] The `pki` container ran and exited cleanly. Everything between the
+      containers hangs on it; there is nothing to configure, but there is
+      something to look at once
 - [ ] LDAP with StartTLS or `ldaps://`, and certificate verification left on
 - [ ] After going live, look at **Settings → Anmeldungen** once. The Herkunft
       table sums the week up by address; one address with many failures against
@@ -332,8 +377,82 @@ set applies.
 ### Uploads fail
 
 The attachment directory does not belong to uid/gid 10001, or the file is larger
-than `max_anhang_mb`, or larger than nginx's `client_max_body_size` (25 MiB) —
-raising the setting alone is not enough.
+than `max_anhang_mb`, or larger than nginx's `client_max_body_size` (512 MiB in
+the bundled configuration) — raising the setting alone is not enough. What the
+real limit is can be measured under **Settings → Anhänge**.
+
+### Writing together does not start, or reconnects for ever
+
+The session runs over a WebSocket on `/api/echtzeit/{id}`. Anything in front has
+to pass the upgrade through:
+
+```nginx
+location /api/echtzeit/ {
+    proxy_pass http://nexora-frontend;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 86400s;
+}
+```
+
+Without it the proxy answers 400 and the browser retries with a growing pause.
+The bundled nginx already carries this; a second proxy in front of it, the usual
+case in a home network, does not. The page keeps working meanwhile — it says
+**Nicht verbunden** in the top bar, and the text is saved as before, whole.
+
+Other reasons the session may not start at all: the licence does not include
+`echtzeit`, the switch under **Settings → Zusammenarbeit** is off, or nobody
+else has edit rights on the page — a page that only its owner may write on opens
+no session, on purpose.
+
+### Somebody forgot their password
+
+Another administrator sets a new one in the **Admin view**, in that account's
+row. Every session of the account is ended along with it, so a device somebody
+else is holding loses access at the same moment. Hand the new password over on a
+different channel than email and let the person set their own afterwards, at the
+bottom left of the sidebar.
+
+Two cases this does not cover. An account that signs in through SSO or the
+directory has no password here, and setting one would take its sign-in away, so
+it is refused — the password of such an account belongs in the provider. And an
+instance whose **only** administrator is locked out has no way in through the
+interface; there the account has to be repaired in the database, which is what
+the backup and a fresh `password_hash` are for.
+
+### The machine list says "still" although the machine is up
+
+It reports what it can establish, and that is one thing only: does something
+answer on that address and port. A machine that is up but has nothing listening
+on the port you entered is silent by that measure, and rightly so. Check the
+port first — SSH is 22, a web service is whatever it publishes. The list refuses
+an address without a port on purpose rather than guessing one, because a guessed
+port produces exactly this misleading answer.
+
+If the operating system and kernel columns stay empty, `prometheus_adresse` is
+unset, unreachable, or behind a password, or that machine carries no
+`node_exporter`. The column stays empty in all four cases; nothing is invented
+to fill it.
+
+### After a rebuild nothing talks to anything any more
+
+Check the `pki` container first: `docker compose logs pki`. It has to have run
+and exited cleanly, and every other service waits for exactly that. If the
+volume was removed (`docker compose down -v`) a new authority is generated, and
+then everything fits together again — but only after every container has been
+restarted, because the old ones still hold the old certificates.
+
+`x509: certificate signed by unknown authority` in the service's log means it
+does not know the authority: `tls_wurzel` is unset or points at a file that is
+not there. `certificate is valid for X, not Y` means a service was renamed —
+the name is in the certificate, so `docker compose down` and up again, having
+removed that service's directory from the volume so it gets a fresh one.
+
+If the interface answers 502 and its log says `SSL_do_handshake() failed`, the
+service behind it is speaking plain HTTP while the interface expects TLS. That
+is the case when the service runs without `tls_zertifikat`; then
+`NEXORA_DIENST_SCHEMA=http` and `NEXORA_DIENST_PORT=8080` belong in the `.env`.
 
 ### Search finds nothing for older pages
 
