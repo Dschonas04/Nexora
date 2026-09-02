@@ -37,12 +37,14 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// GenerateToken signs a session token for userID that expires after ttl.
-//
-// sitzungID may be empty, then the token is valid purely by computation as it
-// used to be. Nothing uses that any more; the possibility remains so that an old
-// token from a session predating this change does not become invalid all at
-// once.
+/*
+GenerateToken signs a session token for userID that expires after ttl.
+sitzungID may be empty, then the token is valid purely by computation as it
+used to be. Nothing uses that any more; the possibility remains so that an old
+token from a session predating this change does not become invalid all at
+once.
+*/
+
 func GenerateToken(secret []byte, userID, sitzungID string, ttl time.Duration) (string, error) {
 	claims := Claims{
 		UserID:    userID,
@@ -55,10 +57,12 @@ func GenerateToken(secret []byte, userID, sitzungID string, ttl time.Duration) (
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(secret)
 }
 
-// ParseToken verifies a token and returns the user id and session it was issued
-// for.
-// Every failure returns the same opaque error so a caller cannot tell an expired
-// token from a forged one.
+/*
+ParseToken verifies a token and returns the user id and session it was issued for.
+Every failure returns the same opaque error so a caller cannot tell an expired
+token from a forged one.
+*/
+
 func ParseToken(secret []byte, tokenStr string) (string, string, error) {
 	claims := &Claims{}
 	tok, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {

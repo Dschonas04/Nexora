@@ -135,8 +135,8 @@ func seitenstroeme(t *testing.T, roh []byte) string {
 // Ohne Bilddaten bleibt es bei der Verweiszeile. Eine Seite, deren Bild nicht
 // mehr da ist, soll sagen, was fehlt, statt eine Luecke zu lassen.
 func TestPDFOhneBildBleibtBeiDerZeile(t *testing.T) {
-	roh := PDF(AusInhalt(json.RawMessage(
-		`[{"type":"image","props":{"url":"/api/x","name":"Plan"}}]`), "Ohne"))
+	roh := PDF(AusInhaltMitBildern(json.RawMessage(
+		`[{"type":"image","props":{"url":"/api/x","name":"Plan"}}]`), "Ohne", nil))
 	if bytes.Contains(roh, []byte("/Subtype /Image")) {
 		t.Fatal("Bildobjekt ohne Bilddaten")
 	}

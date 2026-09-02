@@ -8,12 +8,26 @@
 services:
   db:
     image: postgres:16-alpine
+    # Verschlüsselt, mit dem Zertifikat aus dem PKI-Container. PostgreSQL
+    # spricht sonst im Klartext, und über diese Leitung geht alles: jede Seite,
+    # jeder Passwort-Hash, jede Sitzungskennung.
+    command:
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/pki/db/db.crt
+      - -c
+      - ssl_key_file=/pki/db/db.key
     environment:
       POSTGRES_USER: nexora
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexora}
       POSTGRES_DB: nexora
+    depends_on:
+      pki:
+        condition: service_completed_successfully
     volumes:
       - nexora_db:/var/lib/postgresql/data
+      - nexora_pki:/pki:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U nexora"]
       interval: 5s
@@ -24,6 +38,14 @@ services:
   # Start only once the database really answers. Without that the backend runs
   # into a closed door on the first boot and falls over.
   backend:
+    environment:
+      # verify-full und nicht require: "require" verschlüsselt zwar, prüft aber
+      # nicht, mit wem -- damit wäre die Verschlüsselung eine Beruhigung und
+      # keine Aussage. Geprüft wird gegen die eigene Stelle des Verbunds.
+      #
+      # Wer eine eigene Datenbank mitbringt, setzt DATABASE_URL in der .env und
+      # lässt diese Beidatei weg; dann gilt, was dort steht.
+      DATABASE_URL: ${DATABASE_URL:-postgres://nexora:${POSTGRES_PASSWORD:-nexora}@db:5432/nexora?sslmode=verify-full&sslrootcert=/pki/ca.crt}
     depends_on:
       db:
         condition: service_healthy

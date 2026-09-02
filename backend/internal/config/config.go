@@ -96,6 +96,23 @@ type Konfig struct {
 	RedisPasswort  string
 	RedisDatenbank int
 	RedisVorsilbe  string
+	// RedisTLS spricht den Zwischenspeicher verschlüsselt an. Er hält
+	// Sitzungskennungen, und die sind so viel wert wie ein Passwort.
+	RedisTLS bool
+
+	// TLS im Verbund
+	//
+	// TLSZertifikat und TLSSchluessel machen aus dem Dienst einen, der HTTPS
+	// spricht. Beide leer heißt: unverschlüsselt wie bisher, was für einen
+	// Dienst richtig ist, vor dem ohnehin ein Gegenstück steht, das die
+	// Verschlüsselung übernimmt und auf demselben Rechner sitzt.
+	TLSZertifikat string
+	TLSSchluessel string
+	// TLSWurzel ist eine ZUSÄTZLICHE Zertifizierungsstelle für alles, was
+	// dieser Dienst seinerseits anspricht: Datenbank, Ablage,
+	// Zwischenspeicher. Die öffentlichen Stellen bleiben daneben gültig, siehe
+	// internal/vertrauen.
+	TLSWurzel string
 
 	// Kennzahlen für Prometheus. Leer heißt: den Weg gibt es nicht. Ein
 	// Losungswort und kein Ja/Nein, weil die Zahlen verraten, wie viele Leute
@@ -291,6 +308,11 @@ func Laden(pfad string) Konfig {
 	text(&k.RedisPasswort, "redis_passwort", "NEXORA_REDIS_PASSWORT")
 	zahl(&k.RedisDatenbank, "redis_datenbank", "NEXORA_REDIS_DATENBANK")
 	text(&k.RedisVorsilbe, "redis_vorsilbe", "NEXORA_REDIS_VORSILBE")
+	jaNein(&k.RedisTLS, "redis_tls", "NEXORA_REDIS_TLS")
+
+	text(&k.TLSZertifikat, "tls_zertifikat", "NEXORA_TLS_ZERTIFIKAT")
+	text(&k.TLSSchluessel, "tls_schluessel", "NEXORA_TLS_SCHLUESSEL")
+	text(&k.TLSWurzel, "tls_wurzel", "NEXORA_TLS_WURZEL")
 
 	text(&k.MetrikenToken, "metriken_token", "NEXORA_METRIKEN_TOKEN")
 

@@ -6,9 +6,12 @@ COPY . .
 RUN npm run build
 
 FROM nginx:1.27-alpine
-# openssl for the self signed certificate on the first start.
-RUN apk add --no-cache openssl
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# openssl fuer das selbst unterschriebene Zertifikat nach aussen, gettext fuer
+# envsubst: die Vorlage traegt zwei Platzhalter, siehe tls-start.sh.
+RUN apk add --no-cache openssl gettext
+# Als Vorlage und nicht als fertige Konfiguration: beim Start wird eingesetzt,
+# wie der Dienst dahinter anzusprechen ist.
+COPY nginx.conf /etc/nginx/vorlage.conf
 COPY tls-start.sh /usr/local/bin/tls-start.sh
 RUN chmod +x /usr/local/bin/tls-start.sh
 COPY --from=build /app/dist /usr/share/nginx/html

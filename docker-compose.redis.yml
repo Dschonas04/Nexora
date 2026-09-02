@@ -27,8 +27,32 @@ services:
       - ${REDIS_SPEICHER:-128mb}
       - --maxmemory-policy
       - allkeys-lru
+      # Verschlüsselt und NUR verschlüsselt: --port 0 schließt die offene Tür.
+      # Hier liegen Sitzungskennungen, und wer eine mitliest, ist angemeldet.
+      - --port
+      - "0"
+      - --tls-port
+      - "6379"
+      - --tls-cert-file
+      - /pki/redis/redis.crt
+      - --tls-key-file
+      - /pki/redis/redis.key
+      - --tls-ca-cert-file
+      - /pki/ca.crt
+      # Der Dienst weist sich mit Passwort aus und nicht mit einem Zertifikat.
+      # Ein zweites Zertifikat je Anwender wäre mehr Verwaltung, als diese
+      # Leitung wert ist.
+      - --tls-auth-clients
+      - "no"
+    depends_on:
+      pki:
+        condition: service_completed_successfully
+    volumes:
+      - nexora_pki:/pki:ro
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # Auch die Probe muss jetzt verschlüsselt fragen, sonst meldet sie den
+      # Dienst für tot, während er läuft.
+      test: ["CMD", "redis-cli", "--tls", "--cacert", "/pki/ca.crt", "-h", "redis", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -38,6 +62,7 @@ services:
     environment:
       NEXORA_REDIS_ADRESSE: ${NEXORA_REDIS_ADRESSE:-redis:6379}
       NEXORA_REDIS_VORSILBE: ${NEXORA_REDIS_VORSILBE:-nexora}
+      NEXORA_REDIS_TLS: "ja"
     depends_on:
       redis:
         condition: service_healthy

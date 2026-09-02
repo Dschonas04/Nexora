@@ -7,7 +7,11 @@
 package middleware
 
 import (
+	"bufio"
+	"errors"
+	"net"
 	"net/http"
+	"strings"
 
 	"nexora/internal/puls"
 )
@@ -33,6 +37,25 @@ func (s *schreiberMitStatus) Write(b []byte) (int, error) {
 	return s.ResponseWriter.Write(b)
 }
 
+// Hijack reicht die Leitung durch.
+//
+// Ohne das gäbe es kein gemeinsames Schreiben: eine WebSocket-Verbindung
+// übernimmt die nackte Verbindung, und wer hier nur den http.ResponseWriter
+// weitergibt, verdeckt die Stelle, an der sie zu holen ist. Der Aufruf käme
+// dann bis zum Aufschalten und schlüge dort fehl.
+func (s *schreiberMitStatus) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := s.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("die Verbindung lässt sich nicht übernehmen")
+	}
+	// Von hier an schreibt jemand anderes, und der Status ist das, was der
+	// Aufschlag hinterlassen hat: 101, sonst wäre es nicht so weit gekommen.
+	if s.status == 0 {
+		s.status = http.StatusSwitchingProtocols
+	}
+	return h.Hijack()
+}
+
 // Messen zählt jede Anfrage und ihre Dauer.
 func Messen(m *puls.Messer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -42,7 +65,13 @@ func Messen(m *puls.Messer) func(http.Handler) http.Handler {
 			// Prometheus den anderen alle fünfzehn; sie stünden sonst als
 			// Grundrauschen in jeder Messung, die sie anzeigen sollen, und die
 			// Rate der Anfragen wäre nie null, auch wenn niemand arbeitet.
-			if r.URL.Path == "/api/system/puls" || r.URL.Path == "/metrics" {
+			// Und das gemeinsame Schreiben zählt auch nicht mit. Es ist keine
+			// Anfrage, die beantwortet wird, sondern eine Leitung, die
+			// stundenlang offen steht; als eine Anfrage von zwei Stunden
+			// gezählt verdürbe sie jeden Mittelwert, den die Anzeige daneben
+			// zeigt.
+			if r.URL.Path == "/api/system/puls" || r.URL.Path == "/metrics" ||
+				strings.HasPrefix(r.URL.Path, "/api/echtzeit/") {
 				next.ServeHTTP(w, r)
 				return
 			}

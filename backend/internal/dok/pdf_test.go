@@ -33,7 +33,7 @@ const beispiel = `[
 
 func lade(t *testing.T) Dokument {
 	t.Helper()
-	return AusInhalt(json.RawMessage(beispiel), "Testseite")
+	return AusInhaltMitBildern(json.RawMessage(beispiel), "Testseite", nil)
 }
 
 func TestEinlesenErkenntAlleArten(t *testing.T) {
@@ -215,8 +215,8 @@ func TestWordIstEinZipMitDokument(t *testing.T) {
 
 // An angle bracket in the text must not tear the file apart.
 func TestSonderzeichenBrechenDasDokumentNicht(t *testing.T) {
-	d := AusInhalt(json.RawMessage(
-		`[{"type":"paragraph","content":[{"type":"text","text":"a < b & c > d \"e\""}]}]`), "T & <U>")
+	d := AusInhaltMitBildern(json.RawMessage(
+		`[{"type":"paragraph","content":[{"type":"text","text":"a < b & c > d \"e\""}]}]`), "T & <U>", nil)
 	roh, err := Word(d)
 	if err != nil {
 		t.Fatal(err)

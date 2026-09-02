@@ -46,6 +46,7 @@ tier contains which feature is in [architecture chapter 8.5](architecture.md#85-
 | `POST` | `/auth/login` | `{kennung, password}` — `kennung` is an email address *or* a login name; the `@` decides which. `{email, password}` is still accepted. One error message for both failure cases |
 | `POST` | `/auth/logout` | Revokes the session row, not just the cookie |
 | `GET` | `/auth/me` | The signed-in account |
+| `POST` | `/auth/passwort` | `{alt, neu}` — change your own password. The current one is required even though the session already proves who is asking: the case guarded against is an unattended browser. Every **other** session of the account is revoked, this one survives. Answers `{ok, beendet}` with the number of sessions ended. **409** on an account that signs in through SSO |
 | `GET` | `/auth/sso` | Which sign-in methods this instance offers. Read before the login form is drawn |
 | `GET` | `/auth/oidc/start` | 302 to the provider · paid: `sso` |
 | `GET` | `/auth/oidc/zurueck` | The provider's callback · paid: `sso` |
@@ -120,6 +121,28 @@ restoring are gated.
 A public link is the only anonymous access there is, and it is read-only. Opening
 a **space** (`/spaces/{id}/oeffentlich`) opens it to signed-in accounts of the
 instance, never to the internet.
+
+---
+
+## Writing together · paid: `echtzeit`
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/echtzeit/{id}` | WebSocket. The session for one page: everything a browser sends goes to every browser in the room, the sender included. **Edit rights required** — a read-only viewer could otherwise send text that another browser would then save |
+| `GET` | `/pages/{id}/mitschreibende` | How many sit at this page right now, and whether the feature is switched on at all. The share dialog shows it |
+| `GET` | `/system/mitschrift` | Which pages are open and who is in them · admin. Not gated on the licence: the switch in the admin pages should show something even when the extra is locked |
+
+The server keeps no document of its own. It passes packets on, and the browsers
+work out the text between them (Yjs, a CRDT); `GET /pages/{id}` says in
+`gemeinsam` whether a page is one where that happens at all. Two consequences
+worth knowing: a restart of the service costs nothing, the browsers reconnect and
+reconcile — and a room exists only while somebody is in it, so the text lives in
+the database, written there by exactly one of the participants.
+
+Whatever sits in front has to pass the upgrade through. Without
+`proxy_set_header Upgrade` and `Connection "upgrade"` on `/api/echtzeit/`, nginx
+answers 400 and the interface reconnects for ever; the bundled configuration
+already does it.
 
 ---
 
@@ -316,6 +339,7 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `DELETE` | `/users/{id}` | admin, and not yourself |
 | `PUT` | `/users/{id}/role` | admin |
 | `PUT` | `/users/{id}/benutzername` | The account itself, or an admin |
+| `PUT` | `/users/{id}/passwort` | `{neu}` — an admin sets a password for a forgotten one. **Every** session of that account is revoked, including one somebody is sitting at. **400** on your own account, which goes through `/auth/passwort` instead; **409** on an SSO account, where a password would take its sign-in away |
 | `GET` | `/lizenz` | What is unlocked, plus the tier table so the interface can show what a higher tier would bring. Readable by everyone; it contains no secret, and hiding it would only make the interface lie |
 | `PUT` | `/system/lizenz` | Import a key, effective at once · admin |
 | `POST` | `/system/lizenz/ausstellen` | Issue a key. **501** where no private signing key is present, which is every ordinary installation |
@@ -334,6 +358,7 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `POST` | `/system/suchindex` | Rebuild the full text index — needed after changing `such_woerterbuch` |
 | `POST` | `/system/anhangindex` | Extract attachment text for files uploaded before the attachment index existed |
 | `GET` | `/system/anmeldungen` | Sign-in attempts, see above · admin |
+| `GET` | `/system/mitschrift` | Which pages are being written on together right now, and who is in them · admin |
 | `GET` | `/system/puls` | Live state, polled every two seconds by the system view: the last minute in one-second buckets, the connection pool, the process, the database · admin |
 | `POST` | `/system/grenzprobe` | Reads a body and discards it, answering with the byte count. The interface uses it to *measure* how large a transfer may really be: nginx in front has its own `client_max_body_size`, which Nexora cannot read and should not have to · admin |
 | `GET` | `/system/sicherung/umfang` | What a backup would contain, and whether it can be made at all · admin |
@@ -341,6 +366,11 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `GET` | `/system/metriken` | Whether the metrics endpoint is on, when it was last scraped, and the ready-made `prometheus.yml` block with the token in it · admin |
 | `POST` | `/system/metriken/token` | Generate a token and store it, switching the endpoint on. A new one invalidates the old at once · admin |
 | `DELETE` | `/system/metriken/token` | Clear it; `/metrics` answers 404 again · admin |
+| `GET` | `/system/metriken/grafana.json` | The ready-made Grafana dashboard for this version, as a download · admin |
+| `GET` | `/system/rechner` | The machines this instance keeps an eye on, each with a fresh probe: `zustand` is `antwortet`, `still` or `unbekannt`, plus the round trip time and — where a Prometheus is configured — operating system, kernel and uptime. Measurements are at most 15 seconds old; a poll in between is answered from memory · admin |
+| `POST` | `/system/rechner` | `{name, ziel, notiz?, instanz?}`. `ziel` is `host:port` or a full `http(s)://` address; a host without a port is refused rather than guessed · admin |
+| `PUT` | `/system/rechner/{id}` | Change one · admin |
+| `DELETE` | `/system/rechner/{id}` | Remove one from the list · admin |
 | `GET` | `/system/ldap` | How the directory is configured, read from `config.conf`. The service account's password is never in the answer, only whether one is set · admin |
 | `POST` | `/system/ldap/test` | Ask the directory about one account · admin · paid: `ldap` |
 

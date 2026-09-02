@@ -226,22 +226,30 @@ func (s *Server) SitzungenUhr(ctx context.Context) {
 	}
 }
 
-// SitzungenEinesKontos revokes everything belonging to one account. Needed when
-// a password changes and when an administrator locks somebody out.
-func (s *Server) SitzungenEinesKontos(ctx context.Context, uid string) {
+// sitzungenWiderrufen beendet jede Sitzung eines Kontos und gibt zurück, wie
+// viele es waren. Wer eine Sitzung behalten will -- die, an der gerade jemand
+// sitzt --, nennt sie in "ausser"; leer beendet alle.
+//
+// Gebraucht beim Passwortwechsel: ein neues Passwort, nach dem die alten
+// Anmeldungen weiterlaufen, sperrt niemanden aus.
+func (s *Server) sitzungenWiderrufen(ctx context.Context, uid, ausser string) int {
 	rows, err := s.Pool.Query(ctx,
 		`UPDATE sitzungen SET widerrufen_am=now()
-		 WHERE user_id=$1 AND widerrufen_am IS NULL RETURNING id`, uid)
+		 WHERE user_id=$1 AND widerrufen_am IS NULL AND ($2 = '' OR id <> $2)
+		 RETURNING id`, uid, ausser)
 	if err != nil {
-		return
+		return 0
 	}
 	defer rows.Close()
+	anzahl := 0
 	for rows.Next() {
 		var id string
 		if err := rows.Scan(&id); err == nil {
 			s.sitzungMerken(id, false)
+			anzahl++
 		}
 	}
+	return anzahl
 }
 
 // kurzerBrowser turns a user agent string into something readable.

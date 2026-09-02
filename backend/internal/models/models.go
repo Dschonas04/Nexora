@@ -126,6 +126,11 @@ type Page struct {
 	IsFavorite  bool            `json:"isFavorite"`
 	CanEdit     bool            `json:"canEdit"` // false for read-only shares
 	IsOwner     bool            `json:"isOwner"`
+	// Gemeinsam: an dieser Seite darf mehr als ein Konto schreiben, und der
+	// Dienst lässt gemeinsames Schreiben zu. Erst dann verbindet sich der
+	// Browser mit der Leitung; eine Seite, an der ohnehin nur einer sitzt,
+	// braucht sie nicht.
+	Gemeinsam bool `json:"gemeinsam"`
 	// Breite: 'normal', 'breit' oder 'voll'. Gehoert zum Satz der Seite und
 	// haengt darum an ihr, nicht am Leser.
 	Breite    string    `json:"breite"`

@@ -437,6 +437,21 @@ CREATE TABLE IF NOT EXISTS einstellungen (
 	geaendert_am  timestamptz NOT NULL DEFAULT now(),
 	geaendert_von text NOT NULL DEFAULT ''
 );
+
+-- Rechner, die diese Instanz im Blick behalten soll. Reine Nachschlageliste:
+-- geprueft wird bei jedem Aufruf neu, gespeichert wird nur, WAS zu pruefen ist.
+-- Kein Zustand in der Tabelle, damit ein Neustart nichts Falsches behauptet.
+CREATE TABLE IF NOT EXISTS rechner (
+	id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	name         text NOT NULL,
+	ziel         text NOT NULL,
+	notiz        text NOT NULL DEFAULT '',
+	-- Die Kennung, unter der Prometheus den Rechner fuehrt (label instance).
+	-- Leer heisst: aus dem Ziel erraten, was in aller Regel stimmt.
+	instanz      text NOT NULL DEFAULT '',
+	reihenfolge  int NOT NULL DEFAULT 0,
+	angelegt_am  timestamptz NOT NULL DEFAULT now()
+);
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

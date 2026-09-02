@@ -2,8 +2,11 @@ package ablage
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -33,6 +36,11 @@ type Einstellungen struct {
 	Region    string
 	TLS       bool
 	Pfadstil  bool // true: http://host/bucket/key statt http://bucket.host/key
+	// Wurzeln sind die Stellen, denen beim Prüfen des Zertifikats geglaubt
+	// wird. nil heißt: die des Systems. Gesetzt wird das für eine Ablage im
+	// eigenen Verbund, deren Zertifikat aus der eigenen Stelle stammt und die
+	// keine öffentliche je unterschreiben würde.
+	Wurzeln *x509.CertPool
 }
 
 // NeuS3 connects and makes sure the bucket exists.
@@ -50,12 +58,21 @@ func NeuS3(ctx context.Context, e Einstellungen) (*S3, error) {
 	}
 	endpunkt = strings.TrimSuffix(endpunkt, "/")
 
-	klient, err := minio.New(endpunkt, &minio.Options{
+	optionen := &minio.Options{
 		Creds:        credentials.NewStaticV4(e.Zugriff, e.Geheimnis, ""),
 		Secure:       e.TLS,
 		Region:       e.Region,
 		BucketLookup: bucketArt(e.Pfadstil),
-	})
+	}
+	// Eigene Stelle: dann braucht der Weg dorthin einen eigenen Transport, denn
+	// minio-go nimmt sonst den der Bibliothek, und der kennt nur die
+	// öffentlichen Stellen.
+	if e.TLS && e.Wurzeln != nil {
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		transport.TLSClientConfig = &tls.Config{RootCAs: e.Wurzeln, MinVersion: tls.VersionTLS12}
+		optionen.Transport = transport
+	}
+	klient, err := minio.New(endpunkt, optionen)
 	if err != nil {
 		return nil, fmt.Errorf("S3-Verbindung: %w", err)
 	}

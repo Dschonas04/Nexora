@@ -33,6 +33,7 @@ const (
 	Export      Funktion = "export"      // exporting a whole space
 	Kommentare  Funktion = "kommentare"  // comments on pages
 	Konflikte   Funktion = "konflikte"   // detecting concurrent edits
+	Echtzeit    Funktion = "echtzeit"    // several accounts writing on one page at the same time
 )
 
 // Alle lists every paid extra. Used for the status endpoint and by the key
@@ -40,6 +41,7 @@ const (
 var Alle = []Funktion{
 	Versionen, Anhaenge, Freigeben,
 	Pruefspur, Gruppen, SSO, LDAP, Anhangsuche, Export, Kommentare, Konflikte,
+	Echtzeit,
 }
 
 // Stufe is a bundle of features, the thing that is sold.
@@ -66,7 +68,7 @@ var StufenReihe = []Stufe{StufeFrei, StufeAdvanced, StufePro, StufeBusiness}
 var stufenZusatz = map[Stufe][]Funktion{
 	StufeFrei:     {},
 	StufeAdvanced: {Versionen, Anhaenge, Kommentare},
-	StufePro:      {Freigeben, Konflikte, Export, Anhangsuche},
+	StufePro:      {Freigeben, Konflikte, Echtzeit, Export, Anhangsuche},
 	StufeBusiness: {Gruppen, Pruefspur, SSO, LDAP},
 }
 

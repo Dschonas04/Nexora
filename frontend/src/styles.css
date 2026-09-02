@@ -950,6 +950,42 @@ textarea::placeholder {
   align-items: center;
   gap: 6px;
 }
+/* Die Anwesenden in der Kopfzeile. Ein Kreis je Person, in ihrer Farbe, mit
+   dem ersten Buchstaben ihres Namens: dieselbe Farbe traegt ihre Schreibmarke
+   im Text, und daran erkennt man, wem die dort mitlaufende Marke gehoert. Der
+   Überlappung wegen rücken sie zusammen, so wie sie es überall tun, wo
+   Anwesende gezeigt werden. */
+.mitschreibende {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 6px;
+}
+.mitschreibender {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: -6px;
+  border: 2px solid var(--bg);
+  cursor: default;
+}
+
+/* Die Schreibmarke der anderen im Text.
+   BlockNote bringt Form und Lage selbst mit, es fehlt nur die Schrift auf dem
+   Fähnchen: sie ist dort fast schwarz und liegt auf der Farbe der jeweiligen
+   Person, und auf einem kräftigen Blau oder Rot liest sich das nicht. Der
+   Vorrang steht über dem der mitgelieferten Regel, weil die Reihenfolge der
+   Stilblätter im Bündel nichts ist, worauf man sich verlassen sollte. */
+.bn-container .collaboration-cursor__label,
+.ProseMirror .collaboration-cursor__label {
+  color: #fff;
+  font-size: 11px;
+}
+
 .toggle-row {
   display: flex;
   align-items: center;

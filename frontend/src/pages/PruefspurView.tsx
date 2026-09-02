@@ -18,6 +18,9 @@ const BESCHRIFTUNG: Record<string, string> = {
   "konto.angelegt": "Konto angelegt",
   "konto.geloescht": "Konto gelöscht",
   "konto.rolle": "Rolle geändert",
+  "konto.passwort": "Passwort gewechselt",
+  "konto.passwort.gesetzt": "Passwort zurückgesetzt",
+  "konto.passwort.fehlgeschlagen": "Passwortwechsel abgelehnt",
   "seite.angelegt": "Seite angelegt",
   "seite.geaendert": "Seite geändert",
   "seite.geloescht": "In den Papierkorb",
@@ -82,6 +85,8 @@ const AUFFAELLIG = new Set([
   "seite.entfernt",
   "konto.geloescht",
   "konto.rolle",
+  "konto.passwort.gesetzt",
+  "konto.passwort.fehlgeschlagen",
   "oeffentlich.an",
 ]);
 

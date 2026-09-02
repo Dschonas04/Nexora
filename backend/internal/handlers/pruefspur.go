@@ -36,6 +36,12 @@ const (
 	AktKontoGeloescht = "konto.geloescht"
 	AktRolleGeaendert = "konto.rolle"
 	AktNameGeaendert  = "konto.benutzername"
+	// Der Wechsel selbst, das Zurücksetzen durch eine Verwaltung und der
+	// Fehlversuch am eigenen Konto: drei Namen, weil im Protokoll ein Unterschied
+	// ist, ob jemand sein Passwort wechselt oder ob es ihm gewechselt wurde.
+	AktPasswortGeaendert = "konto.passwort"
+	AktPasswortGesetzt   = "konto.passwort.gesetzt"
+	AktPasswortFehl      = "konto.passwort.fehlgeschlagen"
 
 	AktSeiteAngelegt     = "seite.angelegt"
 	AktSeiteGeaendert    = "seite.geaendert"
@@ -72,6 +78,9 @@ const (
 	AktAnhangIndex        = "anhangindex.nachgezogen"
 	AktLDAPTest           = "verzeichnis.geprueft"
 	AktSicherung          = "sicherung.erstellt"
+	AktRechnerAngelegt    = "rechner.angelegt"
+	AktRechnerGeaendert   = "rechner.geaendert"
+	AktRechnerEntfernt    = "rechner.entfernt"
 	AktWiederherstellung  = "sicherung.eingespielt"
 	AktSpaceOeffentlich   = "space.oeffentlich"
 	AktSpaceAngelegt      = "space.angelegt"

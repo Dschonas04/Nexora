@@ -13,7 +13,7 @@ func TestDateienSchreiben(t *testing.T) {
 	if ziel == "" {
 		t.Skip("DOK_SCHREIBEN nicht gesetzt")
 	}
-	d := AusInhalt(json.RawMessage(beispiel), "Testseite")
+	d := AusInhaltMitBildern(json.RawMessage(beispiel), "Testseite", nil)
 	if err := os.WriteFile(ziel+".pdf", PDF(d), 0o644); err != nil {
 		t.Fatal(err)
 	}

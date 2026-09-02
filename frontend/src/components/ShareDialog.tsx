@@ -2,6 +2,7 @@
 // accounts, and a public link anyone can open. A page can use both at once.
 import { useEffect, useState } from "react";
 import { ShareEntry, api } from "../api/client";
+import { useLizenz } from "../lizenz";
 
 interface Props {
   pageId: string;
@@ -16,10 +17,33 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
   const [email, setEmail] = useState("");
   const [perm, setPerm] = useState("read");
   const [err, setErr] = useState("");
+  // Wie viele gerade an dieser Seite sitzen. Wer teilt, will sehen, ob jemand
+  // drin ist, bevor er ein Recht wegnimmt.
+  const [dabei, setDabei] = useState<{ anzahl: number; moeglich: boolean } | null>(null);
+  const { frei } = useLizenz();
 
   const refresh = () => api.listShares(pageId).then(setShares).catch(() => setShares([]));
   useEffect(() => {
     refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageId]);
+
+  // Nur solange das Fenster offen ist, und nur wenn die Lizenz es überhaupt
+  // hergibt: sonst wäre es eine Abfrage im Takt für eine Zahl, die nie kommt.
+  useEffect(() => {
+    if (!frei("echtzeit")) return;
+    let lebt = true;
+    const holen = () =>
+      api
+        .mitschreibende(pageId)
+        .then((d) => lebt && setDabei(d))
+        .catch(() => lebt && setDabei(null));
+    holen();
+    const takt = window.setInterval(holen, 4000);
+    return () => {
+      lebt = false;
+      window.clearInterval(takt);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId]);
 
@@ -86,6 +110,24 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
             </button>
           </div>
           {err && <div className="error">{err}</div>}
+
+          {frei("echtzeit") && (
+            <p className="muted small">
+              Wer <strong>bearbeiten</strong> darf, schreibt gleichzeitig mit: alle sehen die
+              Änderungen der anderen sofort, mit Schreibmarke und Namen. Wer nur ansehen darf,
+              liest.
+              {dabei && dabei.moeglich && dabei.anzahl > 0 && (
+                <>
+                  {" "}
+                  Gerade {dabei.anzahl === 1 ? "sitzt eine Person" : `sitzen ${dabei.anzahl} Personen`}{" "}
+                  an dieser Seite.
+                </>
+              )}
+              {dabei && !dabei.moeglich && (
+                <> Gemeinsames Bearbeiten ist in den Einstellungen abgeschaltet.</>
+              )}
+            </p>
+          )}
 
           <div className="share-list">
             {shares.length === 0 && <div className="muted small">Noch mit niemandem geteilt.</div>}

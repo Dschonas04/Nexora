@@ -20,7 +20,10 @@ import {
   LDAPTestErgebnis,
   MetrikenZustand,
   SicherungUmfang,
+  MitschriftZustand,
   Puls,
+  Rechner,
+  RechnerListe,
   Sitzung,
   SystemZustand,
   api,
@@ -36,6 +39,7 @@ type Bereich =
   | "uebersicht"
   | "nutzer"
   | "gruppen"
+  | "zusammen"
   | "sicherheit"
   | "anmeldungen"
   | "ldap"
@@ -56,6 +60,7 @@ const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
   // anyway when one wants to set something.
   { id: "nutzer", titel: "Nutzer", unter: "Konten, Rollen, Zugänge" },
   { id: "gruppen", titel: "Gruppen", unter: "Konten bündeln für Ablage-Rechte" },
+  { id: "zusammen", titel: "Zusammenarbeit", unter: "Gemeinsames Bearbeiten, wer gerade schreibt" },
   { id: "sicherheit", titel: "Sicherheit", unter: "Registrierung, Laufzeiten, Administratoren" },
   { id: "anmeldungen", titel: "Anmeldungen", unter: "Jeder Versuch, mit Adresse und Herkunft" },
   { id: "sitzungen", titel: "Sitzungen", unter: "Angemeldete Geräte, einzeln beendbar" },
@@ -82,6 +87,7 @@ const ZUSATZ: Record<string, string> = {
   export: "Ablage-Export",
   kommentare: "Kommentare",
   konflikte: "Konflikterkennung",
+  echtzeit: "Gemeinsames Bearbeiten",
 };
 
 const ZAHL_TITEL: Record<string, string> = {
@@ -385,6 +391,94 @@ export default function EinstellungenView() {
   // Der Live-Stand. Wird nur abgefragt, solange der Bereich offen ist: eine
   // Abfrage je Sekunde ist nichts, eine Abfrage je Sekunde für immer, weil
   // jemand den Reiter offen gelassen hat, ist Grundrauschen in jeder Messung.
+  // Wer gerade gemeinsam schreibt. Alle drei Sekunden statt jede Sekunde: eine
+  // Sitzung dauert Minuten, und die Liste soll nicht flackern.
+  const [zusammen, setZusammen] = useState<MitschriftZustand | null>(null);
+  useEffect(() => {
+    if (bereich !== "zusammen") {
+      setZusammen(null);
+      return;
+    }
+    let lebt = true;
+    const holen = () =>
+      api
+        .mitschriftZustand()
+        .then((z) => lebt && setZusammen(z))
+        .catch(() => lebt && setZusammen(null));
+    holen();
+    const takt = window.setInterval(holen, 3000);
+    return () => {
+      lebt = false;
+      window.clearInterval(takt);
+    };
+  }, [bereich]);
+
+  // Die eigenen Rechner. Alle zehn Sekunden: der Dienst misst ohnehin nur alle
+  // fünfzehn neu und antwortet dazwischen aus dem Gedächtnis, häufiger zu
+  // fragen brächte nichts als Verkehr.
+  const [rechner, setRechner] = useState<RechnerListe | null>(null);
+  const rechnerLaden = useCallback(() => {
+    api
+      .rechner()
+      .then(setRechner)
+      .catch(() => setRechner(null));
+  }, []);
+  useEffect(() => {
+    if (bereich !== "system") {
+      setRechner(null);
+      return;
+    }
+    let lebt = true;
+    const holen = () =>
+      api
+        .rechner()
+        .then((l) => lebt && setRechner(l))
+        .catch(() => lebt && setRechner(null));
+    holen();
+    const takt = window.setInterval(holen, 10000);
+    return () => {
+      lebt = false;
+      window.clearInterval(takt);
+    };
+  }, [bereich]);
+
+  const [neuerRechner, setNeuerRechner] = useState({ name: "", ziel: "", instanz: "", notiz: "" });
+  const [rechnerFehler, setRechnerFehler] = useState("");
+
+  const rechnerAnlegen = async () => {
+    setRechnerFehler("");
+    try {
+      await api.rechnerAnlegen({
+        name: neuerRechner.name.trim(),
+        ziel: neuerRechner.ziel.trim(),
+        instanz: neuerRechner.instanz.trim(),
+        notiz: neuerRechner.notiz.trim(),
+      });
+      setNeuerRechner({ name: "", ziel: "", instanz: "", notiz: "" });
+      rechnerLaden();
+    } catch (e) {
+      setRechnerFehler((e as Error).message);
+    }
+  };
+
+  const rechnerEntfernen = async (r: Rechner) => {
+    if (
+      !(await frage({
+        titel: "Rechner entfernen",
+        text: `${r.name} verschwindet aus der Übersicht. Der Rechner selbst merkt davon nichts.`,
+        bestaetigen: "Entfernen",
+      }))
+    )
+      return;
+    setRechnerFehler("");
+    try {
+      await api.rechnerLoeschen(r.id);
+      rechnerLaden();
+    } catch (e) {
+      setRechnerFehler((e as Error).message);
+    }
+  };
+
   const [puls, setPuls] = useState<Puls | null>(null);
   useEffect(() => {
     if (bereich !== "system") {
@@ -1122,6 +1216,60 @@ export default function EinstellungenView() {
             {zeilen(bestand)}
             <h3>Zustand</h3>
             {zeilen(zustaende)}
+          </>
+        );
+      }
+
+      case "zusammen": {
+        const raeume = zusammen?.raeume ?? [];
+        const leute = raeume.reduce((summe, r) => summe + r.anzahl, 0);
+        return (
+          <>
+            <h3>Einstellung</h3>
+            {feld("echtzeit")}
+            {zusammen && !zusammen.lizenziert && (
+              <p className="muted small">
+                Die Lizenz enthält das gemeinsame Bearbeiten nicht. Der Schalter steht
+                trotzdem hier: er gilt, sobald ein Schlüssel es freischaltet.
+              </p>
+            )}
+
+            <h3>Gerade offen</h3>
+            <div className="kennzahlreihe">
+              {kennzahl("Seiten", raeume.length)}
+              {kennzahl("Personen", leute)}
+              {kennzahl("Höchstens je Seite", zusammen?.hoechstens ?? "—")}
+            </div>
+            {raeume.length === 0 ? (
+              <p className="muted small">
+                An keiner Seite wird gerade gemeinsam geschrieben. Eine Sitzung entsteht,
+                sobald jemand eine Seite öffnet, die mit einem anderen Konto zum Bearbeiten
+                geteilt ist, und sie endet, sobald der Letzte den Reiter schließt.
+              </p>
+            ) : (
+              <table className="tabelle">
+                <thead>
+                  <tr>
+                    <th>Seite</th>
+                    <th>Wer</th>
+                    <th className="zahl">Anzahl</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {raeume.map((r) => (
+                    <tr key={r.seite}>
+                      <td>{r.titel}</td>
+                      <td className="muted">{r.wer.join(", ")}</td>
+                      <td className="zahl">{r.anzahl}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <p className="muted small">
+              Nur der Augenblick. Wer wann was geschrieben hat, steht im Versionsverlauf der
+              Seite und, sofern lizenziert, im Protokoll.
+            </p>
           </>
         );
       }
@@ -2345,6 +2493,137 @@ export default function EinstellungenView() {
                   )}
                   </tbody>
                 </table>
+            </div>
+
+            <h3>Eigene Rechner</h3>
+            <p className="muted small">
+              Adressen, bei denen diese Instanz anklopft, damit an einer Stelle steht, wer im
+              Haus noch antwortet. Geprüft wird, was ohne Zugangsdaten geht: eine TCP-Verbindung
+              kommt zustande, oder eine Web-Adresse antwortet. Bei <code>https://</code> wird das
+              Zertifikat bewusst nicht geprüft, sonst stünde jedes selbst unterschriebene Gerät
+              im Haus als still da. Ein Schlüssel zu deinen Rechnern liegt hier ausdrücklich
+              nicht.{" "}
+              {rechner?.prometheus ? (
+                <>
+                  Betriebssystem, Kern und Laufzeit kommen aus <code>{rechner.prometheus}</code>.
+                </>
+              ) : (
+                <>
+                  Für Betriebssystem und Kern trag oben unter <em>Prometheus</em> die Adresse
+                  deines Prometheus ein; ohne sie steht hier nur, wer antwortet.
+                </>
+              )}
+            </p>
+
+            <div className="tabelle-rollen">
+              <table className="tabelle verbund-tabelle">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Adresse</th>
+                    <th>Zustand</th>
+                    <th>Antwort</th>
+                    <th>System</th>
+                    <th>Läuft</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {(rechner?.rechner ?? []).map((r) => (
+                    <Fragment key={r.id}>
+                      <tr
+                        className={
+                          r.zustand === "antwortet"
+                            ? "laeuft"
+                            : r.zustand === "still"
+                              ? "fehlt"
+                              : "aus"
+                        }
+                      >
+                        <td>{r.name}</td>
+                        <td className="muted einzeilig">{r.ziel}</td>
+                        <td>{r.zustand}</td>
+                        <td className="muted einzeilig">{r.antwort || "—"}</td>
+                        <td className="muted">
+                          {r.system || "—"}
+                          {r.kern && <span className="muted small"> · {r.kern}</span>}
+                        </td>
+                        <td className="muted einzeilig">{r.laeuft || "—"}</td>
+                        <td className="zeilen-aktionen">
+                          <button
+                            className="btn-schlicht gefaehrlich"
+                            onClick={() => rechnerEntfernen(r)}
+                          >
+                            Entfernen
+                          </button>
+                        </td>
+                      </tr>
+                      {(r.hinweis || r.notiz) && (
+                        <tr className="verbund-hinweis">
+                          <td colSpan={7}>{r.notiz ? `${r.notiz}${r.hinweis ? " · " : ""}` : ""}
+                            {r.hinweis}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                  {(rechner?.rechner ?? []).length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="muted">
+                        Noch kein Rechner eingetragen.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="einstellung">
+              <div className="s3-felder">
+                <label>
+                  <span>Name</span>
+                  <input
+                    placeholder="optional"
+                    value={neuerRechner.name}
+                    onChange={(e) => setNeuerRechner({ ...neuerRechner, name: e.target.value })}
+                  />
+                </label>
+                <label>
+                  <span>Adresse</span>
+                  <input
+                    placeholder="10.0.0.5:22 oder http://10.0.0.5:9090"
+                    value={neuerRechner.ziel}
+                    onChange={(e) => setNeuerRechner({ ...neuerRechner, ziel: e.target.value })}
+                    onKeyDown={(e) => e.key === "Enter" && rechnerAnlegen()}
+                  />
+                </label>
+                <label>
+                  <span>Kennung in Prometheus</span>
+                  <input
+                    placeholder="nur wenn sie abweicht"
+                    value={neuerRechner.instanz}
+                    onChange={(e) => setNeuerRechner({ ...neuerRechner, instanz: e.target.value })}
+                  />
+                </label>
+                <label>
+                  <span>Notiz</span>
+                  <input
+                    placeholder="optional"
+                    value={neuerRechner.notiz}
+                    onChange={(e) => setNeuerRechner({ ...neuerRechner, notiz: e.target.value })}
+                  />
+                </label>
+              </div>
+              <div className="einstellung-aktionen">
+                <button
+                  className="btn"
+                  disabled={!neuerRechner.ziel.trim()}
+                  onClick={rechnerAnlegen}
+                >
+                  Hinzufügen
+                </button>
+              </div>
+              {rechnerFehler && <div className="fehler">{rechnerFehler}</div>}
             </div>
 
             <h3>Nur beim Start änderbar</h3>
