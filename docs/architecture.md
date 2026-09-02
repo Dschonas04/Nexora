@@ -329,7 +329,7 @@ no licence code compiled in at all.
 | `internal/lizenz` | The feature names, the four tiers, `Frei(f)` — and the `Pruefer` interface a verifier registers against | Contains no cryptography |
 | `internal/ablage` | `Ablage`: `Schreiben`, `Lesen`, `Loeschen`, `Name`. Implementations `platte.go` and `s3.go` | A failed write leaves nothing behind; deleting what is already gone is not an error |
 | `internal/einlesen` | Markdown and HTML into BlockNote blocks: `markdown.go`, `html.go`, `bloecke.go`, `inline.go` | The import side. Hand-written, tested against real Obsidian, Notion and Confluence exports |
-| `internal/dok` | Typesetting: `pdf.go`, `docx.go`, `word_lesen.go`, image embedding, font metrics | Written without a third-party library. The PDF uses base fonts and WinAnsi encoding, so umlauts survive |
+| `internal/dok` | Typesetting: `pdf.go`, `docx.go`, `word_lesen.go`, `farben.go`, image embedding, font metrics | Written without a third-party library. The PDF uses base fonts and WinAnsi encoding, so umlauts survive. Text colour and highlight travel as the editor's colour *names* and are translated per target: three numbers for PDF, six hex digits for Word, and for Word's highlight a name from its fixed palette |
 | `internal/vertrauen` | `Wurzeln(pfad)`: the system's certificate pool plus the stack's own authority | Added, never substituted. An empty path yields nil, which every caller reads as "take the system's" |
 | `internal/models` | The structs that cross the API boundary | |
 | `internal/handlers` | Everything else: one file per subject | Every handler is a method on `Server` and decides access itself through `access.go` |

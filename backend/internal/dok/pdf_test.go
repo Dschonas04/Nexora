@@ -90,7 +90,7 @@ func TestWinAnsiUmlaute(t *testing.T) {
 
 func TestUmbruchBleibtInDerBreite(t *testing.T) {
 	lang := strings.Repeat("Wort ", 200)
-	zeilen := umbrechen([]wort{{lang, fNormal, 10.5, false, false, false}}, satzBreite)
+	zeilen := umbrechen([]wort{{lang, fNormal, 10.5, false, false, false, "", ""}}, satzBreite)
 	if len(zeilen) < 5 {
 		t.Fatalf("nur %d Zeilen, da wurde nicht umbrochen", len(zeilen))
 	}
@@ -109,7 +109,7 @@ func TestUmbruchBleibtInDerBreite(t *testing.T) {
 // A single word wider than the line has to be broken hard, otherwise it runs
 // over the margin and half of it is gone.
 func TestUeberlangesWortWirdGetrennt(t *testing.T) {
-	zeilen := umbrechen([]wort{{strings.Repeat("A", 400), fNormal, 10.5, false, false, false}}, satzBreite)
+	zeilen := umbrechen([]wort{{strings.Repeat("A", 400), fNormal, 10.5, false, false, false, "", ""}}, satzBreite)
 	if len(zeilen) < 2 {
 		t.Fatal("überlanges Wort wurde nicht getrennt")
 	}

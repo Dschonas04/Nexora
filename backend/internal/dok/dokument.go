@@ -42,6 +42,11 @@ type Stueck struct {
 	Durch   bool
 	Unter   bool
 	Verweis string // the address, when the run is a link
+	// Farbe und Hintergrund tragen die Namen aus dem Editor: "yellow", "red",
+	// "blue". Kein Farbwert, denn der Name ueberlebt einen Wechsel des
+	// Grundtons; uebersetzt wird erst beim Setzen, siehe farben.go.
+	Farbe       string
+	Hintergrund string
 }
 
 // Absatz is one line or block of the document.
@@ -267,13 +272,26 @@ func stuecke(roh json.RawMessage) []Stueck {
 				v, ok := t.Styles[n].(bool)
 				return ok && v
 			}
+			// Farbe und Markierung stehen als Name da und nicht als Ja/Nein.
+			// "default" heisst: nichts gesetzt, und das ist etwas anderes als
+			// ein unbekannter Name -- beides ergibt hier aber dasselbe, naemlich
+			// den gewoehnlichen Satz.
+			name := func(n string) string {
+				v, ok := t.Styles[n].(string)
+				if !ok || v == "" || v == "default" {
+					return ""
+				}
+				return v
+			}
 			out = append(out, Stueck{
-				Text:   t.Text,
-				Fett:   an("bold"),
-				Kursiv: an("italic"),
-				Fest:   an("code"),
-				Durch:  an("strike"),
-				Unter:  an("underline"),
+				Text:        t.Text,
+				Fett:        an("bold"),
+				Kursiv:      an("italic"),
+				Fest:        an("code"),
+				Durch:       an("strike"),
+				Unter:       an("underline"),
+				Farbe:       name("textColor"),
+				Hintergrund: name("backgroundColor"),
 			})
 		}
 	}
