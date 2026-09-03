@@ -68,6 +68,9 @@ foreign key at all.
 | `password_hash` | text | bcrypt. Empty for an account created through OIDC or LDAP |
 | `role` | text | `admin` or `user`. The first account ever created becomes `admin` |
 | `created_at` | timestamptz | |
+| `bild` | bytea | The profile picture, in the database rather than in the object store. Attachments are a paid extra, and a face on your own account must not depend on a licence key. Size makes it viable: the browser scales to 256 × 256 before uploading, which is tens of kilobytes, and the server refuses anything over 512 KB |
+| `bild_mime` | text | Determined by decoding the bytes, never taken from the request header |
+| `bild_stand` | timestamptz | When it was last set; NULL means there is none. It rides in the image URL so a new picture appears at once — the browser caches the old one for a day |
 
 ### `sitzungen`
 

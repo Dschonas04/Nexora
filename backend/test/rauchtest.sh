@@ -553,19 +553,6 @@ pruefe "genau ein neuer Eintrag in der Pruefspur" "1" "$((SPUR_NACH - SPUR_VOR))
 pruefe "und er traegt die Adresse" "127.0.0.1" \
        "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
           "SELECT ip FROM pruefspur WHERE akteur_name='Skript mit Losungswort' ORDER BY zeitpunkt DESC LIMIT 1")"
-# Das Wort der Kennzahlen darf hier NICHT gelten. Zwei Reichweiten, zwei
-# Woerter: das eine gibt eine Zusammenfassung heraus, das andere den ganzen
-# Bestand. Hier eigens erzeugt und gleich wieder entfernt, weil der Abschnitt
-# Kennzahlen erst weiter unten kommt und eine leere Variable hier alles
-# durchgehen liesse, ohne dass der Test es merkt.
-MWORT=$(hole -X POST "$BASIS/api/system/metriken/token" | feld "['token']")
-pruefe "das Kennzahlen-Wort ist ein anderes" "True" \
-       "$(python3 -c "print('$MWORT' != '$SWORT' and len('$MWORT') > 10)")"
-pruefe "und oeffnet die Sicherung nicht" "401" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $MWORT" "$BASIS/api/system/sicherung")"
-pruefe "umgekehrt oeffnet das Sicherungs-Wort die Kennzahlen nicht" "404" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SWORT" "$BASIS/metrics")"
-hole -X DELETE "$BASIS/api/system/metriken/token" >/dev/null
 pruefe "entfernt" "200" "$(code -X DELETE "$BASIS/api/system/sicherung/token")"
 pruefe "danach ist der Weg wieder zu" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SWORT" "$BASIS/api/system/sicherung")"
@@ -656,72 +643,6 @@ pruefe "die Suche greift ohne Zutun" "t" \
        "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
           "SELECT count(*) > 0 FROM pages WHERE title <> '' AND such_tsv @@ plainto_tsquery('german', title)")"
 
-echo "== Kennzahlen"
-# Ohne Losungswort gibt es den Weg nicht, und zwar mit 404 und nicht mit 401:
-# dass es ihn gibt, braucht niemand zu erfahren, der ihn nicht abholen darf.
-pruefe "ohne Losungswort nicht vorhanden" "404" "$(code "$BASIS/metrics")"
-pruefe "auch mit erfundenem Losungswort nicht" "404" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer erfunden' "$BASIS/metrics")"
-
-# Einschalten aus dem Panel heraus. Das Losungswort wird erzeugt, nicht
-# eingetippt, und muss danach sofort gelten: es steht in der Datenbank, und
-# der Zwischenspeicher muss mitgezogen sein, sonst gaelte weiter der alte Wert.
-pruefe "Zustand ist lesbar" "200" "$(code "$BASIS/api/system/metriken")"
-pruefe "anfangs aus" "False" "$(hole "$BASIS/api/system/metriken" | feld "['aktiv']")"
-WORT=$(hole -X POST "$BASIS/api/system/metriken/token" | feld "['token']")
-pruefe "ein Losungswort wurde erzeugt" "48" "$(printf '%s' "$WORT" | wc -c | tr -d ' ')"
-pruefe "jetzt an" "True" "$(hole "$BASIS/api/system/metriken" | feld "['aktiv']")"
-pruefe "und der Weg antwortet" "200" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $WORT" "$BASIS/metrics")"
-pruefe "mit einem alten Wort nicht" "404" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer erfunden' "$BASIS/metrics")"
-pruefe "das Abholen wird vermerkt" "True" \
-       "$(hole "$BASIS/api/system/metriken" | python3 -c 'import json,sys;print(json.load(sys.stdin)["abholungen"] > 0)')"
-pruefe "der fertige Abschnitt traegt das Wort" "True" \
-       "$(hole "$BASIS/api/system/metriken" | WORT="$WORT" python3 -c '
-import json, os, sys
-print(os.environ["WORT"] in json.load(sys.stdin)["prometheus"])')"
-# Ein neues Wort macht das alte sofort ungueltig.
-NEU=$(hole -X POST "$BASIS/api/system/metriken/token" | feld "['token']")
-pruefe "das alte Wort gilt nicht mehr" "404" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $WORT" "$BASIS/metrics")"
-pruefe "das neue schon" "200" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $NEU" "$BASIS/metrics")"
-pruefe "abgeschaltet" "200" "$(code -X DELETE "$BASIS/api/system/metriken/token")"
-pruefe "danach gibt es den Weg nicht mehr" "404" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $NEU" "$BASIS/metrics")"
-
-hole "$BASIS/api/system/metriken/grafana.json" > "$ARBEIT/bild.json"
-MPROBE=$(hole -X POST "$BASIS/api/system/metriken/token" | feld "['token']")
-curl -s -H "Authorization: Bearer $MPROBE" "$BASIS/metrics" > "$ARBEIT/metriken.txt"
-hole -X DELETE "$BASIS/api/system/metriken/token" >/dev/null
-export ARBEIT
-pruefe "das Grafana-Bild kommt aus dem Abbild" "True" \
-       "$(hole "$BASIS/api/system/metriken/grafana.json" | python3 -c '
-import json, sys
-d = json.load(sys.stdin)
-felder = [p for p in d["panels"] if p["type"] != "row"]
-print(len(felder) == 14 and d["title"] == "Nexora")')"
-# Jede Abfrage im Bild muss eine Kennzahl treffen, die es wirklich gibt. Ein
-# Bild, das leere Felder zeigt, ist schlimmer als keines: es sieht nach einer
-# kaputten Instanz aus, obwohl nur der Name veraltet ist.
-pruefe "alle Kennzahlen im Bild gibt es auch" "" \
-       "$(python3 - <<'PYEOF'
-import json, re, subprocess, os
-bild = json.load(open(os.environ["ARBEIT"] + "/bild.json"))
-namen = set()
-def geh(p):
-    for z in p.get("targets", []):
-        namen.update(re.findall(r"\bnexora_[a-z_]+", z.get("expr", "")))
-for p in bild["panels"]:
-    geh(p)
-vorhanden = set(re.findall(r"^(nexora_[a-z_]+)", open(os.environ["ARBEIT"] + "/metriken.txt").read(), re.M))
-fehlend = sorted(namen - vorhanden)
-print(", ".join(fehlend))
-PYEOF
-)"
-
-
 echo "== Verzeichnis-Verwaltung"
 # Nachsehen darf ein Administrator immer, auch ohne Lizenz: sonst sieht eine
 # Instanz nicht einmal, dass da etwas eingerichtet ist, das nicht laeuft.
@@ -775,6 +696,57 @@ pruefe "das Ersetzen einer markierten PDF ist zu" "402" \
        "$(curl -s -o /dev/null -w '%{http_code}' -X PUT -b "$KEKSE" \
           -H 'Content-Type: application/pdf' --data-binary '%PDF-1.4' \
           "$BASIS/api/pages/$BREIT/attachments/egal/pdf")"
+
+echo "== Eigenes Profil"
+SELBST_ID=$(hole "$BASIS/api/auth/me" | feld "['id']")
+# Name und Bild gehoeren dem Konto selbst, nicht der Verwaltung. Und das Bild
+# wird nach seinem INHALT geprueft: was der Browser als Typ behauptet, sagt
+# nichts darueber, was wirklich ankommt.
+pruefe "anfangs kein Bild" "404" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
+pruefe "der Name laesst sich aendern" "Rauch Umbenannt" \
+       "$(hole -X PUT "$BASIS/api/profil" -H 'Content-Type: application/json' \
+          -d '{"name":"Rauch Umbenannt"}' | feld "['name']")"
+pruefe "und steht sofort am Konto" "Rauch Umbenannt" "$(hole "$BASIS/api/auth/me" | feld "['name']")"
+pruefe "ein leerer Name wird abgewiesen" "400" \
+       "$(code -X PUT "$BASIS/api/profil" -H 'Content-Type: application/json' -d '{"name":"  "}')"
+
+# Ein winziges echtes PNG, von Hand gebaut: ein Pixel reicht, um zu pruefen,
+# dass die Erkennung nach dem Inhalt geht. Es wiegt 69 Byte -- und genau daran
+# ist einmal eine Untergrenze in Bytes gescheitert, die gut gemeint war.
+python3 - "$ARBEIT" <<'PYTHON'
+import struct, sys, zlib
+def stueck(art, inhalt):
+    roh = art + inhalt
+    return struct.pack(">I", len(inhalt)) + roh + struct.pack(">I", zlib.crc32(roh))
+kopf = struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)
+daten = zlib.compress(b"\x00\xff\x00\x00")
+png = b"\x89PNG\r\n\x1a\n" + stueck(b"IHDR", kopf) + stueck(b"IDAT", daten) + stueck(b"IEND", b"")
+open(sys.argv[1] + "/bild.png", "wb").write(png)
+PYTHON
+pruefe "ein Bild laesst sich setzen" "True" \
+       "$(hole -X PUT "$BASIS/api/profil/bild" -H 'Content-Type: image/png' \
+          --data-binary "@$ARBEIT/bild.png" | feld "['ok']")"
+pruefe "danach ist es abrufbar" "200" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
+pruefe "und kommt als PNG heraus" "image/png" \
+       "$(curl -s -o /dev/null -w '%{content_type}' -b "$KEKSE" "$BASIS/api/users/$SELBST_ID/bild")"
+pruefe "das Konto weiss jetzt von einem Bild" "True" \
+       "$(hole "$BASIS/api/auth/me" | python3 -c 'import json,sys;print(bool(json.load(sys.stdin).get("bildStand")))')"
+# Ein umbenanntes Programm mit dem Typ eines Bildes darf NICHT durch: sonst
+# laege es spaeter als image/png in der Zeile und kaeme so auch wieder heraus.
+printf '\177ELF\002\001\001\000und noch etwas mehr Fuellung als hundert Zeichen, damit es nicht schon an der Mindestlaenge scheitert.' > "$ARBEIT/kein-bild.png"
+pruefe "eine leere Anfrage wird abgewiesen" "400" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X PUT \
+          -H 'Content-Type: image/png' --data-binary '' "$BASIS/api/profil/bild")"
+pruefe "ein Programm mit Bildnamen nicht" "400" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X PUT \
+          -H 'Content-Type: image/png' --data-binary "@$ARBEIT/kein-bild.png" \
+          "$BASIS/api/profil/bild")"
+pruefe "das alte Bild steht noch" "200" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
+pruefe "es laesst sich entfernen" "True" "$(hole -X DELETE "$BASIS/api/profil/bild" | feld "['ok']")"
+pruefe "danach gibt es keines mehr" "404" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
+# Zurueck auf den alten Namen, damit die folgenden Abschnitte ihn wiederfinden.
+hole -X PUT "$BASIS/api/profil" -H 'Content-Type: application/json' \
+     -d '{"name":"Rauch Test"}' >/dev/null
 
 echo "== Passwort wechseln"
 # Das bisherige Passwort ist Pflicht, auch bei offener Sitzung: sonst genuegte
@@ -860,12 +832,16 @@ pruefe "und entfernen" "True" \
        "$(hole -X DELETE "$BASIS/api/system/rechner/$SELBST" | feld "['ok']")"
 pruefe "danach steht nur noch der stille da" "1" \
        "$(hole "$BASIS/api/system/rechner" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["rechner"]))')"
-# Und nichts von alledem braucht einen Prometheus: die Einstellung dafuer gibt
-# es nicht mehr, gemessen wird selbst.
+# Und nichts von alledem braucht einen Prometheus. Der ist samt Grafana
+# ausgebaut: keine Einstellung, kein Losungswort, kein Weg. Geprueft wird das
+# hier, weil eine Ausbaustelle sich sonst still zurueckschleicht.
 pruefe "keine Prometheus-Einstellung mehr" "0" \
        "$(hole "$BASIS/api/einstellungen" | python3 -c '
 import json, sys
-print(len([e for e in json.load(sys.stdin) if e["schluessel"] == "prometheus_adresse"]))')"
+schluessel = {e["schluessel"] for e in json.load(sys.stdin)}
+print(len(schluessel & {"prometheus_adresse", "metriken_token"}))')"
+pruefe "den Weg /metrics gibt es nicht mehr" "404" "$(code "$BASIS/metrics")"
+pruefe "und seine Verwaltung auch nicht" "404" "$(code "$BASIS/api/system/metriken")"
 
 echo "== Programme werden nicht angenommen"
 # Anhaenge sind ein Zusatz und ohne Lizenz zu; geprueft wird deshalb die

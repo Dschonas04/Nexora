@@ -19,6 +19,12 @@ type User struct {
 	Benutzername string    `json:"benutzername"`
 	Role         string    `json:"role"`
 	CreatedAt    time.Time `json:"createdAt"`
+	// BildStand ist der Zeitpunkt, an dem das Profilbild zuletzt gesetzt wurde,
+	// und fehlt, wenn es keines gibt. Zwei Antworten in einem Feld: OB ein Bild
+	// da ist (dann zeigt die Oberflaeche kein Namenskuerzel), und WELCHES (die
+	// Adresse traegt den Stand, damit ein neues Bild sofort erscheint statt aus
+	// dem Zwischenspeicher zu kommen).
+	BildStand *time.Time `json:"bildStand,omitempty"`
 }
 
 // Space is a top-level container grouping pages beyond simple nesting.

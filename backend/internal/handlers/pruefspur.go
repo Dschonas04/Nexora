@@ -36,6 +36,10 @@ const (
 	AktKontoGeloescht = "konto.geloescht"
 	AktRolleGeaendert = "konto.rolle"
 	AktNameGeaendert  = "konto.benutzername"
+	// Was jemand an seinem eigenen Konto ändert: der angezeigte Name. Ein
+	// eigener Name, weil im Protokoll ein Unterschied ist, ob eine Verwaltung
+	// ein Konto anfasst oder ob jemand sein eigenes einrichtet.
+	AktProfilGeaendert = "konto.profil"
 	// Der Wechsel selbst, das Zurücksetzen durch eine Verwaltung und der
 	// Fehlversuch am eigenen Konto: drei Namen, weil im Protokoll ein Unterschied
 	// ist, ob jemand sein Passwort wechselt oder ob es ihm gewechselt wurde.

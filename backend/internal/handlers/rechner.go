@@ -307,8 +307,7 @@ func (s *Server) rechnerLesen(ctx context.Context) ([]Rechner, error) {
 	return liste, rows.Err()
 }
 
-// rechnerMessen klopft an allen Adressen gleichzeitig an und reichert das
-// Ergebnis mit dem an, was Prometheus über die Rechner weiß.
+// rechnerMessen klopft an allen Adressen gleichzeitig an.
 //
 // Gleichzeitig, weil nacheinander die Wartezeiten aufeinanderlägen: bei zehn
 // stillen Rechnern wären das dreißig Sekunden, und so lange sieht niemand einer

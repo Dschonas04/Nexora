@@ -35,11 +35,16 @@ const (
 
 // Nachricht is one entry in the inbox.
 type Nachricht struct {
-	ID            string     `json:"id"`
-	Art           string     `json:"art"`
-	PageID        *string    `json:"pageId"`
-	KommentarID   *string    `json:"kommentarId"`
-	AusloeserName string     `json:"ausloeserName"`
+	ID            string  `json:"id"`
+	Art           string  `json:"art"`
+	PageID        *string `json:"pageId"`
+	KommentarID   *string `json:"kommentarId"`
+	AusloeserID   *string `json:"ausloeserId"`
+	AusloeserName string  `json:"ausloeserName"`
+	// Der Stand des Profilbildes dessen, der die Nachricht ausgelöst hat, damit
+	// in der Liste ein Gesicht steht und nicht nur ein Name. Fehlt, wenn das
+	// Konto keines hat oder inzwischen gelöscht wurde.
+	AusloeserBild *time.Time `json:"ausloeserBild,omitempty"`
 	SeitenTitel   string     `json:"seitenTitel"`
 	Text          string     `json:"text"`
 	GelesenAm     *time.Time `json:"gelesenAm"`
@@ -85,13 +90,17 @@ func (s *Server) ListPostfach(w http.ResponseWriter, r *http.Request) {
 
 	bedingung := ""
 	if r.URL.Query().Get("ungelesen") != "" {
-		bedingung = " AND gelesen_am IS NULL"
+		bedingung = " AND p.gelesen_am IS NULL"
 	}
 	rows, err := s.Pool.Query(r.Context(),
-		`SELECT id, art, page_id, kommentar_id, ausloeser_name, seiten_titel,
-		        text, gelesen_am, erstellt_am
-		 FROM postfach WHERE empfaenger_id = $1`+bedingung+`
-		 ORDER BY erstellt_am DESC LIMIT 100`, uid)
+		`SELECT p.id, p.art, p.page_id, p.kommentar_id, p.ausloeser_id, p.ausloeser_name,
+		        p.seiten_titel, p.text, p.gelesen_am, p.erstellt_am, u.bild_stand
+		 FROM postfach p
+		 -- LEFT JOIN, denn ausloeser_id wird beim Löschen eines Kontos auf NULL
+		 -- gesetzt: die Nachricht bleibt, das Gesicht dazu nicht.
+		 LEFT JOIN users u ON u.id = p.ausloeser_id
+		 WHERE p.empfaenger_id = $1`+bedingung+`
+		 ORDER BY p.erstellt_am DESC LIMIT 100`, uid)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "Postfach nicht lesbar")
 		return
@@ -101,8 +110,9 @@ func (s *Server) ListPostfach(w http.ResponseWriter, r *http.Request) {
 	liste := []Nachricht{}
 	for rows.Next() {
 		var n Nachricht
-		if err := rows.Scan(&n.ID, &n.Art, &n.PageID, &n.KommentarID, &n.AusloeserName,
-			&n.SeitenTitel, &n.Text, &n.GelesenAm, &n.ErstelltAm); err == nil {
+		if err := rows.Scan(&n.ID, &n.Art, &n.PageID, &n.KommentarID, &n.AusloeserID,
+			&n.AusloeserName, &n.SeitenTitel, &n.Text, &n.GelesenAm, &n.ErstelltAm,
+			&n.AusloeserBild); err == nil {
 			liste = append(liste, n)
 		}
 	}

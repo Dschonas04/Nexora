@@ -51,6 +51,10 @@ tier contains which feature is in [architecture chapter 8.5](architecture.md#85-
 | `GET` | `/auth/oidc/start` | 302 to the provider · paid: `sso` |
 | `GET` | `/auth/oidc/zurueck` | The provider's callback · paid: `sso` |
 | `POST` | `/auth/ldap` | `{kennung, password}`, bound against the directory · paid: `ldap` |
+| `PUT` | `/profil` | `{name}` — the display name of your own account. Free, and not an admin matter: what somebody is called is their own business. The email address is *not* changeable here, it is the identity every share and every sign-in hangs on |
+| `PUT` | `/profil/bild` | The raw bytes of a profile picture, at most 512 KB. What kind of image it is, is decided by **decoding it**, not by the `Content-Type` — PNG, JPEG and GIF are accepted, anything else gets 415. The browser crops and scales to 256 × 256 before sending |
+| `DELETE` | `/profil/bild` | Remove it; the interface falls back to initials |
+| `GET` | `/users/{id}/bild` | The picture of any account, for every signed-in caller: a face beside a comment is only useful if it also appears for somebody you share no space with. 404 when there is none — which placeholder stands for an account without a picture is the interface's decision, not the server's |
 | `GET` | `/sitzungen` | Every stored session of this account, with IP, browser, ages, and `diese: true` for the current one |
 | `DELETE` | `/sitzungen` | End every session except the current one |
 | `DELETE` | `/sitzungen/{id}` | End one, effective on its next request |
@@ -380,10 +384,6 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `POST` | `/system/grenzprobe` | Reads a body and discards it, answering with the byte count. The interface uses it to *measure* how large a transfer may really be: nginx in front has its own `client_max_body_size`, which Nexora cannot read and should not have to · admin |
 | `GET` | `/system/sicherung/umfang` | What a backup would contain, and whether it can be made at all · admin |
 | `GET` | `/system/sicherung` | The whole instance as a streamed ZIP: `pg_dump` plus every attachment · admin |
-| `GET` | `/system/metriken` | Whether the metrics endpoint is on, when it was last scraped, and the ready-made `prometheus.yml` block with the token in it · admin |
-| `POST` | `/system/metriken/token` | Generate a token and store it, switching the endpoint on. A new one invalidates the old at once · admin |
-| `DELETE` | `/system/metriken/token` | Clear it; `/metrics` answers 404 again · admin |
-| `GET` | `/system/metriken/grafana.json` | The ready-made Grafana dashboard for this version, as a download · admin |
 | `GET` | `/system/rechner` | The machines this instance keeps an eye on, each with a fresh probe: `zustand` is `antwortet`, `still` or `unbekannt`, plus the round trip time, the version the service names itself (`fassung`, from its greeting or the `Server` header) and, on TLS targets, how long the certificate still has (`zertifikat`, `tageBisAblauf`). Nothing outside is asked — no monitoring system, no credentials. Measurements are at most 15 seconds old; a poll in between is answered from memory · admin |
 | `POST` | `/system/rechner` | `{name, ziel, notiz?}`. `ziel` is `host:port` or a full `http(s)://` address; a host without a port is refused rather than guessed · admin |
 | `PUT` | `/system/rechner/{id}` | Change one · admin |

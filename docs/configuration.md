@@ -233,48 +233,6 @@ dump carries off.
 Redis is a cache, never the source of truth. A failure to connect is logged, not
 fatal.
 
-## Metrics for Prometheus
-
-| Key | Env | Default | Meaning |
-|---|---|---|---|
-| `metriken_token` | `NEXORA_METRIKEN_TOKEN` | *(empty)* | Bearer token for `GET /metrics`. Empty means the endpoint does not exist |
-
-Normally there is no reason to set this in the file at all: **Settings →
-Kennzahlen** generates the token, stores it in the database, and shows the
-finished `prometheus.yml` block with the token already in it, plus when it was
-last scraped. Turning it on in the file is for an instance that is configured
-entirely from the outside.
-
-It is the one secret kept in the database rather than the file, and the
-difference is real: the LDAP service password opens a *foreign* system, so a
-dump would be a key to something the dump itself does not contain. This token
-only guards a summary of what already sits in that same database. Whoever holds
-the dump already has more than the metrics could tell them.
-
-Empty is the default and the endpoint then answers **404**, not 401: the figures
-say how many people work here and when, and that they exist is not something a
-caller who may not fetch them needs to learn. Set a token and Prometheus can
-scrape it:
-
-```yaml
-  - job_name: 'nexora'
-    metrics_path: /metrics
-    authorization:
-      credentials: 'the same token'
-    static_configs:
-      - targets: ['nexora-host:3000']
-```
-
-The block above is what the settings page hands you, filled in. The endpoint
-sits outside `/api`, since a scraper brings no session cookie, and it does not
-count itself — otherwise the request rate would never be zero even
-when nobody is working. A ready-made Grafana dashboard is offered for download on the same settings
-page, under *Einstellungen, Kennzahlen*; see [`grafana/README.md`](../grafana/README.md).
-
-The in-app system view covers the last minute and answers *what is happening
-now*. This covers *what happened at three in the morning*, which is the question
-one actually has when somebody complains about yesterday.
-
 ## LDAP / Active Directory · paid extra `ldap`
 
 | Key | Environment | Default | What it does |

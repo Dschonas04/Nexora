@@ -87,7 +87,7 @@ func main() {
 		log.Printf("ACHTUNG: %v. Es gelten nur die öffentlichen Stellen.", err)
 	} else if wurzeln != nil {
 		// Einmal an zentraler Stelle, damit es für ALLES gilt, was dieser
-		// Dienst anspricht: den Anmeldedienst, den Prometheus der
+		// Dienst anspricht: den Anmeldedienst, das Anklopfen der
 		// Rechnerliste, jeden Abruf, den irgendein Handler macht. Die
 		// Alternative wäre, den Vorrat durch jeden Aufruf durchzureichen und
 		// beim nächsten neuen Weg zu vergessen.
@@ -180,12 +180,6 @@ func main() {
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer) // a panicking handler must not take the process down
 	r.Use(chimw.Timeout(30 * time.Second))
-
-	// Kennzahlen für Prometheus. Außerhalb von /api, weil dort der Anmeldefilter
-	// hängt und ein Sammler keinen Keks mitbringt; ausgewiesen wird er über ein
-	// Losungswort aus config.conf. Ohne das Losungswort antwortet der Weg mit
-	// 404, siehe metriken.go.
-	r.Get("/metrics", h.Metriken)
 
 	// Die vollständige Sicherung, außerhalb der Sitzungsgruppe.
 	//
@@ -355,10 +349,6 @@ func main() {
 			r.Post("/system/rechner", h.RechnerAnlegen)
 			r.Put("/system/rechner/{id}", h.RechnerAendern)
 			r.Delete("/system/rechner/{id}", h.RechnerLoeschen)
-			// Die Kennzahlen an- und ausschalten. Das Losungswort steht in
-			// derselben Karte wie die übrigen Einstellungen; ein eigener Weg,
-			// weil Einschalten allein nichts nützt und der fertige Abschnitt
-			// für prometheus.yml daneben gehört.
 			// Was in eine Sicherung ginge. Nur fürs Panel, deshalb hier
 			// drinnen; der Abruf selbst steht weiter unten, außerhalb.
 			r.Get("/system/sicherung/umfang", h.SicherungUmfang)
@@ -369,10 +359,6 @@ func main() {
 			// soll niemand aus einem Skript heraus anstoßen können.
 			r.Post("/system/wiederherstellung", h.Wiederherstellen)
 
-			r.Get("/system/metriken", h.MetrikenZustand)
-			r.Post("/system/metriken/token", h.MetrikenTokenNeu)
-			r.Delete("/system/metriken/token", h.MetrikenAus)
-			r.Get("/system/metriken/grafana.json", h.GrafanaBild)
 			r.Post("/system/suchindex", h.IndexNeuAufbauen)
 			r.Post("/system/anhangindex", h.AnhangIndexNachziehen)
 			// Nimmt einen Rumpf an und wirft ihn weg. Damit misst die
@@ -455,6 +441,15 @@ func main() {
 			// Zuruecksetzen durch eine Verwaltung, fuer ein vergessenes
 			// Passwort. Das eigene Konto weist der Handler ab, siehe passwort.go.
 			r.Put("/users/{id}/passwort", h.PasswortSetzen)
+			// Das eigene Profil: angezeigter Name und Bild. Kein Zusatz und
+			// keine Verwaltungssache -- wie jemand heisst und aussieht, geht
+			// ihn selbst an, siehe profilbild.go.
+			r.Put("/profil", h.ProfilAendern)
+			r.Put("/profil/bild", h.ProfilbildSetzen)
+			r.Delete("/profil/bild", h.ProfilbildWeg)
+			// Das Bild eines beliebigen Kontos: jedes angemeldete darf jedes
+			// sehen, sonst blieben Gesichter an Kommentaren leer.
+			r.Get("/users/{id}/bild", h.Profilbild)
 
 			// Spaces
 			r.Get("/spaces", h.ListSpaces)

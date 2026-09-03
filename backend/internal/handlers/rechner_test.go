@@ -122,7 +122,7 @@ func TestAnklopfenFolgtKeinerUmleitung(t *testing.T) {
 
 // Ein Dienst, der sich beim Verbindungsaufbau vorstellt -- wie es jeder
 // SSH-Dienst tut --, landet mit seiner Kennung in der Spalte. Das ist die
-// Antwort auf "welche Fassung laeuft da", ohne Anmeldung und ohne Prometheus.
+// Antwort auf "welche Fassung laeuft da", ohne Anmeldung und ohne fremde Hilfe.
 func TestAnklopfenLiestDieBegruessung(t *testing.T) {
 	horcher, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
