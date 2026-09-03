@@ -75,7 +75,7 @@ interface Props {
   onRenameSpace: (id: string, current: string) => void;
   onDeleteSpace: (id: string) => void;
   onSpaceOeffentlich: (id: string, wert: "nein" | "lesen" | "schreiben") => void;
-  /** Die Farbe einer Ablage. Leerer Wert heißt: zurück zur Farbe aus der Reihe. */
+  /** The color of a space. Empty value means: revert to the palette color. */
   onSpaceFarbe: (id: string, farbe: string) => void;
   onMovePage: (id: string, parentId: string | null, spaceId: string | null) => void;
     /** Reparenting AND reordering in one: the target names the parent level and
@@ -267,9 +267,9 @@ export default function Sidebar(props: Props) {
   // Id of the space whose visibility menu is open, at most one at a time, hence
   // a single value and not a set.
   const [sichtbarkeitFuer, setSichtbarkeitFuer] = useState<string | null>(null);
-  // Dasselbe für das Farbmenü. Zwei getrennte Werte und nicht einer mit einer
-  // Art dazu: die beiden Menüs schließen einander aus, und das steht so
-  // deutlicher da, als wenn ein Feld beides bedeuten müsste.
+  // The same for the color menu. Two separate values rather than one with a
+  // kind field: the two menus are mutually exclusive and this makes the
+  // intent clearer than overloading a single field.
   const [farbeFuer, setFarbeFuer] = useState<string | null>(null);
   // The same for the export menu of a space.
   // The two menus in the toolbar. `exportFuer` holds the selected space so
