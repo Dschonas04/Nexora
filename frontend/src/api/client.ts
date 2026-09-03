@@ -684,6 +684,30 @@ export const api = {
       body: JSON.stringify({ titel, bloecke }),
     }),
 
+  // Eine im Browser markierte PDF-Datei an die Stelle der alten schreiben. Roh
+  // und nicht als JSON: die Datei ist bereits Bytes, und sie durch Base64 zu
+  // schicken machte sie um ein Drittel groesser, ohne dass jemand etwas davon
+  // haette.
+  pdfErsetzen: async (seiteId: string, anhangId: string, daten: Uint8Array) => {
+    const res = await fetch(`/api/pages/${seiteId}/attachments/${anhangId}/pdf`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/pdf" },
+      body: new Blob([daten as BlobPart], { type: "application/pdf" }),
+    });
+    if (!res.ok) {
+      let msg = res.statusText;
+      try {
+        const j = await res.json();
+        if (j && j.error) msg = j.error;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(msg);
+    }
+    return (await res.json()) as { ok: boolean; bytes: number };
+  },
+
   sitzungen: () => req<Sitzung[]>("/sitzungen"),
   sitzungBeenden: (id: string) => req<void>(`/sitzungen/${id}`, { method: "DELETE" }),
   sitzungenBeenden: () => req<{ beendet: number }>("/sitzungen", { method: "DELETE" }),

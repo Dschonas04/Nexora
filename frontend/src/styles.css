@@ -854,6 +854,97 @@ textarea::placeholder {
   color: var(--muted);
 }
 
+/* PDF markieren. Die Blaetter stehen untereinander wie in jedem Betrachter,
+   die Leiste bleibt oben stehen: wer auf Seite vier markiert, will die Farbe
+   nicht am Anfang des Dokuments suchen. */
+.pdfm {
+  align-self: stretch;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: 82vh;
+}
+.pdfm-leiste {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--flaeche, #fff);
+  border-bottom: 1px solid var(--rand, #e9e9e7);
+}
+.pdfm-name {
+  font-weight: 600;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pdfm-farben {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.pdfm-farbe {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.pdfm-farbe.ist-aktiv {
+  border-color: var(--text, #37352f);
+}
+.pdfm-hinweis {
+  padding: 6px 12px;
+}
+.pdfm-blaetter {
+  overflow: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-2, #f7f6f3);
+}
+.pdfm-blatt {
+  position: relative;
+  background: #ffffff;
+  box-shadow: 0 1px 6px rgba(15, 15, 15, 0.2);
+  /* Das Fadenkreuz sagt, dass hier gezogen und nicht ausgewaehlt wird. */
+  cursor: crosshair;
+  user-select: none;
+  flex: none;
+}
+.pdfm-leinwand {
+  display: block;
+}
+.pdfm-marke {
+  position: absolute;
+  /* Die Marke faengt keine Maus ab, sonst koennte man ueber einer gesetzten
+     Markierung keine zweite mehr aufziehen. */
+  pointer-events: none;
+}
+.pdfm-zug {
+  background: rgba(55, 53, 47, 0.15);
+  outline: 1px dashed rgba(55, 53, 47, 0.6);
+}
+.pdfm-notiz {
+  position: absolute;
+  z-index: 3;
+  width: 240px;
+  padding: 4px 6px;
+  font-size: 13px;
+  border: 1px solid var(--rand, #e9e9e7);
+  border-radius: 4px;
+  background: var(--flaeche, #fff);
+  color: var(--text, #37352f);
+  box-shadow: 0 2px 8px rgba(15, 15, 15, 0.18);
+}
+
 /* Modal (share dialog) */
 .modal-backdrop {
   position: fixed;

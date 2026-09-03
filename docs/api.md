@@ -104,6 +104,22 @@ restoring are gated.
 | `GET` | `/pages/{id}/attachments/{attId}/word` | A `.docx` as editor blocks. Whoever may read the page may read the file |
 | `PUT` | `/pages/{id}/attachments/{attId}/word` | Write the blocks back as `.docx`. Needs write access **and** the `anhaenge` licence. Text, headings, lists and tables survive; headers, styles, comments and images do not |
 
+### PDF attachments
+
+| Method | Path | Notes |
+|---|---|---|
+| `PUT` | `/pages/{id}/attachments/{attId}/pdf` | The raw bytes of a marked-up PDF, `Content-Type: application/pdf`. Needs write access **and** the `anhaenge` licence. The body must start with `%PDF-` and is capped by `max_anhang_mb` |
+
+The marking itself happens in the browser: pdf.js draws the pages, the reader
+drags rectangles over them, and pdf-lib writes the highlights into the file
+before it is sent. The server only checks and stores.
+
+**It replaces, it does not add a version.** The bytes are written under the same
+attachment id, so every link to that attachment keeps pointing at what was
+meant -- and the unmarked version is gone afterwards. That is deliberate and
+recorded in the audit trail as `anhang.bearbeitet` with `"art": "pdf-markiert"`.
+Whoever wants to keep the original downloads it first.
+
 ---
 
 ## Sharing · paid: `freigeben`
