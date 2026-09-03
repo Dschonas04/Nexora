@@ -2620,6 +2620,41 @@ textarea::placeholder {
   border: 1px solid var(--border);
   border-radius: 9px;
 }
+
+/* Der Farbpunkt vor dem Namen einer Ablage. Klein und rund: er soll die Zeile
+   kennzeichnen, nicht mit ihr um Aufmerksamkeit ringen. */
+.ablage-punkt {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 2px;
+}
+
+/* Die Farbtafel im Menue. Zwei Reihen zu fuenf, damit die zehn Toene als
+   Tafel dastehen und nicht als Schlange, die das Menue in die Breite zieht. */
+.farbmenue-tafel {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  padding: 2px 8px 8px;
+}
+.farbmenue-feld {
+  height: 22px;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0;
+}
+.farbmenue-feld:hover {
+  transform: scale(1.08);
+}
+/* Der Rand in der Textfarbe und nicht in der Farbe selbst: auf einem gelben
+   Feld waere ein gelber Rand unsichtbar, und gerade das gewaehlte Feld soll
+   man erkennen. */
+.farbmenue-feld.gewaehlt {
+  border-color: var(--text);
+}
 .sichtbarkeit-kopf {
   padding: 2px 8px 6px;
   font-size: 10px;

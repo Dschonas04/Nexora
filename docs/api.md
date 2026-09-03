@@ -140,7 +140,7 @@ Whoever wants to keep the original downloads it first.
 
 A public link is the only anonymous access there is, and it is read-only. Opening
 a **space** (`/spaces/{id}/oeffentlich`) opens it to signed-in accounts of the
-| `PUT` | `/spaces/{id}/farbe` | `{farbe}` as `#rrggbb`, or empty to reset. The colour the space wears in the graph. It sits on the space and not in the browser, so everybody sees the same picture · owner or admin |
+| `PUT` | `/spaces/{id}/farbe` | `{farbe}` as `#rrggbb`, or empty to reset. The colour the space wears **in the sidebar and in the graph** — a dot before its name, and every page of that space in the graph. It sits on the space and not in the browser, so everybody sees the same picture. Without a chosen colour one is derived from the space id, which keeps it stable when spaces are added or the graph is filtered · owner or admin |
 instance, never to the internet.
 
 ---

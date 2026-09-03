@@ -1,54 +1,36 @@
-// Das Grafbild: eine lebende Kräftesimulation, gezeichnet als SVG, zum
-// Schieben, Zoomen und Ziehen.
+// Grafbild: a live force simulation drawn as SVG, supporting pan, zoom, and
+// drag.
 //
-// Es steht hier und nicht in der Graf-Ansicht, weil es zweimal gebraucht wird:
-// einmal über dem ganzen Arbeitsbereich, einmal als kleiner Graf unter einer
-// Seite. Der kleine war vorher ein starrer Stern aus fest gerechneten Winkeln
-// -- dasselbe Bild, aber ohne alles, was den großen brauchbar macht.
-//
-// Die Simulation läuft vollständig außerhalb von React. Die Positionen liegen
-// in Refs und werden in einer requestAnimationFrame-Schleife fortgeschrieben;
-// React wird nur zum Neuzeichnen angestoßen, denn hunderte Koordinaten in den
-// Zustand zu legen hieße, den ganzen Baum sechzigmal je Sekunde neu zu bauen.
+// This component lives here instead of the graph view because it is reused in
+// two places: a full workspace view and a small inline graph under a page.
+// The simulation runs entirely outside React. Positions are stored in refs and
+// advanced in a requestAnimationFrame loop; React is only triggered to redraw
+// because putting hundreds of coordinates into state would rerender the tree
+// dozens of times per second.
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Graph, GraphNode } from "../api/client";
-
-// Farben je Ablage. Seiten ohne Ablage teilen sich die letzte, neutrale Farbe.
-const ABLAGE_FARBEN = [
-  "#2383e2", "#e2662c", "#159a6b", "#a84be0", "#d4356b",
-  "#c99700", "#0f9bb0", "#7a52d6", "#5a8f3c", "#d05a2c",
-];
-const OHNE_ABLAGE_FARBE = "#9b9a97";
+import { farbeFuerAblage } from "../ablagefarben";
 
 function ablageSchluessel(node: { spaceId: string | null }): string {
   return node.spaceId ?? "__none__";
 }
 
-// ablageFarben liefert die vorkommenden Ablagen in fester Reihenfolge und die
-// Farbe dazu, damit ein Knoten die Farbe seiner Ablage tragen kann.
+// `ablageFarben` returns a color for each encountered space.
 //
-// Eine selbst gewählte Farbe schlägt die Reihe. Die Reihe bleibt daneben
-// bestehen und wird auch weitergezählt, wenn eine Ablage ihre eigene Farbe
-// trägt: sonst rückten beim Setzen einer einzigen Farbe alle anderen um eine
-// Stelle weiter, und der Graf sähe nach jedem Klick anders aus.
+// The color is derived from the space identifier, not its index in a list
+// (see src/ablagefarben.ts). That ensures a space has the same color in the
+// graph and in the sidebar, even when filtering or pages change.
 function ablageFarben(graph: Graph, eigene?: Record<string, string>) {
-  const schluessel: string[] = [];
+  const farbe: Record<string, string> = {};
   for (const n of graph.nodes) {
     const k = ablageSchluessel(n);
-    if (!schluessel.includes(k)) schluessel.push(k);
-  }
-  const farbe: Record<string, string> = {};
-  let i = 0;
-  for (const k of schluessel) {
-    const ausReihe =
-      k === "__none__" ? OHNE_ABLAGE_FARBE : ABLAGE_FARBEN[i++ % ABLAGE_FARBEN.length];
-    farbe[k] = eigene?.[k] || ausReihe;
+    if (!(k in farbe)) farbe[k] = farbeFuerAblage(k === "__none__" ? null : k, eigene?.[k]);
   }
   return farbe;
 }
 
-// Ein simuliertes Teilchen je Seite.
+// One simulated particle per page.
 interface Teilchen {
   x: number;
   y: number;
@@ -56,9 +38,9 @@ interface Teilchen {
   vy: number;
 }
 
-// Die Kräfte. Knoten stoßen sich ab, Kanten ziehen wie Federn -- die Hierarchie
-// deutlich straffer als lose [[Verweise]] --, und eine milde Schwerkraft hält
-// das Ganze in der Mitte.
+// Physics parameters. Nodes repel each other, edges act like springs
+// (parent links stiffer than soft references), and a mild centering gravity
+// keeps the layout overall centered.
 export interface Physik {
   abstossung: number;
   federEltern: number;
@@ -69,7 +51,7 @@ export interface Physik {
   gleicheAblage: number;
 }
 
-// Für das große Bild über den ganzen Arbeitsbereich.
+// Physics constants for the large workspace view.
 export const PHYSIK_GROSS: Physik = {
   abstossung: 13000,
   federEltern: 0.006,
@@ -80,9 +62,8 @@ export const PHYSIK_GROSS: Physik = {
   gleicheAblage: 0.0016,
 };
 
-// Für den kleinen Graf unter einer Seite: weniger Knoten, weniger Fläche. Mit
-// den Werten des großen Bildes flögen fünf Knoten in einem Kasten von 280
-// Pixeln Höhe sofort an dessen Rand.
+// Physics constants for the small inline graph: fewer nodes, less space. The
+// large-view constants would cause a few nodes to fly to the edges here.
 export const PHYSIK_KLEIN: Physik = {
   abstossung: 2600,
   federEltern: 0.010,
@@ -96,22 +77,19 @@ export const PHYSIK_KLEIN: Physik = {
 const GESCHWINDIGKEIT_DAEMPFUNG = 0.82;
 const ALPHA_ABFALL = 0.985;
 const ALPHA_MIN = 0.02;
-const ZUG_ALPHA = 0.35; // hält die Simulation warm, solange jemand zieht
-const ZUG_SCHWELLE = 4; // Pixel, ab denen ein Druck als Ziehen gilt und nicht als Klick
+const ZUG_ALPHA = 0.35; // keeps the simulation warm while the user drags
+const ZUG_SCHWELLE = 4; // pixels threshold above which a press is a drag, not a click
 
-// Beschriftung.
+// Labels.
 //
-// Jeder Knoten trägt seinen Namen, also stehen die Namen einander im Weg. Nichts
-// hiervon bewegt einen Knoten; nur die Beschriftung tritt zur Seite, und zwar
-// nur auf einen von wenigen festen Plätzen um ihren eigenen Knoten herum. Eine
-// Beschriftung, die frei wandert, ist schlimmer als eine, die überlappt: man
-// sieht dann nicht mehr, welcher Name zu welchem Punkt gehört.
+// Each node shows its title which leads to overlaps. Labels do not move nodes;
+// they shift to one of a few fixed positions around their node. A freely
+// floating label causes worse ambiguity than a fixed offset.
 const LABEL_SCHRIFT = 12;
 const LABEL_HOEHE = 14;
-// Grobe Breite je Zeichen in dieser Größe. Richtig zu messen hieße, ein Canvas
-// zu halten und je Name und Bild einmal zu messen; zum Ausweichen genügt eine
-// Schätzung, die eher zu groß ausfällt -- zu breit heißt nur, dass eine
-// Beschriftung etwas zu eifrig zur Seite tritt.
+// Approximate width per character at this font size. Measuring precisely
+// would require a canvas and per-string measurement; an overestimate is fine
+// because it only makes labels shift a bit more.
 const LABEL_BREITE_JE_ZEICHEN = 6.4;
 
 interface Kasten {
@@ -125,9 +103,8 @@ function ueberlappen(a: Kasten, b: Kasten): boolean {
   return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }
 
-// Die Plätze, die eine Beschriftung einnehmen darf, nach Vorliebe geordnet:
-// rechts vom Knoten zuerst, weil man sie dort sucht, dann links, dann darunter,
-// dann darüber, und ganz zuletzt weiter darunter.
+// Candidate anchor positions for a label, ordered by preference: right, left,
+// below, above, then further below.
 type Anker = "start" | "end" | "middle";
 const LABEL_PLAETZE: { dx: (r: number) => number; dy: (r: number) => number; anker: Anker }[] = [
   { dx: (r) => r + 5, dy: () => 4, anker: "start" },
@@ -137,8 +114,7 @@ const LABEL_PLAETZE: { dx: (r: number) => number; dy: (r: number) => number; ank
   { dx: () => 0, dy: (r) => r + 28, anker: "middle" },
 ];
 
-// kastenFuer sagt, wo eine Beschriftung liegt, wenn sie einen dieser Plätze
-// eingenommen hat.
+// `kastenFuer` computes the bounding box of a label at a chosen anchor.
 function kastenFuer(x: number, y: number, breite: number, dx: number, dy: number, anker: Anker): Kasten {
   const links = anker === "start" ? x + dx : anker === "end" ? x + dx - breite : x + dx - breite / 2;
   return { x: links, y: y + dy - LABEL_HOEHE + 3, w: breite, h: LABEL_HOEHE };
@@ -146,23 +122,23 @@ function kastenFuer(x: number, y: number, breite: number, dx: number, dy: number
 
 interface Props {
   graph: Graph;
-  /** Ein Klick auf einen Knoten, der kein Ziehen war. */
+  /** A click on a node that was not a drag. */
   onOeffnen: (id: string) => void;
-  /** Diese Seite wird betont und in der Mitte gehalten -- der kleine Graf. */
+  /** The page to emphasize and keep near the center (used by the small graph). */
   mitte?: string;
   physik?: Physik;
-  /** Feste Höhe in Pixeln; ohne Angabe füllt das Bild seinen Kasten. */
+  /** Fixed height in pixels; if omitted the image fills its container. */
   hoehe?: number;
   hinweis?: string;
   legende?: boolean;
   zentrieren?: boolean;
-  /** Selbst gewählte Farben je Ablage, Schlüssel ist die spaceId. */
+  /** User-selected colors per space; key is the spaceId. */
   eigeneFarben?: Record<string, string>;
-  /** Darf hier eine Farbe geändert werden? Dann trägt die Legende einen
-      Farbwähler. Ohne den Rückruf ist sie eine reine Beschriftung. */
+    /** Callback to change a space color. If provided, the legend shows a color
+      picker; otherwise the legend is read-only. */
   onFarbe?: (spaceId: string, farbe: string) => void;
-  /** Ob das Mausrad zoomt. In einer Seite nur mit Strg, sonst bliebe beim
-      Scrollen der Text stehen und der Graf zöge sich zusammen. */
+    /** Whether the mouse wheel zooms. In a page view only with Ctrl to avoid
+      interfering with normal scrolling. */
   radZoom?: "immer" | "mit-strg";
 }
 
@@ -197,8 +173,8 @@ export default function Grafbild({
 
   const farbe = ablageFarben(graph, eigeneFarben);
 
-  // Abgeleitetes, das nur von der Knotenmenge abhängt: Grad (für die Größe),
-  // Nachbarschaften (für das Hervorheben) und die Legende.
+  // Derived values that depend only on the node set: degree (for size),
+  // neighbor sets (for highlighting), and the legend entries.
   const idsKey = graph.nodes.map((n) => n.id).sort().join(",");
   const abgeleitet = useMemo(() => {
     const grad: Record<string, number> = {};
@@ -226,8 +202,7 @@ export default function Grafbild({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey]);
 
-  // Der Knoten in der Mitte ist etwas größer: er ist der Grund, aus dem das
-  // Bild überhaupt dasteht.
+  // The center node is slightly larger: it is the reason the graph exists.
   const radius = (id: string) =>
     (id === mitte ? 3 : 0) + 6 + Math.min(7, Math.sqrt(abgeleitet.grad[id] || 0) * 2.2);
 
@@ -260,7 +235,7 @@ export default function Grafbild({
     return () => ro.disconnect();
   }, [hoehe]);
 
-  // Ein Schritt der Simulation über die aktuelle Teilchenmenge.
+  // One simulation step over the current particle set.
   const schritt = () => {
     const nodes = graph.nodes;
     const p = teilchen.current;
@@ -268,7 +243,7 @@ export default function Grafbild({
     const { w, h } = groesseRef.current;
     const ph = physikRef.current;
 
-    // Abstoßung zwischen jedem Paar.
+    // Repulsion between every pair.
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const pa = p[nodes[i].id];
@@ -290,8 +265,8 @@ export default function Grafbild({
         pa.vy += uy * rep;
         pb.vx -= ux * rep;
         pb.vy -= uy * rep;
-        // Lose Anziehung innerhalb einer Ablage: Ordner finden zusammen, ohne
-        // festgenagelt zu sein.
+        // Mild attraction within the same space: folders cluster without
+        // being pinned.
         if (ph.gleicheAblage && ablageVon.current[nodes[i].id] === ablageVon.current[nodes[j].id]) {
           pa.vx -= ux * ph.gleicheAblage * dist * a;
           pa.vy -= uy * ph.gleicheAblage * dist * a;
@@ -301,7 +276,8 @@ export default function Grafbild({
       }
     }
 
-    // Federn an den Kanten -- Hierarchie kurz und straff, Verweise lang und weich.
+    // Spring forces along edges: parents act as short stiff springs, refs as
+    // longer softer springs.
     for (const e of graph.edges) {
       const ps = p[e.source];
       const pt = p[e.target];
@@ -321,9 +297,8 @@ export default function Grafbild({
       pt.vy -= uy * spr;
     }
 
-    // Schwerkraft zur Mitte der Fläche. Der betonte Knoten wird stärker
-    // gehalten: im kleinen Graf soll die Seite, um die es geht, auch in der
-    // Mitte stehen -- ziehen lässt sie sich trotzdem.
+    // Gravity toward the center. The emphasized node is held more strongly so
+    // that the focused page remains near the center in the small graph.
     for (const n of nodes) {
       const pp = p[n.id];
       if (!pp) continue;
@@ -332,7 +307,7 @@ export default function Grafbild({
       pp.vy += (h / 2 - pp.y) * ph.schwerkraft * stark * a;
     }
 
-    // Fortschreiben.
+    // Integrate velocities to advance positions.
     for (const n of nodes) {
       const pp = p[n.id];
       if (!pp) continue;
@@ -350,9 +325,9 @@ export default function Grafbild({
       pp.y += pp.vy;
     }
 
-    // Das Ganze mittig halten: alle Knoten so verschieben, dass ihr Schwerpunkt
-    // in der Mitte liegt. Beim Ziehen ausgesetzt, damit der gegriffene Knoten
-    // unter dem Zeiger bleibt.
+    // Keep the whole layout centered by translating nodes so their centroid is
+    // at the center. Skip while dragging so the grabbed node remains under the
+    // cursor.
     if (!gehalten.current) {
       let cx = 0;
       let cy = 0;
@@ -378,14 +353,11 @@ export default function Grafbild({
     beschriftungenVerteilen();
   };
 
-  // Jeder Beschriftung einen Platz geben, an dem sie so wenig wie möglich
-  // verdeckt.
+  // Assign each label a position that minimizes overlap.
   //
-  // Gierig und in einem Durchgang: die Knoten mit den meisten Kanten kommen
-  // zuerst und behalten den guten Platz rechts, alles andere weicht um sie
-  // herum aus. Ein richtiges Optimum wäre weder den Code noch die Millisekunden
-  // wert -- es wird ohnehin in jedem Bild neu gerechnet, und ein Bild später
-  // steht alles woanders.
+  // Greedy single-pass algorithm: nodes with highest degree get preference and
+  // keep the best spot on the right; others yield. A true optimum is not worth
+  // the CPU time because layout changes frequently.
   const beschriftungenVerteilen = () => {
     const p = teilchen.current;
     const reihe = [...graph.nodes].sort(
@@ -414,9 +386,9 @@ export default function Grafbild({
           break;
         }
       }
-      // So oder so belegt: auch der letzte Ausweg sperrt den Platz für den
-      // Nächsten, sonst lägen zwei Beschriftungen, die beide aufgeben mussten,
-      // übereinander.
+      // Either way it occupies space: even the last fallback reserves the
+      // spot for the next label, otherwise two labels that both gave up would
+      // end up overlapping.
       belegt.push(kasten);
       gewaehlt[n.id] = { dx: platz.dx(r), dy: platz.dy(r), anker: platz.anker };
     }
@@ -439,8 +411,8 @@ export default function Grafbild({
     if (raf.current == null) raf.current = requestAnimationFrame(schleife);
   };
 
-  // Teilchen neu setzen, sobald sich die Menge der Seiten ändert, dann laufen
-  // lassen. Bekannte Knoten behalten ihre Stelle über einen Datenwechsel hinweg.
+  // Reinitialize particles whenever the node set changes, then run the
+  // simulation. Known nodes retain their positions across data updates.
   useEffect(() => {
     const { w, h } = groesseRef.current;
     const naechste: Record<string, Teilchen> = {};
@@ -473,18 +445,18 @@ export default function Grafbild({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey]);
 
-  // Bildschirm- in Simulationskoordinaten, Verschiebung und Zoom
-  // herausgerechnet. Jeder Zeigerhandler braucht das, denn die Physik weiß
-  // nichts vom Ausschnitt.
+  // Convert screen coordinates to simulation coordinates, accounting for
+  // pan and zoom. Every pointer handler needs this because the physics loop
+  // is unaware of the current viewport.
   const zuGraf = (clientX: number, clientY: number) => {
     const rect = svgRef.current!.getBoundingClientRect();
     const v = blickRef.current;
     return { x: (clientX - rect.left - v.x) / v.scale, y: (clientY - rect.top - v.y) / v.scale };
   };
 
-  // Ein Druck greift entweder einen Knoten oder schiebt die Fläche -- je
-  // nachdem, worauf er landet. Der Zeiger wird eingefangen, damit ein schneller
-  // Zug, der die Fläche verlässt, weiter verfolgt wird.
+  // A press either grabs a node or pans the surface depending on what lies
+  // beneath the pointer. Capture the pointer so a quick drag that leaves the
+  // SVG remains tracked.
   const zeigerAb = (e: React.PointerEvent) => {
     const treffer = (e.target as Element).closest?.("[data-node]") as Element | null;
     svgRef.current?.setPointerCapture(e.pointerId);
@@ -519,8 +491,8 @@ export default function Grafbild({
     }
   };
 
-  // Ein gezogener Knoten hängt am Zeiger, die Simulation bleibt warm, damit
-  // seine Nachbarn mitkommen statt zu erstarren.
+  // A dragged node stays attached to the pointer; keep the simulation warm
+  // so its neighbors move along instead of freezing.
   const zeigerBewegt = (e: React.PointerEvent) => {
     const d = zug.current;
     if (!d.art) return;
@@ -536,9 +508,9 @@ export default function Grafbild({
     }
   };
 
-  // Loslassen. Ein Druck, der die Schwelle nie überschritten hat, gilt als
-  // Klick und öffnet die Seite -- ein gezogener Knoten führt also nicht
-  // versehentlich woanders hin.
+  // On release: a press that never exceeded the drag threshold is treated as
+  // a click and opens the page — so a dragged node does not accidentally
+  // navigate elsewhere.
   const zeigerAuf = (e: React.PointerEvent) => {
     const d = zug.current;
     svgRef.current?.releasePointerCapture(e.pointerId);
@@ -548,9 +520,9 @@ export default function Grafbild({
     zug.current.art = null;
   };
 
-  // Zum Zeiger hin zoomen und nicht zur Mitte: der Punkt unter dem Zeiger muss
-  // stehen bleiben, dafür die Umrechnung. Der Maßstab ist begrenzt, damit der
-  // Graf weder verschwindet noch als einzelner Knoten das Fenster füllt.
+  // Zoom toward the pointer, not the center: the point under the pointer
+  // should remain fixed, adjust the transform accordingly. Limit the scale so
+  // the graph neither vanishes nor becomes a single node filling the window.
   const amRad = (e: React.WheelEvent) => {
     if (radZoom === "mit-strg" && !e.ctrlKey && !e.metaKey) return;
     e.preventDefault();
@@ -564,8 +536,8 @@ export default function Grafbild({
     });
   };
 
-  // Zurücksetzen: Ausschnitt zurück auf Anfang und der Simulation einen frischen
-  // Stoß, damit sie sich neu in der Mitte setzt.
+  // Reset view: restore the default viewport and nudge the simulation so it
+  // recenters.
   const zurueck = () => {
     setBlick({ x: 0, y: 0, scale: 1 });
     if (graph.nodes.length) anheizen(1);
@@ -578,9 +550,9 @@ export default function Grafbild({
     return 0.15;
   };
 
-  // Jeder Knoten trägt seinen Namen, in jeder Vergrößerung. Sie erst beim
-  // Hineinzoomen zu zeigen hielt das Bild aufgeräumt und machte es nutzlos: ein
-  // Graf aus namenlosen Punkten sagt nichts darüber, was womit zusammenhängt.
+  // Every node shows its name at all zoom levels. Hiding labels until zoom
+  // kept the image tidy but made it useless: a cloud of unlabeled points
+  // does not convey what is related to what.
   return (
     <div className="graph-wrap" ref={rahmenRef} style={hoehe ? { height: hoehe } : undefined}>
       {hinweis && <div className="graph-hint">{hinweis}</div>}
@@ -588,11 +560,11 @@ export default function Grafbild({
         <div className="graph-legend">
           {abgeleitet.legende.map((l) => (
             <span key={l.key} className="graph-legend-item">
-              {/* Der Punkt ist der Farbwähler: anklicken, Farbe aussuchen,
-                  fertig. Ein eigener Knopf daneben wäre eine Bedienung mehr
-                  für dieselbe Sache, und der Punkt ist genau das, was man
-                  ändern will. Bei "Keine Ablage" bleibt es beim Punkt -- es
-                  gibt keine Ablage, an der die Farbe stehen könnte. */}
+                {/* The dot itself is the color picker: click it, choose a color,
+                  done. A separate button would be an extra control for the
+                  same action, and the dot is precisely what the user intends
+                  to change. For "No space" only the dot is shown — there is
+                  no space to attach a color to. */}
               {onFarbe && l.key !== "__none__" ? (
                 <label className="graph-legend-dot-wahl" title="Farbe dieser Ablage">
                   <span className="graph-legend-dot" style={{ background: farbe[l.key] }} />
@@ -639,9 +611,9 @@ export default function Grafbild({
                 y1={a.y}
                 x2={b.x}
                 y2={b.y}
-                // Die Farben stehen im Stilblatt, nicht hier: als Attribut wären
-                // sie an einen Grundton gebunden, und im dunklen stünden helle
-                // Linien auf hellem Text.
+                // Colors live in the stylesheet, not as attributes: if set here
+                // they'd be tied to a base tone and could make light lines sit
+                // on light text in dark themes.
                 className={
                   "graph-kante" +
                   (kante.kind === "parent" ? " eltern" : "") +
@@ -672,15 +644,14 @@ export default function Grafbild({
                 <circle
                   r={zeiger === node.id ? r + 2 : r}
                   fill={farbe[ablageSchluessel(node)] ?? "#2383e2"}
-                  // Der Rand ist der Grund der Seite, damit ein Knoten sich von
-                  // den Linien dahinter abhebt -- hell im Hellen, dunkel im
-                  // Dunklen.
+                  // The stroke color should match the page background so nodes
+                  // stand out from the lines behind them—light on light, dark on dark.
                   className={"graph-knoten" + (betont ? " betont" : "")}
                   strokeWidth={betont ? 2 : 1}
                 />
-                {/* Der Saum um die Buchstaben hält einen Namen dort lesbar, wo
-                    er eine Linie kreuzt -- das Ausweichen regelt die
-                    Beschriftungen untereinander, nicht die Linien. */}
+                {/* The outline around letters keeps a name readable where it
+                  crosses a line — overlap avoidance manages labels with
+                  respect to each other, not the edges. */}
                 <text
                   x={platz.dx}
                   y={platz.dy}
