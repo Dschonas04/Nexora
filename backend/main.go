@@ -239,6 +239,11 @@ func main() {
 			// attachments license.
 			r.Get("/pages/{id}/attachments/{attId}/word", h.WordLesen)
 			r.Put("/pages/{id}/attachments/{attId}/word", h.WordSchreiben)
+			// Die markierte Fassung einer PDF-Datei, an die Stelle der alten.
+			// Roh und nicht als Formular: der Browser hat die fertigen Bytes
+			// schon in der Hand, und ein Formular drumherum waere eine
+			// Verpackung ohne Inhalt.
+			r.Put("/pages/{id}/attachments/{attId}/pdf", h.PDFErsetzen)
 			r.Get("/sitzungen", h.ListSitzungen)
 			r.Delete("/sitzungen", h.SitzungenBeenden)
 			r.Delete("/sitzungen/{id}", h.SitzungBeenden)

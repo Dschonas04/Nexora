@@ -130,21 +130,26 @@ echten PDF-Dateien.
 | `golang.org/x/text` | v0.41.0 | BSD-3-Clause |
 | `gopkg.in/ini.v1` | v1.67.3 | Apache-2.0 |
 
-## npm, Produktivbaum (173)
+## npm, Produktivbaum (247)
 
 | Verteilung | |
 |---|---|
-| MIT | 167 |
+| MIT | 235 |
 | MPL-2.0 | 3 |
+| 0BSD | 2 |
+| Apache-2.0 | 1 |
+| BSD-2-Clause | 1 |
+| BSD-3-Clause | 1 |
 | ISC | 1 |
-| 0BSD | 1 |
+| Python-2.0 | 1 |
+| MIT und Zlib | 1 |
 | MIT oder CC0-1.0 | 1 |
 
-Alle 173 einzeln aufzuführen hieße, eine Liste zu pflegen, die beim nächsten
-`npm install` still veraltet. Namentlich stehen hier deshalb die elf direkten
-Abhängigkeiten und jedes Paket im Baum, das nicht MIT ist. Der Rest ist der
-übliche Unterbau von React und ProseMirror und durchgehend MIT; nachsehen lässt
-er sich mit dem Befehl oben.
+Alle 247 einzeln aufzuführen hieße, eine Liste zu pflegen, die beim nächsten
+`npm install` still veraltet. Namentlich stehen hier deshalb die dreizehn
+direkten Abhängigkeiten und jedes Paket im Baum, das nicht MIT ist. Der Rest ist
+der übliche Unterbau von React und ProseMirror und durchgehend MIT; nachsehen
+lässt er sich mit dem Befehl oben.
 
 **Direkt:**
 
@@ -156,6 +161,8 @@ er sich mit dem Befehl oben.
 | `@tiptap/core` | 2.27.2 | MIT |
 | `@tiptap/pm` | 2.27.2 | MIT |
 | `lib0` | 0.2.117 | MIT |
+| `pdf-lib` | 1.17.1 | MIT |
+| `pdfjs-dist` | 6.3.289 | **Apache-2.0** |
 | `react` | 18.3.1 | MIT |
 | `react-dom` | 18.3.1 | MIT |
 | `react-router-dom` | 6.26.2 | MIT |
@@ -166,17 +173,26 @@ er sich mit dem Befehl oben.
 
 | Paket | Fassung | Lizenz |
 |---|---|---|
+| `argparse` | 2.0.1 | Python-2.0 |
+| `diff` | 5.2.2 | BSD-3-Clause |
+| `entities` | 4.5.0 | BSD-2-Clause |
 | `hast-util-from-dom` | 4.2.0 | ISC |
-| `tslib` | 2.8.1 | 0BSD |
+| `pako` | 1.0.11 | MIT und Zlib |
+| `tslib` | 1.14.1, 2.8.1 | 0BSD |
 | `type-fest` | 4.41.0 | MIT oder CC0-1.0 |
+
+`pdfjs-dist` steht unter Apache-2.0 und ist damit das erste ausgelieferte Paket
+neben BlockNote, das mehr verlangt als einen Urhebervermerk: Abschnitt 4 der
+Lizenz will den Lizenztext und einen Hinweis auf Änderungen. Geändert wird
+nichts -- die Bibliothek wird unverändert gebündelt --, und der Hinweis auf
+diese Datei steht im Kopf jedes Bündels.
 
 ## Nur beim Bauen, nicht im Erzeugnis
 
 TypeScript (Apache-2.0), Vite (MIT), `@vitejs/plugin-react` (MIT) sowie deren
-Unterbau. Zwei davon fallen beim Durchsehen auf und seien darum genannt, damit
-niemand sie für einen Fund hält: `caniuse-lite` steht unter CC-BY-4.0 und
-`argparse` unter Python-2.0. Beides sind Bauwerkzeuge, beides gerät nie in ein
-ausgeliefertes Bündel.
+Unterbau. Eines davon fällt beim Durchsehen auf und sei darum genannt, damit
+niemand es für einen Fund hält: `caniuse-lite` steht unter CC-BY-4.0. Ein
+Bauwerkzeug, es gerät nie in ein ausgeliefertes Bündel.
 
 Auf der Go-Seite gilt dasselbe für `stretchr/testify`, `davecgh/go-spew` und
 `pmezard/go-difflib`: Prüfwerkzeuge, alle MIT oder ISC, nicht im Binärprogramm.

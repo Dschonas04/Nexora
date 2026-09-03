@@ -169,6 +169,12 @@ when the database approaches a gigabyte, not before.
   access, can be edited and written back. Text, headings, lists and tables
   survive; headers, styles, comments and images do not — and the interface says
   so before you start
+- **Marking up a PDF**: a PDF attachment can be highlighted in colour and given
+  notes right in the viewer. The marks are drawn into the file itself, so they
+  survive every other reader and every printout, and notes become real PDF
+  annotations carrying their author. The marked-up file **replaces** the old
+  one under the same id — every link to it keeps working, and the unmarked
+  version is gone afterwards; the interface says so before you save
 - **Audit trail**: who did what, when — sign-ins including the failed ones,
   accounts, pages, trash, permanent deletion, shares and public links. Entries
   survive the deletion of the page or account they refer to, because deleting is
@@ -518,6 +524,7 @@ DELETE /tags/{id}                         delete
 
 GET    /pages/{id}/attachments/{attId}/word    a .docx as editor blocks
 PUT    /pages/{id}/attachments/{attId}/word    write the blocks back as .docx
+PUT    /pages/{id}/attachments/{attId}/pdf     replace a PDF with a marked-up one
 GET    /auth/sso                         which sign-in methods this instance offers
 GET    /auth/oidc/start                  begin an OIDC sign-in (redirects to the provider)
 GET    /auth/oidc/zurueck                the provider's callback

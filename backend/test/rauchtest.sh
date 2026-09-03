@@ -768,6 +768,13 @@ pruefe "die @-Liste ist zu" "402" "$(code "$BASIS/api/pages/$BREIT/erwaehnbare")
 pruefe "die Ausgabe einer Ablage ist zu" "402" "$(code "$BASIS/api/spaces/$ABL_ID/export")"
 pruefe "der öffentliche Weg zu einer Datei ist zu" "402" \
        "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/public/egal/dateien/egal")"
+# 402 und nicht 404: der Weg zum Ersetzen einer markierten PDF ist eingetragen,
+# er ist nur verschlossen. Ein 404 hiesse, die Route fehlt -- und das faende
+# niemand, bevor eine Lizenz da ist.
+pruefe "das Ersetzen einer markierten PDF ist zu" "402" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -X PUT -b "$KEKSE" \
+          -H 'Content-Type: application/pdf' --data-binary '%PDF-1.4' \
+          "$BASIS/api/pages/$BREIT/attachments/egal/pdf")"
 
 echo "== Passwort wechseln"
 # Das bisherige Passwort ist Pflicht, auch bei offener Sitzung: sonst genuegte

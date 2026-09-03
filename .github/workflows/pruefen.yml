@@ -104,6 +104,17 @@ jobs:
             --outfile="$RUNNER_TEMP/mitschrift.mjs" --log-level=warning
           node test/mitschrift-probe.mjs "$RUNNER_TEMP/mitschrift.mjs"
 
+      - name: Markierungen in einer PDF-Datei
+        run: |
+          # Ob eine Markierung an der richtigen Stelle landet, entscheidet eine
+          # Umrechnung: das PDF zählt von unten, der Bildschirm von oben. Die
+          # Probe schreibt eine Datei, liest sie zurück und prüft, dass die
+          # Anmerkungen dort hängen, wo sie sollen -- und dass der vorhandene
+          # Inhalt ERGÄNZT und nicht ersetzt wurde.
+          npx esbuild src/pdfmarken.ts --bundle --format=esm \
+            --outfile="$RUNNER_TEMP/pdfmarken.mjs" --log-level=warning
+          node test/pdf-probe.mjs "$RUNNER_TEMP/pdfmarken.mjs"
+
       - name: Der Lizenzhinweis muss im Bündel stehen
         run: |
           # BlockNote steht unter MPL-2.0, und die verlangt, dass der Hinweis

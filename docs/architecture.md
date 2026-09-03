@@ -371,7 +371,7 @@ graph TB
     subgraph comps["Components (src/components)"]
         side["Sidebar · PageTree"]
         ed["Editor (BlockNote)"]
-        panels["Attachments · QuickView · Kommentare<br/>VersionPanel · ShareDialog · SpaceRechte<br/>Einfuhr · Grafbild · LocalGraph"]
+        panels["Attachments · QuickView · PdfMarker · Kommentare<br/>VersionPanel · ShareDialog · SpaceRechte<br/>Einfuhr · Grafbild · LocalGraph"]
         util["Rueckfrage · Fehlergrenze · klappen.ts"]
     end
 

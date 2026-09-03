@@ -5,11 +5,14 @@
 // list: anything that can produce a list of files can open it. The caller hands
 // over the whole list and which entry to start on, so browsing between files
 // happens in here and every caller gets it for free.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
 
 import { api } from "../api/client";
 import Editor from "./Editor";
 import Fehlergrenze from "./Fehlergrenze";
+// Nachgeladen, nicht mitgebündelt: pdf.js und pdf-lib zusammen wiegen mehr als
+// die halbe Anwendung, und die meisten sehen eine PDF nur an.
+const PdfMarker = lazy(() => import("./PdfMarker"));
 
 export interface Datei {
   id: string;
@@ -78,6 +81,12 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   const [zoom, setZoom] = useState(1);
   const [drehung, setDrehung] = useState(0);
   const [text, setText] = useState<string | null>(null);
+  // Markiert wird nur auf Wunsch: solange niemand danach fragt, bleibt der
+  // Betrachter des Browsers stehen, der mehr kann als jede selbstgemalte
+  // Anzeige. Die Zahl daneben zwingt nach dem Speichern ein neues Laden -- ohne
+  // sie zeigte der Betrachter die alte Fassung aus dem Zwischenspeicher.
+  const [markieren, setMarkieren] = useState(false);
+  const [frisch, setFrisch] = useState(0);
   const [textFehler, setTextFehler] = useState(false);
 
   // Word: content as editor blocks, plus the title and the editing state.
@@ -123,6 +132,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
     setWordFehler(null);
     setBearbeiten(false);
     setGespeichert(null);
+    setMarkieren(false);
     wordStand.current = null;
   }, [datei?.id]);
 
@@ -147,6 +157,16 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   // Keyboard: the shortcuts a reader expects from any image viewer.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Wer gerade in ein Feld tippt, meint mit "-" ein Minuszeichen und nicht
+      // "verkleinern". Ohne diese Zeile bekaeme man beim Schreiben einer
+      // Anmerkung eine springende Anzeige.
+      const ziel = e.target as HTMLElement | null;
+      if (ziel && (ziel.tagName === "INPUT" || ziel.tagName === "TEXTAREA" || ziel.isContentEditable)) {
+        return;
+      }
+      // Beim Markieren gehoert die Tastatur dem Markieren: Blaettern und Zoomen
+      // wuerden gesetzte Marken wegwerfen.
+      if (markieren && e.key !== "Escape") return;
       switch (e.key) {
         case "Escape":
           onClose();
@@ -176,7 +196,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, weiter]);
+  }, [onClose, weiter, markieren]);
 
   // Hold the page still behind the overlay and give focus to the viewer, so
   // Tab stays inside it and the shortcuts above arrive.
@@ -269,6 +289,11 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                 </button>
               </>
             )}
+            {istPdf(typ) && datei.darfSchreiben && datei.seiteId && !markieren && (
+              <button className="btn" onClick={() => setMarkieren(true)}>
+                Markieren
+              </button>
+            )}
             <a className="btn" href={datei.url} download={datei.filename}>
               Herunterladen
             </a>
@@ -288,7 +313,22 @@ export default function QuickView({ dateien, start, onClose }: Props) {
           {istBild(typ) && (
             <img className="qv-image" style={bildStil} src={datei.url} alt={datei.filename} />
           )}
-          {istPdf(typ) && (
+          {istPdf(typ) && markieren && datei.seiteId && (
+            <Suspense fallback={<div className="qv-none">Wird geladen…</div>}>
+              <PdfMarker
+                url={datei.url}
+                seiteId={datei.seiteId}
+                anhangId={datei.id}
+                dateiname={datei.filename}
+                onFertig={() => {
+                  setMarkieren(false);
+                  setFrisch((n) => n + 1);
+                }}
+                onAbbruch={() => setMarkieren(false)}
+              />
+            </Suspense>
+          )}
+          {istPdf(typ) && !markieren && (
             // The browser's built in PDF viewer brings paging, zoom and search
             // along already. Rebuilding that on a rendering library would be a
             // lot of code for a worse result.
@@ -297,7 +337,14 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             // themselves, and mobile browsers mostly cannot, then show the
             // content between the tags instead of an empty white area one sits
             // in front of at a loss.
-            <object className="qv-frame" data={datei.url} type="application/pdf" aria-label={datei.filename}>
+            <object
+              className="qv-frame"
+              // Die Zahl haengt nur dran, damit der Browser nach dem Ersetzen
+              // wirklich neu laedt statt seine Abschrift zu zeigen.
+              data={datei.url + (frisch ? (datei.url.includes("?") ? "&" : "?") + "v=" + frisch : "")}
+              type="application/pdf"
+              aria-label={datei.filename}
+            >
               <div className="qv-none">
                 Dieser Browser zeigt PDF-Dateien nicht selbst an.
                 <a className="btn" href={datei.url} target="_blank" rel="noreferrer">
