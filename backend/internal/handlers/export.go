@@ -1,12 +1,12 @@
 // Exporting a whole space as a ZIP of Markdown files.
 //
-// The point of an export is not convenience, it is the answer to "what happens
-// if we stop using this". A wiki nobody can leave is a wiki nobody should
-// enter, and that question comes up in every serious evaluation.
+// The export's goal is portability rather than convenience: it answers
+// "what happens if we stop using this". A wiki nobody can leave is a wiki
+// nobody should adopt.
 //
-// The archive is written straight to the response instead of being assembled in
-// memory first. A space with a few hundred pages and their attachments would
-// otherwise sit in RAM twice, once as the buffer, once as the response.
+// The archive is streamed directly to the response instead of built in memory
+// first. A space with hundreds of pages and attachments would otherwise use
+// a large amount of RAM twice (buffer + response).
 package handlers
 
 import (
@@ -36,9 +36,9 @@ type exportSeite struct {
 
 // ExportSpace returns a space as a ZIP.
 //
-// spaceID may be "ohne": then the pages belonging to no space are collected.
-// Otherwise they would be left out of every export even though they are just as
-// much part of the content, and nobody would notice.
+// spaceID may be "ohne": this collects pages that do not belong to any
+// space. Otherwise those pages would be excluded from every export even though
+// they are part of the content.
 func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	spaceID := chi.URLParam(r, "id")
@@ -64,9 +64,9 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Filtered by the same rule as everywhere else. An export reaching further
-	// than opening a page would be the most convenient way to other people's
-	// content.
+	// The same visibility rules apply as elsewhere. Allowing an export to
+	// reach further than opening a single page would be an easy way to leak
+	// other people's content.
 	abfrage := `
 		SELECT p.id, p.parent_id, p.title, p.content, p.updated_at
 		FROM pages p
@@ -111,10 +111,10 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 
 	name := dateiname(spaceName)
 
-	// A space as ONE typeset document rather than an archive full of separate
-	// parts: for leafing through, printing and passing on that is the more useful
-	// form. The archive of Markdown files stays the default, because it is the
-	// way out of the system and that should be machine readable.
+	// Optionally render the whole space as a single typeset document (PDF or
+	// Word) rather than a folder of individual files. That is useful for
+	// printing or quick reading. The Markdown archive remains the default as
+	// it is the machine-readable escape route.
 	switch r.URL.Query().Get("format") {
 	case "pdf", "word", "docx":
 		sort.Slice(seiten, func(i, j int) bool { return seiten[i].Titel < seiten[j].Titel })
@@ -153,8 +153,8 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 	// No defer for Close: a failure while finishing has to be loggable, and once
 	// the header is on the wire no error status can be sent anyway.
 
-	// Duplicate titles are allowed, duplicate file names are not. The counter
-	// appends a number instead of silently overwriting the second page.
+	// Duplicate titles are allowed but duplicate file names are not. A counter
+	// is appended to create unique filenames rather than silently overwriting.
 	vergeben := map[string]int{}
 	eindeutig := func(basis string) string {
 		vergeben[basis]++
@@ -164,8 +164,8 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 		return basis
 	}
 
-	// Die Anhaenge aller ausgegebenen Seiten. Sie werden vorher eingesammelt,
-	// weil schon der Text die Pfade im Archiv nennen muss.
+	// Collect the attachments for all exported pages first because the page
+	// text refers to paths in the archive and needs them available.
 	kennungen := make([]string, 0, len(seiten))
 	for _, p := range seiten {
 		kennungen = append(kennungen, p.ID)
@@ -216,9 +216,9 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Das Verzeichnis bildet den Seitenbaum ab und nicht eine Liste: eine Ablage
-	// mit fuenf Ebenen war bisher eine flache Aufzaehlung, aus der niemand mehr
-	// las, was unter was gehoert.
+	// The index models the page tree rather than a flat list: previously a
+	// deep space appeared as a flat enumeration and readers could not tell the
+	// hierarchy.
 	schreibeVerzeichnis(&verzeichnis, seiten, namen)
 
 	s.dateienSchreiben(r.Context(), zw, dateien)

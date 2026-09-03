@@ -16,17 +16,17 @@ function zeit(iso: string): string {
     : d.toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
-// Was hinter einem @ steht, bis zum Schreibzeiger. Der Name eines Kontos darf
-// Leerzeichen tragen ("Anna Schmidt"), darum endet die Suche nicht am ersten
-// Wort; ein zweites @ und ein Zeilenwechsel beenden sie sehr wohl.
+// What follows an @ up to the caret. Account names may contain spaces
+// ("Anna Schmidt"), so the match does not stop at the first word; a second
+// @ or a line break ends it.
 const ERWAEHNUNG = /@([^\n@]{0,40})$/;
 
-// Erwaehnfeld ist ein Textfeld, das beim Tippen von @ die Namen anbietet.
+// `Erwaehnfeld` is a textarea that offers account name suggestions while
+// typing @.
 //
-// Ohne die Liste musste man den Namen eines Kontos auf den Buchstaben genau
-// treffen, sonst ging die Erwähnung ins Leere -- und zwar still: der Kommentar
-// stand da, benachrichtigt wurde niemand. Wer die Namen der Kollegen nicht
-// auswendig kann, konnte die Funktion nicht benutzen.
+// Without suggestions the user had to type a name exactly; a typo would
+// silently fail to create a mention. The list makes the feature usable for
+// people who do not remember colleagues' full names.
 function Erwaehnfeld({
   wert,
   setzen,
@@ -43,9 +43,8 @@ function Erwaehnfeld({
   autoFocus?: boolean;
 }) {
   const feld = useRef<HTMLTextAreaElement>(null);
-  // Die Suche ist null, solange keine offen ist. Der Unterschied zur leeren
-  // Zeichenkette zählt: direkt hinter einem @ steht sie leer, und dann sollen
-  // alle Namen dastehen.
+  // The search is `null` while no suggestion list is open. This differs from
+  // an empty string: immediately after an @ it is empty and should match all names.
   const [suche, setSuche] = useState<string | null>(null);
   const [gewaehlt, setGewaehlt] = useState(0);
 
@@ -54,8 +53,8 @@ function Erwaehnfeld({
       ? []
       : personen.filter((p) => p.name.toLowerCase().includes(suche.toLowerCase())).slice(0, 8);
 
-  // Prüft nach jeder Änderung und nach jedem Sprung des Schreibzeigers, ob vor
-  // ihm eine angefangene Erwähnung steht.
+  // Checks after every change and after any caret move whether there is a
+  // started mention immediately before the caret.
   const pruefen = (text: string, stelle: number) => {
     const treffer = ERWAEHNUNG.exec(text.slice(0, stelle));
     setSuche(treffer ? treffer[1] : null);
@@ -72,8 +71,8 @@ function Erwaehnfeld({
     const neu = davor.slice(0, gefunden.index) + "@" + name + " " + wert.slice(stelle);
     setzen(neu);
     setSuche(null);
-    // Der Schreibzeiger gehört hinter den eingesetzten Namen, nicht ans Ende
-    // des Textes: geschrieben wird oft mitten im Satz.
+    // The caret should be placed after the inserted name, not at the end of
+    // the text: users often type in the middle of a sentence.
     const hinter = gefunden.index + name.length + 2;
     requestAnimationFrame(() => {
       el.focus();
@@ -95,8 +94,8 @@ function Erwaehnfeld({
         }}
         onClick={(e) => pruefen(wert, e.currentTarget.selectionStart ?? 0)}
         onBlur={() => {
-          // Verzögert, sonst wäre die Liste weg, ehe der Klick auf einen Namen
-          // ankommt: der Verlust des Fokus geht dem Klick voraus.
+          // Delay removing the list so a click on a suggestion can be processed;
+          // blur fires before the click event.
           window.setTimeout(() => setSuche(null), 150);
         }}
         onKeyDown={(e) => {
@@ -120,12 +119,11 @@ function Erwaehnfeld({
           {treffer.map((p, i) => (
             <button
               key={p.name}
-              // hervor und nicht gewaehlt: der Haken der anderen Listen sagt
-              // "das ist der gesetzte Wert", hier heißt es bloß "hier steht
-              // gerade der Zeiger".
+              // highlighted not selected: other lists show the chosen value;
+              // here the visual just marks the current cursor position.
               className={"klappeintrag" + (i === gewaehlt ? " hervor" : "")}
-              // onMouseDown und nicht onClick: der Klick käme erst, wenn das
-              // Feld den Fokus schon verloren hat und die Liste zu ist.
+              // use onMouseDown instead of onClick because the click would
+              // arrive after the textarea loses focus and the list disappears.
               onMouseDown={(e) => {
                 e.preventDefault();
                 einsetzen(p.name);
@@ -140,14 +138,14 @@ function Erwaehnfeld({
   );
 }
 
-// mitErwaehnungen setzt die Namen im Text hervor, die wirklich zu einem Konto
-// gehören. Damit sieht man einem abgeschickten Kommentar an, ob die Erwähnung
-// angekommen ist -- vorher war ein Tippfehler im Namen von einer richtigen
-// Erwähnung nicht zu unterscheiden.
+// `mitErwaehnungen` highlights the names in the text that actually belong to
+// an account. This makes it obvious in a posted comment whether a mention was
+// recognised — previously a typo could not be distinguished from a valid
+// mention.
 function mitErwaehnungen(text: string, personen: Person[]) {
   if (personen.length === 0 || !text.includes("@")) return text;
-  // Die längsten Namen zuerst: sonst nähme "@Anna" den Anfang von
-  // "@Anna Schmidt" weg und der Nachname bliebe als gewöhnlicher Text stehen.
+  // Match the longest names first: otherwise "@Anna" would consume the
+  // beginning of "@Anna Schmidt" leaving the surname as ordinary text.
   const namen = [...personen].sort((a, b) => b.name.length - a.name.length);
 
   const stuecke: (string | { name: string })[] = [];
@@ -192,8 +190,8 @@ export default function Kommentare({ pageId }: { pageId: string }) {
   const [bearbeitText, setBearbeitText] = useState("");
   const [erledigteZeigen, setErledigteZeigen] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
-  // Wen man hier ansprechen kann. Bleibt die Liste leer -- kein Recht, keine
-  // Antwort --, verhält sich das Feld wie ein gewöhnliches Textfeld.
+  // Who can be addressed here. If the list remains empty — no permission,
+  // no reply — the field behaves like an ordinary text field.
   const [personen, setPersonen] = useState<Person[]>([]);
 
   const laden = () =>

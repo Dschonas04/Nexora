@@ -1,16 +1,13 @@
-// Das Bild am eigenen Konto.
+// Avatar image for a user account.
 //
-// In der Datenbank und nicht in der Ablage, wo die Anhänge liegen. Zwei Gründe:
-// Anhänge sind ein kostenpflichtiger Zusatz, und ein Gesicht am eigenen Konto
-// darf nicht davon abhängen, ob jemand einen Schlüssel gekauft hat. Und die
-// Größe passt: die Oberfläche rechnet vor dem Hochladen auf 256 Pixel herunter,
-// was wenige Zehn-Kilobyte ergibt. Für zweihundert Konten sind das ein paar
-// Megabyte in einer Datenbank, die ohnehin jede Seite enthält -- eine zweite
-// Ablage dafür wäre mehr Verwaltung als Nutzen.
+// Stored in the database rather than in the attachment storage. Reasons:
+// attachments are a paid extra and avatar visibility must not depend on a
+// purchased feature; avatars are also small (client resizes to 256px before
+// upload), so a few hundred avatars fit comfortably in the DB without a
+// separate storage system.
 //
-// Zugeschnitten wird im Browser und nicht hier. Der Dienst prüft nur, was
-// ankommt: dass es wirklich ein Bild ist (nicht, dass es so heißt), und dass es
-// klein bleibt.
+// Images are cropped client-side; the server only validates incoming bytes —
+// that they are an actual image and within the size limit.
 package handlers
 
 import (
@@ -30,20 +27,20 @@ import (
 	"nexora/internal/middleware"
 )
 
-// hoechstensBild ist reichlich für ein auf 256 Pixel gerechnetes Bild und knapp
-// genug, dass niemand die Datenbank als Fotoalbum benutzt.
+// hoechstensBild is generous for a 256px image and small enough to avoid
+// treating the database as a photo album.
 const hoechstensBild = 512 * 1024
 
-// erlaubteBildarten. GIF ist dabei, weil ein alter Bestand welche enthält; WebP
-// nicht, denn Go erkennt es ohne fremdes Paket nicht, und ein Format, das der
-// Dienst nicht prüfen kann, soll er auch nicht annehmen.
+// Allowed image formats. GIF is permitted for legacy content; WebP is not
+// accepted because Go does not recognise it without an external package, and
+// the server should not accept formats it cannot validate.
 var erlaubteBildarten = map[string]string{
 	"jpeg": "image/jpeg",
 	"png":  "image/png",
 	"gif":  "image/gif",
 }
 
-// ProfilbildSetzen nimmt die rohen Bytes entgegen.
+// ProfilbildSetzen accepts the raw image bytes.
 func (s *Server) ProfilbildSetzen(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 
@@ -54,19 +51,17 @@ func (s *Server) ProfilbildSetzen(w http.ResponseWriter, r *http.Request) {
 			fmt.Sprintf("das Bild ist zu groß, höchstens %d KB", hoechstensBild/1024))
 		return
 	}
-	// Nur die leere Anfrage bekommt hier einen eigenen Satz. Eine Untergrenze in
-	// Bytes wäre geraten: ein gültiges PNG von einem Pixel wiegt 69 Byte, und
-	// jede Zahl darüber wiese ein echtes Bild ab. Ob es eines ist, entscheidet
-	// gleich darunter der Leser und nicht die Länge.
+	// Only an empty request gets a bespoke error here. A byte-size lower bound
+	// would be guesswork (a one-pixel PNG can be very small); actual image
+	// detection is performed below using the decoder.
 	if len(roh) == 0 {
 		writeErr(w, http.StatusBadRequest, "da kam kein Bild an")
 		return
 	}
 
-	// Wirklich ein Bild, und was für eines: entschieden wird nach dem Inhalt und
-	// nicht nach dem, was der Browser als Typ behauptet. Sonst legte ein
-	// umbenanntes Skript sich als "image/png" in die Zeile und käme später mit
-	// genau diesem Typ wieder heraus.
+	// Verify the data is actually an image and determine its type by content,
+	// not by a claimed Content-Type header. Otherwise a renamed script claiming
+	// to be "image/png" could be accepted.
 	_, art, err := image.DecodeConfig(bytes.NewReader(roh))
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, "das ließ sich nicht als Bild lesen")
@@ -89,8 +84,8 @@ func (s *Server) ProfilbildSetzen(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "bildStand": jetzt})
 }
 
-// ProfilbildWeg nimmt das Bild wieder fort. Danach zeigt die Oberfläche wieder
-// die Anfangsbuchstaben.
+// ProfilbildWeg removes the profile image. The UI will revert to showing
+// initials after this.
 func (s *Server) ProfilbildWeg(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if _, err := s.Pool.Exec(r.Context(),
@@ -101,13 +96,12 @@ func (s *Server) ProfilbildWeg(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
-// Profilbild gibt das Bild eines Kontos heraus.
+// Profilbild serves the image for a given account.
 //
-// Jedes angemeldete Konto darf jedes sehen, und das ist Absicht: ein Gesicht
-// neben einem Kommentar nützt nur, wenn es auch dann erscheint, wenn der
-// Kommentar von jemandem stammt, mit dem man keine Ablage teilt. Mehr als Name
-// und Bild gibt dieser Weg nicht heraus, und beides steht ohnehin an jedem
-// Kommentar und in jeder Freigabeliste.
+// Any signed-in account may view any avatar. This is intentional: an avatar
+// next to a comment is only useful if it appears even for commentators with
+// whom the viewer does not share a space. This endpoint only exposes name and
+// image, which are already present on comments and share lists.
 func (s *Server) Profilbild(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
@@ -127,10 +121,10 @@ func (s *Server) Profilbild(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", mime)
-	// Lange Frist, aber nur für diesen Browser: das Bild wird über die Adresse
-	// mit dem Stand darin geholt, und ein neues Bild bringt eine neue Adresse
-	// mit. private, weil ein Zwischenspeicher unterwegs sonst Gesichter einer
-	// Instanz an eine andere Sitzung ausliefern könnte.
+	// Long cache lifetime but private to the browser: the image is fetched
+	// using a URL that encodes the image's timestamp, so a new upload yields a
+	// new URL. `private` prevents shared caches from serving avatars from one
+	// session to another.
 	w.Header().Set("Cache-Control", "private, max-age=86400")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Write(roh)

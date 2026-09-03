@@ -1,12 +1,11 @@
-// Das eigene Passwort wechseln.
+// Change the current user's password.
 //
-// Ein eigenes Fenster und keine Zeile in den Einstellungen: die Einstellungen
-// sind der Verwaltung vorbehalten, das eigene Passwort geht jeden an. Deshalb
-// hängt der Weg dorthin unten in der Leiste, neben dem Namen.
+// This is a dedicated dialog rather than a settings page because changing
+// one's password is a personal action. The entry point is in the footer next
+// to the username.
 //
-// Drei Felder statt zweier. Die Wiederholung fängt den Vertipper ab, den man
-// sonst erst beim nächsten Anmelden bemerkt -- und dann nicht mehr weiß, was
-// man getippt hat.
+// Three fields instead of two: repeating the new password catches a typo that
+// would otherwise only surface on the next login.
 import { useState } from "react";
 import { api } from "../api/client";
 
@@ -18,9 +17,9 @@ export default function PasswortDialog({ onClose }: { onClose: () => void }) {
   const [fertig, setFertig] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
 
-  // Dieselben Grenzen wie im Dienst, siehe backend/internal/handlers/passwort.go.
-  // Hier stehen sie nur, damit die Antwort sofort kommt statt nach einer
-  // Anfrage; entschieden wird sie drüben.
+  // The same limits as enforced on the server (see backend/internal/handlers/passwort.go).
+  // These checks are only cosmetic to provide immediate feedback; the server
+  // is the authority.
   const zuKurz = neu.length > 0 && [...neu].length < 6;
   const zuLang = new TextEncoder().encode(neu).length > 72;
   const passtNicht = nochmal.length > 0 && neu !== nochmal;

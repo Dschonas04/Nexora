@@ -18,16 +18,16 @@ import { useDesign } from "../design";
 // be reset before each use; see onClickCapture below.
 const WIKI_RE = /\[\[([^[\]]+)\]\]/g;
 
-// geradegeruecktes repairs content before it reaches the editor.
+// `geradegeruecktes` repairs content before it reaches the editor.
 //
-// BlockNote reads the styles of a piece of text with Object.entries. If the
-// field is missing or null that throws, and the editor then rejects the whole
-// document instead of that one piece — the page stays empty. Older imports
-// wrote exactly such pieces, and they lie in the database to this day, so it is
-// not enough to write them correctly from now on.
+// BlockNote reads a text block's styles using Object.entries. If the styles
+// field is missing or null, that throws and the editor rejects the entire
+// document instead of just the broken piece — resulting in an empty page.
+// Older imports can contain such malformed blocks still stored in the DB,
+// so we must repair them on read.
 //
-// Deliberately a copy: the original is state of the calling view, and repairing
-// it in place would change something that view never handed over for changing.
+// The function deliberately returns a copy: repairing in-place would mutate
+// the caller's state.
 function geradegeruecktes(wert: unknown): unknown {
   if (Array.isArray(wert)) return wert.map(geradegeruecktes);
   if (wert === null || typeof wert !== "object") return wert;
@@ -43,8 +43,8 @@ function geradegeruecktes(wert: unknown): unknown {
 }
 
 // caretInfo returns the text node and character offset under a screen point,
-// bridging the two browser APIs. Used to tell whether a click landed inside a
-// [[wiki-link]] token.
+// bridging two different browser APIs. Used to detect whether a click landed
+// inside a [[wiki-link]] token.
 function caretInfo(x: number, y: number): { node: Node; offset: number } | null {
   const doc = document as Document & {
     caretRangeFromPoint?: (x: number, y: number) => Range | null;
@@ -62,15 +62,10 @@ function caretInfo(x: number, y: number): { node: Node; offset: number } | null 
 
 // Highlights [[links]] in the text.
 //
-// A link is ordinary text, and that is exactly what makes it durable, because it
-// survives every renaming of the target page. Only it therefore also looked like
-// ordinary text: the brackets stood there raw, and one could not tell it could
-// be clicked.
-//
-// So this extension lays a decoration over the occurrences without touching the
-// text itself. Whether the link resolves is decided by the page: if the target
-// exists the title is drawn as a link, otherwise it stays pale and underlined, a
-// hint at a title that does not exist (yet).
+// Wiki-links are stored as plain text, which makes them resilient to target
+// renames but also indistinguishable from normal text. This extension draws
+// decorations over occurrences without modifying the text itself. The
+// decoration style depends on whether the link resolves to an existing page.
 function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) | undefined) {
   return Extension.create({
     name: "nexoraVerweise",
@@ -112,15 +107,12 @@ function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) 
 
 // Bold AND italic in one go.
 //
-// The editor knows "**bold**" and "*italic*" on their own, each through an input
-// rule of its own. Both at once it does not know: the rules look for a run
-// without further asterisks in it, so "***both***" matches neither of them and
-// stays standing as the characters one typed. Written this way in every Markdown
-// file, and read back that way by the import, it was the one spot where the
-// editor understood less than its own export.
+// The editor has separate input rules for bold and italic, so combined
+// sequences like "***both***" would not match either. That meant exports
+// containing combined emphasis could be rendered incorrectly on re-import.
 //
-// So one rule per spelling, and each sets both marks. The stored marks are taken
-// back afterwards: what follows the closing asterisks is ordinary text again.
+// These custom input rules detect combined emphasis spellings and apply both
+// marks atomically, preserving round-trip behavior.
 const BEIDES_MUSTER = [
   /(?:^|\s)(\*\*\*([^*\n]+)\*\*\*)$/,
   /(?:^|\s)(___([^_\n]+)___)$/,
@@ -161,13 +153,11 @@ const fettKursivErweiterung = Extension.create({
   },
 });
 
-// siehtNachMarkdownAus decides whether a pasted text was meant as Markdown.
+// `siehtNachMarkdownAus` decides whether pasted text appears to be Markdown.
 //
-// The question is necessary because the answer is not always yes: whoever pastes
-// a line from a log wants it as it is. So it does not look for single characters
-// but for the shapes nobody types by accident: a heading at the start of a line,
-// a bullet, a quote, a code fence, a link in brackets or a word between two pairs
-// of asterisks.
+// This is heuristic: a pasted log line should not be treated as Markdown,
+// so the check looks for constructs unlikely to occur by accident (heading
+// markers, bullets, code fences, links, emphasis patterns).
 const MARKDOWN_MUSTER = [
   /^#{1,6}\s+\S/m,
   /^\s*[-*+]\s+\S/m,
@@ -208,10 +198,9 @@ export default function Editor({
   // its address. Without it the image block asks for a URL and nothing else,
   // which means an image has to live somewhere before it can be used here.
   dateiHochladen?: (datei: File) => Promise<string>;
-  // Gemeinsames Schreiben. Liegt es an, kommt der Text nicht mehr aus
-  // initialContent, sondern aus dem geteilten Dokument: die Seite wird nicht
-  // mehr als Ganzes gespeichert und wieder geladen, sondern zeichenweise
-  // zusammengeführt.
+  // Collaborative editing. When present the text comes from the shared
+  // document rather than `initialContent`: the page is merged character-by-
+  // character instead of being saved and reloaded as a whole.
   mitschrift?: { fragment: XmlFragment; provider: unknown; user: { name: string; color: string } };
 }) {
   const { design } = useDesign();
@@ -222,9 +211,9 @@ export default function Editor({
   // an older import are missing the styles on their text pieces, and BlockNote
   // refuses the entire document over that.
   //
-  // Beim gemeinsamen Schreiben bleibt es leer: der Inhalt steht dann im
-  // geteilten Dokument, und was hier zusätzlich hineingereicht würde, stünde
-  // hinterher doppelt da, einmal je Browser, der die Seite öffnet.
+  // When collaborating the initial content should be empty: the shared
+  // document contains the authoritative content and any provided initial
+  // content would be duplicated across browsers.
   const content =
     !mitschrift && Array.isArray(initialContent) && initialContent.length > 0
       ? (geradegeruecktes(initialContent) as PartialBlock[])

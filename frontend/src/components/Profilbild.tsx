@@ -1,13 +1,7 @@
-// Das Gesicht an einem Konto -- oder, solange keines da ist, die
-// Anfangsbuchstaben.
-//
-// Eine eigene Datei, weil das an mehreren Stellen erscheint: unten in der
-// Leiste, im Profilfenster, und überall dort, wo künftig ein Name mit einem
-// Gesicht daneben stehen soll. Ein Bild, das an drei Stellen anders aussieht,
-// sieht nach drei verschiedenen Programmen aus.
+// The avatar for an account, or the initials when no image is present.
 import { useState } from "react";
 
-/** Woher die Farbe eines Kürzels kommt, wenn kein Bild da ist. */
+/** Where the background tone for an initials badge comes from when no image exists. */
 const TOENE = [
   "#c2410c",
   "#b45309",
@@ -19,16 +13,17 @@ const TOENE = [
   "#be123c",
 ];
 
-// Immer dieselbe Farbe für dasselbe Konto. Nicht zufällig, sondern aus der
-// Kennung gerechnet: sonst wechselte ein Gesicht bei jedem Laden die Farbe, und
-// gerade daran erkennt man jemanden in einer Liste wieder.
+// Always the same tone for the same account. Deterministic from the id so a
+// user is recognized by color across reloads.
 function tonFuer(id: string): string {
   let summe = 0;
   for (let i = 0; i < id.length; i++) summe = (summe * 31 + id.charCodeAt(i)) % 100000;
   return TOENE[summe % TOENE.length];
+// Always the same tone for the same account. Deterministic from the id so
+// that a user is recognized by color across reloads.
 }
 
-/** Die Anfangsbuchstaben: aus Vor- und Nachnamen, sonst der erste Buchstabe. */
+/** Initials: from first and last name if available, otherwise the first letter. */
 export function kuerzel(name: string, email = ""): string {
   const teile = name.trim().split(/\s+/).filter(Boolean);
   if (teile.length >= 2) return (teile[0][0] + teile[teile.length - 1][0]).toUpperCase();
@@ -37,21 +32,20 @@ export function kuerzel(name: string, email = ""): string {
 }
 
 /**
- * Die Adresse des Bildes. Der Stand hängt daran, damit ein neues Bild sofort
- * erscheint: der Browser hebt das alte einen Tag lang auf, und ohne eine Zahl,
- * die sich mitbewegt, sähe man sein eigenes neues Gesicht erst morgen.
+ * URL for the profile image. The `stand` parameter is used as a cache-buster
+ * so a newly uploaded image appears immediately instead of the browser
+ * showing a cached one.
  */
 export function bildUrl(id: string, stand?: string | null): string {
   return `/api/users/${id}/bild?v=${encodeURIComponent(stand ?? "")}`;
 }
-
 interface Props {
   id: string;
   name: string;
   email?: string;
-  /** Fehlt er, gibt es kein Bild und es bleibt beim Kürzel. */
+  /** If absent, there is no image and the initials are shown. */
   stand?: string | null;
-  /** Kantenlänge in Pixeln. */
+  /** Edge length in pixels. */
   groesse?: number;
   className?: string;
 }
@@ -64,8 +58,9 @@ export default function Profilbild({
   groesse = 28,
   className = "",
 }: Props) {
-  // Ein Bild, das nicht lädt -- gelöscht, während die Seite offen stand --,
-  // fällt auf das Kürzel zurück statt ein zerbrochenes Sinnbild zu zeigen.
+  // If the image fails to load (for example it was deleted while the page
+  // was open), fall back to the initials badge rather than showing a broken
+  // image icon.
   const [gescheitert, setGescheitert] = useState(false);
 
   const stil = {

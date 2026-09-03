@@ -1,16 +1,15 @@
-// Bilder im PDF.
-//
-// Bis hierher nannte das PDF ein Bild nur beim Namen und verwies auf seine
-// Adresse -- in einem Wiki voller Skizzen und Fotos ist das eine
-// Inhaltsangabe, kein Abbild. Der Satz kommt ohne fremde Pakete aus, und das
-// bleibt so: ein Bild wird entpackt, auf eine vernuenftige Kantenlaenge
-// gebracht und als roher RGB-Strom eingebettet.
-//
-// Warum roh und nicht das JPEG durchgereicht: ein PDF kann DCTDecode, aber nur
-// fuer die Farbraeume, die es kennt, und ein CMYK- oder Graustufen-JPEG waere
-// dann falschfarbig statt eingebettet. Der Umweg ueber die Bildpakete der
-// Standardbibliothek trifft jedes Format gleich richtig; bezahlt wird er mit
-// Groesse, und dagegen steht die Begrenzung der Kantenlaenge.
+// Images in the PDF.
+
+// Until now the PDF only referred to an image by name and its address — in a
+// wiki full of sketches and photos that is an index, not a depiction. The
+// typesetting does not use external packages: an image is unpacked, resized
+// to a reasonable edge length and embedded as a raw RGB stream.
+
+// Why raw and not passing through the original JPEG: a PDF can use
+// DCTDecode but only for color spaces it understands; a CMYK or grayscale
+// JPEG would then be embedded with wrong colors. Decoding via the image
+// packages in the standard library handles every format correctly; the
+// downside is size, which is mitigated by limiting the edge length.
 package dok
 
 import (
@@ -23,20 +22,20 @@ import (
 	"strings"
 )
 
-// maxKante ist die groesste Kantenlaenge in Bildpunkten, die eingebettet wird.
-// Ein Foto aus einer Kamera hat gut 6000 Punkte; auf einer A4-Seite sind davon
-// keine 1400 zu sehen, alles darueber waere Gewicht ohne Bild.
+// maxKante is the largest edge length in image pixels that will be embedded.
+// A camera photo has about 6000 pixels; on an A4 page fewer than 1400 are
+// visible, so anything above that would be weight without image content.
 const maxKante = 1400
 
-// pdfBild ist ein fertig aufbereitetes Bild: RGB, Punkt fuer Punkt, gepackt.
+// pdfBild is a fully prepared image: RGB, pixel by pixel, packed.
 type pdfBild struct {
 	breite, hoehe int
 	strom         []byte
 }
 
-// bildAufbereiten entpackt ein Bild und bringt es in die Form, die das PDF
-// braucht. Was sich nicht entpacken laesst, gilt als kein Bild -- der Satz
-// faellt dann auf die Verweiszeile zurueck.
+// bildAufbereiten unpacks an image and converts it into the form the PDF
+// needs. Anything that cannot be unpacked is treated as no image — the
+// typesetting then falls back to the reference line.
 func bildAufbereiten(daten []byte) (*pdfBild, bool) {
 	roh, ok := bildBytes(daten)
 	if !ok {
@@ -54,10 +53,10 @@ func bildAufbereiten(daten []byte) (*pdfBild, bool) {
 		return nil, false
 	}
 
-	// Durchsichtigkeit gibt es hier nicht: sie waere eine eigene Maske im PDF.
-	// Stattdessen liegt das Bild auf Weiss, wie auf Papier. Ein Logo mit
-	// durchsichtigem Grund sieht damit aus wie gedruckt und nicht wie ein
-	// schwarzer Kasten.
+	// There is no transparency here: that would be a separate mask in the
+	// PDF. Instead the image is composited over white, like on paper. A
+	// logo with a transparent background therefore looks printed rather
+	// than like a black box.
 	rgb := make([]byte, 0, b*h*3)
 	for y := feld.Min.Y; y < feld.Max.Y; y++ {
 		for x := feld.Min.X; x < feld.Max.X; x++ {
@@ -66,8 +65,8 @@ func bildAufbereiten(daten []byte) (*pdfBild, bool) {
 				rgb = append(rgb, 255, 255, 255)
 				continue
 			}
-			// Die Werte kommen mit dem Alpha vormultipliziert; auf Weiss gelegt
-			// heisst das: Farbe plus der Rest, der durchscheint.
+			// The values are premultiplied by alpha; composited onto white
+			// that means: color plus the remainder that shows through.
 			rest := 0xffff - a
 			rgb = append(rgb,
 				byte((r+rest)>>8),
@@ -78,9 +77,8 @@ func bildAufbereiten(daten []byte) (*pdfBild, bool) {
 	return &pdfBild{breite: b, hoehe: h, strom: packen(rgb)}, true
 }
 
-// bildBytes liefert die Bytes hinter dem, was im Dokument steht: entweder die
-// Datei selbst, oder eine Datenadresse, wie sie aus einem eingelesenen
-// Word-Dokument stammt.
+// bildBytes returns the bytes behind what is stored in the document: either
+// the file itself or a data URL as found in an imported Word document.
 func bildBytes(daten []byte) ([]byte, bool) {
 	if len(daten) == 0 {
 		return nil, false
@@ -100,11 +98,12 @@ func bildBytes(daten []byte) ([]byte, bool) {
 	return entpackt, true
 }
 
-// verkleinern rechnet ein Bild auf hoechstens kante Punkte je Seite herunter.
-//
-// Naechster Nachbar und kein gewichteter Mittelwert: fuer eine Skizze oder einen
-// Bildschirmausschnitt reicht das, und die Alternative waere ein Paket mehr.
-// Bilder, die schon klein genug sind, werden nicht angefasst.
+// verkleinern scales an image down to at most kante pixels on its longest
+// side.
+
+// Nearest-neighbor sampling, not a weighted average: sufficient for a sketch
+// or a screenshot and avoids adding another dependency. Images already small
+// enough are left unchanged.
 func verkleinern(bild image.Image, kante int) image.Image {
 	feld := bild.Bounds()
 	b, h := feld.Dx(), feld.Dy()
@@ -134,12 +133,12 @@ func verkleinern(bild image.Image, kante int) image.Image {
 	return klein
 }
 
-// bildSetzen stellt ein Bild in den Satz.
-//
-// Die Groesse: 96 Punkte je Zoll, wie im Browser, also drei Viertel Punkt je
-// Bildpunkt. Was breiter ist als der Satzspiegel, wird auf ihn gebracht; was
-// hoeher ist als eine Seite, auf die Seitenhoehe. Ein Bild faengt lieber auf
-// einer neuen Seite an, als in zwei Haelften zerschnitten zu werden.
+// bildSetzen places an image in the layout.
+
+// Size: 96 pixels per inch, as in the browser, so three quarters of a point
+// per image pixel. If wider than the text column it is scaled to it; if
+// taller than a page it is scaled to the page height. An image prefers to
+// start on a new page rather than be split in two.
 func (s *setzer) bildSetzen(bild *pdfBild, einzug, breite float64) {
 	nummer := len(s.bilder)
 	s.bilder = append(s.bilder, bild)

@@ -1,11 +1,11 @@
-// Die Farben, die der Editor kennt, in den Formen, die PDF und Word verlangen.
-//
-// Im gespeicherten Text steht kein Farbwert, sondern ein Name: "yellow",
-// "red", "blue". Das ist die Sprache des Editors, und sie ist gut so -- ein
-// Name überlebt einen Wechsel des Grundtons, ein Farbwert nicht. Übersetzt wird
-// erst hier, beim Setzen, und für jedes Ziel eigens: PDF will drei Zahlen
-// zwischen 0 und 1, Word will sechs Hexziffern und für die Markierung sogar
-// einen eigenen, festen Namen aus seiner Palette.
+// The colors the editor knows, in the forms PDF and Word require.
+
+// In the stored text there is no color value but a name: "yellow", "red",
+// "blue". That is the editor's vocabulary and it is intentional — a name
+// survives a theme change whereas a color value does not. Translation to the
+// target format happens here during rendering and is specific to each target:
+// PDF wants three numbers between 0 and 1, Word wants six hex digits and the
+// highlighting feature even requires a fixed name from its palette.
 package dok
 
 import "fmt"

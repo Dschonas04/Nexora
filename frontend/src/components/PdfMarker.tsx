@@ -1,23 +1,22 @@
-// Eine PDF-Datei anstreichen und das Ergebnis an die Stelle der alten schreiben.
+// Annotate a PDF by drawing highlights and write the result back to the file.
 //
-// Zum Lesen genügt der Betrachter des Browsers, und deshalb bleibt er in der
-// Schnellansicht auch stehen. Zum Markieren genügt er nicht: er gibt nicht
-// heraus, wo auf der Seite jemand gerade gezogen hat. Also wird für diesen einen
-// Zweck selbst gezeichnet -- pdf.js malt die Seite auf eine Leinwand, darüber
-// liegt eine Fläche, auf der die Maus Rechtecke aufzieht.
+// The browser's built-in viewer is sufficient for reading and remains in the
+// quick preview. It cannot, however, tell where the user is dragging on the
+// page, so this UI draws overlays for marking: pdf.js renders a page to a
+// canvas and we capture drag rectangles on top of it.
 //
-// Was hier entsteht, sind nur Koordinaten. Das Schreiben in die Datei steht in
-// src/pdfmarken.ts und ist ohne Browser prüfbar; diese Datei ist die Hand, jene
-// der Kopf.
+// This component only collects coordinates. Writing annotations into the
+// binary is done by `src/pdfmarken.ts` and is testable outside the browser;
+// this file is the user-facing hand, the other is the head.
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api } from "../api/client";
 import { useAuth } from "../auth";
 import { MARKIERFARBEN, Marke, ausBildschirm, markenAnwenden, normiert } from "../pdfmarken";
 
-// pdf.js wird erst geladen, wenn jemand wirklich markiert. Die Bibliothek wiegt
-// mehr als der halbe übrige Bestand, und die allermeisten Besuche einer Seite
-// markieren nichts.
+// pdf.js is only loaded when someone actually marks something. The library
+// is large compared to the rest of the bundle and the vast majority of page
+// visits do not create annotations.
 type PdfSeite = {
   getViewport: (o: { scale: number }) => { width: number; height: number };
   render: (o: { canvasContext: CanvasRenderingContext2D; viewport: unknown }) => { promise: Promise<void> };
@@ -26,9 +25,9 @@ type PdfDatei = { numPages: number; getPage: (n: number) => Promise<PdfSeite> };
 
 async function pdfjsLaden() {
   const pdfjs = await import("pdfjs-dist");
-  // Der Arbeiter läuft in einem eigenen Faden, sonst stünde die Oberfläche
-  // still, während eine große Seite gerechnet wird. Die Adresse muss über
-  // import.meta.url gehen, damit der Bündler die Datei mitnimmt.
+  // The worker runs in a separate thread to avoid blocking the UI while a
+  // large page is processed. The worker path is constructed via import.meta.url
+  // so the bundler includes the file.
   pdfjs.GlobalWorkerOptions.workerSrc = new URL(
     "pdfjs-dist/build/pdf.worker.min.mjs",
     import.meta.url,
@@ -36,7 +35,7 @@ async function pdfjsLaden() {
   return pdfjs;
 }
 
-/** Ein aufgezogenes Rechteck in Anzeigekoordinaten, bevor es eine Marke wird. */
+/** A dragged rectangle in display coordinates, before it becomes an annotation. */
 interface Zug {
   seite: number;
   von: { x: number; y: number };
@@ -44,7 +43,7 @@ interface Zug {
 }
 
 interface Props {
-  /** Woher die Vorlage kommt. */
+  /** Where the source bytes come from. */
   url: string;
   seiteId: string;
   anhangId: string;
@@ -53,8 +52,8 @@ interface Props {
   onAbbruch: () => void;
 }
 
-// Ein Maßstab, bei dem A4 auf einen gewöhnlichen Bildschirm passt, ohne dass
-// der Satz zu klein zum Zielen wird.
+// A scale at which an A4 page fits a typical screen without the text becoming
+// too small to target.
 const MASSSTAB = 1.4;
 
 export default function PdfMarker({
@@ -70,20 +69,18 @@ export default function PdfMarker({
   const [marken, setMarken] = useState<Marke[]>([]);
   const [farbe, setFarbe] = useState("yellow");
   const [zug, setZug] = useState<Zug | null>(null);
-  // Welche Marke gerade nach einem Zettel fragt. Die Frage kommt sofort nach dem
-  // Ziehen und an der Stelle, an der gezogen wurde: wer eine Anmerkung schreiben
-  // will, hat den Satz noch vor Augen, und wer keine will, tippt nichts und
-  // klickt weiter.
+  // Which annotation is currently requesting a note. The prompt appears
+  // immediately after the drag at the dragged location: users who want to add
+  // a remark still have the passage in view; users who do not simply continue.
   const [notizBei, setNotizBei] = useState<number | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [speichert, setSpeichert] = useState(false);
   const leinwaende = useRef<(HTMLCanvasElement | null)[]>([]);
   const { user } = useAuth();
 
-  // Die Bytes werden einmal geholt und dann zweimal gebraucht: pdf.js zeigt
-  // damit an, pdf-lib schreibt darauf. Ein zweiter Abruf wäre eine zweite
-  // Fassung -- und wenn zwischendurch jemand anders die Datei ersetzt hätte,
-  // markierte man auf einer und überschriebe eine andere.
+  // The file bytes are fetched once and used twice: pdf.js renders them and
+  // pdf-lib writes annotations to them. A second fetch would retrieve a
+  // different revision if the file changed in the meantime.
   useEffect(() => {
     let weg = false;
     fetch(url, { credentials: "include" })
@@ -98,8 +95,8 @@ export default function PdfMarker({
     };
   }, [url]);
 
-  // Anzeigen. pdf.js verbraucht die übergebenen Bytes, deshalb bekommt es eine
-  // Abschrift; sonst stünde beim Speichern ein leerer Puffer bereit.
+  // Rendering. pdf.js consumes the passed bytes, so we pass it a copy; without
+  // that the buffer would be empty when saving.
   useEffect(() => {
     if (!roh) return;
     let weg = false;
@@ -116,8 +113,8 @@ export default function PdfMarker({
         }
         if (weg) return;
         setSeiten(masse);
-        // Erst nach dem Zustand malen: vorher gibt es die Leinwände noch nicht.
-        // Ein Rahmen Verzögerung, dann stehen sie.
+        // Only paint after the state is in place: the canvas elements do not
+        // exist before then. Give the browser a frame to settle, then render.
         requestAnimationFrame(async () => {
           for (let n = 1; n <= doc.numPages; n++) {
             if (weg) return;
@@ -146,8 +143,8 @@ export default function PdfMarker({
     return { x: e.clientX - k.left, y: e.clientY - k.top };
   };
 
-  // Ein Zug unter drei Pixeln ist ein Klick und keine Markierung. Ohne diese
-  // Grenze bliebe bei jedem versehentlichen Klick ein Punkt in der Datei.
+  // A drag under three pixels is considered a click, not a selection. Without
+  // this threshold accidental clicks would produce tiny marks.
   const genugGezogen = (z: Zug) =>
     Math.abs(z.bis.x - z.von.x) > 3 && Math.abs(z.bis.y - z.von.y) > 3;
 
@@ -158,8 +155,8 @@ export default function PdfMarker({
       const k = normiert(z.von, z.bis);
       const seite = seiten[z.seite];
       if (!seite) return;
-      // Die Höhe der Seite in Punkten, nicht in Bildpunkten: die Anzeige ist um
-      // den Maßstab größer.
+      // The page height in typographic points, not screen pixels: the display
+      // is enlarged by the scale factor.
       const punkt = ausBildschirm(k, MASSSTAB, seite.hoehe / MASSSTAB);
       setMarken((alt) => {
         setNotizBei(alt.length);
@@ -224,8 +221,8 @@ export default function PdfMarker({
         </button>
       </div>
 
-      {/* Der Hinweis steht VOR dem Speichern da, nicht danach als Ausrede: die
-          alte Fassung ist anschließend fort. */}
+        {/* The note is shown BEFORE saving as a reminder: the old version is
+          replaced when you save. */}
       <div className="pdfm-hinweis muted small">
         Beim Speichern wird die vorhandene Datei ersetzt, nicht ergänzt. Die
         unmarkierte Fassung ist danach nur noch da, wo sie vorher heruntergeladen
@@ -250,8 +247,9 @@ export default function PdfMarker({
               setZug({ ...zug, bis: p });
             }}
             onMouseUp={() => zug && zug.seite === nr && beenden(zug)}
-            // Verlässt die Maus das Blatt mit gedrückter Taste, gilt der Zug als
-            // beendet. Ohne das bliebe ein Rechteck hängen, das nie fertig wird.
+            // If the mouse leaves the page while a button is pressed consider
+            // the drag finished. Otherwise a rectangle could remain stuck and
+            // never complete.
             onMouseLeave={() => zug && zug.seite === nr && beenden(zug)}
           >
             <canvas
@@ -260,7 +258,7 @@ export default function PdfMarker({
                 leinwaende.current[nr] = el;
               }}
             />
-            {/* Die gesetzten Marken, zurückgerechnet auf die Anzeige. */}
+            {/* The applied annotations, converted back to display coordinates. */}
             {marken
               .map((m, i) => ({ m, i }))
               .filter(({ m }) => m.seite === nr)
@@ -280,7 +278,7 @@ export default function PdfMarker({
                   />
                 );
               })}
-            {/* Der Zettel zu der zuletzt gesetzten Marke. */}
+            {/* The note for the most recently added annotation. */}
             {notizBei !== null && marken[notizBei] && marken[notizBei].seite === nr && (
               <input
                 className="pdfm-notiz"
@@ -305,7 +303,7 @@ export default function PdfMarker({
                 }}
               />
             )}
-            {/* Das Rechteck, während es gezogen wird. */}
+            {/* The rectangle while it is being dragged. */}
             {zug && zug.seite === nr && (
               <div
                 className="pdfm-marke pdfm-zug"

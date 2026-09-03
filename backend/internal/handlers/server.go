@@ -1,6 +1,6 @@
 // Package handlers implements the HTTP API. Every handler is a method on
 // Server, reads the caller from the request context and decides access itself;
-// see access.go for the two helpers all of them rely on.
+// see access.go for the two helper functions they all rely on.
 package handlers
 
 import (
@@ -44,9 +44,9 @@ type Server struct {
 	Puls *puls.Messer
 }
 
-// writeJSON sends v as JSON. An encoding error is ignored on purpose: the
-// status line is already on the wire at that point, so there is nothing left to
-// report to the client.
+// writeJSON sends `v` as JSON. An encoding error is intentionally ignored:
+// once the status line is written the response cannot be replaced with an
+// error payload.
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -62,13 +62,12 @@ func decode(r *http.Request, v interface{}) error {
 	return json.NewDecoder(r.Body).Decode(v)
 }
 
-// setAuthCookieFuer sets the cookie and marks it Secure when the request came
-// over HTTPS.
+// setAuthCookieFuer sets the session cookie and marks it Secure when the
+// original browser-to-proxy connection used HTTPS.
 //
-// Setting Secure unconditionally would not work: no cookie would arrive over a
-// plain HTTP connection at all, and an instance in a home network without TLS
-// would be unusable. The other way round, a session cookie without Secure on an
-// HTTPS site is an invitation to grab it through a smuggled in HTTP call.
+// Secure cannot be set unconditionally: clients on plain HTTP would not send
+// back cookies marked Secure. Conversely, leaving Secure off on an HTTPS site
+// weakens security by allowing cookie leaks via mixed content.
 func (s *Server) setAuthCookieFuer(w http.ResponseWriter, r *http.Request, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
@@ -82,20 +81,15 @@ func (s *Server) setAuthCookieFuer(w http.ResponseWriter, r *http.Request, token
 	})
 }
 
-// ueberTLS sagt, ob der BROWSER verschlüsselt spricht -- nicht, ob diese eine
-// Verbindung verschlüsselt ist.
+// ueberTLS returns whether the BROWSER spoke over TLS, not whether the local
+// connection is encrypted.
 //
-// Der Unterschied ist der Grund für diese Funktion. Seit der Innenverkehr des
-// Verbunds verschlüsselt ist, kommt jede Anfrage über TLS bei diesem Dienst an,
-// auch wenn davor jemand über gewöhnliches HTTP auf die Oberfläche zugreift.
-// Würde hier r.TLS entscheiden, bekäme dieser Jemand einen Keks mit dem
-// Merkmal Secure, sein Browser würde ihn über HTTP nicht zurückschicken, und er
-// wäre nach der Anmeldung sofort wieder abgemeldet. Genau das ist am 02.09.2026
-// passiert.
-//
-// Deshalb zählt X-Forwarded-Proto zuerst: das ist die Angabe des Gegenstücks
-// darüber, womit der Browser gekommen ist. Erst wenn niemand davorsteht, gilt
-// die eigene Verbindung.
+// This distinction matters because proxies terminate TLS. The header
+// `X-Forwarded-Proto` describes how the browser connected to the proxy. If
+// we relied only on `r.TLS` we might mark cookies Secure for requests that
+// arrived over an internal TLS connection even though the browser used plain
+// HTTP, causing the browser not to send the cookie back. Therefore X-Forwarded-Proto
+// is checked first and r.TLS only as a fallback.
 func ueberTLS(r *http.Request) bool {
 	if r == nil {
 		return false
@@ -106,8 +100,9 @@ func ueberTLS(r *http.Request) bool {
 	return r.TLS != nil
 }
 
-// clearAuthCookie expires the cookie. The token itself stays valid until it
-// runs out, so logout only clears the browser, not the server.
+// clearAuthCookie expires the cookie on the client. The token may remain
+// valid server-side until it is explicitly revoked; clearing the cookie only
+// removes it from the browser.
 func (s *Server) clearAuthCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     cookieName,
@@ -119,14 +114,13 @@ func (s *Server) clearAuthCookie(w http.ResponseWriter) {
 	})
 }
 
-// gemeinsamBeschrieben sagt, ob an dieser Seite mehr als ein Konto schreiben
-// darf: durch eine Freigabe mit Bearbeitungsrecht, durch ein Recht auf ihrem
-// Bereich oder weil der Bereich für alle offen steht.
+// gemeinsamBeschrieben returns whether more than one account may write to
+// a page: via an edit share, via space-level rights or because the space is
+// open for writing.
 //
-// Die Frage entscheidet, ob der Browser die Leitung zum gemeinsamen Schreiben
-// öffnet. Sie fällt bewusst hier und nicht dort: eine Seite, die nur ihrem
-// Besitzer gehört, soll gar nicht erst eine Sitzung aufmachen, in der nie
-// jemand zweites sitzen wird.
+// This determines whether the browser opens a real-time collaboration channel
+// for the page. The check is made here so that pages owned only by their
+// creator do not create sessions where a second participant will never join.
 func (s *Server) gemeinsamBeschrieben(ctx context.Context, pageID string) bool {
 	if !lizenz.Frei(lizenz.Echtzeit) || !s.echtzeitAn() {
 		return false
@@ -146,9 +140,9 @@ func (s *Server) gemeinsamBeschrieben(ctx context.Context, pageID string) bool {
 }
 
 // loadPage returns a full (non-deleted) page with tags and, for a logged-in
-// viewer, its favorite flag and permission flags. viewerID == "" is used for
-// public pages and skips per-user fields. Callers are responsible for checking
-// read access (see pagePerm) before returning the page to a user.
+// viewer, per-viewer fields such as favorite and permission flags. A
+// viewerID of "" is used for anonymous/public views and omits per-user fields.
+// Callers must check read access (see pagePerm) before serving the page.
 func (s *Server) loadPage(ctx context.Context, viewerID, pageID string) (*models.Page, error) {
 	var p models.Page
 	var content []byte

@@ -27,7 +27,7 @@ type S3 struct {
 	anzeige string
 }
 
-// Einstellungen are the values from config.conf.
+// Settings are the values read from config.conf.
 type Einstellungen struct {
 	Endpunkt  string // host:port, without a scheme
 	Bucket    string
@@ -35,11 +35,11 @@ type Einstellungen struct {
 	Geheimnis string
 	Region    string
 	TLS       bool
-	Pfadstil  bool // true: http://host/bucket/key statt http://bucket.host/key
-	// Wurzeln sind die Stellen, denen beim Prüfen des Zertifikats geglaubt
-	// wird. nil heißt: die des Systems. Gesetzt wird das für eine Ablage im
-	// eigenen Verbund, deren Zertifikat aus der eigenen Stelle stammt und die
-	// keine öffentliche je unterschreiben würde.
+	Pfadstil  bool // true: http://host/bucket/key instead of http://bucket.host/key
+	// Root CAs trusted when verifying the server certificate. nil means the
+	// system roots. This is set for a storage service inside the same trust
+	// domain whose certificate is issued by a local CA and would not be
+	// signed by a public authority.
 	Wurzeln *x509.CertPool
 }
 
@@ -64,9 +64,9 @@ func NeuS3(ctx context.Context, e Einstellungen) (*S3, error) {
 		Region:       e.Region,
 		BucketLookup: bucketArt(e.Pfadstil),
 	}
-	// Eigene Stelle: dann braucht der Weg dorthin einen eigenen Transport, denn
-	// minio-go nimmt sonst den der Bibliothek, und der kennt nur die
-	// öffentlichen Stellen.
+	// Local deployment: then the connection to it needs a custom transport,
+	// because minio-go otherwise uses the library's default transport which
+	// only knows the public CAs.
 	if e.TLS && e.Wurzeln != nil {
 		transport := http.DefaultTransport.(*http.Transport).Clone()
 		transport.TLSClientConfig = &tls.Config{RootCAs: e.Wurzeln, MinVersion: tls.VersionTLS12}

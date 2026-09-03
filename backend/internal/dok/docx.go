@@ -58,13 +58,14 @@ func lauf(s Stueck, groesse int, immerFett bool) string {
 	} else if c, ok := schriftfarbe(s.Farbe); ok {
 		fmt.Fprintf(&eig, `<w:color w:val="%s"/>`, c.hex())
 	}
-	// Word markiert nicht mit einem Farbwert, sondern mit einem Namen aus einer
-	// festen Palette. Deshalb die Zuordnung in farben.go statt des Hexwerts:
-	// ein freier Wert stuende hier zwar im XML, Word zeigte ihn aber nicht.
+	// Word does not mark with a color value but with a name from a fixed
+	// palette. For that reason the mapping is in farben.go instead of the
+	// hex value: an arbitrary value could be present in the XML but Word
+	// would ignore it.
 	if marker, ok := wordMarker[s.Hintergrund]; ok {
 		fmt.Fprintf(&eig, `<w:highlight w:val="%s"/>`, marker)
 	}
-	// Half points: w:sz counts in half points.
+	// Half points: w:sz uses half-point units.
 	fmt.Fprintf(&eig, `<w:sz w:val="%d"/><w:szCs w:val="%d"/>`, groesse*2, groesse*2)
 
 	// xml:space="preserve" is not cosmetic: without the attribute Word throws
@@ -231,8 +232,9 @@ func Word(d Dokument) ([]byte, error) {
 // WordMehrere writes several pages into ONE document, separated by a page break.
 func WordMehrere(docs []Dokument) ([]byte, error) {
 	var koerper strings.Builder
-	// Die Bilder, die im Text vorkommen. Sie werden beim Setzen eingesammelt,
-	// weil erst dabei feststeht, welche sich ueberhaupt einbetten lassen.
+	// The images referenced in the text. They are collected while composing
+	// the body because only then it becomes clear which images can actually
+	// be embedded.
 	var bilder []wordBildTeil
 	for i, d := range docs {
 		if i > 0 {
@@ -313,8 +315,8 @@ func WordMehrere(docs []Dokument) ([]byte, error) {
 			return nil, err
 		}
 	}
-	// Die Bilddateien selbst. Store und nicht Deflate: PNG und JPEG sind bereits
-	// gepackt, ein zweiter Durchgang kostet Zeit und bringt nichts.
+	// The image files themselves. Use STORE not DEFLATE: PNG and JPEG are
+	// already compressed, a second pass wastes time with no benefit.
 	for _, b := range bilder {
 		w, err := z.CreateHeader(&zip.FileHeader{Name: "word/media/" + b.name, Method: zip.Store})
 		if err != nil {

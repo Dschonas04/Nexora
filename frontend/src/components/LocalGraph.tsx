@@ -1,5 +1,13 @@
-// Der kleine Graf unter einer Seite: die Seite in der Mitte, ihre unmittelbaren
-// Nachbarn darum herum.
+
+// Small inline graph under a page: the page in the center and its immediate
+// neighbors.
+
+// It reuses the same `Grafbild` as the larger view and therefore supports
+// dragging, panning and zooming. Previously this was a static star layout
+// with fixed angles; nodes could overlap and remain stuck.
+
+// The data comes from the graph the page already requested, so no extra API
+// call is required.
 //
 // Er benutzt dasselbe Grafbild wie die große Ansicht und ist damit ebenso zum
 // Ziehen, Schieben und Zoomen. Vorher war er ein starrer Stern: Winkel fest
@@ -18,10 +26,9 @@ interface Props {
 }
 
 export default function LocalGraph({ graph, pageId, onOpen }: Props) {
-  // Die Nachbarschaft: diese Seite und alles, was eine Kante mit ihr teilt.
-  // Ungerichtet -- wer hierher verweist und wohin diese Seite verweist, ist
-  // beides Nachbarschaft; für die Frage "was hängt hiermit zusammen" spielt die
-  // Richtung keine Rolle.
+  // The neighborhood: this page and everything that shares an edge with it.
+  // Undirected: incoming and outgoing links are both considered neighbors for
+  // the question "what is related to this page?".
   const dabei = new Set<string>([pageId]);
   for (const e of graph.edges) {
     if (e.source === pageId) dabei.add(e.target);
@@ -29,13 +36,13 @@ export default function LocalGraph({ graph, pageId, onOpen }: Props) {
   }
 
   const knoten = graph.nodes.filter((n) => dabei.has(n.id));
-  // Ohne die eigene Seite im Graf -- etwa, solange er noch lädt -- gibt es
-  // nichts zu zeigen.
+  // Without the own page present (for example while loading) there is nothing
+  // to show.
   if (knoten.length <= 1 || !knoten.some((n) => n.id === pageId)) return null;
 
-  // Auch die Kanten UNTER den Nachbarn kommen mit, nicht nur die zur Mitte:
-  // dass zwei Nachbarn einander kennen, ist genau das, was ein Bild zeigen
-  // kann und eine Liste nicht.
+  // Also include edges between neighbors, not only those to the center node:
+  // relationships among neighbors are exactly what a graph visualization can
+  // show more clearly than a list.
   const kanten = graph.edges.filter((e) => dabei.has(e.source) && dabei.has(e.target));
 
   return (
@@ -46,13 +53,13 @@ export default function LocalGraph({ graph, pageId, onOpen }: Props) {
         onOeffnen={onOpen}
         mitte={pageId}
         physik={PHYSIK_KLEIN}
-        // Die Höhe wächst mit: bei zwei Knoten stand die untere Hälfte des
-        // Kastens leer, bei zwölf wurde es eng. Nach oben gedeckelt, damit der
-        // Graf ein Bild in der Seite bleibt und keine zweite Ansicht.
+        // The height grows with the number of nodes: with two nodes the lower
+        // half of the box looked empty, with twelve it became cramped. Cap the
+        // maximum so the graph remains an inline image and not a second view.
         hoehe={Math.min(340, 150 + knoten.length * 22)}
-        // Am Rad wird die Seite gescrollt, nicht gezoomt: ein Graf, der beim
-        // Vorbeiscrollen den Text festhält und sich selbst zusammenzieht, ist
-        // eine Falle mitten in der Seite.
+        // Scrolling with the wheel scrolls the page, not the zoom: a graph
+        // that fixed the text while shrinking itself during scroll would be a
+        // trap in the middle of the page.
         radZoom="mit-strg"
         hinweis="Knoten ziehen · Strg + Rad zoomt"
       />

@@ -19,14 +19,14 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
   const [err, setErr] = useState("");
   const [hinweis, setHinweis] = useState("");
   const [laeuft, setLaeuft] = useState(false);
-  // Die vorhandenen Konten, wenn dieses Konto sie sehen darf. Die Liste ist
-  // Verwaltungssache; wer sie nicht bekommt, tippt Adressen ein und merkt von
-  // dieser Hälfte nichts.
+  // The available accounts if this user is allowed to see them. The list is
+  // an administrative convenience; users who cannot see it can still type
+  // addresses manually.
   const [konten, setKonten] = useState<User[] | null>(null);
   const [gewaehlt, setGewaehlt] = useState<Set<string>>(new Set());
   const [suche, setSuche] = useState("");
-  // Wie viele gerade an dieser Seite sitzen. Wer teilt, will sehen, ob jemand
-  // drin ist, bevor er ein Recht wegnimmt.
+  // How many people are currently on this page. When changing shares the user
+  // wants to know if someone is active before revoking rights.
   const [dabei, setDabei] = useState<{ anzahl: number; moeglich: boolean } | null>(null);
   const { frei } = useLizenz();
 
@@ -36,8 +36,9 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId]);
 
-  // Nur solange das Fenster offen ist, und nur wenn die Lizenz es überhaupt
-  // hergibt: sonst wäre es eine Abfrage im Takt für eine Zahl, die nie kommt.
+  // Poll the presence count only while the dialog is open and when the
+  // license grants the feature; otherwise polling would repeatedly request a
+  // number that will not be provided.
   useEffect(() => {
     if (!frei("echtzeit")) return;
     let lebt = true;
@@ -62,10 +63,10 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
       .catch(() => setKonten(null));
   }, []);
 
-  // Mehrere auf einmal, und aus zwei Quellen zugleich: die angehakten Konten
-  // und was im Feld steht. Das Feld nimmt eine Adresse oder zwanzig, getrennt
-  // durch Komma, Semikolon, Leerzeichen oder Zeilenumbruch -- eine Liste aus
-  // einer Mail lässt sich so hineinkopieren, ohne sie vorher zu zerlegen.
+  // Support adding multiple recipients at once from two sources: checked
+  // accounts and addresses typed into the field. The field accepts one or
+  // many addresses separated by commas, semicolons, whitespace or newlines so
+  // a pasted mailing list can be added without splitting it beforehand.
   const adressenAus = (roh: string) =>
     roh
       .split(/[\s,;]+/)
@@ -77,8 +78,8 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
     setHinweis("");
     const ausListe = (konten ?? []).filter((k) => gewaehlt.has(k.id)).map((k) => k.email);
     const ausFeld = adressenAus(email);
-    // Doppelte fallen weg: wer jemanden anhakt und seine Adresse zusätzlich
-    // eintippt, meint einmal.
+    // Duplicates are removed: checking an account and typing the same email
+    // once more counts only once.
     const alle = Array.from(new Set([...ausListe, ...ausFeld]));
     if (alle.length === 0) {
       setErr("Niemand ausgewählt.");
@@ -86,8 +87,8 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
     }
 
     setLaeuft(true);
-    // Nacheinander und nicht alle auf einmal: jede Adresse bekommt ihre eigene
-    // Antwort, und eine, die scheitert, soll die anderen nicht mitreißen.
+    // Send one request per address rather than in parallel: each address gets
+    // its own response and a failing one should not abort the others.
     const gescheitert: string[] = [];
     let geschafft = 0;
     for (const adresse of alle) {
@@ -171,11 +172,11 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
             </button>
           </div>
 
-          {/* Die Kontenliste, wenn dieses Konto sie sehen darf. Ankreuzen statt
-              abtippen: bei einem Dutzend Leuten ist das der Unterschied
-              zwischen einer Handbewegung und einer Fleißaufgabe. Wer schon
-              dabei ist, steht ausgegraut da und lässt sich nicht doppelt
-              vergeben. */}
+            {/* The account list shown when this user is allowed to see it. Checking
+              boxes instead of typing is the difference between a single motion
+              and a tedious chore when adding a dozen people. Accounts that
+              already have access are shown disabled so they are not added
+              twice. */}
           {konten && konten.length > 0 && (
             <div className="konten-wahl">
               {konten.length > 8 && (

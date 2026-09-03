@@ -1,13 +1,12 @@
-// Bilder im Word-Dokument.
+// Images in the Word document.
 //
-// Ein docx traegt seine Bilder im Archiv: als Datei unter word/media, als
-// Beziehung in den rels und als Zeichnung im Text. Fehlt eines der drei, meldet
-// Word die Datei als beschaedigt -- darum stehen sie hier an einer Stelle
-// beieinander.
+// A docx stores its images in the archive: as a file under word/media, as a
+// relationship in the rels and as a drawing in the document text. If any of
+// the three are missing Word reports the file as corrupted — therefore they
+// are handled together here.
 //
-// Anders als im PDF wandern die Bytes unveraendert hinein. Word kennt PNG, JPEG
-// und GIF von sich aus, und ein Bild neu zu rechnen hiesse hier nur, Schaerfe zu
-// verlieren.
+// Unlike the PDF path the bytes are inserted unchanged. Word understands PNG,
+// JPEG and GIF natively and resampling here would only reduce sharpness.
 package dok
 
 import (
@@ -20,21 +19,22 @@ import (
 	"strings"
 )
 
-// wordBildTeil ist ein Bild, so wie es im Archiv liegt.
+// wordBildTeil describes an image as it appears in the archive.
 type wordBildTeil struct {
-	name  string // Dateiname unter word/media
-	kenn  string // Beziehungskennung, rIdN
+	name  string // filename under word/media
+	kenn  string // relationship id, rIdN
 	daten []byte
-	// In EMU, dem Mass, in dem Word rechnet: 914400 auf den Zoll.
+	// Dimensions in EMU, the unit Word uses: 914400 per inch.
 	breiteEMU, hoeheEMU int64
 }
 
-// Der Satzspiegel einer A4-Seite mit 2 cm Rand, in EMU. Ein breiteres Bild wird
-// darauf gebracht, sonst ragt es aus dem Papier.
+// The text column of an A4 page with a 2 cm margin, in EMU. A wider image is
+// scaled to this width, otherwise it would extend off the page.
 const satzBreiteEMU = 5731200
 
-// bildTeilAnlegen bereitet ein Bild fuer das Archiv vor. Ohne lesbare Groesse
-// kein Bild: Word braucht die Ausdehnung im Text, raten kann man sie nicht.
+// bildTeilAnlegen prepares an image for the archive. Without a readable
+// dimension there is no image: Word requires the dimensions in the document
+// and they cannot be guessed.
 func bildTeilAnlegen(daten []byte, nummer int) (wordBildTeil, bool) {
 	roh, ok := bildBytes(daten)
 	if !ok {
@@ -49,7 +49,7 @@ func bildTeilAnlegen(daten []byte, nummer int) (wordBildTeil, bool) {
 		endung = "jpg"
 	}
 
-	// 96 Bildpunkte auf den Zoll, wie im Browser: 9525 EMU je Punkt.
+	// 96 pixels per inch as in the browser: 9525 EMU per pixel.
 	breite := int64(konfig.Width) * 9525
 	hoehe := int64(konfig.Height) * 9525
 	if breite > satzBreiteEMU {
