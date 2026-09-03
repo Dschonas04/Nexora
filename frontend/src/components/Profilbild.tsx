@@ -19,8 +19,6 @@ function tonFuer(id: string): string {
   let summe = 0;
   for (let i = 0; i < id.length; i++) summe = (summe * 31 + id.charCodeAt(i)) % 100000;
   return TOENE[summe % TOENE.length];
-// Always the same tone for the same account. Deterministic from the id so
-// that a user is recognized by color across reloads.
 }
 
 /** Initials: from first and last name if available, otherwise the first letter. */
@@ -39,6 +37,7 @@ export function kuerzel(name: string, email = ""): string {
 export function bildUrl(id: string, stand?: string | null): string {
   return `/api/users/${id}/bild?v=${encodeURIComponent(stand ?? "")}`;
 }
+
 interface Props {
   id: string;
   name: string;
