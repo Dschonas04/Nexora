@@ -133,8 +133,8 @@ func verteilen(seite string, paket []byte) {
 		select {
 		case s.post <- paket:
 		default:
-				// Full: the channel is closed, the writer ends and closes the
-				// connection.
+			// Full: the channel is closed, the writer ends and closes the
+			// connection.
 			s.schliessen()
 			delete(r.leute, s)
 		}

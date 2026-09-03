@@ -155,8 +155,8 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 	stempel := time.Now().Format("2006-01-02_1504")
 	rettung := filepath.Join(ablage, "vor-wiederherstellung-"+stempel+".sql")
 	if err := s.rettungsDump(r.Context(), rettung); err != nil {
-		    // Do not restore without a rollback path. Prefer not restoring at all
-		    // to making an irreversible change.
+		// Do not restore without a rollback path. Prefer not restoring at all
+		// to making an irreversible change.
 		writeErr(w, http.StatusInternalServerError,
 			"Der jetzige Stand ließ sich nicht sichern, deshalb wird nichts eingespielt: "+err.Error())
 		return
