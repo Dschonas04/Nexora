@@ -202,15 +202,15 @@ func janein(b bool) string {
 // once, without a restart.
 func RegistrierungOffen() bool { return wert("registrierung_offen") == "ja" }
 
-// echtzeitAn sagt, ob gemeinsam geschrieben werden darf. Die Oberfläche fragt
-// vorher, die Leitung fragt noch einmal: eine ausgeschaltete Funktion, die sich
-// über einen offen gelassenen Weg doch benutzen lässt, ist keine.
+// echtzeitAn reports whether collaborative editing is allowed. The UI asks
+// first and the realtime layer checks again: a disabled feature that can be
+// abused via an open path is not considered off.
 func (s *Server) echtzeitAn() bool { return wert("echtzeit") == "ja" }
 
-// Seitenbreite ist die Vorgabe für Seiten, die selbst nichts sagen. Ein
-// unbekannter Wert wäre eine Klasse im Browser, die es nicht gibt, und damit
-// wieder der schmale Satzspiegel -- deshalb wird hier abgefangen und nicht
-// dort.
+// Seitenbreite is the default width for pages that do not specify one. An
+// unknown value would create a CSS class that does not exist and therefore
+// fall back to the narrow layout — so we validate it here rather than in the
+// client.
 func Seitenbreite() string {
 	b := wert("seitenbreite")
 	if !breiten[b] || b == "" {

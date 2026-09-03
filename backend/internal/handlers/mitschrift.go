@@ -1,20 +1,20 @@
-// Gemeinsames Schreiben an derselben Seite.
+// Collaborative editing on the same page.
 //
-// Der Dienst führt hier keinen eigenen Text: er reicht die Pakete der Beteiligten
-// nur weiter. Was am Ende dasteht, rechnen die Browser selbst aus, Yjs ist dafür
-// gebaut und kommt ohne eine Schiedsstelle in der Mitte aus. Damit bleibt die
-// Sitzung auch dann heil, wenn der Dienst mitten hinein neu startet: die Browser
-// verbinden sich neu und gleichen ab, verloren ist nichts.
+// The service does not produce its own text here: it only forwards packets
+// between participants. What ends up in storage is computed by the browsers
+// themselves; Yjs is built for that and does not need a central arbiter. This
+// design keeps sessions intact even if the service restarts: browsers
+// reconnect and reconcile, nothing is lost.
 //
-// Weitergereicht wird an alle im Raum, den Absender eingeschlossen. Das Echo
-// klingt nach Verschwendung, ist aber der Herzschlag: der Browser legt auf,
-// wenn dreißig Sekunden lang nichts kommt, und wer allein an einer Seite sitzt,
-// bekäme sonst nie etwas zu hören. Yjs verträgt die eigene Änderung ein zweites
-// Mal, sie ändert nichts mehr.
+// Messages are forwarded to everyone in the room, including the sender. The
+// audible echo may seem wasteful but is vital: the browser times out if it
+// hears nothing for thirty seconds, and a single editor would otherwise
+// never receive updates. Yjs tolerates receiving the same change twice; it
+// becomes a no-op the second time.
 //
-// Wer den Raum betreten darf, entscheidet dieselbe Prüfung wie beim Speichern.
-// Nur Schreibberechtigte: ein Mitleser könnte über die Leitung sonst Text
-// schicken, den ein anderer Browser dann arglos in die Datenbank schreibt.
+// Permission to enter the room is the same check used for saving: only
+// writers are allowed. A passive reader could otherwise inject text over the
+// channel that another browser would unwittingly persist.
 package handlers
 
 import (
@@ -33,17 +33,17 @@ import (
 )
 
 const (
-	// So viele dürfen gleichzeitig an einer Seite sitzen. Keine technische
-	// Grenze, sondern eine gegen den Unfall: an einer Seite arbeitet ein Team,
-	// keine Belegschaft.
+	// Maximum number of simultaneous participants on a page. This is not a
+	// technical limit but a safeguard against accidents: a page is edited by
+	// a team, not a whole workforce.
 	hoechstensImRaum = 25
-	// So viele Pakete darf ein Langsamer hinter sich herziehen. Danach fliegt
-	// er, statt dass sein Rückstau alle anderen bremst; sein Browser verbindet
-	// sich neu und gleicht ab.
+	// How many packets a slow client may lag behind. After this it is kicked
+	// out to avoid its backlog slowing everyone else; its browser reconnects
+	// and resynchronizes.
 	stauGrenze = 512
-	// Größtes einzelnes Paket. Ein Yjs-Paket ist im Betrieb ein paar hundert
-	// Bytes; ein Megabyte deckt auch das erste vollständige Abgleichen einer
-	// langen Seite ab.
+	// Maximum size of a single packet. In practice Yjs packages are a few
+	// hundred bytes; one megabyte also covers the initial full synchronization
+	// of a long page.
 	groesstesPaket = 1 << 20
 )
 
@@ -53,9 +53,9 @@ const (
 type sitzer struct {
 	post chan []byte
 	uid  string
-	// einmal, weil zwei Wege denselben Kanal schließen wollen: der Verteiler,
-	// wenn der Rückstau zu groß wird, und der Abgang, wenn der Browser geht.
-	// Ein Kanal zweimal geschlossen ist ein Absturz.
+	// `once` protects against closing the channel twice: the dispatcher may
+	// close it when backpressure becomes too high and the departure routine
+	// closes it when the browser leaves. Closing a channel twice panics.
 	einmal sync.Once
 }
 
@@ -68,8 +68,8 @@ type raum struct {
 	leute map[*sitzer]bool
 }
 
-// raeume hält die offenen Sitzungen. Im Speicher und nicht in der Datenbank:
-// der Inhalt eines Raums ist nur so lange etwas wert, wie jemand darin sitzt.
+// `raeume` holds the active sessions. Kept in-memory, not in the database:
+// the content of a room is only useful while someone is present.
 var raeume = struct {
 	sync.Mutex
 	nach map[string]*raum
@@ -141,8 +141,8 @@ func verteilen(seite string, paket []byte) {
 	}
 }
 
-// ImRaum sagt, wie viele gerade an einer Seite sitzen. Für die Anzeige im
-// Teilen-Fenster.
+// ImRaum returns how many participants are currently on a page. Used for the
+// sharing UI.
 func ImRaum(seite string) int {
 	raeume.Lock()
 	r := raeume.nach[seite]
@@ -173,9 +173,9 @@ func (s *Server) Mitschreibende(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// offeneRaeume gibt für jede Seite, an der gerade jemand sitzt, die Kennungen
-// der Beteiligten zurück. Eine Kopie, keine Sicht auf das Original: der Aufrufer
-// soll daran nichts verändern können, und die Sperre wird nur kurz gehalten.
+// offeneRaeume returns, for every page with active participants, the IDs of
+// those participants. A copy is returned rather than a view of the original
+// to avoid exposing internal state and to keep locks brief.
 func offeneRaeume() map[string][]string {
 	raeume.Lock()
 	kopie := make(map[string]*raum, len(raeume.nach))
@@ -198,12 +198,12 @@ func offeneRaeume() map[string][]string {
 	return raus
 }
 
-// MitschriftZustand zeigt der Verwaltung, woran gerade gemeinsam geschrieben
-// wird: welche Seiten offen sind und wer daran sitzt.
+// MitschriftZustand reports current collaborative activity to administrators:
+// which pages are open and who is editing them.
 //
-// Nur die laufenden Sitzungen, nichts Gespeichertes. Wer wann was geschrieben
-// hat, steht in der Prüfspur und in den Versionen; hier geht es um den
-// Augenblick, und der ist vorbei, sobald der Letzte den Reiter schließt.
+// Only live sessions are reported; historic edits and timestamps are stored
+// in the audit trail and in versions. This endpoint concerns the present
+// moment, which ends as soon as the last participant closes the tab.
 func (s *Server) MitschriftZustand(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")

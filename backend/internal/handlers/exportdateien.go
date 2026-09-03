@@ -1,14 +1,14 @@
-// Die Dateien, die zu einem Export gehoeren.
-//
-// Ein Ausgang aus dem System, der die Bilder zuruecklaesst, ist keiner. Bisher
-// enthielt das Archiv nur Markdown, und darin standen Adressen der Form
-// /api/pages/<id>/attachments/<id>: Verweise, die ausserhalb dieser Instanz auf
-// nichts zeigen. Wer sein Wiki verlassen wollte, nahm den Text mit und liess
-// die Bilder da.
-//
-// Also wandern die Dateien in einen Ordner des Archivs, und die Adressen im
-// Text zeigen dorthin. Das Archiv ist damit fuer sich lesbar, in jedem
-// Markdown-Betrachter und auch in zehn Jahren noch.
+// The files that belong to an export.
+
+// An export that returns the images was not the original behaviour. Previously
+// the archive contained only Markdown with addresses like
+// /api/pages/<id>/attachments/<id>: references that point to nothing outside
+// this instance. When someone wanted to move their wiki away they would take
+// the text but leave the images behind.
+
+// Therefore files are placed into a folder inside the archive and the
+// addresses in the text are rewritten to point there. The archive becomes
+// self-contained and readable by any Markdown viewer, even years later.
 package handlers
 
 import (
@@ -21,24 +21,24 @@ import (
 	"strings"
 )
 
-// dateiOrdner ist der Ordner im Archiv, in dem die Anhaenge liegen.
+// dateiOrdner is the folder inside the archive where attachments reside.
 const dateiOrdner = "dateien"
 
-// exportDatei ist ein Anhang, so wie er im Archiv landet.
+// exportDatei describes an attachment as it ends up in the archive.
 type exportDatei struct {
 	ID     string
 	Seite  string
-	Name   string // der Name, den die Datei beim Hochladen hatte
-	Pfad   string // wo sie im Archiv liegt, samt Ordner
+	Name   string // original filename as uploaded
+	Pfad   string // where it lives inside the archive, including folder
 	Groess int64
 }
 
-// anhaengeSammeln liest die Anhaenge der ausgegebenen Seiten und legt fuer jeden
-// einen eindeutigen Platz im Archiv fest.
+// anhaengeSammeln reads attachments of the exported pages and assigns a
+// unique location for each inside the archive.
 //
-// Zwei Seiten duerfen dieselbe Datei "Plan.png" tragen; im Archiv koennen sie
-// nicht denselben Namen haben. Der Zaehler haengt eine Zahl an, statt die zweite
-// still zu ueberschreiben -- dieselbe Regel wie bei den Seiten.
+// Two pages may share the same filename like "Plan.png"; in the archive they
+// cannot have the same name. A counter is appended rather than silently
+// overwriting the second one — the same rule we apply to pages.
 func (s *Server) anhaengeSammeln(ctx context.Context, seiten []string) []exportDatei {
 	if len(seiten) == 0 {
 		return nil
@@ -64,9 +64,9 @@ func (s *Server) anhaengeSammeln(ctx context.Context, seiten []string) []exportD
 	return liste
 }
 
-// eindeutigerDateiname haengt bei einem schon vergebenen Namen eine Zahl an,
-// und zwar VOR der Endung: "Plan-2.png" und nicht "Plan.png-2", sonst weiss
-// kein Programm mehr, was fuer eine Datei das ist.
+// eindeutigerDateiname appends a number to an already taken name, placed
+// BEFORE the extension: "Plan-2.png" not "Plan.png-2", otherwise programs
+// would no longer recognise the file type.
 func eindeutigerDateiname(vergeben map[string]int, name string) string {
 	sauber := dateiname(name)
 	if sauber == "seite" && strings.TrimSpace(name) == "" {
@@ -82,12 +82,13 @@ func eindeutigerDateiname(vergeben map[string]int, name string) string {
 	return sauber
 }
 
-// adressenAufDateien schreibt die Anhangadressen im Markdown auf die Pfade im
-// Archiv um.
-//
-// Nur die Anhaenge der ausgegebenen Seiten: was auf eine Seite zeigt, die nicht
-// mitkommt, bleibt stehen wie es ist. Ein Verweis, der ins Leere zeigt, ist
-// ehrlicher als einer, der auf eine Datei zeigt, die im Archiv fehlt.
+// adressenAufDateien rewrites attachment addresses in the Markdown to the
+// paths inside the archive.
+
+// Only attachments of the exported pages are rewritten: references pointing
+// to a page that isn't included remain unchanged. A link that points to
+// nothing is more honest than one that points to a file missing from the
+// archive.
 func adressenAufDateien(md string, dateien []exportDatei) string {
 	if len(dateien) == 0 || !strings.Contains(md, "/attachments/") {
 		return md
@@ -102,11 +103,12 @@ func adressenAufDateien(md string, dateien []exportDatei) string {
 	return md
 }
 
-// anhangListe haengt an eine Seite die Dateien an, die im Text nicht vorkommen.
-//
-// Ein Bild steht im Text und ist damit erwaehnt; ein Anhang aus der Spalte
-// daneben steht nirgends. Ohne diese Liste laege er im Archiv, ohne dass ihn
-// jemals jemand fände.
+// anhangListe appends to a page a list of files that are not referenced in
+// the text.
+
+// An image referenced in the text is mentioned; an attachment recorded in the
+// adjacent column may be nowhere. Without this list it would lie in the
+// archive and never be found.
 func anhangListe(md string, dateien []exportDatei) string {
 	var fehlend []exportDatei
 	for _, d := range dateien {
@@ -128,21 +130,22 @@ func anhangListe(md string, dateien []exportDatei) string {
 	return b.String()
 }
 
-// dateienSchreiben legt die Anhaenge ins Archiv.
-//
-// Der Strom geht von der Ablage direkt in das ZIP, ohne Zwischenspeicher: eine
-// Ablage mit ein paar hundert Bildern laege sonst zweimal im Arbeitsspeicher.
-// Eine Datei, die nicht mehr da ist, wird uebersprungen und nicht zum Fehler --
-// das Archiv ist dann unvollstaendig, aber es entsteht, und die fehlende Datei
-// war ohnehin schon weg.
+// dateienSchreiben places attachments into the archive.
+
+// The stream goes from the storage straight into the ZIP without buffering:
+// a storage with a few hundred images would otherwise occupy memory twice.
+// A missing file is skipped rather than treated as an error — the archive
+// will be incomplete but will be produced, and the missing file was already
+// gone.
 func (s *Server) dateienSchreiben(ctx context.Context, zw *zip.Writer, dateien []exportDatei) {
 	for _, d := range dateien {
 		f, err := s.Ablage.Lesen(ctx, d.ID)
 		if err != nil {
 			continue
 		}
-		// Deflate bringt bei einem JPEG nichts und kostet Zeit; gespeichert wird
-		// es darum nur bei den Formaten, die noch etwas hergeben.
+		// Deflate gives no benefit for a JPEG and costs time; therefore we
+		// store such formats without compression, and deflate only where it
+		// makes sense.
 		verfahren := zip.Deflate
 		if schonGepackt(d.Name) {
 			verfahren = zip.Store

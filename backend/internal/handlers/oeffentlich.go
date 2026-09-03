@@ -1,13 +1,13 @@
-// Was ein Besucher ohne Konto zu sehen bekommt.
+// What a visitor without an account can see.
 //
-// Eine oeffentlich geteilte Seite bestand bisher nur aus ihrem Text. Bilder
-// darin zeigten auf /api/pages/<id>/attachments/<id>, und dieser Weg verlangt
-// eine Sitzung: der Besucher bekam 401 und damit ein zerbrochenes Bild. Wer
-// eine bebilderte Seite teilte, teilte ihre Loecher.
+// Previously a publicly shared page contained only its text. Images linked to
+// /api/pages/<id>/attachments/<id>, and that path requires a session: the
+// visitor received 401 and thus broken images. Sharing a page with images
+// therefore shared its holes.
 //
-// Darum ein eigener Weg fuer die Dateien einer geteilten Seite, und im Text
-// zeigen die Adressen darauf. Das nimmt zugleich die Kennungen aus der Antwort:
-// bisher stand die Kennung der Seite in jeder Bildadresse.
+// This adds a dedicated path for files of a shared page and rewrites the
+// addresses in the content accordingly. It also removes page IDs from the
+// responses: previously the page ID appeared in every image URL.
 package handlers
 
 import (
@@ -19,23 +19,22 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// oeffentlicheDateien baut die Adresse, unter der die Dateien einer geteilten
-// Seite liegen. Eine Funktion und keine Zeichenkette an zwei Stellen: der Weg
-// steht im Router und hier, und beide muessen dasselbe meinen.
+// oeffentlicheDateien builds the URL under which files of a shared page are
+// served. It is a function rather than a repeated string: the path appears
+// both in the router and here and both must mean the same thing.
 func oeffentlicheDateien(token string) string { return "/api/public/" + token + "/dateien/" }
 
-// adressenOeffnen schreibt die Bild- und Dateiadressen einer Seite auf den
-// oeffentlichen Weg um.
+// adressenOeffnen rewrites image and file addresses of a page to the public
+// path.
 //
-// Bewusst eine Ersetzung auf dem rohen JSON und kein Gang durch den Baum: die
-// Adresse steht in props.url, aber ebenso in einer Bildunterschrift, in einem
-// Verweis und in dem, was ein spaeterer Blocktyp mitbringt. Der gesuchte Text
-// enthaelt die Kennung der Seite und ist damit eindeutig genug, dass er nichts
-// anderes trifft.
+// Intentionally performed as a raw JSON string replacement rather than by
+// traversing the tree: the URL may appear in `props.url`, in a caption, in a
+// link, or in data added by other block types. The searched text contains the
+// page ID and is therefore specific enough to not match unrelated content.
 //
-// Nur die Dateien DIESER Seite: ein Block, der auf den Anhang einer anderen
-// zeigt, bleibt stehen und bleibt verschlossen. Ihn mit freizugeben hiesse, mit
-// einer Seite eine zweite zu teilen, von der niemand spricht.
+// Only files of THIS page are rewritten: a block that references an attachment
+// of another page remains untouched and locked. Exposing it would amount to
+// sharing a second page implicitly.
 func adressenOeffnen(inhalt json.RawMessage, seitenID, token string) json.RawMessage {
 	alt := "/api/pages/" + seitenID + "/attachments/"
 	if !strings.Contains(string(inhalt), alt) {
@@ -44,12 +43,12 @@ func adressenOeffnen(inhalt json.RawMessage, seitenID, token string) json.RawMes
 	return json.RawMessage(strings.ReplaceAll(string(inhalt), alt, oeffentlicheDateien(token)))
 }
 
-// OeffentlicheDatei liefert einen Anhang der geteilten Seite an jeden, der den
-// Verweis hat.
+// OeffentlicheDatei serves an attachment of a shared page to anyone with the
+// reference.
 //
-// Die Prüfung ist dieselbe wie bei der Seite selbst: Zeichen und is_public, und
-// der Anhang muss zu genau dieser Seite gehoeren. Wird der Verweis
-// zurueckgezogen, sind die Bilder im selben Augenblick wieder zu.
+// The authorization is the same as for the page itself: token and `is_public`,
+// and the attachment must belong to exactly that page. If the share is revoked
+// the images become inaccessible immediately.
 func (s *Server) OeffentlicheDatei(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 	attID := chi.URLParam(r, "attId")

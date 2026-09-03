@@ -18,28 +18,28 @@ import (
 	"nexora/internal/dok"
 )
 
-// anhangAdresse trifft die Adressen, unter denen Anhaenge in einem Dokument
-// stehen. Zwei Kennungen, weil die Rechte an der Seite haengen und nicht am
-// Anhang.
+// anhangAdresse matches addresses under which attachments appear in a
+// document. Two identifiers are present because permissions depend on the
+// page, not the attachment.
 var anhangAdresse = regexp.MustCompile(`^/api/pages/([0-9a-fA-F-]{36})/attachments/([0-9a-fA-F-]{36})$`)
 
-// maxBildBytes ist die Grenze je Bild. Ein Bild, das groesser ist, wird nicht
-// eingebettet, sondern bleibt die Verweiszeile: ein Dokument, das eine Viertel
-// Stunde braucht, ist niemandem geholfen.
+// maxBildBytes is the per-image limit. An image larger than this is not
+// embedded and remains a reference line: a document that takes a quarter of
+// an hour to assemble is of no practical use.
 const maxBildBytes = 25 << 20
 
-// bildquelle liefert den Rueckruf, mit dem dok an die Bilder kommt.
+// bildquelle returns the callback that `dok` uses to obtain image bytes.
 //
-// Die gelesenen Bilder werden gemerkt: dieselbe Datei kommt in einer Ablage
-// gerne mehrfach vor, etwa ein Logo, und sie fuer jede Seite neu aus der Ablage
-// zu holen waere bei einem Export ueber hundert Seiten spuerbar.
+// Read images are cached: the same file may occur multiple times in a
+// storage (for example a logo) and fetching it separately for every page in
+// an export of a hundred pages would be noticeable.
 func (s *Server) bildquelle(ctx context.Context, uid string) dok.Bildquelle {
 	gelesen := map[string][]byte{}
 	darf := map[string]bool{}
 
 	return func(adresse string) ([]byte, bool) {
-		// Eine Datenadresse traegt das Bild schon bei sich; dok packt sie selbst
-		// aus. Hier wird sie nur durchgereicht.
+		// A data URL already contains the image; `dok` will decode it. We just
+		// pass it through here.
 		if strings.HasPrefix(adresse, "data:") {
 			return []byte(adresse), true
 		}
@@ -64,9 +64,9 @@ func (s *Server) bildquelle(ctx context.Context, uid string) dok.Bildquelle {
 			return nil, false
 		}
 
-		// Nur, was auch ein Bild sein kann. Ein PDF oder eine Tabelle im Text
-		// waere ohnehin nicht zu setzen, und es zu lesen kostete den Speicher
-		// zweimal.
+		// Only things that can be an image. A PDF or table inside the text
+		// would not be embedded anyway, and reading it here would consume
+		// memory twice.
 		var mime string
 		if err := s.Pool.QueryRow(ctx,
 			`SELECT mime FROM attachments WHERE id=$1 AND page_id=$2`, anhang, seite).Scan(&mime); err != nil ||

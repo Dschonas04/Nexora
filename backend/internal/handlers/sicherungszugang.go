@@ -1,16 +1,15 @@
-// Wer die Sicherung abholen darf.
+// Who is allowed to fetch backups.
 //
-// Aus dem Panel heraus reicht die Sitzung: ein angemeldeter Administrator
-// klickt, der Browser schickt den Keks mit. Ein Skript hat keinen Keks, und
-// genau das ist der Fall, um den es beim Automatisieren geht. Es braucht also
-// einen zweiten Weg hinein, und der ist ein Losungswort.
+// A logged-in administrator can fetch from the panel: the browser sends the
+// session cookie. A script does not have a cookie, and automation is exactly
+// the use case here. Therefore a second way in is required: a shared token.
 //
-// DAS LOSUNGSWORT WIEGT SCHWERER ALS DAS FÜR DIE KENNZAHLEN. Dort gibt es eine
-// Zusammenfassung heraus, hier den gesamten Bestand samt Passwort-Hashes,
-// Sitzungen und Freigabe-Tokens. Es ist deshalb ein eigenes: wer den Sammler
-// für Kennzahlen einrichtet, soll dabei nicht nebenbei einen Schlüssel zur
-// ganzen Datenbank verteilen. Und jeder Abruf landet in der Prüfspur, mit der
-// Adresse, von der er kam.
+// THE BACKUP TOKEN IS MORE SENSITIVE THAN THE METRICS TOKEN. The latter
+// exposes a summary, this one exposes the entire dataset including password
+// hashes, sessions and share tokens. It is therefore separate: configuring
+// a metrics exporter should not also distribute a key to the entire
+// database. Every retrieval is recorded in the audit trail with its source
+// address.
 package handlers
 
 import (
@@ -30,20 +29,19 @@ const perTokenSchluessel zugangsArt = "sicherung.perToken"
 // diesen Weg gibt es nicht, es bleibt bei der Anmeldung.
 func SicherungToken() string { return wert("sicherung_token") }
 
-// SicherungZugang lässt entweder ein gültiges Losungswort oder eine Sitzung
-// durch.
+// SicherungZugang allows either a valid token or a logged-in session.
 //
-// Zusammengesetzt statt nebeneinander: ein zweiter Weg mit eigener Adresse
-// wäre eine zweite Stelle, an der die Rechte zu pflegen sind, und die beiden
-// liefen früher oder später auseinander.
+// Composed rather than duplicated: exposing a second endpoint with its own
+// authorization would create a second place to manage rights and would
+// diverge over time.
 func SicherungZugang(secret []byte, pruefe middleware.SitzungPruefer) func(http.Handler) http.Handler {
 	ueberSitzung := middleware.Auth(secret, pruefe)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if token := SicherungToken(); token != "" {
 				angeboten := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-				// Vergleich in fester Zeit, damit sich das Wort nicht Zeichen
-				// für Zeichen erraten lässt.
+				// Constant-time comparison so the token cannot be guessed one
+				// character at a time.
 				if angeboten != "" &&
 					subtle.ConstantTimeCompare([]byte(angeboten), []byte(token)) == 1 {
 					r = r.WithContext(context.WithValue(r.Context(), perTokenSchluessel, true))
@@ -56,7 +54,7 @@ func SicherungZugang(secret []byte, pruefe middleware.SitzungPruefer) func(http.
 	}
 }
 
-// perToken sagt, ob dieser Aufruf über das Losungswort hereinkam.
+// perToken reports whether this request arrived using the backup token.
 func perToken(r *http.Request) bool {
 	wert, _ := r.Context().Value(perTokenSchluessel).(bool)
 	return wert

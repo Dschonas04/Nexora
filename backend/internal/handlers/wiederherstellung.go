@@ -1,24 +1,23 @@
-// Eine Sicherung wieder einspielen.
+// Restoring a backup.
 //
-// Der zerstörerischste Weg, den diese Anwendung hat: er ersetzt den gesamten
-// Bestand. Alles hier ist darauf ausgelegt, dass ein Irrtum überlebbar bleibt.
+// The most destructive operation this application exposes: it replaces the
+// entire dataset. Everything here is designed so that mistakes are recoverable.
 //
-// ES WIRD ZUERST GESICHERT. Bevor irgendetwas überschrieben wird, entsteht ein
-// Dump des jetzigen Standes im Datenverzeichnis. Wer die falsche Datei
-// erwischt, hat damit einen Weg zurück; ohne diesen Schritt wäre ein Fehlgriff
-// endgültig, und Fehlgriffe passieren genau hier, weil zwei Archive gleich
-// heißen und sich nur im Zeitstempel unterscheiden.
+// A BACKUP IS MADE FIRST. Before anything is overwritten a dump of the current
+// state is written beside the attachments. If the wrong file was chosen this
+// provides a path back; without this step a mistake would be final. Mistakes
+// occur here because two archives can have identical names except for the
+// timestamp.
 //
-// OHNE DIE MARKE FERTIG WIRD ABGELEHNT. Ein mittendrin abgebrochenes Archiv ist
-// ein gültiges ZIP und lässt sich öffnen. Es einzuspielen hieße, einen halben
-// Bestand über einen ganzen zu legen. Genau dafür schreibt die Sicherung diese
-// Marke als letzten Eintrag.
+// ARCHIVES MISSING THE FINAL MARKER ARE REJECTED. A partially written archive
+// is a valid ZIP and can be opened; restoring it would overlay half a state
+// onto a full one. The backup therefore writes a final marker entry to avoid
+// that.
 //
-// DANACH WIRD NEU GESTARTET. Der Vorrat an Verbindungen hält vorbereitete
-// Abfragen auf Tabellen, die es nach dem Einspielen so nicht mehr gibt, und der
-// Zwischenspeicher der Einstellungen steht auf den alten Werten. Beides ließe
-// sich einzeln nachziehen; ein Neustart macht es vollständig und ist an dieser
-// Stelle ohnehin niemandem zu viel.
+// THE SERVICE IS RESTARTED AFTERWARDS. Prepared DB connections may hold
+// prepared statements for tables that no longer exist after restore, and the
+// in-memory settings cache still holds old values. Both could be reconciled
+// manually; a restart makes the state consistent and is inexpensive here.
 package handlers
 
 import (
@@ -37,9 +36,9 @@ import (
 	"nexora/internal/middleware"
 )
 
-// So groß darf ein hochgeladenes Archiv höchstens sein. Nicht als Schutz vor
-// einer großen Sicherung, sondern damit ein versehentlich gewähltes Abbild von
-// zwanzig Gigabyte nicht erst die Platte füllt und dann abgelehnt wird.
+// Maximum allowed size for an uploaded archive. Not a protection against a
+// legitimately large backup, but to avoid accidentally selecting a 20GiB file
+// that would first fill disk and only later be rejected.
 const maxSicherungBytes = 8 << 30 // 8 GiB
 
 // Wiederherstellen nimmt ein Archiv entgegen und spielt es ein.
@@ -58,9 +57,9 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Das Archiv landet auf der Platte, nicht im Speicher: für ein ZIP braucht
-	// es wahlfreien Zugriff, und eine Sicherung von mehreren Gigabyte im
-	// Arbeitsspeicher wäre der Grund, aus dem das Einspielen scheitert.
+	// The archive is written to disk, not kept in memory: a ZIP requires
+	// random access and keeping several gigabytes in RAM would be the reason
+	// the restore fails.
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
 		writeErr(w, http.StatusBadRequest, "Archiv konnte nicht gelesen werden")
 		return
@@ -111,7 +110,7 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 	}
 	defer archiv.Close()
 
-	// ── Prüfen, bevor irgendetwas geschieht ─────────────────────────────
+	// ── Validate before any action ──────────────────────────────────────
 	var dump *zip.File
 	anhaenge := map[string]*zip.File{}
 	marke := false
@@ -145,15 +144,15 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Die Spur wird VOR dem Einspielen geschrieben, denn danach gibt es diese
-	// Datenbank nicht mehr. Sie wird vom eingespielten Stand überschrieben und
-	// ist damit weg; der dauerhafte Beleg ist der Rückweg auf der Platte und
-	// das Protokoll des Prozesses. Trotzdem hier: wer den Rückweg einspielt,
-	// findet darin, dass und wann jemand etwas ersetzt hat.
+	// The audit trail is recorded BEFORE restore because after restoring that
+	// database no longer exists. It would be overwritten by the restored
+	// state and thus lost; the persistent evidence is the dump on disk and the
+	// runtime log. Still, we record here: anyone restoring later will see who
+	// replaced what and when.
 	s.spurAusRequest(r, AktWiederherstellung, "system", "", kopf.Filename,
 		map[string]interface{}{"archiv": kopf.Filename, "bytes": kopf.Size})
 
-	// ── Erst den jetzigen Stand retten ──────────────────────────────────
+	// ── Save the current state first ───────────────────────────────────
 	stempel := time.Now().Format("2006-01-02_1504")
 	rettung := filepath.Join(ablage, "vor-wiederherstellung-"+stempel+".sql")
 	if err := s.rettungsDump(r.Context(), rettung); err != nil {
@@ -164,7 +163,7 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Wiederherstellung: Stand vorher gesichert nach %s", rettung)
 
-	// ── Einspielen ──────────────────────────────────────────────────────
+	// ── Restore the database ───────────────────────────────────────────
 	quelle, err := dump.Open()
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "Der Dump ließ sich nicht lesen")
@@ -180,10 +179,11 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// ── Anhänge ─────────────────────────────────────────────────────────
+	// ── Attachments ────────────────────────────────────────────────────
 	//
-	// Vorhandene werden überschrieben, überzählige NICHT gelöscht: eine Datei
-	// zu viel in der Ablage kostet Platz, eine zu wenig kostet Inhalt.
+	// Existing attachments are overwritten; extra files are NOT deleted:
+	// an extra file in storage just consumes space, a missing file costs
+	// data.
 	geschrieben, misslungen := 0, 0
 	for kennung, f := range anhaenge {
 		quelle, err := f.Open()

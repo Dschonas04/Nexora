@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-// Ein Bild darf im Fenster stehen -- daran haengt die Vorschau und das Bild im
-// Text.
+// An image may be shown inline — this is needed for previews and inline
+// images in text.
 func TestBildBleibtInline(t *testing.T) {
 	w := httptest.NewRecorder()
 	anhangKopf(w, "image/png", "Plan.png")
@@ -19,10 +19,9 @@ func TestBildBleibtInline(t *testing.T) {
 	}
 }
 
-// Eine HTML-Datei darf NICHT als Dokument ausgeliefert werden. Der Typ ist die
-// Behauptung dessen, der sie hochgeladen hat; unveraendert und inline waere sie
-// Programmcode auf dem Ursprung dieser Instanz, mit Zugriff auf die Sitzung
-// dessen, der sie anschaut.
+// An HTML file must NOT be served as a document. The content type is the
+// uploader's claim; returned unchanged and inline it would be executable code
+// on the origin of this instance with access to the viewer's session.
 func TestHTMLWirdNichtAngezeigt(t *testing.T) {
 	for _, typ := range []string{"text/html", "text/html; charset=utf-8", "TEXT/HTML", "application/xhtml+xml"} {
 		w := httptest.NewRecorder()
@@ -39,8 +38,8 @@ func TestHTMLWirdNichtAngezeigt(t *testing.T) {
 	}
 }
 
-// nosniff steht immer da: sonst überstimmt der Browser einen harmlosen Typ
-// anhand des Inhalts.
+// `nosniff` is always present: otherwise the browser may override a harmless
+// declared type based on content sniffing.
 func TestNosniffImmer(t *testing.T) {
 	w := httptest.NewRecorder()
 	anhangKopf(w, "image/png", "Plan.png")
@@ -49,8 +48,8 @@ func TestNosniffImmer(t *testing.T) {
 	}
 }
 
-// Ton, Video und PDF bleiben sichtbar: sie sind keine Dokumente, und an ihnen
-// hängt die Schnellansicht.
+// Audio, video and PDF remain viewable: they are not documents and are used
+// by the quick view feature.
 func TestMedienBleibenSichtbar(t *testing.T) {
 	for _, typ := range []string{"application/pdf", "audio/mpeg", "video/mp4", "text/plain"} {
 		w := httptest.NewRecorder()
@@ -61,9 +60,9 @@ func TestMedienBleibenSichtbar(t *testing.T) {
 	}
 }
 
-// Was in einem Kopf nichts zu suchen hat, kommt nicht hinein: ein
-// Anführungszeichen beendet die Angabe, ein Zeilenumbruch wäre eine Zeile mehr,
-// als der Aufrufer im Sinn hatte.
+// Anything that does not belong in a header is removed: a quote would end
+// the value and a line break would create an extra header line the caller did
+// not intend.
 func TestNameWirdEntschaerft(t *testing.T) {
 	w := httptest.NewRecorder()
 	anhangKopf(w, "image/png", "a\"; x=1\r\nSet-Cookie: b=c\n.png")
@@ -76,8 +75,8 @@ func TestNameWirdEntschaerft(t *testing.T) {
 	}
 }
 
-// Ein Name aus lauter Steuerzeichen lässt gar keinen Namen übrig -- dann steht
-// nur die Anordnung da, statt eines leeren Namens.
+// A name consisting solely of control characters yields no filename — in
+// that case only the disposition remains, instead of an empty filename.
 func TestLeererNameFaelltWeg(t *testing.T) {
 	w := httptest.NewRecorder()
 	anhangKopf(w, "application/zip", "\x01\x02")
@@ -86,9 +85,9 @@ func TestLeererNameFaelltWeg(t *testing.T) {
 	}
 }
 
-// Ein SVG bleibt ein Bild -- sonst zeigte die Vorschau ein Loch --, aber mit
-// einem Regelwerk, das ihm die Skripte nimmt, falls jemand seine Adresse
-// unmittelbar aufruft.
+// An SVG remains an image — otherwise the preview would show a hole — but it
+// is returned with a policy that removes scripts in case someone requests the
+// file directly.
 func TestSVGBleibtBildOhneSkripte(t *testing.T) {
 	w := httptest.NewRecorder()
 	anhangKopf(w, "image/svg+xml", "zeichnung.svg")

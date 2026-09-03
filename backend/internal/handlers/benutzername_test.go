@@ -2,8 +2,8 @@ package handlers
 
 import "testing"
 
-// Was durchgeht und was nicht. Der Name wird getippt und vorgelesen, deshalb
-// sind Grossbuchstaben keine Ablehnung, sondern werden geglaettet.
+// What passes and what doesn't. The name is typed and read aloud, so
+// uppercase letters are not rejected but normalized.
 func TestBenutzernamePruefen(t *testing.T) {
 	faelle := []struct {
 		eingabe string
@@ -37,9 +37,9 @@ func TestBenutzernamePruefen(t *testing.T) {
 	}
 }
 
-// Der Vorschlag aus der Adresse nimmt den vorderen Teil und wirft heraus, was
-// im Namen nichts zu suchen hat. Bleibt zu wenig übrig, gibt es keinen -- ein
-// zurechtgestutzter Rest wäre schlechter als gar keiner.
+// The suggestion derived from an address takes the local part and removes
+// characters not allowed in a username. If too little remains no suggestion
+// is returned — a trimmed remainder would be worse than none.
 func TestBenutzernameAusAdresse(t *testing.T) {
 	faelle := map[string]string{
 		"anna.mueller@example.com": "anna.mueller",
@@ -55,8 +55,8 @@ func TestBenutzernameAusAdresse(t *testing.T) {
 	}
 }
 
-// Der leere Name muss als NULL in die Datenbank: der eindeutige Index lässt
-// beliebig viele NULL zu, aber nur einen leeren String.
+// The empty name must become NULL in the database: the unique index allows
+// many NULLs but only a single empty string.
 func TestLeererNameWirdNull(t *testing.T) {
 	if leerAlsNull("") != nil {
 		t.Fatal("der leere Name muss NULL werden")

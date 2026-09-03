@@ -1,31 +1,28 @@
-// Eine vollständige Sicherung, als ein Strom durch den Browser.
+// A complete backup streamed to the browser.
 //
-// Der Anlass ist eine Beobachtung, die in jeder Installation gilt: die
-// Datenbank ist nicht der ganze Bestand. Anhänge liegen als Dateien daneben,
-// auf der Platte oder in einem Objektspeicher, und ein Dump allein hinterlässt
-// Zeilen in `attachments`, die auf nichts mehr zeigen. Wer das erst beim
-// Zurückspielen merkt, merkt es zu spät.
+// Rationale: the database is not the entire state. Attachments live as
+// separate files, on disk or in an object store, and a SQL dump alone leaves
+// rows in `attachments` that point to nothing. Discovering that only during
+// restore is too late.
 //
-// Vier Entscheidungen prägen diese Datei.
+// Four decisions shape this implementation.
 //
-// ES WIRD GESTRÖMT, nicht gesammelt. Das Archiv geht Stück für Stück in die
-// Antwort. Eine Sicherung erst im Speicher zu bauen hieße, den ganzen Bestand
-// zweimal vorzuhalten, und genau bei der Größe, ab der eine Sicherung wichtig
-// wird, geht das schief.
+// IT IS STREAMED, not buffered. The archive is written piece by piece to the
+// response. Building the archive fully in memory would require keeping the
+// whole dataset twice and fails exactly at the sizes where backups matter.
 //
-// DER DUMP KOMMT VON pg_dump und nicht von einer eigenen Ausgabe über SQL. Was
-// gesichert wird, muss zurückspielbar sein, und das ist keine Eigenschaft, die
-// man sich selbst bescheinigt: pg_dump erzeugt genau die Form, die psql wieder
-// einliest, samt Fremdschlüsseln, Vorgaben und Reihenfolge.
+// THE DUMP COMES FROM `pg_dump`, not from a custom SQL export. What is
+// backed up must be restorable; `pg_dump` produces the exact form that
+// `psql` expects, including foreign keys, defaults and correct ordering.
 //
-// DIE ANHÄNGE KOMMEN ÜBER DIE ABLAGE-SCHNITTSTELLE. Damit ist es gleichgültig,
-// ob sie auf der Platte oder in einem Objektspeicher liegen; dieselbe Sicherung
-// funktioniert in beiden Fällen, ohne dass hier jemand nachsehen müsste.
+// ATTACHMENTS ARE READ THROUGH THE STORAGE INTERFACE. This makes the
+// procedure agnostic to whether files live on disk or in an object store: the
+// same backup works in both cases without special-casing here.
 //
-// AM ENDE STEHT EINE MARKE. Bricht der Strom mitten im Archiv ab, weil die
-// Leitung fällt oder pg_dump aussteigt, ist die Datei trotzdem ein gültiges
-// ZIP: die halbe Sicherung sähe aus wie eine ganze. Der letzte Eintrag heißt
-// FERTIG, und wer ihn nicht findet, hat ein unvollständiges Archiv.
+// A MARKER IS WRITTEN AT THE END. If the stream is cut in the middle because
+// the connection drops or pg_dump fails, the file remains a valid ZIP: a
+// half backup looks like a full one. The final entry is named FERTIG; if it
+// is missing the archive is incomplete.
 package handlers
 
 import (
@@ -45,16 +42,16 @@ import (
 	"nexora/internal/models"
 )
 
-// Der Suchindex bleibt draußen, und zwar von selbst: such_tsv ist eine
-// GENERATED-Spalte, pg_dump schreibt ihren Inhalt nicht mit, sondern nur ihre
-// Bildungsvorschrift. PostgreSQL rechnet sie beim Einspielen neu. Dasselbe gilt
-// für den GIN-Index darüber.
+// The search index is excluded automatically: `such_tsv` is a GENERATED
+// column and `pg_dump` does not include its contents, only the expression that
+// defines it. PostgreSQL recomputes it on restore. The same applies to the
+// GIN index over it.
 
-// SicherungUmfang sagt vorher, was in eine Sicherung ginge.
+// SicherungUmfang reports what a backup would contain.
 //
-// Ein eigener Weg, weil die Oberfläche das VOR dem Herunterladen wissen muss:
-// bei einem Bestand von mehreren Gigabyte soll niemand den Knopf drücken und
-// dann raten, ob es hängt oder nur dauert.
+// A separate endpoint is used because the UI needs to know BEFORE starting a
+// download: for a dataset of several gigabytes the user should not press the
+// button and then wonder whether the process hung or is simply slow.
 func (s *Server) SicherungUmfang(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
@@ -75,9 +72,10 @@ func (s *Server) SicherungUmfang(w http.ResponseWriter, r *http.Request) {
 		fehler = "Die Adresse der Datenbank ist nicht bekannt."
 	}
 
-	// Der fertige Befehl fürs Skript. Die Adresse kommt aus der Konfiguration,
-	// soweit eine eingetragen ist; sonst ein Platzhalter, der als solcher zu
-	// erkennen ist. Wer den Befehl abschreiben muss, schreibt ihn falsch ab.
+	// The complete command for a retrieval script. The target URL comes from
+	// configuration if present; otherwise a placeholder that is clearly
+	// identifiable. Anyone who has to retype the command will likely make
+	// mistakes copying it.
 	ziel := "https://NEXORA-HOST"
 	if u := speicherOeffentlicheURL(); u != "" {
 		ziel = strings.TrimSuffix(u, "/")
@@ -116,8 +114,8 @@ fi
 		"anhaenge":       anhaenge,
 		"anhaengeBytes":  anhangBytes,
 		"ablage":         s.Ablage.Name(),
-		// Der Dump ist Text und packt sich gut; die Anhänge sind meist schon
-		// gepackt. Eine Schätzung, ausdrücklich als solche benannt.
+		// The dump is textual and compresses well; attachments are usually
+		// already compressed. This is an estimate and is labelled as such.
 		"geschaetztBytes": dbBytes/4 + anhangBytes,
 		"bereit":          fehler == "",
 		"fehler":          fehler,
@@ -187,18 +185,17 @@ func (s *Server) Sicherung(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Vom Zeitlimit der Anfrage abgekoppelt.
+	// Detached from the request timeout.
 	//
-	// Der Router setzt dreißig Sekunden auf jede Anfrage, und die reichen für
-	// eine Sicherung nicht annähernd. Ein Wächter auf r.Context() wäre hier
-	// falsch, obwohl er nach der richtigen Sache zu sehen scheint: dort meldet
-	// sich sowohl der weggegangene Browser ALS AUCH diese Zeitgrenze, und
-	// beides ist nicht zu unterscheiden. Die Sicherung bräche dann nach dreißig
-	// Sekunden ab, jedes Mal.
+	// The router applies a 30 second timeout to every request, which is far
+	// too short for a backup. Watching r.Context() here would be wrong even
+	// though it seems appropriate: that context signals both a gone browser
+	// AND the timeout, and they cannot be distinguished. The backup would
+	// then always abort after 30 seconds.
 	//
-	// Ein weggegangener Browser beendet sie trotzdem, nur über einen anderen
-	// Weg: das Schreiben in eine geschlossene Verbindung scheitert, pg_dump
-	// bekommt eine gebrochene Röhre, und der Aufruf kehrt mit Fehler zurück.
+	// A gone browser still stops the process, but via a different mechanism:
+	// writing to a closed connection fails, pg_dump receives a broken pipe and
+	// returns an error.
 	ctx, abbruch := context.WithCancel(context.WithoutCancel(r.Context()))
 	defer abbruch()
 

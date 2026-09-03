@@ -18,8 +18,8 @@ func neuerSitzer(platz int) *sitzer {
 	return &sitzer{post: make(chan []byte, platz)}
 }
 
-// Ein Paket geht an alle im Raum, den Absender eingeschlossen. Das Echo ist
-// Absicht: es ist der Herzschlag für den, der allein an einer Seite sitzt.
+// A packet is sent to everyone in the room, including the sender. The echo
+// is intentional: it is the heartbeat for someone who is alone on a page.
 func TestVerteilenErreichtAlleSamtAbsender(t *testing.T) {
 	a, b := neuerSitzer(4), neuerSitzer(4)
 	if !betreten("s1", a) || !betreten("s1", b) {
@@ -40,8 +40,7 @@ func TestVerteilenErreichtAlleSamtAbsender(t *testing.T) {
 	}
 }
 
-// Räume sind getrennt: was an einer Seite geschrieben wird, hat an einer
-// anderen nichts zu suchen.
+// Rooms are isolated: what is written on one page must not appear on another.
 func TestVerteilenBleibtImRaum(t *testing.T) {
 	a, b := neuerSitzer(4), neuerSitzer(4)
 	betreten("s1", a)
@@ -54,7 +53,8 @@ func TestVerteilenBleibtImRaum(t *testing.T) {
 	}
 }
 
-// Wer nicht abholt, fliegt, statt alle anderen zu bremsen.
+// A client that does not consume messages is kicked out rather than slowing
+// everyone else down.
 func TestStauWirftHinaus(t *testing.T) {
 	langsam := neuerSitzer(1)
 	flott := neuerSitzer(8)
@@ -79,8 +79,8 @@ func TestStauWirftHinaus(t *testing.T) {
 	}
 }
 
-// Der leere Raum wird abgeräumt. Sonst wüchse die Karte mit jeder je
-// geöffneten Seite und schrumpfte nie wieder.
+// Empty rooms are pruned. Otherwise the map would grow with every opened
+// page and never shrink.
 func TestLeererRaumVerschwindet(t *testing.T) {
 	a := neuerSitzer(2)
 	betreten("s4", a)
@@ -94,7 +94,7 @@ func TestLeererRaumVerschwindet(t *testing.T) {
 	}
 }
 
-// Mehr als die Obergrenze kommt nicht hinein.
+// No more than the capacity may enter.
 func TestRaumIstBegrenzt(t *testing.T) {
 	var drin []*sitzer
 	for i := 0; i < hoechstensImRaum; i++ {
@@ -114,16 +114,15 @@ func TestRaumIstBegrenzt(t *testing.T) {
 	}
 }
 
-// Zweimal schließen darf keinen Absturz geben: der Verteiler schließt beim
-// Rückstau, der Abgang schließt beim Auflegen.
+// Closing twice must not panic: the dispatcher closes on backpressure and
+// the departure routine closes on hangup.
 func TestZweimalSchliessen(t *testing.T) {
 	s := neuerSitzer(1)
 	s.schliessen()
 	s.schliessen()
 }
 
-// Betreten und Verlassen laufen nebeneinander, ohne dass die Buchführung
-// auseinanderfällt.
+// Entering and leaving run concurrently without corrupting the bookkeeping.
 func TestRaumHaeltNebenlaeufigStand(t *testing.T) {
 	var wg sync.WaitGroup
 	for i := 0; i < 50; i++ {
@@ -142,9 +141,8 @@ func TestRaumHaeltNebenlaeufigStand(t *testing.T) {
 	}
 }
 
-// Eine Verbindung von einer fremden Seite wird abgewiesen. Der Anmeldekeks
-// reist dort zwar ohnehin nicht mit, aber die Leitung soll sich nicht darauf
-// verlassen.
+// A connection from a foreign origin is rejected. The session cookie would
+// not be sent there anyway, but the realtime layer must not rely on that.
 func TestFremdeHerkunftWirdAbgewiesen(t *testing.T) {
 	faelle := []struct {
 		herkunft string
@@ -170,12 +168,12 @@ func TestFremdeHerkunftWirdAbgewiesen(t *testing.T) {
 	}
 }
 
-// Und jetzt über eine echte Leitung: zwei Browser, ein Raum, ein Paket.
+// Now over a real connection: two browsers, one room, one packet.
 //
-// Die Prüfungen darüber arbeiten am Speicher; hier hängt alles daran, dass das
-// Aufschalten überhaupt gelingt. Das kann es nur, wenn der Messfilter die
-// Verbindung durchreicht, und genau das ist eine Zeile, die man beim Umbauen
-// verliert, ohne dass ein einziger anderer Test rot wird.
+// The checks above operate on in-memory structures; here everything depends
+// on the connection setup working. That only succeeds if the measurement
+// middleware passes the connection through — a single line easily lost when
+// refactoring, and which would not cause any other test to fail.
 func TestLeitungTraegtPaketeZwischenBrowsern(t *testing.T) {
 	const seite = "leitungsprobe"
 	dienst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -184,8 +182,8 @@ func TestLeitungTraegtPaketeZwischenBrowsern(t *testing.T) {
 			http.Error(w, "voll", http.StatusConflict)
 			return
 		}
-		// Genau wie im Handler: durch den Messfilter hindurch, damit die Probe
-		// den Weg nimmt, den eine echte Anfrage nimmt.
+		// As in the handler: run through the measurement middleware so the probe
+		// takes the same path as a real request.
 		middleware.Messen(puls.Neu())(leitung(seite, mich)).ServeHTTP(w, r)
 		verlassen(seite, mich)
 		mich.schliessen()

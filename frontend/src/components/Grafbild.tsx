@@ -137,6 +137,16 @@ interface Props {
     /** Callback to change a space color. If provided, the legend shows a color
       picker; otherwise the legend is read-only. */
   onFarbe?: (spaceId: string, farbe: string) => void;
+  /**
+   * Welche Ablagen dieses Konto färben darf. Ohne die Angabe darf es alle, die
+   * in der Legende stehen.
+   *
+   * Nötig, weil der Dienst nur den Eigentümer und eine Verwaltung durchlässt:
+   * ein Wähler an einer fremden Ablage nähme die Farbe an, der Dienst wiese sie
+   * ab, und sie spränge kommentarlos zurück. Ein Regler, der zurückschnappt,
+   * sieht kaputt aus -- also gibt es ihn dort gar nicht erst.
+   */
+  faerbbar?: Set<string>;
     /** Whether the mouse wheel zooms. In a page view only with Ctrl to avoid
       interfering with normal scrolling. */
   radZoom?: "immer" | "mit-strg";
@@ -153,6 +163,7 @@ export default function Grafbild({
   zentrieren = false,
   eigeneFarben,
   onFarbe,
+  faerbbar,
   radZoom = "immer",
 }: Props) {
   const rahmenRef = useRef<HTMLDivElement>(null);
@@ -565,7 +576,7 @@ export default function Grafbild({
                   same action, and the dot is precisely what the user intends
                   to change. For "No space" only the dot is shown — there is
                   no space to attach a color to. */}
-              {onFarbe && l.key !== "__none__" ? (
+              {onFarbe && l.key !== "__none__" && (!faerbbar || faerbbar.has(l.key)) ? (
                 <label className="graph-legend-dot-wahl" title="Farbe dieser Ablage">
                   <span className="graph-legend-dot" style={{ background: farbe[l.key] }} />
                   <input
