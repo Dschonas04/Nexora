@@ -514,7 +514,7 @@ GET    /graph                             nodes and edges of the whole workspace
 
 ```
 GET    /spaces                            list spaces
-PUT    /spaces/{id}/farbe                 the colour the space wears in the graph
+PUT    /spaces/{id}/farbe                 the colour the space wears in sidebar and graph
 POST   /spaces                            create
 PUT    /spaces/{id}                       rename
 DELETE /spaces/{id}                       delete (pages keep existing, space_id nulled)

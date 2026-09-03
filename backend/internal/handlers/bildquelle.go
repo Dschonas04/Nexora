@@ -1,13 +1,12 @@
-// Woher ein gesetztes Dokument seine Bilder bekommt.
+// Where a rendered document obtains its images from.
 //
-// Im gespeicherten Dokument steht von einem Bild nur die Adresse:
-// /api/pages/<seite>/attachments/<anhang>, oder eine Datenadresse, wie sie aus
-// einem eingelesenen Word-Dokument stammt. PDF und Word brauchen die Bytes.
+// In the stored document an image is represented only by its address:
+// /api/pages/<page>/attachments/<attachment>, or a data URL as found in an
+// imported Word document. PDF and Word rendering need the raw bytes.
 //
-// Der Weg dahin fuehrt durch dieselbe Rechtepruefung wie das Oeffnen der Seite.
-// Sonst waere der Export der bequemste Weg an fremde Bilder: man nennt im
-// eigenen Text die Adresse eines fremden Anhangs und laesst sich das PDF
-// ausgeben.
+// The path to them goes through the same permission check as opening the
+// page. Otherwise export would become the easiest route to foreign images:
+// one could reference someone else's attachment address and export it.
 package handlers
 
 import (

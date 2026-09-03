@@ -144,6 +144,32 @@ pruefe "beides zusammen wird abgewiesen" "400" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X POST "$BASIS/api/import" \
           -F "file=@$ARBEIT/ablage.md" -F "neueAblage=Zwei" -F "spaceId=$ABL_ID")"
 
+# Die Farbe einer Ablage. Sie steht in der Ablage selbst und nicht in einer
+# Einstellung des Betrachters: sie soll fuer alle gelten, die sie sehen.
+pruefe "anfangs ohne eigene Farbe" "" \
+       "$(hole "$BASIS/api/spaces" | python3 -c '
+import json, sys
+print(json.load(sys.stdin)[0].get("farbe", ""))')"
+pruefe "eine Farbe laesst sich setzen" "#2383e2" \
+       "$(hole -X PUT "$BASIS/api/spaces/$ABL_ID/farbe" -H 'Content-Type: application/json' \
+          -d '{"farbe":"#2383e2"}' | feld "['farbe']")"
+pruefe "und steht in der Liste" "#2383e2" \
+       "$(hole "$BASIS/api/spaces" | python3 -c '
+import json, sys
+print(json.load(sys.stdin)[0]["farbe"])')"
+# Kein Farbwert, sondern irgendein Text: abweisen statt in die Zeile schreiben.
+# Aus der Zeile kaeme er spaeter in ein style-Attribut wieder heraus.
+pruefe "ein erfundener Wert wird abgewiesen" "400" \
+       "$(code -X PUT "$BASIS/api/spaces/$ABL_ID/farbe" -H 'Content-Type: application/json' \
+          -d '{"farbe":"rot; background:url(x)"}')"
+pruefe "die alte Farbe steht noch" "#2383e2" \
+       "$(hole "$BASIS/api/spaces" | python3 -c '
+import json, sys
+print(json.load(sys.stdin)[0]["farbe"])')"
+pruefe "leer setzt zurueck" "" \
+       "$(hole -X PUT "$BASIS/api/spaces/$ABL_ID/farbe" -H 'Content-Type: application/json' \
+          -d '{"farbe":""}' | feld "['farbe']")"
+
 echo "== Ausgabe"
 pruefe "Markdown" "200" "$(code "$BASIS/api/pages/$SEITE/markdown")"
 

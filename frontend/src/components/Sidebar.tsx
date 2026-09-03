@@ -9,6 +9,7 @@ import { useAuth } from "../auth";
 import PageTree, { TreeGap } from "./PageTree";
 import { useAussenklick } from "../klappen";
 import SpaceRechte from "./SpaceRechte";
+import { ABLAGE_FARBEN, farbeFuerAblage } from "../ablagefarben";
 import Einfuhr from "./Einfuhr";
 import PasswortDialog from "./PasswortDialog";
 import ProfilDialog from "./ProfilDialog";
@@ -20,9 +21,8 @@ import Profilbild from "./Profilbild";
 const ZU_SCHLUESSEL = "nexora.leiste.eingeklappt";
 const VERSTECKT_SCHLUESSEL = "nexora.leiste.versteckt";
 const BREITE_SCHLUESSEL = "nexora.leiste.breite";
-// Die Grenzen der Breite. Schmaler als 180 stehen die Titel der Seiten nur noch
-// abgeschnitten da, breiter als 520 nimmt die Leiste der Seite den Platz weg,
-// um den es hier gerade geht.
+// Width constraints. Narrower than 180 pixels page titles are truncated; wider
+// than 520 pixels the page area would encroach on the space the sidebar owns.
 const BREITE_VORGABE = 260;
 const BREITE_MIN = 180;
 const BREITE_MAX = 520;
@@ -32,8 +32,8 @@ function gemerkteZu(): Set<string> {
     const roh = localStorage.getItem(ZU_SCHLUESSEL);
     return new Set<string>(roh ? (JSON.parse(roh) as string[]) : []);
   } catch {
-    // Ein privates Fenster ohne Speicher oder ein kaputter Eintrag darf die
-    // Leiste nicht lahmlegen, dann eben alles aufgeklappt.
+    // If storage is unavailable (private mode) or the entry is corrupted,
+    // do not break the sidebar; default to everything expanded.
     return new Set<string>();
   }
 }
@@ -43,7 +43,7 @@ function gemerkteBreite(): number {
     const roh = Number(localStorage.getItem(BREITE_SCHLUESSEL));
     if (Number.isFinite(roh) && roh >= BREITE_MIN && roh <= BREITE_MAX) return roh;
   } catch {
-    // s.u.
+    // see above
   }
   return BREITE_VORGABE;
 }
@@ -57,8 +57,8 @@ function gemerktVersteckt(): boolean {
 }
 
 interface Props {
-  /** Ungelesene Nachrichten, die Zahl kommt von oben, damit sie nur einmal
-      geholt wird und nicht je Ansicht neu. */
+    /** Unread messages: the count is provided from above so it is fetched once
+      and not on every view. */
   ungelesen: number;
   pages: PageMeta[];
   shared: PageMeta[];
@@ -75,16 +75,18 @@ interface Props {
   onRenameSpace: (id: string, current: string) => void;
   onDeleteSpace: (id: string) => void;
   onSpaceOeffentlich: (id: string, wert: "nein" | "lesen" | "schreiben") => void;
+  /** Die Farbe einer Ablage. Leerer Wert heißt: zurück zur Farbe aus der Reihe. */
+  onSpaceFarbe: (id: string, farbe: string) => void;
   onMovePage: (id: string, parentId: string | null, spaceId: string | null) => void;
-  /** Umhängen UND einsortieren in einem: das Ziel nennt die Ebene und die
-      Nachbarseite, vor der die Seite landet. */
+    /** Reparenting AND reordering in one: the target names the parent level and
+      the sibling before which the page will be placed. */
   onOrdnePage: (id: string, ziel: TreeGap) => void;
-  /** Die Reihenfolge der Ablagen, vollständig und in der neuen Folge. */
+    /** The full order of spaces, complete and in the new sequence. */
   onOrdneSpaces: (ids: string[]) => void;
   onNavigate: (to: string) => void;
   currentPath: string;
-  // Nach einer Einfuhr sind Seiten, Ablagen und Schlagworte veraltet, die
-  // Leiste kann sie nicht selbst nachladen, sie besitzt keine davon.
+  // After an import pages, spaces and tags are stale; the sidebar cannot
+  // reload them itself because it does not own that data.
   onEingefuehrt: () => void;
 }
 
@@ -105,6 +107,7 @@ export default function Sidebar(props: Props) {
     onRenameSpace,
     onDeleteSpace,
     onSpaceOeffentlich,
+    onSpaceFarbe,
     onMovePage,
     onOrdnePage,
     onOrdneSpaces,
@@ -116,15 +119,15 @@ export default function Sidebar(props: Props) {
   const { user, logout } = useAuth();
   const [passwortOffen, setPasswortOffen] = useState(false);
   const [profilOffen, setProfilOffen] = useState(false);
-  // Das Menü unten links. Zu, bis jemand auf sein Gesicht klickt: die Leiste
-  // ist schmal, und drei Knöpfe nebeneinander drängten den Namen heraus, für
-  // den sie da sind.
+  // The account menu in the bottom-left. It stays closed until the avatar
+  // is clicked: the sidebar is narrow and three side-by-side buttons would
+  // crowd out the username the menu serves.
   const [kontoMenue, setKontoMenue] = useState(false);
   const kontoEcke = useRef<HTMLDivElement>(null);
 
-  // Ein Klick daneben und Esc schließen das Menü. Ohne das bliebe es offen
-  // stehen, während man schon wieder etwas anderes tut, und verdeckte den
-  // unteren Teil des Baums.
+  // Clicking outside or pressing Escape closes the menu. Without this it
+  // would remain open while the user does something else, obscuring the lower
+  // part of the tree.
   useEffect(() => {
     if (!kontoMenue) return;
     const daneben = (e: MouseEvent) => {
@@ -139,17 +142,15 @@ export default function Sidebar(props: Props) {
     };
   }, [kontoMenue]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  // Eingeklappte Abschnitte der Leiste. Getrennt von `expanded`, das die
-  // Verzweigungen INNERHALB eines Baums steuert, hier geht es um den
-  // Abschnitt als Ganzes.
+  // Collapsed sections of the sidebar. Distinct from `expanded`, which
+  // controls branches within a tree; this concerns whole sections.
   const [zu, setZu] = useState<Set<string>>(gemerkteZu);
-  // Die Leiste ganz weg. Getrennt von `zu`: das eine klappt Abschnitte
-  // zusammen, das hier raeumt die Leiste beiseite, damit nur noch die Seite
-  // dasteht.
+  // Whether the entire sidebar is hidden. Separate from `zu`: that collapses
+  // sections, this tucks the whole sidebar aside to leave only the page.
   const [versteckt, setVersteckt] = useState<boolean>(gemerktVersteckt);
-  // Die Breite der Leiste, in Pixeln. Sie steht im Zustand und nicht im
-  // Stylesheet, weil sie am Rand gezogen wird; gemerkt wird sie erst beim
-  // Loslassen, sonst schriebe jedes Bild des Ziehens in den Speicher.
+  // The sidebar width in pixels. Stored in state because it is resized by
+  // dragging; the value is persisted only on pointer release to avoid
+  // spamming storage during a drag.
   const [breite, setBreite] = useState<number>(gemerkteBreite);
   const zug = useRef<{ startX: number; startBreite: number } | null>(null);
   const klappen = (key: string) =>
@@ -164,9 +165,9 @@ export default function Sidebar(props: Props) {
       return n;
     });
 
-  // Alle Abschnitte auf einmal. Solange noch einer offen steht, klappt der
-  // Griff zu -- so bedeutet ein zweiter Druck immer das Gegenteil des ersten
-  // und nicht noch einmal dasselbe.
+  // Toggle all sections at once. As long as at least one is open the control
+  // closes them — pressing it a second time performs the inverse of the first
+  // action instead of repeating it.
   const alleMarken = () => {
     const marken = ["favoriten", "geteilt", "schlagwoerter", "workspace", "verwaltung", "root"];
     for (const sp of spaces) marken.push("space:" + sp.id);
@@ -180,7 +181,7 @@ export default function Sidebar(props: Props) {
     try {
       localStorage.setItem(ZU_SCHLUESSEL, JSON.stringify([...n]));
     } catch {
-      // Nicht speichern zu koennen ist kein Grund, nicht zu klappen.
+      // Failing to persist is no reason not to collapse.
     }
   };
   const alleZu = alleMarken().every((m) => zu.has(m));
@@ -195,10 +196,9 @@ export default function Sidebar(props: Props) {
       return !v;
     });
 
-  // Am rechten Rand ziehen. Waehrend des Zugs faengt der Griff den Zeiger ein,
-  // damit eine schnelle Bewegung, die ueber die Leiste hinauslaeuft, weiter
-  // ankommt; und die Textauswahl wird abgestellt, weil sonst beim Ziehen die
-  // halbe Leiste blau markiert wird.
+  // Drag from the right edge. During drag the handle captures the pointer so
+  // a quick movement that leaves the sidebar still arrives; text selection is
+  // disabled to prevent half the sidebar from being highlighted while dragging.
   const zugBeginnen = (e: React.PointerEvent) => {
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     zug.current = { startX: e.clientX, startBreite: breite };
@@ -221,8 +221,8 @@ export default function Sidebar(props: Props) {
       // Nicht merken zu koennen ist kein Grund, nicht zu ziehen.
     }
   };
-  // Ein Doppelklick auf den Griff setzt die Breite zurueck. Wer sich verzogen
-  // hat, findet so wieder heraus, ohne die Vorgabe zu kennen.
+  // Double-clicking the handle resets the width. If someone has accidentally
+  // resized the sidebar this restores the default without needing to know it.
   const zugZuruecksetzen = () => {
     setBreite(BREITE_VORGABE);
     try {
@@ -232,9 +232,9 @@ export default function Sidebar(props: Props) {
     }
   };
 
-  // Strg + Rueckschraegstrich blendet die Leiste aus und wieder ein. Nicht
-  // Strg+B: das ist im Editor fett, und eine Tastenfolge doppelt zu belegen
-  // heisst, dass eine der beiden Bedeutungen irgendwann ueberrascht.
+  // Ctrl + backslash toggles the sidebar visibility. Not Ctrl+B because that
+  // is bold in the editor; double-binding a shortcut leads to surprising
+  // behavior.
   useEffect(() => {
     const auf = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "\\") {
@@ -267,20 +267,21 @@ export default function Sidebar(props: Props) {
   // Id of the space whose visibility menu is open, at most one at a time, hence
   // a single value and not a set.
   const [sichtbarkeitFuer, setSichtbarkeitFuer] = useState<string | null>(null);
+  // Dasselbe für das Farbmenü. Zwei getrennte Werte und nicht einer mit einer
+  // Art dazu: die beiden Menüs schließen einander aus, und das steht so
+  // deutlicher da, als wenn ein Feld beides bedeuten müsste.
+  const [farbeFuer, setFarbeFuer] = useState<string | null>(null);
   // The same for the export menu of a space.
-  // Die beiden Menues der Werkzeugzeile. exportFuer haelt die Ablage, sobald
-  // eine gewaehlt ist: dann zeigt dasselbe Feld die Formate statt der Liste.
+  // The two menus in the toolbar. `exportFuer` holds the selected space so
+  // the same control can switch to showing export formats instead of a list.
   const [einfuhrOffen, setEinfuhrOffen] = useState(false);
   const [ausfuhrOffen, setAusfuhrOffen] = useState(false);
   const [exportFuer, setExportFuer] = useState<string | null>(null);
-  // Ein Klick daneben und Escape schließen die beiden Menüs. Ohne das blieben
-  // sie über dem Seitenbaum stehen, sobald man sie öffnete, ohne sie zu
-  // berühren -- und fingen dort die Klicks ab.
-  // Nur was auch Seiten enthält. Eine leere Ablage auszugeben endete auf einer
-  // rohen Fehlerseite des Servers -- der Sprung auf die Adresse verlässt die
-  // Anwendung, und wo eine Datei kommen sollte, stand dann {"error": ...}.
-  // Seiten ohne Ablage kommen als eigener Eintrag dazu; der Server kennt sie
-  // unter "ohne", angeboten wurden sie nie.
+  // Clicking outside or pressing Escape closes these menus. Without this
+  // they'd remain over the page tree and intercept clicks.
+  // Only spaces that actually contain pages are exportable. Requesting an
+  // empty space previously led to a raw server error page because the app
+  // navigated away; pages without a space are offered as a separate entry.
   const ausgebbar = spaces.filter((sp) => pages.some((p) => (p.spaceId ?? null) === sp.id));
   const ohneAblage = pages.some((p) => (p.spaceId ?? null) === null);
 
@@ -289,7 +290,7 @@ export default function Sidebar(props: Props) {
     setAusfuhrOffen(false);
     setExportFuer(null);
   });
-  // Ziel der Einfuhr, solange ihr Kasten offen steht.
+  // Target for the import while its panel is open.
   const [einfuhrZiel, setEinfuhrZiel] = useState<
     { ziel: { parentId?: string; spaceId?: string }; name: string } | null
   >(null);
@@ -300,16 +301,15 @@ export default function Sidebar(props: Props) {
   const [alleSpaces, setAlleSpaces] = useState(false);
   const [alleTags, setAlleTags] = useState(false);
   const [results, setResults] = useState<SearchHit[] | null>(null);
-  // Filter der Suche. Getrennt vom Suchwort, damit ein gesetzter Filter beim
-  // Weitertippen stehen bleibt, man engt einmal ein und sucht dann mehrmals.
+  // Search filters. Kept separate from the query so a chosen filter remains
+  // while the user continues typing; narrow once and search repeatedly.
   const [filter, setFilter] = useState<SuchFilter>({});
   const [filterOffen, setFilterOffen] = useState(false);
   const suchfeld = useRef<HTMLInputElement>(null);
 
-  // Suche wegwerfen: Wort, Filter und die Filterzeile zusammen. Nur das Wort zu
-  // löschen und den Filter stehen zu lassen hieße, dass die nächste Suche
-  // stillschweigend eingegrenzt ist, ohne dass man noch sieht wodurch -- die
-  // Filterzeile ist dann ja zu.
+  // Clear the search: query, filter, and the filter UI together. Deleting
+  // only the query would silently limit the next search while hiding the
+  // filter controls.
   const suchtLoeschen = () => {
     setQ("");
     setFilter({});
@@ -399,16 +399,15 @@ export default function Sidebar(props: Props) {
       return n;
     });
 
-  // Der Weg zur offenen Seite klappt von selbst auf.
+  // Automatically expand the path to the active page.
   //
-  // Ohne das liegt eine Seite hinter zugeklappten Vorfahren, und zwar genau
-  // dann, wenn man nicht über den Baum zu ihr gekommen ist: über die Suche,
-  // über eine Verknüpfung, oder weil man gerade eine Unterseite angelegt hat.
-  // Die neue Seite wäre dann angelegt, geöffnet und im Baum trotzdem nicht zu
-  // sehen, was aussieht, als sei nichts passiert.
+  // Without this a page could be hidden under collapsed ancestors when it was
+  // reached not via the tree — for example via search, a link, or after
+  // creating a child. The page would be created and opened but remain hidden
+  // in the tree, which looks like nothing happened.
   //
-  // Aufgeklappt wird nur dazu, nie zugeklappt: was jemand von Hand geöffnet
-  // hat, soll offen bleiben.
+  // Only expand ancestors; never auto-collapse something the user opened by
+  // hand.
   useEffect(() => {
     if (!activeId) return;
     const eltern = new Map(pages.map((p) => [p.id, p.parentId ?? null]));
@@ -528,10 +527,9 @@ export default function Sidebar(props: Props) {
     onDropLuecke: (l: TreeGap) => dropInLuecke(l),
   };
 
-  // Weggeraeumte Leiste: ein schmaler Streifen, der nichts kann ausser sich
-  // selbst zurueckholen. Ganz verschwinden darf sie nicht -- sonst gaebe es
-  // keinen Weg zurueck ausser der Tastenfolge, und die kennt nur, wer sie
-  // schon einmal gelesen hat.
+  // Tucked-away sidebar: a slim strip that only serves to pull it back out.
+  // It must not disappear completely — otherwise the only way back would be
+  // a keyboard shortcut that only someone who read the docs knows.
   if (versteckt) {
     return (
       <div className="sidebar schmal">
@@ -549,8 +547,8 @@ export default function Sidebar(props: Props) {
 
   return (
     <div className="sidebar" style={{ width: breite, minWidth: breite }}>
-      {/* Der Griff zum Ziehen sitzt auf der Kante, nicht daneben: die Kante ist
-          die Stelle, an der man es versucht. */}
+        {/* The drag handle sits on the edge, not beside it: the edge is the
+          spot the user reaches for. */}
       <div
         className="leiste-kante"
         title="Breite ziehen, Doppelklick setzt zurück"
@@ -562,8 +560,8 @@ export default function Sidebar(props: Props) {
       />
       <div className="sidebar-header">
         <span className="brand">Nexora</span>
-        {/* Ganz rechts, weil er die Leiste als Ganzes betrifft und nicht das,
-            was in ihr steht. */}
+        {/* Placed on the far right because it affects the entire sidebar and
+          not its contents. */}
         <button
           className="icon-btn leiste-griff"
           title="Leiste ausblenden (Strg + \)"
@@ -581,8 +579,8 @@ export default function Sidebar(props: Props) {
           placeholder="Suchen…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          // Escape wirft die Suche weg, ohne dass man zum Kreuz greifen muss.
-          // Wer sucht, hat die Hände ohnehin auf der Tastatur.
+          // Pressing Escape clears the search without needing to click the
+          // cross button. Searchers typically have their hands on the keyboard.
           onKeyDown={(e) => {
             if (e.key === "Escape" && q !== "") {
               e.preventDefault();
@@ -590,15 +588,15 @@ export default function Sidebar(props: Props) {
             }
           }}
         />
-        {/* Beide Knöpfe erscheinen nur, solange etwas im Feld steht: ohne
-            Suchwort gäbe es nichts wegzuwerfen und nichts einzugrenzen. */}
+        {/* Both buttons appear only while the field contains text: without a
+          query there is nothing to clear and nothing to filter by. */}
         {q !== "" && (
           <div className="such-knoepfe">
             <button className="icon-btn" title="Suche leeren (Esc)" aria-label="Suche leeren" onClick={suchtLoeschen}>
               ✕
             </button>
-            {/* Der Punkt daneben sagt, dass ein Filter gesetzt ist -- sonst
-                wundert man sich über zu wenige Treffer. */}
+            {/* The dot beside it indicates that a filter is active — otherwise
+              one could be puzzled by unexpectedly few results. */}
             <button
               className={"icon-btn" + (filterAktiv ? " aktiv" : "")}
               title={filterAktiv ? "Filter (aktiv)" : "Treffer eingrenzen"}
@@ -667,11 +665,11 @@ export default function Sidebar(props: Props) {
           sections. */}
       {results === null && (
         <div className="sidebar-werkzeuge">
-          {/* Alles, womit etwas entsteht oder das Haus verlässt, steht in
-              dieser einen Zeile beieinander: neue Seite, neue Ablage, Import,
-              Export. Die neue Seite hing vorher als blankes Plus oben in der
-              Kopfzeile -- ein Zeichen ohne Wort, weit weg von den drei anderen,
-              die dasselbe tun. */}
+            {/* Everything that creates or exports content is grouped on this
+              single line: new page, new space, import, export. Previously the
+              new-page action lived as an unlabeled plus in the header — an
+              icon without a word, far from the three other actions that do
+              the same. */}
           <button className="text-btn" title="Neue Seite ganz oben anlegen" onClick={() => onCreateRoot()}>
             + Seite
           </button>
@@ -681,9 +679,9 @@ export default function Sidebar(props: Props) {
           {/* Labelled instead of an arrow: an icon alone does not say that a
               whole archive can be read in here, and since the import can create
               a space of its own, this is the way back out of an export. */}
-          {/* Der Import fragt zuerst, wohin. Frueher hing an jeder Ablage ein
-              eigener Pfeil dafuer; die Frage ist dieselbe, sie steht jetzt nur
-              einmal da statt an jeder Ueberschrift. */}
+            {/* The import first asks where to put the content. Previously each
+              space had its own arrow; the question is the same but is now
+              asked once instead of on every heading. */}
           <div className="klappmenue" ref={einfuhrBereich}>
             <button
               className="text-btn"
@@ -722,10 +720,9 @@ export default function Sidebar(props: Props) {
               </div>
             )}
           </div>
-          {/* Ein gewoehnlicher Sprung auf die Adresse, kein fetch: so nimmt der
-              Browser den Dateinamen aus dem Content-Disposition-Kopf und
-              schreibt den Strom direkt auf die Platte, statt ihn erst in den
-              Speicher zu ziehen. */}
+            {/* A normal navigation to the URL, not a fetch: the browser can pick
+              up the filename from the Content-Disposition header and stream
+              the download directly to disk instead of loading it into memory. */}
           {frei("export") && (ausgebbar.length > 0 || ohneAblage) && (
             <div className="klappmenue" ref={ausfuhrBereich}>
               <button
@@ -803,8 +800,8 @@ export default function Sidebar(props: Props) {
               )}
             </div>
           )}
-          {/* Jede Ablage einzeln zuzuklappen ist bei einem Dutzend Ablagen ein
-              Dutzend Klicks. Hier ist es einer. */}
+            {/* Collapsing every space individually would be a dozen clicks with a
+              dozen spaces. This button does it in one. */}
           <button
             className="text-btn klapp-alles"
             title={alleZu ? "Alle Abschnitte wieder aufklappen" : "Alle Abschnitte zuklappen"}
@@ -908,6 +905,14 @@ export default function Sidebar(props: Props) {
                     >
                       {eingeklappt ? "▸" : "▾"}
                     </button>
+                    {/* Der Punkt trägt die Farbe der Ablage. Er steht vor dem
+                        Namen und nicht in der Zeichenreihe rechts: die Farbe
+                        soll man sehen, ohne auf die Zeile zu zeigen. */}
+                    <span
+                      className="ablage-punkt"
+                      style={{ background: farbeFuerAblage(sp.id, sp.farbe) }}
+                      aria-hidden="true"
+                    />
                     <span className="klapp-name" onClick={() => klappen(marke)}>
                       {sp.name}
                     </span>
@@ -926,15 +931,15 @@ export default function Sidebar(props: Props) {
                         {sp.oeffentlich === "schreiben" ? "offen" : "öffentlich"}
                       </span>
                     )}
-                    {/* Die Zahl erscheint nur eingeklappt: aufgeklappt sieht
-                        man die Seiten ja. */}
+                    {/* The count is shown only while collapsed: when expanded you
+                      can already see the pages. */}
                     {eingeklappt && spacePages.length > 0 && (
                       <span className="tag-anzahl muted small">{spacePages.length}</span>
                     )}
-                    {/* Ohne das feste display folgen die Zeichen derselben Regel
-                        wie in den Zeilen darunter: sie erscheinen, wenn man auf
-                        die Ueberschrift zeigt. Sonst steht ueber jeder Ablage
-                        eine Reihe Zeichen, die man fast nie braucht. */}
+                    {/* Without a fixed display these controls would follow the
+                      same rule as the lines below: they appear on hover.
+                      Otherwise every space would show a row of controls one
+                      rarely needs. */}
                     <span className="tree-actions">
                       <button className="icon-btn" title="Neue Seite" onClick={() => onCreateInSpace(sp.id)}>
                         +
@@ -956,9 +961,24 @@ export default function Sidebar(props: Props) {
                         <button
                           className="icon-btn"
                           title="Sichtbarkeit dieser Ablage"
-                          onClick={() => setSichtbarkeitFuer((v) => (v === sp.id ? null : sp.id))}
+                          onClick={() => {
+                            setFarbeFuer(null);
+                            setSichtbarkeitFuer((v) => (v === sp.id ? null : sp.id));
+                          }}
                         >
                           ◎
+                        </button>
+                      )}
+                      {sp.darfVerwalten && (
+                        <button
+                          className="icon-btn"
+                          title="Farbe dieser Ablage"
+                          onClick={() => {
+                            setSichtbarkeitFuer(null);
+                            setFarbeFuer((v) => (v === sp.id ? null : sp.id));
+                          }}
+                        >
+                          ◐
                         </button>
                       )}
                       {frei("gruppen") && sp.darfVerwalten && (
@@ -970,10 +990,9 @@ export default function Sidebar(props: Props) {
                           ⚿
                         </button>
                       )}
-                      {/* Ein- und Ausfuhr standen frueher hier, an jeder
-                          Ueberschrift zwei weitere Zeichen. Sie stehen jetzt
-                          oben links ueber allen Ablagen und fragen dort nach
-                          der Ablage -- siehe die Werkzeugzeile. */}
+                        {/* Import and export used to live here as extra icons on every
+                          heading. They now sit in the top-left tool row and
+                          ask for the target space there — see the tool section. */}
                       {sp.darfVerwalten && (
                         <button className="icon-btn" title="Space löschen" onClick={() => onDeleteSpace(sp.id)}>
                           ✕
@@ -1022,6 +1041,57 @@ export default function Sidebar(props: Props) {
                       <div className="sichtbarkeit-hinweis muted small">
                         Betrifft nur angemeldete Konten dieser Instanz. Ohne Anmeldung bleibt die
                         Ablage unerreichbar.
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Die Farbtafel. Eine feste Auswahl statt eines freien
+                      Farbwählers: die zehn Töne sind gegeneinander
+                      unterscheidbar und auf beiden Grundtönen lesbar, und wer
+                      frei wählen darf, trifft irgendwann zweimal fast dasselbe
+                      Grau. Wer es doch genau wissen will, findet den freien
+                      Wähler am Punkt in der Legende des Grafen. */}
+                  {farbeFuer === sp.id && (
+                    <div className="sichtbarkeit-menue farbmenue">
+                      <div className="sichtbarkeit-kopf">Farbe dieser Ablage</div>
+                      <div className="farbmenue-tafel">
+                        {ABLAGE_FARBEN.map((f) => (
+                          <button
+                            key={f}
+                            className={"farbmenue-feld" + (sp.farbe === f ? " gewaehlt" : "")}
+                            style={{ background: f }}
+                            title={f}
+                            aria-label={"Farbe " + f}
+                            aria-pressed={sp.farbe === f}
+                            onClick={() => {
+                              onSpaceFarbe(sp.id, f);
+                              setFarbeFuer(null);
+                            }}
+                          />
+                        ))}
+                      </div>
+                      {/* Zurücksetzen und nicht "keine Farbe": ohne eigene Wahl
+                          bekommt die Ablage eine aus der Reihe, sie ist also
+                          nie farblos. */}
+                      <button
+                        className="sichtbarkeit-eintrag"
+                        onClick={() => {
+                          onSpaceFarbe(sp.id, "");
+                          setFarbeFuer(null);
+                        }}
+                      >
+                        <span className="sichtbarkeit-text">
+                          <span className="sichtbarkeit-titel">Zurücksetzen</span>
+                          <span className="sichtbarkeit-erklaerung">
+                            Wieder die Farbe, die sich aus der Ablage selbst ergibt
+                          </span>
+                        </span>
+                        <span className="sichtbarkeit-haken" aria-hidden="true">
+                          {sp.farbe ? "" : "✓"}
+                        </span>
+                      </button>
+                      <div className="sichtbarkeit-hinweis muted small">
+                        Gilt auch im Grafen: dort trägt jede Seite die Farbe ihrer Ablage.
                       </div>
                     </div>
                   )}
