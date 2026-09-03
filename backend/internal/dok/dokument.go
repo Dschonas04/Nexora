@@ -42,9 +42,9 @@ type Stueck struct {
 	Durch   bool
 	Unter   bool
 	Verweis string // the address, when the run is a link
-	// Farbe und Hintergrund tragen die Namen aus dem Editor: "yellow", "red",
-	// "blue". Kein Farbwert, denn der Name ueberlebt einen Wechsel des
-	// Grundtons; uebersetzt wird erst beim Setzen, siehe farben.go.
+	// Farbe and Hintergrund hold the names from the editor: "yellow", "red",
+	// "blue". Not a color value, because the name survives a theme change;
+	// translation happens when rendering, see farben.go.
 	Farbe       string
 	Hintergrund string
 }
@@ -59,17 +59,18 @@ type Absatz struct {
 	Text     []Stueck
 	Zeilen   []string   // Codeblock, zeilenweise
 	Tabelle  [][]string // a table, rows of cells
-	// Bild is a picture carried in the answer itself, as a data address. Word
-	// files keep their pictures inside the archive, so there is no address that
-	// could point at one; without this the picture would be lost on the way into
-	// the editor.
+	// Bild is a picture embedded in the document as a data URL. Word files
+	// store their images inside the archive, so there is no external address
+	// to refer to; without this the image would be lost when round-tripping
+	// through the editor.
 	//
-	// Auf dem Weg nach draussen steht hier dasselbe: die Bytes des Bildes, damit
-	// PDF und Word es einbetten koennen statt nur seinen Namen zu nennen.
+	// On the way out the same field carries the image bytes so PDF and Word
+	// can embed the image instead of merely naming it.
 	Bild string
-	// BildDaten sind die Bytes eines Bildes, wenn der Aufrufer sie beschaffen
-	// konnte. Ist das Feld leer, bleibt es bei der Verweiszeile -- ein Name mit
-	// Adresse ist ehrlicher als eine leere Flaeche.
+	// BildDaten contains the raw bytes of an image when the caller could
+	// obtain them. If the field is empty we fall back to the reference line —
+	// a line stating what is missing and where it lives is more honest than an
+	// empty area.
 	BildDaten []byte
 }
 
@@ -79,7 +80,7 @@ type Dokument struct {
 	Absatz []Absatz
 }
 
-// Einlesen des Editor-Dokuments
+// Reading the editor document
 
 type knoten struct {
 	Type     string          `json:"type"`
@@ -97,19 +98,19 @@ type stueckJSON struct {
 	Props   map[string]any  `json:"props"`
 }
 
-// Bildquelle beschafft die Bytes zu einer Bildadresse.
+// Bildquelle fetches the bytes for an image address.
 //
-// Als Rueckruf und nicht als fertige Liste: die Adressen stehen im Dokument, und
-// nur der Aufrufer weiss, wie er an die Datei dahinter kommt -- ueber die
-// Ablage, ueber eine Datenadresse im Text, oder gar nicht. Ein nil-Rueckruf
-// heisst: keine Bilder, dann steht wie bisher die Verweiszeile da.
+// As a callback rather than a finished list: the addresses live in the
+// document and only the caller knows how to obtain the file behind them —
+// via the storage backend, via a data URL in the text, or not at all. A nil
+// callback means no images; then the reference line remains as before.
 type Bildquelle func(adresse string) ([]byte, bool)
 
-// AusInhaltMitBildern liest ein gespeichertes Dokument ein und holt zu jedem
-// Bild die Bytes. Wie ueberall in dieser Umwandlung gilt: ein unbekannter
-// Blocktyp wird zum Absatz und nicht zum Fehler, denn ein Dokument, das
-// unvollstaendig herauskommt, ist mehr wert als eines, das die Ausfuhr
-// verweigert. Ein nil-Rueckruf heisst: ohne Bilder.
+// AusInhaltMitBildern reads a stored document and fetches the bytes for each
+// image. As everywhere in this conversion: an unknown block type becomes a
+// paragraph rather than an error, because an incomplete exported document is
+// more useful than one that refuses to export. A nil callback means: no
+// images.
 func AusInhaltMitBildern(roh json.RawMessage, titel string, hol Bildquelle) Dokument {
 	d := Dokument{Titel: titel}
 	var knoten []knoten

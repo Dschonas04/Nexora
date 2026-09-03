@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-// probePNG liefert ein kleines Bild als PNG-Bytes.
+// probePNG returns a small image as PNG bytes.
 func probePNG(t *testing.T, breite, hoehe int) []byte {
 	t.Helper()
 	b := image.NewRGBA(image.Rect(0, 0, breite, hoehe))
@@ -42,8 +42,8 @@ func TestBildAufbereitenLiestEinPNG(t *testing.T) {
 	}
 }
 
-// Eine Datenadresse, wie sie aus einem eingelesenen Word-Dokument stammt, muss
-// denselben Weg gehen wie eine Datei.
+// A data URL, as produced by an imported Word document, must take the same
+// path as a regular file.
 func TestBildAufbereitenLiestEineDatenadresse(t *testing.T) {
 	adresse := "data:image/png;base64," + base64.StdEncoding.EncodeToString(probePNG(t, 4, 4))
 	if _, ok := bildAufbereiten([]byte(adresse)); !ok {
@@ -51,30 +51,30 @@ func TestBildAufbereitenLiestEineDatenadresse(t *testing.T) {
 	}
 }
 
-// Was kein Bild ist, ist kein Bild: der Satz faellt dann auf die Verweiszeile
-// zurueck, statt eine leere Flaeche zu setzen.
+// What is not an image is not an image: the typesetting then falls back to
+// the reference line instead of leaving an empty area.
 func TestBildAufbereitenLehntUnsinnAb(t *testing.T) {
 	if _, ok := bildAufbereiten([]byte("kein Bild")); ok {
 		t.Fatal("Unsinn als Bild angenommen")
 	}
 }
 
-// Ein grosses Bild wird auf eine vernuenftige Kantenlaenge gebracht, sonst waegt
-// ein Foto aus der Kamera das ganze Dokument nieder.
+// A large image is reduced to a reasonable maximum edge length; otherwise a
+// camera photo would overwhelm the whole document.
 func TestVerkleinernHaeltDieKante(t *testing.T) {
 	gross := image.NewRGBA(image.Rect(0, 0, 4000, 2000))
 	klein := verkleinern(gross, 1400)
 	if klein.Bounds().Dx() != 1400 || klein.Bounds().Dy() != 700 {
 		t.Fatalf("Maße: %v", klein.Bounds())
 	}
-	// Ein Bild, das schon klein genug ist, wird nicht angefasst.
+	// Images that are already small enough are left unchanged.
 	winzig := image.NewRGBA(image.Rect(0, 0, 10, 10))
 	if verkleinern(winzig, 1400) != image.Image(winzig) {
 		t.Fatal("kleines Bild wurde neu gerechnet")
 	}
 }
 
-// dokumentMitBild baut ein Dokument, in dem ein Bildblock steht.
+// dokumentMitBild builds a document that contains an image block.
 func dokumentMitBild(t *testing.T) Dokument {
 	t.Helper()
 	daten := probePNG(t, 20, 10)
@@ -88,15 +88,15 @@ func dokumentMitBild(t *testing.T) Dokument {
 	})
 }
 
-// Das PDF traegt das Bild wirklich bei sich, als eingebettetes Objekt und nicht
-// als Zeile mit einem Namen darin.
+// The PDF actually carries the image with it as an embedded object and not
+// merely as a line containing a name.
 func TestPDFBettetDasBildEin(t *testing.T) {
 	roh := PDF(dokumentMitBild(t))
 	if !bytes.Contains(roh, []byte("/Subtype /Image")) {
 		t.Fatal("kein Bildobjekt im PDF")
 	}
-	// Der Seitenstrom ist gepackt, der Aufruf steht also nicht im Klartext in
-	// der Datei; er wird ausgepackt gesucht.
+	// The page stream is compressed, so the call does not appear in cleartext
+	// in the file; the test searches for it after decompression.
 	if !bytes.Contains([]byte(seitenstroeme(t, roh)), []byte("/Im0 Do")) {
 		t.Fatal("das Bild wird nirgends aufgerufen")
 	}
@@ -105,8 +105,8 @@ func TestPDFBettetDasBildEin(t *testing.T) {
 	}
 }
 
-// seitenstroeme packt die Seiteninhalte eines PDF aus, damit ein Test hinein
-// sehen kann.
+// seitenstroeme unpacks the page contents of a PDF so that a test can
+// inspect them.
 func seitenstroeme(t *testing.T, roh []byte) string {
 	t.Helper()
 	var b strings.Builder
@@ -132,8 +132,8 @@ func seitenstroeme(t *testing.T, roh []byte) string {
 	return b.String()
 }
 
-// Ohne Bilddaten bleibt es bei der Verweiszeile. Eine Seite, deren Bild nicht
-// mehr da ist, soll sagen, was fehlt, statt eine Luecke zu lassen.
+// Without image data the reference line remains. A page whose image is
+// missing should state what is missing rather than leave a gap.
 func TestPDFOhneBildBleibtBeiDerZeile(t *testing.T) {
 	roh := PDF(AusInhaltMitBildern(json.RawMessage(
 		`[{"type":"image","props":{"url":"/api/x","name":"Plan"}}]`), "Ohne", nil))
@@ -142,8 +142,9 @@ func TestPDFOhneBildBleibtBeiDerZeile(t *testing.T) {
 	}
 }
 
-// Word legt das Bild als Datei ins Archiv, nennt seinen Typ und verweist darauf.
-// Fehlt eines der drei, meldet Word die Datei als beschaedigt.
+// Word places the image as a file in the archive, records its type and
+// references it. If any of the three are missing, Word reports the file as
+// corrupted.
 func TestWordBettetDasBildEin(t *testing.T) {
 	roh, err := Word(dokumentMitBild(t))
 	if err != nil {
@@ -177,17 +178,18 @@ func TestWordBettetDasBildEin(t *testing.T) {
 	if !strings.Contains(teile["word/document.xml"], `r:embed="rIdBild0"`) {
 		t.Fatal("der Text ruft das Bild nicht auf")
 	}
-	// Die Unterschrift steht darunter, der Name nicht: der steht schon im Bild.
+	// The caption appears below, not the filename: the name is already in
+	// the image.
 	if !strings.Contains(teile["word/document.xml"], "Der Aufbau") {
 		t.Fatal("die Bildunterschrift fehlt")
 	}
 }
 
-// Der eigene Word-Leser findet das Bild in der eigenen Word-Datei wieder.
-//
-// Das ist die schaerfste Probe, die ohne Word zu haben ist: die Datei muss so
-// gebaut sein, dass ein Leser, der die Beziehungen und die Zeichnung wirklich
-// verfolgt, das Bild findet -- und nicht nur so, dass die Teile da sind.
+// The project's Word reader finds the image back in its own Word file.
+
+// This is the strongest test available without Word itself: the file must be
+// constructed so that a reader that follows relationships and drawing truly
+// finds the image — not merely that the parts are present.
 func TestWordRundlaufFindetDasBild(t *testing.T) {
 	roh, err := Word(dokumentMitBild(t))
 	if err != nil {

@@ -20,8 +20,8 @@ export default function VersionPanel({ pageId, canEdit, onRestored, onClose }: P
     api.listVersions(pageId).then(setVersions).catch(() => setVersions([]));
   }, [pageId]);
 
-  // Restoring is safe because the backend snapshots the current state first,
-  // which the confirmation says so nobody fears losing their work.
+  // Restoring is safe because the backend snapshots the current state first;
+  // the confirmation explains this so nobody fears losing their work.
   const restore = async (versionId: string) => {
     if (
       !(await frage({

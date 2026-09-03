@@ -1,7 +1,7 @@
 // File attachments. Metadata lives in the database, the bytes live in the
-// configured Ablage, local disk or an S3 bucket, as one object per
-// attachment id. That split means a backup has to cover both, otherwise rows
-// point at objects that are gone.
+// configured storage (Ablage) — either local disk or an S3 bucket — stored
+// as one object per attachment id. Because metadata and bytes are separate,
+// backups must cover both; otherwise the DB may reference missing objects.
 package handlers
 
 import (
@@ -21,12 +21,12 @@ import (
 )
 
 // Default in case the setting is missing. The actual limit comes from
-// MaxAnhangBytes and can be changed while running, but the value has to match
-// client_max_body_size in the nginx in front, otherwise that one cuts off first.
+// MaxAnhangBytes and can be changed at runtime, but it must match
+// nginx's `client_max_body_size` in front, otherwise nginx blocks uploads first.
 const maxUploadBytes = 25 << 20
 
 // ListAttachments returns the metadata of the files on a page. Read access to
-// the page is enough, matching what a reader sees in the editor.
+// the page is sufficient, matching what a reader can see in the editor.
 func (s *Server) ListAttachments(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -53,12 +53,12 @@ func (s *Server) ListAttachments(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, list)
 }
 
-// UploadAttachment stores an uploaded file. The row is inserted first to obtain
-// an id, which then names the file on disk; every failure after that point rolls
-// the row back so no orphan metadata survives.
+// UploadAttachment stores an uploaded file. The DB row is inserted first to
+// obtain an id that then names the stored object; any failure after that rolls
+// the row back so no orphan metadata remains.
 //
-// The file is named by its id, never by the name the client sent. That keeps a
-// crafted filename such as ../../etc/passwd from escaping the storage directory.
+// The stored object is named by its id, not by the client's filename. This
+// prevents crafted filenames (e.g. ../../etc/passwd) from escaping the storage.
 func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -85,9 +85,8 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	}
 	mime := typAusAngabeUndName(header.Header.Get("Content-Type"), filename)
 
-	// Die ersten Bytes ansehen, bevor irgendetwas geschrieben wird. Der Puffer
-	// steht danach wieder vollständig zur Verfügung, gelesen wird nichts
-	// doppelt: Peek gibt zurück, ohne zu verbrauchen.
+	// Peek at the first bytes before writing. The buffer remains intact: Peek
+	// returns data without consuming it, so nothing is read twice.
 	gepuffert := bufio.NewReaderSize(file, 512)
 	anfang, _ := gepuffert.Peek(len(elfMagie))
 	if istLinuxProgramm(anfang) {
@@ -106,8 +105,8 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// From here on the storage decides where the bytes land, disk or object
-	// store. The handler sees no difference.
+	// From here on the storage decides where the bytes land (disk or object
+	// store); the handler does not need to care about the difference.
 	//
 	// The text extraction hooks into the stream: the file passes through anyway,
 	// and fetching it a second time to read it would be an avoidable round trip,
@@ -121,12 +120,12 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "Ablage nicht erreichbar")
 		return
 	}
-	// Add the full text afterwards. Only now, after the write succeeded: an
-	// attachment without search text is usable, a search text without its
-	// attachment is not.
+	// Extract and store full text afterwards. Only do this after the write
+	// succeeded: an attachment without indexed text is still usable, whereas
+	// indexed text pointing to a missing object is not.
 	//
-	// Errors are swallowed. The upload succeeded; that the file does not become
-	// searchable is a loss of convenience, not a reason to fail.
+	// Text extraction errors are logged but not fatal: the upload itself
+	// already succeeded and should not be reversed because indexing failed.
 	if lizenz.Frei(lizenz.Anhangsuche) {
 		if txt := textAusAnhang(r.Context(), strom.Bytes(), mime, filename); txt != "" {
 			if _, err := s.Pool.Exec(r.Context(),
@@ -145,17 +144,12 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// typAusAngabeUndName determines the file type.
+// typAusAngabeUndName determines the file mime type.
 //
-// What the browser sends along on upload is a claim, and for an extension it
-// does not know it sends nothing at all or "application/octet-stream". The type
-// however decides whether a file later gets a preview and whether its text goes
-// into the search. A PDF arriving as octet-stream is a file without properties
-// after that.
-//
-// So when the claim says nothing, the extension is asked. The browser's claim
-// takes precedence as long as it says something: it knows cases an extension
-// cannot tell apart.
+// The browser's Content-Type header is only a claim and may be missing or
+// generic (e.g. "application/octet-stream"). The chosen type affects whether
+// a file gets an inline preview and whether its text is indexed. When the
+// header is empty or generic, the filename extension is used as a fallback.
 func typAusAngabeUndName(angabe, dateiname string) string {
 	angabe = strings.TrimSpace(strings.ToLower(angabe))
 	// A parameter such as "; charset=utf-8" does not belong in the column.
@@ -191,15 +185,14 @@ func typAusAngabeUndName(angabe, dateiname string) string {
 	return "application/octet-stream"
 }
 
-// DownloadAttachment streams a file back. Access is decided by the page, not by
-// the attachment, so revoking a share also cuts off its files.
+// DownloadAttachment streams a file back. Access is decided by the page, not
+// by the attachment, so revoking a share also cuts off its files.
 //
-// Angezeigt wird nur, was sich anzeigen laesst, ohne ein Dokument zu sein:
-// Bilder, Ton, Video, PDF, schlichter Text. Der Typ ist die Behauptung dessen,
-// der die Datei hochgeladen hat, und eine HTML- oder SVG-Datei, unveraendert
-// und "inline" ausgeliefert, waere Programmcode auf dem Ursprung dieser
-// Instanz. Alles ausserhalb der Liste geht darum als Download hinaus; siehe
-// anhangKopf.
+// Only types that can be rendered without being treated as a document are
+// shown inline: images, audio, video, PDF and plain text. The mime type is
+// the claim of the uploader, and delivering an HTML or SVG file unchanged and
+// inline would execute code on the origin of this instance. Everything outside
+// the allowed set is therefore sent as a download; see anhangKopf.
 func (s *Server) DownloadAttachment(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")

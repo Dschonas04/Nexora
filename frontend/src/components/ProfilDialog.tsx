@@ -1,27 +1,23 @@
-// Das eigene Profil: wie man heißt und wie man aussieht.
+// The user's profile: how they are named and how they appear.
 //
-// Beides gehört zusammen und beides geht das Konto selbst an, nicht die
-// Verwaltung -- deshalb ein eigenes Fenster unten an der Leiste und keine Zeile
-// in den Einstellungen, die Administratoren vorbehalten sind.
+// Both belong to the user and not to administrators, so this is a dedicated
+// dialog in the footer rather than a settings entry.
 //
-// Das Bild wird HIER verkleinert und nicht erst im Dienst. Ein Foto aus einer
-// Kamera wiegt vier Megabyte, angezeigt wird es als Kreis von achtundzwanzig
-// Pixeln. Es ungerechnet hochzuladen hieße, eine Leitung und eine Datenbank mit
-// dem 3.900-fachen dessen zu belasten, was je zu sehen ist. Der Browser kann
-// rechnen, also rechnet er.
+// The image is resized here before upload. A camera photo may be several
+// megabytes while it is displayed as a small circle; resizing in the browser
+// saves bandwidth and storage.
 import { useRef, useState } from "react";
 
 import { api } from "../api/client";
 import { useAuth } from "../auth";
 import Profilbild from "./Profilbild";
 
-// Kantenlänge des gespeicherten Bildes. 256 statt 128, damit es auf einem
-// Bildschirm mit doppelter Auflösung und im Profilfenster selbst noch scharf
-// ist.
+// Edge length of the stored image. Use 256 rather than 128 so the avatar
+// remains sharp on high-DPI screens and in the profile dialog.
 const KANTE = 256;
 
-// Zugeschnitten wird mittig auf ein Quadrat: angezeigt wird ein Kreis, und ein
-// verzerrtes Gesicht ist schlimmer als ein beschnittenes.
+// Crop centered to a square: the avatar is shown as a circle and a distorted
+// face is worse than a cropped one.
 async function verkleinern(datei: File): Promise<Blob> {
   const bild = await new Promise<HTMLImageElement>((fertig, gescheitert) => {
     const url = URL.createObjectURL(datei);
@@ -51,9 +47,8 @@ async function verkleinern(datei: File): Promise<Blob> {
   return new Promise<Blob>((fertig, gescheitert) =>
     leinwand.toBlob(
       (b) => (b ? fertig(b) : gescheitert(new Error("Das Bild ließ sich nicht erzeugen."))),
-      // JPEG und nicht PNG: ein Gesicht ist ein Foto, und als PNG wäre dasselbe
-      // Bild ein Vielfaches groß. 0.9 ist die Grenze, unterhalb derer man den
-      // Unterschied bei dieser Größe sieht.
+      // Use JPEG rather than PNG: a photo encoded as PNG would be much larger.
+      // Quality 0.9 preserves visible fidelity at this size.
       "image/jpeg",
       0.9,
     ),
@@ -84,7 +79,7 @@ export default function ProfilDialog({ onClose }: { onClose: () => void }) {
       setFehler((e as Error).message);
     } finally {
       setLaeuft(null);
-      // Damit dieselbe Datei ein zweites Mal gewählt werden kann.
+      // Reset the file input so the same file can be selected again.
       if (dateiFeld.current) dateiFeld.current.value = "";
     }
   };

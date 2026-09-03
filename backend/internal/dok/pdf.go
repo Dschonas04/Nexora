@@ -133,7 +133,7 @@ type wort struct {
 	verweis bool // set in colour and underlined
 	durch   bool
 	unter   bool
-	// Die Namen aus dem Editor, uebersetzt erst beim Zeichnen (farben.go).
+	// The names from the editor, translated only when drawing (farben.go).
 	farbe       string
 	hintergrund string
 }
@@ -145,9 +145,9 @@ type setzer struct {
 	y      float64 // current baseline, measured from the top
 	titel  string
 	fuss   string
-	// Die Bilder in der Reihenfolge, in der sie gesetzt wurden. Ihre Nummer im
-	// Satz ist zugleich ihr Name im PDF (/Im0, /Im1 ...), und ihre Objekte
-	// stehen am Ende der Datei, hinter den Seiten.
+	// Images in the order they were placed. Their index in the layout is
+	// also their name in the PDF (/Im0, /Im1 ...), and their objects appear
+	// at the end of the file, after the pages.
 	bilder []*pdfBild
 }
 
@@ -181,9 +181,9 @@ func (s *setzer) zeileSetzen(woerter []wort, x, zeilenHoehe float64) {
 		}
 		breite := textBreite(w.text, w.schrift, w.groesse)
 
-		// Die Markierung zuerst: sie liegt HINTER dem Text, also muss sie vor
-		// ihm gezeichnet werden. Der Kasten reicht etwas unter die Grundlinie
-		// und bis über die Oberlänge, sonst schnitte er die Buchstaben an.
+		// Draw the highlight first: it lies BEHIND the text, so it must be
+		// painted before the text. The box extends slightly below the
+		// baseline and above the ascenders, otherwise it would clip letters.
 		if c, ok := hintergrundfarbe(w.hintergrund); ok {
 			fmt.Fprintf(s.akt, "%s %.2f %.2f %.2f %.2f re f 0 0 0 rg\n",
 				c.pdfFarbe(), lauf, s.y-w.groesse*0.24, breite, w.groesse*1.02)
@@ -463,9 +463,10 @@ func (s *setzer) absatzSetzen(a Absatz) {
 		s.y -= 8
 
 	case ArtDatei:
-		// Ein Bild, das sich einbetten laesst, wird gesetzt; darunter steht, wenn
-		// vorhanden, seine Unterschrift. Alles andere -- Ton, Video, ein Anhang,
-		// ein Bild, das sich nicht entpacken liess -- bleibt die Verweiszeile.
+		// An image that can be embedded is placed; if present, its caption is
+		// written beneath it. Everything else — audio, video, an attachment,
+		// or an image that could not be unpacked — remains the reference
+		// line.
 		if len(a.BildDaten) > 0 {
 			if bild, ok := bildAufbereiten(a.BildDaten); ok {
 				s.bildSetzen(bild, einzug, breite)
@@ -626,9 +627,9 @@ func (s *setzer) fertig() []byte {
 		fmt.Fprintf(&ressourcen, "/%s %d 0 R ", f.kennung, ersteSchrift+i)
 	}
 	ressourcen.WriteString(">> ")
-	// Die Bilder stehen bei allen Seiten in den Betriebsmitteln, auch wenn eine
-	// Seite keines benutzt. Das kostet eine Zeile je Seite und erspart es, sich
-	// zu merken, welches Bild auf welcher Seite steht.
+	// The images are listed in the resources for every page, even if a page
+	// does not use one. This costs one line per page but avoids having to
+	// remember which image belongs to which page.
 	if len(s.bilder) > 0 {
 		ressourcen.WriteString("/XObject << ")
 		for i := range s.bilder {
@@ -681,18 +682,19 @@ func kuerzen(s string, n int) string {
 }
 
 // schreibeBild setzt den Aufruf eines Bildes in den Seitenstrom.
-//
-// Die Matrix ist die ganze Groesse: ein Bild ist im PDF ein Quadrat der
-// Kantenlaenge eins, und erst cm zieht es auf sein Mass und schiebt es an
-// seinen Platz.
+// schreibeBild inserts the invocation of an image into the page stream.
+
+// The matrix describes the full size: an image is a unit square in the PDF
+// and the `cm` operator scales it to its requested dimensions and moves it
+// to its position.
 func (s *setzer) schreibeBild(nummer int, x, y, breite, hoehe float64) {
 	fmt.Fprintf(s.akt, "q %.2f 0 0 %.2f %.2f %.2f cm /Im%d Do Q\n",
 		breite, hoehe, x, y, nummer)
 }
 
-// bildUnterschrift zieht aus den Stuecken einer Dateizeile die Unterschrift.
-// Der Name selbst steht schon im Bild; ihn darunter zu wiederholen brauchte
-// niemand.
+// bildUnterschrift extracts the caption from the pieces of a file line.
+// The filename itself is already present in the image; repeating it below
+// is unnecessary.
 func bildUnterschrift(st []Stueck) string {
 	var b strings.Builder
 	for _, s := range st {

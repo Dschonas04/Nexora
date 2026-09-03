@@ -10,8 +10,8 @@ import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react"
 import { api } from "../api/client";
 import Editor from "./Editor";
 import Fehlergrenze from "./Fehlergrenze";
-// Nachgeladen, nicht mitgebündelt: pdf.js und pdf-lib zusammen wiegen mehr als
-// die halbe Anwendung, und die meisten sehen eine PDF nur an.
+// Loaded on demand, not bundled: pdf.js and pdf-lib together are large, and
+// most users only view PDFs.
 const PdfMarker = lazy(() => import("./PdfMarker"));
 
 export interface Datei {
@@ -81,10 +81,10 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   const [zoom, setZoom] = useState(1);
   const [drehung, setDrehung] = useState(0);
   const [text, setText] = useState<string | null>(null);
-  // Markiert wird nur auf Wunsch: solange niemand danach fragt, bleibt der
-  // Betrachter des Browsers stehen, der mehr kann als jede selbstgemalte
-  // Anzeige. Die Zahl daneben zwingt nach dem Speichern ein neues Laden -- ohne
-  // sie zeigte der Betrachter die alte Fassung aus dem Zwischenspeicher.
+  // Marking is enabled only on request: while no one asks for it the browser
+  // viewer remains in use, which is more capable than a custom renderer. The
+  // counter forces a reload after saving; without it the viewer might show a
+  // cached older revision.
   const [markieren, setMarkieren] = useState(false);
   const [frisch, setFrisch] = useState(0);
   const [textFehler, setTextFehler] = useState(false);
@@ -157,15 +157,15 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   // Keyboard: the shortcuts a reader expects from any image viewer.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Wer gerade in ein Feld tippt, meint mit "-" ein Minuszeichen und nicht
-      // "verkleinern". Ohne diese Zeile bekaeme man beim Schreiben einer
-      // Anmerkung eine springende Anzeige.
+      // If the user is typing in a field, '-' is meant as a minus sign and not
+      // as "zoom out". Without this guard typing an annotation could trigger
+      // the viewer shortcuts.
       const ziel = e.target as HTMLElement | null;
       if (ziel && (ziel.tagName === "INPUT" || ziel.tagName === "TEXTAREA" || ziel.isContentEditable)) {
         return;
       }
-      // Beim Markieren gehoert die Tastatur dem Markieren: Blaettern und Zoomen
-      // wuerden gesetzte Marken wegwerfen.
+      // While annotating the keyboard belongs to the annotation UI: paging and
+      // zooming would discard current selections.
       if (markieren && e.key !== "Escape") return;
       switch (e.key) {
         case "Escape":
@@ -339,8 +339,9 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             // in front of at a loss.
             <object
               className="qv-frame"
-              // Die Zahl haengt nur dran, damit der Browser nach dem Ersetzen
-              // wirklich neu laedt statt seine Abschrift zu zeigen.
+              // The query parameter is appended to force the browser to reload
+              // the resource after a replacement instead of showing a cached
+              // copy.
               data={datei.url + (frisch ? (datei.url.includes("?") ? "&" : "?") + "v=" + frisch : "")}
               type="application/pdf"
               aria-label={datei.filename}
@@ -398,10 +399,9 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                       </button>
                     )}
                   </div>
-                  {/* The note stands there BEFORE editing, not afterwards as an
-                      excuse: whoever changes a Word file here gets a clean
-                      document with its content, not the same file with one line
-                      changed. */}
+                    {/* The note explains that saving rewrites the file: editing here
+                      produces a fresh document with the edited content rather
+                      than an in-place line edit of the original file. */}
                   {bearbeiten && (
                     <div className="qv-word-hinweis muted small">
                       Beim Speichern wird die Datei neu geschrieben. Text, Überschriften,

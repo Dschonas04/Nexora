@@ -15,9 +15,9 @@ export default function Einfuhr({
   onFertig,
   onClose,
 }: {
-  // Genau eines von beidem: unter eine Seite oder in eine Ablage. Ist keines
-  // gesetzt, landet die Einfuhr an der Wurzel, und nur dann darf sie
-  // stattdessen eine eigene Ablage mitbringen.
+  // Exactly one of these should be set: import under a page or into a space.
+  // If neither is set, the import goes to the root and is allowed to include a
+  // top-level space inside the archive.
   ziel: { parentId?: string; spaceId?: string };
   zielName: string;
   onFertig: (bericht: EinfuhrBericht) => void;
@@ -32,13 +32,14 @@ export default function Einfuhr({
   const [fehler, setFehler] = useState<string | null>(null);
   const [ueber, setUeber] = useState(false);
   const wahl = useRef<HTMLInputElement>(null);
-  // Import a whole space. Possible only at the root: creating a second space
-  // inside a space would not yield one order but two.
+  // Importing a whole space is only possible at the root: creating a nested
+  // space inside an existing space would produce two separate top-level
+  // spaces.
   const alsAblageMoeglich = !ziel.parentId && !ziel.spaceId;
   const [alsAblage, setAlsAblage] = useState(false);
   const [ablageName, setAblageName] = useState("");
-  // A counter instead of a flag: over a child element dragleave fires although
-  // the pointer never left the box.
+  // Use a counter instead of a boolean because dragleave fires when moving
+  // between child elements; the counter prevents flicker.
   const tiefe = useRef(0);
 
   useEffect(() => {

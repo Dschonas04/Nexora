@@ -22,8 +22,8 @@ type registerReq struct {
 }
 
 // Register creates an account and logs it straight in. Registration is open to
-// anyone who can reach the API, so an instance exposed to the internet should
-// sit behind a reverse proxy that restricts this route.
+// anyone who can reach the API; an internet-exposed instance should place
+// this route behind a reverse proxy or other access control.
 func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	var req registerReq
 	if err := decode(r, &req); err != nil {
@@ -31,7 +31,7 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Lowercase the address so Alice@example.com and alice@example.com cannot
-	// become two accounts; the UNIQUE index works on the stored value.
+	// become separate accounts; the UNIQUE index applies to the stored value.
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
 	req.Name = strings.TrimSpace(req.Name)
 	if req.Email == "" || !strings.Contains(req.Email, "@") {
@@ -39,8 +39,8 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Self registration can be switched off. The very first account gets through
-	// nonetheless: it becomes the administrator, and without that exception a
+	// Self-registration can be disabled. The very first account is allowed
+	// regardless and becomes the administrator; without this exception a
 	// fresh instance with closed registration would be unusable.
 	if !RegistrierungOffen() {
 		var vorhanden int
@@ -51,8 +51,8 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Domain filter. Applies only here, not to accounts an administrator creates,
-	// who knows what they are doing.
+	// Domain filter: applies only to self-registration, not to accounts created
+	// by an administrator.
 	if erlaubt := ErlaubteDomaenen(); len(erlaubt) > 0 {
 		domaene := req.Email[strings.LastIndex(req.Email, "@")+1:]
 		passt := false
@@ -76,9 +76,8 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Der Benutzername ist freiwillig. Wer keinen angibt, bekommt einen aus dem
-	// vorderen Teil der Adresse: sonst haetten die meisten Konten keinen, und
-	// die Anmeldung mit Namen waere eine Einstellung, die niemand findet.
+	// The username is optional. If none is provided, one is derived from the
+	// local part of the email address so accounts are not created without one.
 	benutzername, err := benutzernamePruefen(req.Benutzername)
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
@@ -117,7 +116,8 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// The very first account becomes the workspace admin. Counting after the
-	// insert means the very first registration wins even if two arrive at once.
+	// insert avoids a race: if two registrations happen concurrently the one
+	// that completes first becomes the admin.
 	var count int
 	if s.Pool.QueryRow(r.Context(), `SELECT count(*) FROM users`).Scan(&count) == nil && count == 1 {
 		if _, err := s.Pool.Exec(r.Context(), `UPDATE users SET role='admin' WHERE id=$1`, u.ID); err == nil {
@@ -143,12 +143,11 @@ type loginReq struct {
 	Password string `json:"password"`
 }
 
-// Login checks the credentials and issues a session cookie.
+// Login checks credentials and issues a session cookie.
 //
-// Angemeldet wird mit der Adresse ODER dem Benutzernamen. Beides in einem Feld
-// und nicht in zweien: an einer Anmeldemaske erst zu waehlen, womit man sich
-// gleich anmeldet, ist eine Frage, die niemand stellen muss -- ein @ im Text
-// beantwortet sie.
+// Login accepts either an email address or username in a single field. This
+// avoids forcing the user to choose which identifier to use; the presence of
+// an @ suggests an email address.
 func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginReq
 	if err := decode(r, &req); err != nil {
@@ -168,9 +167,9 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		  WHERE email = $1 OR lower(benutzername) = $1`,
 		kennung,
 	).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &hash, &u.Role, &u.CreatedAt)
-	// One message for an unknown address and for a wrong password, so the
-	// response cannot be used to find out which addresses are registered. The
-	// trail gets the distinction anyway, see anmeldungen.go.
+	// Use the same error message for unknown addresses and wrong passwords so
+	// the response cannot be used to enumerate registered emails. The audit
+	// trail records the distinction for administrators.
 	if err != nil || !auth.CheckPassword(hash, req.Password) {
 		// The failed attempt is recorded; without it the audit trail would lack
 		// exactly those events one opens it for in the first place. The address
@@ -191,8 +190,8 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 
 // Logout ends the session and clears the cookie.
 //
-// Revoking it is the actual part: previously the token stayed valid because it
-// was signed, and only the browser that threw it away was logged out.
+// Clearing the cookie is the browser-side part; the server also revokes the
+// session row so the token cannot be reused even if still valid.
 func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
 	// The id comes from the cookie, not from the context: logging out sits
 	// deliberately before the authentication check so that it still works with an
@@ -218,8 +217,8 @@ func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 // Me returns the signed-in account. The frontend calls it on load to decide
-// between the app and the login screen, and it re-reads the row so a role
-// changed by an admin shows up without a new login.
+// between the app and the login screen; re-reading the row ensures role
+// changes made by an admin appear without forcing a new login.
 func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var u models.User
@@ -234,10 +233,10 @@ func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
-// issueSession creates the session, signs a token on it and sets the cookie. If
-// creating it fails a token is issued anyway, only without a session id: better
-// logged in without a list than not logged in at all because a side matter is
-// stuck.
+// issueSession creates the session, signs a token and sets the cookie. If
+// creating the session row fails, a token is still issued without a session id
+// (better to be logged in without a session listing than not at all due to
+// a side failure).
 func (s *Server) issueSession(w http.ResponseWriter, r *http.Request, userID string) {
 	sid, err := s.sitzungAnlegen(r.Context(), r, userID)
 	if err != nil {

@@ -34,9 +34,9 @@ export interface Eingabe {
   feld?: string;
   vorgabe?: string;
   bestaetigen?: string;
-  // "passwort" verdeckt die Eingabe und lässt sie ungetrimmt stehen: ein
-  // Leerzeichen am Ende eines Passworts gehört dazu, auch wenn es meist ein
-  // Versehen ist. Bei allem anderen wird getrimmt wie bisher.
+  // If `art` is "passwort" the input is concealed and not trimmed: a
+  // trailing space may be part of a password. For other types the input is
+  // trimmed as usual.
   art?: "text" | "passwort";
 }
 
@@ -109,9 +109,9 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
     [offen],
   );
 
-  // Was aus dem Feld herauskommt: bei einem Passwort unverändert, sonst ohne
-  // Leerraum an den Rändern. An einer Stelle, damit Tastatur und Knopf nicht
-  // verschieden antworten.
+  // Normalize what comes from the field: for passwords return the raw value,
+  // otherwise trim surrounding whitespace. Centralized so keyboard and button
+  // actions behave the same.
   const ausFeld = (roh: string) => (offen?.art === "passwort" ? roh : roh.trim());
 
   // The keyboard branch reads the field content through a reference: otherwise

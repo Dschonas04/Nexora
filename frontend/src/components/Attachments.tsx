@@ -103,7 +103,7 @@ export default function Attachments({
     }
   };
 
-  // Dateien, die auf der Seite statt auf der Liste abgelegt wurden.
+  // Files dropped elsewhere on the page instead of onto the attachment list.
   useEffect(() => {
     if (!eingeworfen || eingeworfen.length === 0 || !canEdit) return;
     upload(eingeworfen).finally(() => onEingeworfenFertig?.());
@@ -183,9 +183,9 @@ export default function Attachments({
               {Math.round(lauf.anteil * 100)} %
             </span>
           </div>
-          {/* Der Balken zeigt den Anteil der SENDUNG. Bei 100 Prozent ist die
-              Datei beim Server, aber noch nicht abgelegt, deshalb bleibt er
-              danach stehen, statt zu verschwinden, bis die Antwort da ist. */}
+            {/* The bar shows the fraction of the UPLOAD completed. At 100% the
+              file has reached the server but may not be finalized yet, so the
+              bar stays until the server confirms the operation. */}
           <div className="hochlauf-bahn">
             <div className="hochlauf-fortschritt" style={{ width: `${lauf.anteil * 100}%` }} />
           </div>
@@ -199,8 +199,9 @@ export default function Attachments({
         )}
         {items.map((a) => {
           const url = api.attachmentUrl(pageId, a.id);
-          // Derselbe Schluss wie im Betrachter: sonst zeigt die Liste ein
-          // Vorschausymbol, das dann nichts vorzuweisen hat, oder umgekehrt.
+          // The same type determination as used by the viewer: otherwise the
+          // list could show a preview icon that the viewer cannot actually
+          // display, or vice versa.
           const typ = echterTyp(a.mime, a.filename);
           const previewable = zeigbar(typ);
           return (
