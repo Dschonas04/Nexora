@@ -1,18 +1,17 @@
-// Wie eine hochgeladene Datei ausgeliefert wird.
-//
-// Der Typ einer Datei ist das, was der Hochladende behauptet hat: er kommt aus
-// dem Content-Type des Formularteils und steht seitdem in der Spalte. Wurde er
-// unveraendert wieder ausgeliefert, und dazu als "inline", dann liess sich eine
-// Seite mit einer HTML- oder SVG-Datei bestuecken, die der Browser auf dem
-// Ursprung dieser Instanz als Dokument ausfuehrt -- samt Zugriff auf die
-// Sitzung dessen, der sie anschaut. Ueber einen oeffentlichen Verweis genuegte
-// dafuer ein Fremder mit dem Link.
-//
-// Darum eine Liste dessen, was im Fenster stehen darf: Bilder, Ton, Video, PDF
-// und schlichter Text. Alles andere geht als Download hinaus, mit einem Typ,
-// den kein Browser auslegt. Das ist die haerte Seite der Wahl -- eine Datei,
-// die man nicht sofort sieht, ist ein Aergernis; eine Datei, die im Namen der
-// Instanz Programmcode ausfuehrt, ist ein Einbruch.
+// How an uploaded file is delivered.
+
+// The file's type is the claim the uploader made: it comes from the
+// Content-Type of the form part and has since been stored in the column. If
+// it were returned unchanged and marked "inline" then a page could contain an
+// HTML or SVG file that the browser executes on the origin of this instance —
+// including access to the viewer's session. A public reference would be
+// sufficient for an outsider to trigger that.
+
+// Therefore we restrict what can be shown inline: images, audio, video, PDF
+// and plain text. Everything else is sent as a download with a type no browser
+// will render. That is the tough side of the choice — a file you cannot view
+// immediately is an annoyance; a file that executes code in the name of the
+// instance is a breach.
 package handlers
 
 import (
@@ -21,12 +20,11 @@ import (
 	"strings"
 )
 
-// inlineTypen sind die Typen, die der Browser anzeigen darf.
+// inlineTypen lists the mime types a browser may render inline.
 //
-// image/svg+xml steht mit Absicht NICHT darin: ein SVG ist ein Dokument, es
-// darf Skripte tragen und ist damit dasselbe wie eine HTML-Datei. Es hier
-// aufzunehmen hiesse, das Loch an einer Stelle zu schliessen und an der
-// naechsten offen zu lassen.
+// Note: image/svg+xml is intentionally excluded: an SVG is a document and may
+// carry scripts, which makes it equivalent to an HTML file. Allowing it here
+// would close the hole in one place and leave it open in another.
 var inlineTypen = map[string]bool{
 	"image/png":                true,
 	"image/jpeg":               true,
@@ -41,8 +39,8 @@ var inlineTypen = map[string]bool{
 	"text/plain":               true,
 }
 
-// reinerTyp schaelt den Typ aus der Angabe: klein geschrieben und ohne
-// Zusaetze wie "; charset=utf-8".
+// reinerTyp extracts the base mime type from a header value: lowercase and
+// without additions like "; charset=utf-8".
 func reinerTyp(mime string) string {
 	m := strings.ToLower(strings.TrimSpace(mime))
 	if i := strings.IndexByte(m, ';'); i >= 0 {
@@ -51,9 +49,9 @@ func reinerTyp(mime string) string {
 	return m
 }
 
-// darfInsFenster sagt, ob ein Typ angezeigt werden darf. Ton und Video stehen
-// nicht in der Liste, sondern werden ueber ihre Gattung erlaubt: davon gibt es
-// zu viele Schreibweisen, und keine von ihnen ist ein Dokument.
+// darfInsFenster reports whether a mime type may be displayed inline. Audio
+// and video are not listed explicitly but allowed by their top-level type:
+// there are too many variants and none of them is a document.
 func darfInsFenster(mime string) bool {
 	m := reinerTyp(mime)
 	if strings.HasPrefix(m, "audio/") || strings.HasPrefix(m, "video/") {
@@ -62,11 +60,11 @@ func darfInsFenster(mime string) bool {
 	return inlineTypen[m]
 }
 
-// anhangKopf setzt Typ und Anordnung fuer eine ausgelieferte Datei.
+// anhangKopf sets headers for a delivered file.
 //
-// nosniff ist dabei kein Ersatz, sondern eine Ergaenzung: es hindert den
-// Browser daran, einen harmlosen Typ zu ueberstimmen, hilft aber nicht, wenn
-// der Typ selbst schon text/html lautet. Das verhindert erst die Liste oben.
+// X-Content-Type-Options: nosniff is not a replacement but a complement: it
+// prevents the browser from overriding a harmless type, but does not help if
+// the mime type itself is text/html. The allowed list above prevents that.
 func anhangKopf(w http.ResponseWriter, mime, dateiname string) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
@@ -76,12 +74,12 @@ func anhangKopf(w http.ResponseWriter, mime, dateiname string) {
 		return
 	}
 
-	// Ein SVG ist beides: ein Bild und ein Dokument. In einem <img> kann es
-	// keine Skripte ausfuehren, ruft man seine Adresse aber unmittelbar auf,
-	// schon -- und dann auf dem Ursprung dieser Instanz. Es geht darum als Bild
-	// hinaus, aber mit einem Regelwerk, das genau diesen Fall stillegt: sandbox
-	// nimmt dem Dokument die Skripte, und fuer die Einbindung als Bild ist das
-	// Regelwerk ohne Belang, weil ein Browser es dort gar nicht erst anwendet.
+	// An SVG is both an image and a document. In an <img> it cannot execute
+	// scripts, but requesting its URL directly could — and then on the origin
+	// of this instance. We therefore serve it as an image but with a policy
+	// that disables this case: `sandbox` removes scripts. The policy has no
+	// effect when the browser embeds it as an <img>, because browsers do not
+	// apply the policy in that context.
 	if reinerTyp(mime) == "image/svg+xml" {
 		w.Header().Set("Content-Type", "image/svg+xml")
 		w.Header().Set("Content-Disposition", "inline"+namensteil(dateiname))
@@ -89,21 +87,22 @@ func anhangKopf(w http.ResponseWriter, mime, dateiname string) {
 		return
 	}
 
-	// Ein Typ, den kein Browser auslegt, dazu die Anweisung zu speichern, und
-	// ein Regelwerk, das dem Dokument alles verbietet, falls doch einmal etwas
-	// davon ausgeführt würde.
+	// A type no browser will render, together with an instruction to save the
+	// file, and a policy that forbids everything in case any of it were
+	// executed.
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Disposition", "attachment"+namensteil(dateiname))
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
 }
 
-// namensteil baut den Dateinamen fuer den Kopf, zweimal: einmal fuer Programme,
-// die nur ASCII lesen, und einmal nach RFC 5987 fuer alle anderen -- damit eine
-// "Übersicht.pdf" auch beim Speichern eine Übersicht bleibt.
+// namensteil builds the filename part for the header twice: once for
+// programs that only read ASCII, and once using RFC 5987 encoding for other
+// clients — this ensures a filename like "Übersicht.pdf" remains readable
+// when saved.
 //
-// Was in einem Kopf nichts zu suchen hat, faellt vorher heraus:
-// Anfuehrungszeichen beenden die Angabe, Zeilenumbrueche waeren eine Zeile
-// mehr, als der Aufrufer im Sinn hatte.
+// Anything that does not belong in a header is removed first: quotes would
+// terminate the value and line breaks would create extra header lines the
+// caller did not intend.
 func namensteil(dateiname string) string {
 	var b strings.Builder
 	for _, r := range dateiname {

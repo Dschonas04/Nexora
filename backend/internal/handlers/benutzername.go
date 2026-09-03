@@ -1,12 +1,10 @@
-// Der Benutzername als zweiter Weg an der Anmeldung.
+// Username as a second login identifier.
 //
-// Er ist bewusst schmal gehalten: Kleinbuchstaben, Ziffern, Punkt, Strich und
-// Unterstrich. Das ist keine Bequemlichkeit, sondern der Grund, warum er
-// ueberhaupt taugt -- er wird getippt, vorgelesen und verglichen, und zwei
-// Namen, die sich nur in einem Zeichen unterscheiden, das man nicht sieht,
-// waeren an einer Anmeldemaske eine Falle. Ein @ ist ausgeschlossen, sonst
-// koennte sich jemand einen Namen nehmen, der wie die Adresse eines anderen
-// aussieht.
+// It is intentionally narrow: lowercase letters, digits, dot, hyphen and
+// underscore. This is not convenience but the reason it is usable at all — it
+// is typed, read aloud and compared, and two names that differ only in an
+// invisible character would be a pitfall on a login form. An `@` is excluded
+// so that a username cannot be taken that looks like another user's email.
 package handlers
 
 import (
@@ -30,8 +28,8 @@ const (
 
 var benutzernameErlaubt = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*$`)
 
-// benutzernamePruefen normalisiert die Eingabe und meldet, was daran nicht
-// geht. Der leere String ist kein Fehler: der Name ist freiwillig.
+// benutzernamePruefen normalizes the input and reports validation errors.
+// The empty string is not an error: a username is optional.
 func benutzernamePruefen(eingabe string) (string, error) {
 	name := strings.ToLower(strings.TrimSpace(eingabe))
 	if name == "" {
@@ -51,8 +49,9 @@ func benutzernamePruefen(eingabe string) (string, error) {
 	return name, nil
 }
 
-// benutzernameAusAdresse macht aus einer E-Mail einen brauchbaren Vorschlag.
-// Was uebrig bleibt, kann zu kurz oder leer sein; dann gibt es eben keinen.
+// benutzernameAusAdresse derives a usable suggestion from an email address.
+// What remains may be too short or empty; in that case no suggestion is
+// returned.
 func benutzernameAusAdresse(email string) string {
 	vorn := strings.SplitN(strings.ToLower(strings.TrimSpace(email)), "@", 2)[0]
 	var b strings.Builder
@@ -69,11 +68,11 @@ func benutzernameAusAdresse(email string) string {
 	return name
 }
 
-// freierBenutzername haengt eine Zahl an, bis der Name noch niemandem gehoert.
+// freierBenutzername appends a number until the name is not taken.
 //
-// Der Datenbankindex bleibt die eigentliche Sicherung -- zwischen dieser Frage
-// und dem Einfuegen kann sich jemand denselben Namen nehmen. Diese Schleife
-// erspart nur den Regelfall, dass zwei Adressen denselben vorderen Teil haben.
+// The database unique index is the ultimate guarantee — between this check
+// and the insert another actor may take the same name. This loop only avoids
+// the common case where two addresses share the same local part.
 func (s *Server) freierBenutzername(ctx context.Context, vorschlag string) string {
 	if vorschlag == "" {
 		return ""
@@ -99,15 +98,15 @@ func (s *Server) freierBenutzername(ctx context.Context, vorschlag string) strin
 	return ""
 }
 
-// nameSchonVergeben sagt, ob der eindeutige Index ueber den Benutzernamen
-// angeschlagen hat und nicht der ueber die Adresse.
+// nameSchonVergeben reports whether the unique index on the username was
+// violated (as opposed to the unique index on the email address).
 func nameSchonVergeben(constraint string) bool {
 	return strings.Contains(constraint, "benutzer_name")
 }
 
-// leerAlsNull macht aus dem leeren Namen ein NULL. Der eindeutige Index laesst
-// beliebig viele NULL zu, aber nur einen leeren String -- ohne diese Umwandlung
-// koennte genau ein Konto ohne Benutzernamen bestehen und jedes weitere nicht.
+// leerAlsNull converts an empty username to NULL. The unique index allows
+// multiple NULLs but only a single empty string — without this conversion one
+// account without a username could exist and any further ones would fail.
 func leerAlsNull(name string) any {
 	if name == "" {
 		return nil
@@ -119,13 +118,13 @@ type benutzernameReq struct {
 	Benutzername string `json:"benutzername"`
 }
 
-// BenutzernameSetzen aendert den Anmeldenamen eines Kontos.
+// BenutzernameSetzen changes an account's login name.
 //
-// Erlaubt ist es dem Konto selbst und einem Administrator. Der eigene Name ist
-// nichts, wofuer man jemanden fragen muesste, und ein Administrator braucht den
-// Griff trotzdem: an einem Konto aus dem Verzeichnis oder aus einer alten
-// Fassung kann der Name fehlen, und wer ihn dann setzt, ist nicht immer der
-// Besitzer.
+// It is allowed for the account itself and for an administrator. Changing
+// one's own name does not require asking someone else, and an administrator
+// still needs the capability: accounts imported from a directory or an old
+// export may lack a username and the person setting it is not necessarily
+// the owner.
 func (s *Server) BenutzernameSetzen(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	ziel := chi.URLParam(r, "id")

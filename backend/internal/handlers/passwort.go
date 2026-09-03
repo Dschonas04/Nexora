@@ -1,12 +1,12 @@
-// Das Passwort wechseln: selbst, mit dem bisherigen als Nachweis, und das
-// Zurücksetzen durch eine Verwaltung.
+// Password management: changing one's own password (with the old password)
+// and resetting it as an administrator.
 //
-// Beide Wege schreiben in dieselbe Spalte und unterscheiden sich in dem, was
-// sie verlangen und was sie hinterher mit den Sitzungen tun. Wer sein eigenes
-// Passwort wechselt, bleibt an diesem Gerät angemeldet und wird überall sonst
-// abgemeldet: das ist der Sinn des Wechsels, wenn ein fremdes Gerät im Spiel
-// war. Setzt eine Verwaltung ein Passwort, fliegt das Konto überall heraus,
-// auch dort, wo gerade jemand daran sitzt.
+// Both routes write to the same column but differ in what they require and
+// how they treat sessions afterwards. Changing your own password keeps you
+// logged in on this device and logs you out everywhere else — the purpose of
+// a change when an untrusted device was involved. When an administrator sets
+// a password, the account is logged out everywhere, including any session
+// currently active on it.
 package handlers
 
 import (
@@ -20,18 +20,18 @@ import (
 )
 
 const (
-	// mindestPasswort ist dieselbe Untergrenze wie bei der Anmeldung. Zwei
-	// verschiedene Grenzen wären schlimmer als eine niedrige: dann ginge ein
-	// Passwort durch die Registrierung und beim nächsten Wechsel nicht mehr.
+	// mindestPasswort matches the same lower bound as registration. Two
+	// different minima would be worse than a low one: a password might pass
+	// registration but be rejected on the next change.
 	mindestPasswort = 6
-	// hoechstensPasswort, weil bcrypt nur die ersten 72 Bytes liest. Ein
-	// längeres Passwort wird stillschweigend abgeschnitten, und dann stimmt der
-	// Satz nicht mehr, den jemand sich gemerkt hat. Lieber hier ablehnen als
-	// unbemerkt kürzen.
+	// hoechstensPasswort because bcrypt only reads the first 72 bytes. A
+	// longer password would be silently truncated and then the phrase someone
+	// remembered would no longer match. Better to reject it here than to
+	// truncate unnoticed.
 	hoechstensPasswort = 72
 )
 
-// passwortPruefen sagt, ob ein neues Passwort taugt.
+// passwortPruefen reports whether a new password is acceptable.
 func passwortPruefen(neu string) string {
 	if len([]rune(neu)) < mindestPasswort {
 		return "das Passwort braucht mindestens 6 Zeichen"
@@ -86,8 +86,8 @@ func (s *Server) PasswortWechseln(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !auth.CheckPassword(hash, req.Alt) {
-		// Der Fehlversuch gehört ins Protokoll: wer fremd an einem offenen
-		// Browser sitzt und das Passwort raten will, fängt genau hier an.
+		// The failed attempt is recorded in the audit trail: someone sitting at
+		// an open browser trying to guess the password would start here.
 		s.spurAusRequest(r, AktPasswortFehl, "konto", uid, "", nil)
 		writeErr(w, http.StatusForbidden, "das bisherige Passwort stimmt nicht")
 		return
@@ -112,8 +112,8 @@ func (s *Server) PasswortWechseln(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Alle anderen Sitzungen fallen. Ein gewechseltes Passwort, nach dem ein
-	// fremdes Gerät weiter angemeldet bleibt, wechselt nichts.
+	// All other sessions are terminated. A changed password that leaves a
+	// foreign device still logged in defeats the purpose of the change.
 	beendet := s.sitzungenWiderrufen(r.Context(), uid, middleware.SitzungID(r))
 	s.spurAusRequest(r, AktPasswortGeaendert, "konto", uid, "",
 		map[string]any{"sitzungen_beendet": beendet})
@@ -124,13 +124,13 @@ type passwortSetzenReq struct {
 	Neu string `json:"neu"`
 }
 
-// PasswortSetzen ist der Weg der Verwaltung: ein neues Passwort für ein fremdes
-// Konto, ohne das bisherige zu kennen.
+// PasswortSetzen is the administrator route: set a new password for another
+// account without knowing the previous one.
 //
-// Das eigene Konto ist ausgenommen und wird auf den anderen Weg verwiesen. Nicht
-// aus Vorsicht, sondern weil dieser hier alle Sitzungen beendet: eine Verwaltung,
-// die sich damit selbst aussperrt, während sie noch am Bildschirm sitzt, hat
-// nichts gewonnen.
+// The administrator may not use this on their own account; the other route is
+// used instead. Not out of caution but because this route terminates all
+// sessions: an administrator who locks themselves out while still at the
+// screen gains nothing.
 func (s *Server) PasswortSetzen(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {
@@ -181,8 +181,8 @@ func (s *Server) PasswortSetzen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Hier fällt alles, auch die Sitzung, an der das Konto gerade sitzt. Ein
-	// zurückgesetztes Passwort heißt in aller Regel: der Zugang ist unsicher.
+	// This revokes everything, including any session currently active on the
+	// account. A reset password usually means the access was compromised.
 	beendet := s.sitzungenWiderrufen(r.Context(), ziel, "")
 	s.spurAusRequest(r, AktPasswortGesetzt, "konto", ziel, mail,
 		map[string]any{"sitzungen_beendet": beendet})

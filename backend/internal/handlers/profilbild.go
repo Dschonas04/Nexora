@@ -14,9 +14,9 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	_ "image/gif"  // nur wegen der Erkennung
-	_ "image/jpeg" // dito
-	_ "image/png"  // dito
+	_ "image/gif"  // only for detection
+	_ "image/jpeg" // likewise
+	_ "image/png"  // likewise
 	"io"
 	"net/http"
 	"strings"
@@ -111,8 +111,8 @@ func (s *Server) Profilbild(w http.ResponseWriter, r *http.Request) {
 	if err := s.Pool.QueryRow(r.Context(),
 		`SELECT bild, coalesce(bild_mime, ''), bild_stand FROM users WHERE id=$1`, id).
 		Scan(&roh, &mime, &stand); err != nil || len(roh) == 0 {
-		// 404 und kein Platzhalterbild: welches Zeichen für ein Konto ohne Bild
-		// steht, entscheidet die Oberfläche, nicht der Dienst.
+		// 404 and no placeholder: which glyph represents an account without an
+		// avatar is decided by the client, not the service.
 		writeErr(w, http.StatusNotFound, "kein Bild")
 		return
 	}
@@ -130,11 +130,11 @@ func (s *Server) Profilbild(w http.ResponseWriter, r *http.Request) {
 	w.Write(roh)
 }
 
-// ProfilAendern setzt den angezeigten Namen des eigenen Kontos.
+// ProfilAendern sets the displayed name of the own account.
 //
-// Der Name und nicht die Adresse: die Adresse ist die Kennung, an der Freigaben
-// und die Anmeldung hängen, und die zu ändern ist Sache einer Verwaltung. Wie
-// jemand heißen möchte, ist dagegen seine eigene Angelegenheit.
+// The name, not the address: the address is an identifier used for shares and
+// login, and changing it is the administrator's job. How someone wishes to be
+// called is a personal matter.
 func (s *Server) ProfilAendern(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 

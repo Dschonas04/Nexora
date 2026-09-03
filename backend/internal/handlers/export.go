@@ -46,8 +46,8 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 
 	var spaceName string
 	if spaceID == "ohne" {
-		// "Ablage" und nicht "Space": in der Oberfläche heißt es überall so, und
-		// der Name steht im Dateinamen des Archivs.
+		// The UI uses the term "Ablage" rather than "Space", and the name is
+		// used in the archive filename.
 		spaceName = "Ohne Ablage"
 	} else {
 		// An admin may read every page, so they must also be allowed to export
@@ -119,8 +119,8 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 	case "pdf", "word", "docx":
 		sort.Slice(seiten, func(i, j int) bool { return seiten[i].Titel < seiten[j].Titel })
 		docs := make([]dok.Dokument, 0, len(seiten))
-		// Eine Bildquelle fuer den ganzen Export: sie merkt sich, was sie schon
-		// gelesen hat, und ein Logo auf jeder Seite wird nur einmal geholt.
+		// A single image source for the whole export: it caches what it has
+		// already read so that a repeated logo is fetched only once per export.
 		bilder := s.bildquelle(r.Context(), uid)
 		for _, p := range seiten {
 			docs = append(docs, dok.AusInhaltMitBildern(p.Inhalt, p.Titel, bilder))
@@ -187,9 +187,9 @@ func (s *Server) ExportSpace(w http.ResponseWriter, r *http.Request) {
 
 	sort.Slice(seiten, func(i, j int) bool { return seiten[i].Titel < seiten[j].Titel })
 
-	// Die Dateinamen stehen vor dem Verzeichnis fest, denn das Verzeichnis
-	// bildet den Seitenbaum ab und braucht auch den Namen einer Seite, die es
-	// erst weiter unten schreibt.
+	// Filenames are determined before the index because the index models the
+	// page tree and needs the name of a page even if the page itself is written
+	// later in the archive.
 	namen := map[string]string{}
 	for _, p := range seiten {
 		namen[p.ID] = eindeutig(dateiname(p.Titel)) + ".md"
@@ -252,12 +252,12 @@ func spaceBedingung(spaceID string) string {
 	return "p.space_id = $3"
 }
 
-// schreibeVerzeichnis setzt den Seitenbaum als eingerueckte Liste.
+// schreibeVerzeichnis renders the page tree as an indented list.
 //
-// Die Ordnung kommt aus parent_id, nicht aus der Reihenfolge der Abfrage: eine
-// Unterseite kann in der alphabetischen Liste weit vor ihrer Mutter stehen.
-// Seiten, deren Mutter nicht mit ausgegeben wurde -- weil sie in einer anderen
-// Ablage liegt oder gesperrt ist -- stehen oben mit, statt zu fehlen.
+// The order is derived from parent_id, not from the query order: a child
+// page may appear alphabetically before its parent. Pages whose parent was
+// not included — because it belongs to another space or is restricted — are
+// shown at the top instead of being omitted.
 func schreibeVerzeichnis(b *strings.Builder, seiten []exportSeite, namen map[string]string) {
 	kinder := map[string][]exportSeite{}
 	dabei := map[string]bool{}

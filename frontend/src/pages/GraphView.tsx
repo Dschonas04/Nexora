@@ -26,7 +26,10 @@ export default function GraphView() {
 
   const eigeneFarben: Record<string, string> = {};
   for (const a of ablagen) if (a.farbe) eigeneFarben[a.id] = a.farbe;
-  const darfFaerben = ablagen.some((a) => a.darfVerwalten);
+  // Je Ablage und nicht pauschal: wer EINE Ablage verwaltet, verwaltet darum
+  // nicht jede, die im Grafen vorkommt -- fremde stehen dort mit, sobald eine
+  // Seite daraus geteilt ist.
+  const faerbbar = new Set(ablagen.filter((a) => a.darfVerwalten).map((a) => a.id));
 
   // Sofort im Bild und erst danach in der Datenbank: eine Farbe, die eine
   // Zehntelsekunde später umspringt, fühlt sich an wie ein Aussetzer.
@@ -53,7 +56,8 @@ export default function GraphView() {
       legende
       zentrieren
       eigeneFarben={eigeneFarben}
-      onFarbe={darfFaerben ? farbeSetzen : undefined}
+      onFarbe={faerbbar.size > 0 ? farbeSetzen : undefined}
+      faerbbar={faerbbar}
     />
   );
 }

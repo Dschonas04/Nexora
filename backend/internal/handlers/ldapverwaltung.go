@@ -1,16 +1,16 @@
-// Die LDAP-Verwaltung: nachsehen, wie das Verzeichnis eingerichtet ist, und
-// ausprobieren, ob es antwortet.
+// LDAP administration: inspect how the directory is configured and test whether
+// it responds.
 //
-// Die Werte selbst stehen in config.conf und lassen sich hier nicht ändern. Das
-// ist keine Lücke, sondern dieselbe Regel wie überall: was gebraucht wird, bevor
-// die Datenbank offen ist, gehört in die Datei. Ein Dienstkonto-Passwort in einer
-// Datenbankzeile würde außerdem jeder Dump mitnehmen.
+// The raw values live in config.conf and cannot be changed here. That is not
+// a bug but the same rule as everywhere: values needed before the database
+// is open belong in the file. A service account password in a database row
+// would also be captured by any dump.
 //
-// Was hier dazukommt, ist das, was die Datei nicht beantworten kann: ob der
-// Server erreichbar ist, ob das Dienstkonto angenommen wird, ob der Filter
-// genau einen Eintrag trifft und ob in diesem Eintrag die Felder stehen, die
-// konfiguriert sind. An diesen vier Stellen scheitert eine LDAP-Einrichtung,
-// und keine davon sieht man einer Konfigurationsdatei an.
+// What this endpoint adds is the information the config file cannot answer:
+// whether the server is reachable, whether the service account is accepted,
+// whether the filter matches exactly one entry, and whether the configured
+// fields are present in that entry. LDAP setup fails at any of these four
+// points, and none of them is visible in a static configuration file.
 package handlers
 
 import (
@@ -21,11 +21,11 @@ import (
 	"nexora/internal/middleware"
 )
 
-// LDAPEinrichtung gibt zurück, wie das Verzeichnis eingerichtet ist.
+// LDAPEinrichtung returns how the directory is configured.
 //
-// Das Passwort des Dienstkontos steht NICHT dabei, nur ob eines hinterlegt ist.
-// Es wäre der eine Wert hier, mit dem sich jemand am Verzeichnis selbst
-// bedienen könnte, und für die Frage "ist es gesetzt" reicht ein Ja.
+// The service account password is NOT included, only whether one is present.
+// That value would give someone access to the directory itself, and a simple
+// yes/no is sufficient for the question "is it set?".
 func (s *Server) LDAPEinrichtung(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
@@ -68,13 +68,14 @@ type ldapTestReq struct {
 
 // LDAPTesten fragt das Verzeichnis nach einem Konto.
 //
-// Ohne Passwort wird nur gesucht. Das ist der übliche Fall: ein Administrator
-// prüft die Einrichtung an einem fremden Konto und hat dessen Passwort nicht,
-// soll es auch nicht haben. Mit Passwort wird zusätzlich gebunden, dann ist die
-// ganze Kette geprüft.
+// Without a password only a lookup is performed. This is the typical case:
+// an administrator tests the setup against an external account and does not
+// have (and should not have) its password. Providing a password additionally
+// attempts a bind, thus verifying the whole chain.
 //
-// Angelegt wird dabei nichts. Ein Konto entsteht in Nexora erst bei einer
-// wirklichen Anmeldung; ein Test, der nebenbei Konten anlegt, wäre keiner.
+// Nothing is created in Nexora as part of the test. An account is only
+// created on an actual login; a test that created accounts as a side effect
+// would not be a harmless test.
 func (s *Server) LDAPTesten(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
@@ -122,8 +123,8 @@ func (s *Server) LDAPTesten(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ohne Adresse käme die Anmeldung später nicht weiter. Der Test sagt das
-	// hier, statt es dem ersten Benutzer zu überlassen, es herauszufinden.
+	// Without an email address a login later would not succeed. The test
+	// reports that here rather than leaving it to the first user to discover.
 	hinweis := ""
 	if befund.Email == "" {
 		hinweis = "Der Eintrag wurde gefunden, trägt aber nichts im Feld " + k.LDAPFeldEmail +
