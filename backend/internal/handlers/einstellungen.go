@@ -430,8 +430,8 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, http.StatusBadRequest, "erwartet weiss, grau oder dunkel")
 			return
 		}
-		// Die leere Breite gibt es nur an einer SEITE ("wie die Instanz es
-		// vorgibt"); als Vorgabe selbst wäre sie ein Verweis auf sich.
+		// An empty width exists only on a PAGE ("as the instance provides it");
+		// as the default itself it would be a reference to itself.
 		if req.Schluessel == "seitenbreite" && (wertNeu == "" || !breiten[wertNeu]) {
 			writeErr(w, http.StatusBadRequest, "erwartet normal, breit oder voll")
 			return
@@ -490,10 +490,10 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 
 // einstellungSchreiben legt einen Wert ab und zieht den Zwischenspeicher nach.
 //
-// Herausgezogen, weil neben SetzeEinstellung inzwischen ein zweiter Weg schreibt
-// (das erzeugte Losungswort für die Kennzahlen). Zweimal dasselbe INSERT wäre
-// zweimal die Gelegenheit, den Zwischenspeicher zu vergessen, und dann stünde
-// der neue Wert in der Datenbank und der alte gälte weiter.
+// Extracted because, besides `SetzeEinstellung`, a second path also writes
+// (the generated passphrase for metrics). Two identical INSERTs would be two
+// chances to forget updating the in-memory cache, leaving the database with
+// the new value while the cache still returned the old.
 func (s *Server) einstellungSchreiben(ctx context.Context, schluessel, wertNeu string) error {
 	_, err := s.Pool.Exec(ctx,
 		`INSERT INTO einstellungen (schluessel, wert, geaendert_von) VALUES ($1, $2, $3)

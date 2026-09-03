@@ -47,9 +47,9 @@ const (
 	groesstesPaket = 1 << 20
 )
 
-// sitzer ist ein offener Browser in einem Raum. Geschrieben wird über den
-// Kanal und nicht direkt auf die Verbindung: sonst schrieben mehrere Absender
-// gleichzeitig in dieselbe Leitung.
+// `sitzer` represents an open browser in a room. Messages are written to the
+// `post` channel rather than directly to the connection: otherwise multiple
+// senders could write concurrently to the same stream.
 type sitzer struct {
 	post chan []byte
 	uid  string
@@ -105,8 +105,8 @@ func verlassen(seite string, s *sitzer) {
 	leer := len(r.leute) == 0
 	r.Unlock()
 
-	// Der leere Raum wird abgeräumt, sonst wüchse die Karte mit jeder je
-	// geöffneten Seite und schrumpfte nie wieder.
+	// The empty room is removed to avoid the map growing with every page
+	// ever opened and never shrinking again.
 	if leer {
 		raeume.Lock()
 		if r2 := raeume.nach[seite]; r2 == r {
@@ -133,8 +133,8 @@ func verteilen(seite string, paket []byte) {
 		select {
 		case s.post <- paket:
 		default:
-			// Voll: der Kanal wird geschlossen, der Schreiber beendet sich und
-			// legt die Verbindung auf.
+				// Full: the channel is closed, the writer ends and closes the
+				// connection.
 			s.schliessen()
 			delete(r.leute, s)
 		}
@@ -157,9 +157,9 @@ func ImRaum(seite string) int {
 
 var errFremdeHerkunft = errors.New("fremde Herkunft")
 
-// Mitschreibende sagt, wie viele gerade an dieser Seite sitzen. Das
-// Teilen-Fenster zeigt es an; wer eine Seite freigibt, will sehen, ob jemand
-// darin ist, bevor er etwas ändert.
+// `Mitschreibende` reports how many participants are currently on a page.
+// The share dialog displays this so a user can see if someone is present
+// before changing permissions.
 func (s *Server) Mitschreibende(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -211,8 +211,9 @@ func (s *Server) MitschriftZustand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	offen := offeneRaeume()
-	// Namen und Titel in einem Rutsch, nicht in einer Schleife: die Zahl der
-	// offenen Räume ist klein, die Zahl der Abfragen soll es auch bleiben.
+	// Fetch names and titles in a single batch rather than in a loop: the
+	// number of open rooms is small and we want to keep the number of
+	// queries small as well.
 	namen := map[string]string{}
 	titel := map[string]string{}
 	alleKonten := map[string]bool{}
@@ -282,11 +283,12 @@ func (s *Server) MitschriftZustand(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// gleicheHerkunft lässt nur Verbindungen von der eigenen Oberfläche zu.
+// `gleicheHerkunft` allows only connections from the same origin as the
+// web UI.
 //
-// Der Anmeldekeks ist SameSite=Lax und reist bei einer fremden Seite gar nicht
-// erst mit; das hier ist der Gürtel dazu. Die Prüfung, die x/net mitbringt,
-// verlangt nur eine lesbare Herkunft und vergleicht sie mit nichts.
+// The session cookie is SameSite=Lax and is not sent from a foreign page;
+// this is an additional safeguard. The check provided by x/net only requires
+// a readable Origin header and performs a host comparison.
 func gleicheHerkunft(_ *websocket.Config, req *http.Request) error {
 	herkunft := req.Header.Get("Origin")
 	if herkunft == "" {
@@ -302,7 +304,7 @@ func gleicheHerkunft(_ *websocket.Config, req *http.Request) error {
 	return nil
 }
 
-// Mitschrift ist die Leitung für das gemeinsame Schreiben an einer Seite.
+// `Mitschrift` is the channel for collaborative editing of a page.
 func (s *Server) Mitschrift(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -330,14 +332,14 @@ func (s *Server) Mitschrift(w http.ResponseWriter, r *http.Request) {
 	leitung(id, mich).ServeHTTP(w, r)
 
 	verlassen(id, mich)
-	// Erst austragen, dann schließen: der Verteiler hat den Kanal jetzt nicht
-	// mehr, ein Senden kann sich mit dem Schließen nicht mehr überschneiden.
+	// Unregister before closing: the distributor no longer holds the channel
+	// and a send cannot race with the closing.
 	mich.schliessen()
 }
 
-// leitung ist die offene Verbindung selbst, ohne Rechteprüfung und ohne
-// Datenbank. Eigens herausgezogen, damit sie sich prüfen lässt: das Verteilen
-// über eine echte Leitung ist der Teil, der schweigend falsch sein kann.
+// `leitung` is the open connection itself, without permission checks or
+// database access. Extracted for testing: distributing over a real
+// connection is the part most likely to fail silently.
 func leitung(id string, mich *sitzer) http.Handler {
 	return &websocket.Server{
 		Handshake: gleicheHerkunft,
@@ -345,7 +347,7 @@ func leitung(id string, mich *sitzer) http.Handler {
 			defer c.Close()
 			c.MaxPayloadBytes = groesstesPaket
 
-			// Der Schreiber läuft nebenher, damit das Lesen nicht wartet.
+			// The writer runs concurrently so that reading does not block.
 			fertig := make(chan struct{})
 			go func() {
 				defer close(fertig)
@@ -358,9 +360,9 @@ func leitung(id string, mich *sitzer) http.Handler {
 
 			for {
 				var paket []byte
-				// Kein r.Context() hier: der Router setzt darauf dreißig
-				// Sekunden, und eine Sitzung dauert Stunden. Zu Ende ist sie,
-				// wenn die Leitung zu ist.
+				// Do not use r.Context() here: the router sets a 30 second
+				// timeout on it, while a session can last hours. The session
+				// ends when the connection is closed.
 				if err := websocket.Message.Receive(c, &paket); err != nil {
 					return
 				}

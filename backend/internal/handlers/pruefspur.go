@@ -36,13 +36,13 @@ const (
 	AktKontoGeloescht = "konto.geloescht"
 	AktRolleGeaendert = "konto.rolle"
 	AktNameGeaendert  = "konto.benutzername"
-	// Was jemand an seinem eigenen Konto ändert: der angezeigte Name. Ein
-	// eigener Name, weil im Protokoll ein Unterschied ist, ob eine Verwaltung
-	// ein Konto anfasst oder ob jemand sein eigenes einrichtet.
+	// What someone changes on their own account: the displayed name. A
+	// separate event because the log distinguishes an admin touching an
+	// account from someone setting up their own.
 	AktProfilGeaendert = "konto.profil"
-	// Der Wechsel selbst, das Zurücksetzen durch eine Verwaltung und der
-	// Fehlversuch am eigenen Konto: drei Namen, weil im Protokoll ein Unterschied
-	// ist, ob jemand sein Passwort wechselt oder ob es ihm gewechselt wurde.
+	// The change itself, an admin reset and a failed attempt on the same
+	// account: three names because the log distinguishes changing your own
+	// password from having it changed by someone else.
 	AktPasswortGeaendert = "konto.passwort"
 	AktPasswortGesetzt   = "konto.passwort.gesetzt"
 	AktPasswortFehl      = "konto.passwort.fehlgeschlagen"

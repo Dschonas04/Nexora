@@ -45,8 +45,9 @@ func passwortPruefen(neu string) string {
 	return ""
 }
 
-// ssoHerkunft erkennt ein Konto, das sich über einen fremden Dienst anmeldet.
-// Statt eines Hashs steht dort "sso:<herkunft>", siehe sso.go.
+// ssoHerkunft detects an account that authenticates via an external SSO
+// provider. Instead of a hash the column contains "sso:<provider>", see
+// sso.go.
 func ssoHerkunft(hash string) (string, bool) {
 	if !strings.HasPrefix(hash, "sso:") {
 		return "", false
@@ -59,12 +60,12 @@ type passwortWechselReq struct {
 	Neu string `json:"neu"`
 }
 
-// PasswortWechseln ändert das Passwort des angemeldeten Kontos.
+// PasswortWechseln changes the password of the currently authenticated
+// account.
 //
-// Das bisherige Passwort wird verlangt, obwohl die Sitzung bereits bewiesen
-// hat, wer da sitzt. Der Nachweis gilt einem anderen Fall: ein Gerät, das
-// jemand kurz unbeaufsichtigt lässt. Ohne die Abfrage wäre ein offener Browser
-// genug, um das Konto zu übernehmen.
+// The old password is required even though the session already proved who
+// is present. The check protects against the case of an unattended device:
+// without it an open browser would be enough to take over the account.
 func (s *Server) PasswortWechseln(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 
@@ -160,10 +161,10 @@ func (s *Server) PasswortSetzen(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "user not found")
 		return
 	}
-	// Ein Passwort auf ein SSO-Konto zu setzen, nähme ihm die Anmeldung: die
-	// Übernahme in sso.go erkennt es danach nicht mehr wieder und verweigert
-	// den Zugang. Das Konto wäre danach nur noch über dieses eine Passwort
-	// erreichbar, und niemand hätte es so gemeint.
+	// Setting a password on an SSO account would remove its SSO login: the
+	// logic in sso.go would no longer recognize it and would deny access.
+	// The account would then only be reachable via that one password, which
+	// is unlikely to be the intended effect.
 	if herkunft, ja := ssoHerkunft(hash); ja {
 		writeErr(w, http.StatusConflict,
 			"dieses Konto meldet sich über "+herkunft+" an, ein Passwort würde ihm den Zugang nehmen")

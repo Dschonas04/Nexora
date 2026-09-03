@@ -95,9 +95,9 @@ func anhangKopf(w http.ResponseWriter, mime, dateiname string) {
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
 }
 
-// namensteil builds the filename part for the header twice: once for
+// `namensteil` builds the filename part for the header twice: once for
 // programs that only read ASCII, and once using RFC 5987 encoding for other
-// clients — this ensures a filename like "Übersicht.pdf" remains readable
+// clients — this ensures a filename like "Overview.pdf" remains readable
 // when saved.
 //
 // Anything that does not belong in a header is removed first: quotes would

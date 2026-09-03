@@ -226,12 +226,12 @@ func (s *Server) SitzungenUhr(ctx context.Context) {
 	}
 }
 
-// sitzungenWiderrufen beendet jede Sitzung eines Kontos und gibt zurück, wie
-// viele es waren. Wer eine Sitzung behalten will -- die, an der gerade jemand
-// sitzt --, nennt sie in "ausser"; leer beendet alle.
+// `sitzungenWiderrufen` ends every session of an account and returns how many
+// were revoked. To keep one session (the one currently in use) pass its ID
+// in `ausser`; an empty value revokes all.
 //
-// Gebraucht beim Passwortwechsel: ein neues Passwort, nach dem die alten
-// Anmeldungen weiterlaufen, sperrt niemanden aus.
+// Used during a password change: if the old sessions keep running a new
+// password would not lock anyone out.
 func (s *Server) sitzungenWiderrufen(ctx context.Context, uid, ausser string) int {
 	rows, err := s.Pool.Query(ctx,
 		`UPDATE sitzungen SET widerrufen_am=now()

@@ -41,9 +41,9 @@ type Nachricht struct {
 	KommentarID   *string `json:"kommentarId"`
 	AusloeserID   *string `json:"ausloeserId"`
 	AusloeserName string  `json:"ausloeserName"`
-	// Der Stand des Profilbildes dessen, der die Nachricht ausgelöst hat, damit
-	// in der Liste ein Gesicht steht und nicht nur ein Name. Fehlt, wenn das
-	// Konto keines hat oder inzwischen gelöscht wurde.
+	// The timestamp of the sender's profile picture, so a face can be shown
+	// in the list rather than just a name. Missing if the account has no
+	// picture or was deleted.
 	AusloeserBild *time.Time `json:"ausloeserBild,omitempty"`
 	SeitenTitel   string     `json:"seitenTitel"`
 	Text          string     `json:"text"`

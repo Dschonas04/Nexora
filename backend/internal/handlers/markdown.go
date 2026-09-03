@@ -590,10 +590,10 @@ func (s *Server) ExportMarkdown(w http.ResponseWriter, r *http.Request) {
 
 	name := dateiname(titel)
 	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
-	// Two forms on purpose: filename for old clients that only understand ASCII,
-	// filename* per RFC 5987 for everyone else. That way "Übersicht" stays an
-	// Übersicht instead of becoming "Uebersicht"; transliterating umlauts was a
-	// workaround from a time before filename* existed.
+	// Two forms on purpose: `filename` for old clients that only understand
+	// ASCII, `filename*` per RFC 5987 for everyone else. That way "Overview"
+	// remains an Overview instead of becoming "Uebersicht"; transliterating
+	// umlauts was a workaround from a time before `filename*` existed.
 	w.Header().Set("Content-Disposition",
 		`attachment; filename="`+nurASCII(name)+`.md"; filename*=UTF-8''`+
 			url.PathEscape(name+".md"))

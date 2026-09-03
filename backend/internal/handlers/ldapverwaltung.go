@@ -33,9 +33,9 @@ func (s *Server) LDAPEinrichtung(w http.ResponseWriter, r *http.Request) {
 	}
 	k := s.SSO.Konf
 
-	// Womit ein Eintrag gesucht wird. Steht nichts in der Datei, greift dieselbe
-	// Vorgabe wie beim Anmelden; sie hier zu verschweigen hieße, dem Leser einen
-	// leeren Filter zu zeigen, der in Wahrheit nicht leer ist.
+	// Which filter is used to find an entry. If the config file leaves it
+	// empty the same default as for login applies; hiding that here would
+	// show an empty filter to the reader even though it is not.
 	filter := k.LDAPBenutzerFilter
 	if filter == "" {
 		filter = "(&(objectClass=person)(|(uid=%s)(sAMAccountName=%s)(mail=%s)))"
@@ -54,9 +54,9 @@ func (s *Server) LDAPEinrichtung(w http.ResponseWriter, r *http.Request) {
 		"feldName":       k.LDAPFeldName,
 		"feldEmail":      k.LDAPFeldEmail,
 		"gruppeAdmin":    k.LDAPGruppeAdmin,
-		// Verschlüsselt die Verbindung wirklich? ldaps:// bringt es mit,
-		// ldap:// nur mit StartTLS. Beides zusammengerechnet, weil die Frage
-		// eine ist und nicht zwei.
+		// Is the connection actually encrypted? ldaps:// implies encryption,
+		// ldap:// requires StartTLS. Combine both into a single boolean since
+		// the question is binary, not two separate ones.
 		"verschluesselt": k.LDAPStartTLS || strings.HasPrefix(strings.ToLower(k.LDAPServer), "ldaps://"),
 	})
 }
@@ -104,18 +104,18 @@ func (s *Server) LDAPTesten(w http.ResponseWriter, r *http.Request) {
 
 	befund, err := s.ldapAbfragen(req.Benutzer, req.Passwort, req.Passwort != "")
 
-	// Der Test wird verzeichnet, nicht aber als Anmeldung: es ist keine. Er
-	// steht in der Prüfspur, weil er das Dienstkonto benutzt und weil damit
-	// jemand nachsehen kann, ob ein Konto im Verzeichnis existiert.
+	// The test is recorded in the audit trail but not treated as a login.
+	// It uses the service account and allows verifying whether an account
+	// exists in the directory.
 	s.spurAusRequest(r, AktLDAPTest, "verzeichnis", "", req.Benutzer, map[string]interface{}{
 		"geglueckt":   err == nil,
 		"mitPasswort": req.Passwort != "",
 	})
 
 	if err != nil {
-		// 200 und nicht 4xx: die Anfrage war in Ordnung, das Ergebnis ist nur
-		// negativ. Ein Fehlerstatus würde die Oberfläche zwingen, zwischen
-		// "Test gescheitert" und "Test nicht durchführbar" zu raten.
+		// HTTP 200, not 4xx: the request was valid and the result is simply
+		// negative. Using an error status would force the UI to guess whether
+		// the test failed or could not be performed.
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":     false,
 			"fehler": err.Error(),

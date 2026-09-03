@@ -1,18 +1,16 @@
-// Wie groß darf eine Übertragung wirklich sein.
+// How large a transfer can actually be.
 //
-// Die Einstellung max_anhang_mb ist nur die letzte von mehreren Grenzen. Davor
-// liegt in der Regel mindestens ein nginx, oft zwei: der im Frontend-Abbild und
-// der Reverse-Proxy davor. Ist deren client_max_body_size kleiner, bricht die
-// Übertragung ab, bevor Nexora sie überhaupt sieht. Der eingestellte Wert steht
-// dann da und stimmt nicht, und der Fehler, den der Benutzer sieht, kommt von
-// einem Dienst, von dem er nichts weiß.
+// The `max_anhang_mb` setting is only the last of several limits. In front of
+// Nexora there is typically at least one nginx and often a second reverse
+// proxy. If their `client_max_body_size` is smaller the transfer fails before
+// Nexora ever sees it; the configured value would then be inaccurate and the
+// user-facing error originates from a service the user does not know about.
 //
-// Ausrechnen lässt sich das nicht: Nexora kennt die Konfiguration der Dienste
-// vor ihm nicht und soll sie auch nicht kennen, dafür bräuchte es Zugriff auf
-// deren Wirt. Messen lässt es sich aber. Dieser Weg nimmt einen Rumpf entgegen
-// und wirft ihn weg; wie weit er kommt, sagt der Browser, der ihn geschickt
-// hat. Gemessen wird damit genau die Strecke, auf der es später schiefgeht:
-// vom Browser durch alles, was dazwischen steht, bis hierher.
+// This cannot be calculated: Nexora does not know the configuration of the
+// services in front of it and should not try to. But it can be measured. This
+// endpoint accepts a payload and discards it; how far it makes it is reported
+// by the browser that sent it. It measures exactly the path where a later
+// failure would occur: from the browser through all intermediaries to here.
 package handlers
 
 import (
@@ -22,9 +20,9 @@ import (
 	"nexora/internal/middleware"
 )
 
-// So viel nimmt der Weg höchstens an. Nicht als Schutz vor einer großen Datei,
-// die wird ohnehin nur gezählt und weggeworfen, sondern damit niemand die
-// Leitung darüber beliebig lange belegen kann.
+// Maximum amount the path will accept. Not as a protection against a large
+// file (those are counted and discarded) but to prevent someone from
+// occupying the connection indefinitely.
 const grenzprobeMax = 512 << 20
 
 func (s *Server) Grenzprobe(w http.ResponseWriter, r *http.Request) {
@@ -33,14 +31,14 @@ func (s *Server) Grenzprobe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Gezählt und verworfen. Der Inhalt ist gleichgültig, es geht allein darum,
-	// ob er ankommt; ihn irgendwo abzulegen wäre eine Einladung, diesen Weg als
-	// Ablage zu missbrauchen.
+	// Counted and discarded. The content is irrelevant; the goal is merely to
+	// see whether it arrives. Persisting it would invite abusing this path as
+	// a storage endpoint.
 	n, err := io.Copy(io.Discard, http.MaxBytesReader(w, r.Body, grenzprobeMax))
 	if err != nil {
-		// MaxBytesReader hat den Rumpf abgeschnitten, oder die Verbindung ist
-		// unterwegs gefallen. Beides ist für den Messenden dasselbe Ergebnis:
-		// so viel geht nicht.
+		// MaxBytesReader truncated the payload or the connection failed in
+		// transit. Either way the result for the probe is the same: that many
+		// bytes do not get through.
 		writeErr(w, http.StatusRequestEntityTooLarge, "zu groß")
 		return
 	}

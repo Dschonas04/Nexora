@@ -9,7 +9,7 @@ import { useAuth } from "../auth";
 import PageTree, { TreeGap } from "./PageTree";
 import { useAussenklick } from "../klappen";
 import SpaceRechte from "./SpaceRechte";
-import { ABLAGE_FARBEN, farbeFuerAblage } from "../ablagefarben";
+import { ABLAGE_FARBEN } from "../ablagefarben";
 import Einfuhr from "./Einfuhr";
 import PasswortDialog from "./PasswortDialog";
 import ProfilDialog from "./ProfilDialog";
@@ -905,14 +905,6 @@ export default function Sidebar(props: Props) {
                     >
                       {eingeklappt ? "▸" : "▾"}
                     </button>
-                    {/* Der Punkt trägt die Farbe der Ablage. Er steht vor dem
-                        Namen und nicht in der Zeichenreihe rechts: die Farbe
-                        soll man sehen, ohne auf die Zeile zu zeigen. */}
-                    <span
-                      className="ablage-punkt"
-                      style={{ background: farbeFuerAblage(sp.id, sp.farbe) }}
-                      aria-hidden="true"
-                    />
                     <span className="klapp-name" onClick={() => klappen(marke)}>
                       {sp.name}
                     </span>
@@ -1091,7 +1083,8 @@ export default function Sidebar(props: Props) {
                         </span>
                       </button>
                       <div className="sichtbarkeit-hinweis muted small">
-                        Gilt auch im Grafen: dort trägt jede Seite die Farbe ihrer Ablage.
+                        Zu sehen ist die Farbe im Grafen: dort trägt jede Seite die Farbe
+                        ihrer Ablage. In der Leiste bleibt es beim Namen.
                       </div>
                     </div>
                   )}

@@ -2621,16 +2621,6 @@ textarea::placeholder {
   border-radius: 9px;
 }
 
-/* Der Farbpunkt vor dem Namen einer Ablage. Klein und rund: er soll die Zeile
-   kennzeichnen, nicht mit ihr um Aufmerksamkeit ringen. */
-.ablage-punkt {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 2px;
-}
-
 /* Die Farbtafel im Menue. Zwei Reihen zu fuenf, damit die zehn Toene als
    Tafel dastehen und nicht als Schlange, die das Menue in die Breite zieht. */
 .farbmenue-tafel {

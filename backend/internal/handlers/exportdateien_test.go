@@ -6,9 +6,9 @@ import (
 	"testing"
 )
 
-// Zwei gleich benannte Dateien duerfen sich im Archiv nicht ueberschreiben, und
-// die Zahl gehoert vor die Endung: "Plan.png-2" waere fuer jedes Programm keine
-// Bilddatei mehr.
+// Two identically named files must not overwrite each other in the archive,
+// and the number belongs before the extension: "Plan.png-2" would not be a
+// valid image filename for many programs.
 func TestEindeutigerDateinameZaehltVorDerEndung(t *testing.T) {
 	vergeben := map[string]int{}
 	if got := eindeutigerDateiname(vergeben, "Plan.png"); got != "Plan.png" {
@@ -22,9 +22,9 @@ func TestEindeutigerDateinameZaehltVorDerEndung(t *testing.T) {
 	}
 }
 
-// Die Adresse eines Anhangs zeigt im Archiv auf die Datei daneben. Ohne das
-// stuenden im ausgegebenen Markdown Verweise, die nur innerhalb dieser Instanz
-// etwas bedeuten.
+// An attachment URL in the archive should point to the nearby file. Without
+// this the produced Markdown would contain references that only make sense
+// inside this instance.
 func TestAdressenAufDateienZeigenInsArchiv(t *testing.T) {
 	dateien := []exportDatei{{
 		ID:    "b1b1b1b1-0000-0000-0000-000000000001",
@@ -39,8 +39,8 @@ func TestAdressenAufDateienZeigenInsArchiv(t *testing.T) {
 	}
 }
 
-// Ein Anhang, der im Text nicht vorkommt, wird unten aufgefuehrt. Sonst laege er
-// im Archiv, ohne dass ihn jemand fände.
+// An attachment not referenced in the text is listed below. Otherwise it
+// would sit in the archive and never be found.
 func TestAnhangListeNenntNurWasFehlt(t *testing.T) {
 	dateien := []exportDatei{
 		{Name: "Im Text.png", Pfad: "dateien/Im Text.png"},
@@ -59,8 +59,8 @@ func TestAnhangListeNenntNurWasFehlt(t *testing.T) {
 	}
 }
 
-// Ohne Anhaenge bleibt der Text, wie er ist: eine leere Ueberschrift "Anhänge"
-// unter jeder Seite waere Laerm.
+// With no attachments the text remains unchanged: an empty "Attachments"
+// heading under every page would be noise.
 func TestAnhangListeOhneDateien(t *testing.T) {
 	md := "# Seite\n"
 	if got := anhangListe(md, nil); got != md {
@@ -68,8 +68,8 @@ func TestAnhangListeOhneDateien(t *testing.T) {
 	}
 }
 
-// Das Verzeichnis bildet den Seitenbaum ab, samt Einrückung, und zwar nach
-// parent_id -- nicht nach der Reihenfolge der Abfrage.
+// The index reflects the page tree with indentation, derived from parent_id
+// rather than the query order.
 func TestVerzeichnisZeigtDenBaum(t *testing.T) {
 	mutter := "aaaa1111-0000-0000-0000-000000000001"
 	fremd := "cccc3333-0000-0000-0000-000000000003"
@@ -97,8 +97,8 @@ func TestVerzeichnisZeigtDenBaum(t *testing.T) {
 	}
 }
 
-// Bilder einer geteilten Seite bekommen den oeffentlichen Weg. Ohne das sieht
-// ein Besucher ohne Konto lauter zerbrochene Bilder.
+// Images of a shared page are rewritten to the public path. Without this a
+// visitor without an account would see broken images.
 func TestAdressenOeffnenSchreibtAufDenOeffentlichenWeg(t *testing.T) {
 	seite := "aaaa1111-0000-0000-0000-000000000001"
 	inhalt := json.RawMessage(`[{"type":"image","props":{"url":"/api/pages/` + seite + `/attachments/b1"}}]`)
@@ -111,8 +111,8 @@ func TestAdressenOeffnenSchreibtAufDenOeffentlichenWeg(t *testing.T) {
 	}
 }
 
-// Der Anhang einer ANDEREN Seite bleibt verschlossen. Ihn mitzuoeffnen hiesse,
-// mit einer Seite eine zweite zu teilen, von der niemand spricht.
+// An attachment of ANOTHER page remains locked. Exposing it would amount to
+// implicitly sharing a second page that is not referenced.
 func TestAdressenOeffnenLaesstFremdeSeitenZu(t *testing.T) {
 	inhalt := json.RawMessage(`[{"type":"image","props":{"url":"/api/pages/ffff9999-0000-0000-0000-000000000009/attachments/b1"}}]`)
 	got := string(adressenOeffnen(inhalt, "aaaa1111-0000-0000-0000-000000000001", "zeichen"))

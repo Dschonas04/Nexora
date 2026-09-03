@@ -41,7 +41,7 @@ import (
 // that would first fill disk and only later be rejected.
 const maxSicherungBytes = 8 << 30 // 8 GiB
 
-// Wiederherstellen nimmt ein Archiv entgegen und spielt es ein.
+// `Wiederherstellen` accepts an archive and restores it.
 func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {
@@ -80,11 +80,10 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ablage := s.datenVerzeichnis()
-	// Anlegen, falls es das Verzeichnis noch nicht gibt. Bei einer Instanz, die
-	// noch nie einen Anhang geschrieben hat, entsteht es sonst nirgends — und
-	// dann scheiterte ausgerechnet das Einspielen daran, dass noch nichts da
-	// ist. Genau der Zustand einer frischen Instanz, in die jemand eine
-	// Sicherung legen will.
+	// Create the directory if it does not exist. On a fresh instance that
+	// never wrote attachments the directory may not exist yet — otherwise the
+	// restore would fail because there is nowhere to store the files. This
+	// handles the case of a new instance receiving a backup.
 	if err := os.MkdirAll(ablage, 0o700); err != nil {
 		writeErr(w, http.StatusInternalServerError,
 			"Das Datenverzeichnis "+ablage+" ließ sich nicht anlegen")
@@ -122,9 +121,9 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 		case strings.HasSuffix(name, "/FERTIG"):
 			marke = true
 		default:
-			// Anhänge liegen unter anhaenge/<kennung>. Der Name wird auf seinen
-			// letzten Teil verkürzt: ein Eintrag wie "../../etc/passwd" wäre
-			// sonst ein Weg, außerhalb der Ablage zu schreiben.
+			// Attachments live under anhaenge/<id>. The filename is reduced to
+			// its base name so an entry like "../../etc/passwd" cannot escape
+			// the storage directory.
 			if i := strings.Index(name, "/anhaenge/"); i >= 0 {
 				kennung := filepath.Base(name)
 				if kennung != "" && kennung != "." && kennung != ".." {
@@ -156,7 +155,8 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 	stempel := time.Now().Format("2006-01-02_1504")
 	rettung := filepath.Join(ablage, "vor-wiederherstellung-"+stempel+".sql")
 	if err := s.rettungsDump(r.Context(), rettung); err != nil {
-		// Kein Einspielen ohne Rückweg. Lieber gar nicht als unumkehrbar.
+		    // Do not restore without a rollback path. Prefer not restoring at all
+		    // to making an irreversible change.
 		writeErr(w, http.StatusInternalServerError,
 			"Der jetzige Stand ließ sich nicht sichern, deshalb wird nichts eingespielt: "+err.Error())
 		return
@@ -221,7 +221,7 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-// rettungsDump schreibt den jetzigen Stand als SQL neben die Anhänge.
+// `rettungsDump` writes the current state as SQL next to the attachments.
 func (s *Server) rettungsDump(ctx context.Context, pfad string) error {
 	ziel, err := os.Create(pfad)
 	if err != nil {
@@ -231,12 +231,11 @@ func (s *Server) rettungsDump(ctx context.Context, pfad string) error {
 	return s.pgDump(ctx, ziel)
 }
 
-// psqlEinspielen schiebt den Dump durch psql.
+// `psqlEinspielen` pipes the dump into `psql`.
 //
-// ON_ERROR_STOP=1 mit Absicht: ein Einspielen, das auf halbem Weg stolpert und
-// weitermacht, hinterlässt eine Datenbank, die weder der alte noch der neue
-// Stand ist. Lieber am ersten Fehler halten, solange der Rückweg noch frisch
-// daneben liegt.
+// `ON_ERROR_STOP=1` is deliberate: a restore that continues after an error
+// leaves the database in a state that is neither the old nor the new one.
+// It is better to stop at the first error while the rollback dump is fresh.
 func (s *Server) psqlEinspielen(quelle io.Reader, url string) (string, error) {
 	befehl := exec.Command("psql", "--quiet", "-v", "ON_ERROR_STOP=1", url)
 	befehl.Stdin = quelle
@@ -247,9 +246,9 @@ func (s *Server) psqlEinspielen(quelle io.Reader, url string) (string, error) {
 	return letzteZeile(meldung.String()), err
 }
 
-// datenVerzeichnis ist der Ort für die Zwischendatei und den Rückweg. Dieselbe
-// Platte, auf der auch die Anhänge liegen: sie ist die einzige, von der der
-// Dienst weiß, dass er dort schreiben darf.
+// `datenVerzeichnis` is the place for the temporary file and the rollback
+// dump. It should be on the same disk as the attachments: that is the only
+// location the service knows it can write to.
 func (s *Server) datenVerzeichnis() string {
 	speicher.RLock()
 	defer speicher.RUnlock()

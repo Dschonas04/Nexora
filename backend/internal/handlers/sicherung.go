@@ -47,7 +47,7 @@ import (
 // defines it. PostgreSQL recomputes it on restore. The same applies to the
 // GIN index over it.
 
-// SicherungUmfang reports what a backup would contain.
+// `SicherungUmfang` reports what a backup would contain.
 //
 // A separate endpoint is used because the UI needs to know BEFORE starting a
 // download: for a dataset of several gigabytes the user should not press the
@@ -122,7 +122,7 @@ fi
 	})
 }
 
-// SicherungTokenNeu erzeugt das Losungswort für den Abruf ohne Anmeldung.
+// `SicherungTokenNeu` generates the passphrase for retrieval without login.
 func (s *Server) SicherungTokenNeu(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
@@ -142,8 +142,8 @@ func (s *Server) SicherungTokenNeu(w http.ResponseWriter, r *http.Request) {
 	s.SicherungUmfang(w, r)
 }
 
-// SicherungTokenWeg nimmt es zurück. Danach geht die Sicherung nur noch aus dem
-// Panel heraus.
+// `SicherungTokenWeg` removes it. After this the backup is only available
+// from the admin panel.
 func (s *Server) SicherungTokenWeg(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
@@ -160,9 +160,9 @@ func (s *Server) SicherungTokenWeg(w http.ResponseWriter, r *http.Request) {
 
 // Sicherung schreibt das Archiv in die Antwort.
 func (s *Server) Sicherung(w http.ResponseWriter, r *http.Request) {
-	// Zwei Wege herein, und nur zwei: ein angemeldeter Administrator, oder ein
-	// gültiges Losungswort. Der Filter davor hat bereits entschieden, welcher
-	// von beiden es war; hier bleibt die Rechteprüfung für den ersten.
+	// Two ways in, and only two: a logged-in admin, or a valid passphrase.
+	// A middleware has already determined which was used; this is the check
+	// for the admin case.
 	uid := middleware.UserID(r)
 	ueberToken := perToken(r)
 	if !ueberToken && !s.isAdmin(r.Context(), uid) {
@@ -170,11 +170,11 @@ func (s *Server) Sicherung(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Alles, was schiefgehen kann, BEVOR das erste Byte hinausgeht.
+	// All checks that can fail BEFORE the first byte is written.
 	//
-	// Sobald der Kopf der Antwort steht, lässt sich kein Fehlerstatus mehr
-	// senden; der Benutzer bekäme dann ein kaputtes Archiv mit dem Status 200.
-	// Deshalb hier die Prüfungen, die den Fehler noch sauber melden können.
+	// Once the response headers are sent a proper error status cannot be
+	// returned; the user would receive a corrupted archive with a 200 code.
+	// Perform the checks here so failures produce a clean error.
 	if s.DatenbankURL == "" {
 		writeErr(w, http.StatusPreconditionFailed, "Die Adresse der Datenbank ist nicht bekannt")
 		return
@@ -204,9 +204,9 @@ func (s *Server) Sicherung(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/zip")
 	w.Header().Set("Content-Disposition",
 		fmt.Sprintf(`attachment; filename="%s.zip"`, wurzel))
-	// Kein Zwischenspeichern auf dem Weg: was hier hinausgeht, ist ein Strom,
-	// und ein Vermittler, der ihn erst vollständig einsammelt, macht aus einer
-	// laufenden Sicherung eine, die minutenlang tot aussieht.
+	// No buffering on the way: the response is a stream and a proxy that
+	// fully buffers it would make an ongoing backup appear stalled for
+	// minutes.
 	w.Header().Set("X-Accel-Buffering", "no")
 	w.Header().Set("Cache-Control", "no-store")
 
@@ -214,44 +214,44 @@ func (s *Server) Sicherung(w http.ResponseWriter, r *http.Request) {
 	fertig := false
 	defer func() {
 		if err := archiv.Close(); err != nil {
-			log.Printf("Sicherung: Archiv schließen: %v", err)
+			log.Printf("Sicherung: closing archive: %v", err)
 		}
 		if !fertig {
-			log.Printf("Sicherung: unvollständig abgebrochen")
+			log.Printf("Sicherung: aborted before completion")
 		}
 	}()
 
-	// ── Die Anleitung zuerst ────────────────────────────────────────────
+	// ── Instructions first ──────────────────────────────────────────────
 	//
-	// Sie steht als erster Eintrag, damit sie beim Öffnen oben liegt. Wer ein
-	// Archiv im Ernstfall aufmacht, hat keine Ruhe, eine Dokumentation zu
-	// suchen.
+	// Placed as the first entry so it appears at the top when opened. In an
+	// emergency the person inspecting an archive should not have to hunt for
+	// documentation.
 	if err := s.schreibeEintrag(archiv, wurzel+"/LIESMICH.md",
 		[]byte(liesmich(stempel, s.Ablage.Name()))); err != nil {
 		return
 	}
 
-	// ── Die Datenbank ───────────────────────────────────────────────────
+	// ── The database ───────────────────────────────────────────────────
 	datei, err := archiv.Create(wurzel + "/datenbank.sql")
 	if err != nil {
 		return
 	}
 	if err := s.pgDump(ctx, datei); err != nil {
 		log.Printf("Sicherung: pg_dump: %v", err)
-		// Der Kopf ist längst hinaus. Statt eines Status bleibt der Vermerk im
-		// Archiv selbst: die Marke FERTIG fehlt dann, und die Anleitung sagt,
-		// was das heißt.
+		// The headers have already been sent. Instead of an HTTP status the
+		// note remains inside the archive itself: the FERTIG marker will be
+		// missing and the README explains what that means.
 		return
 	}
 
-	// ── Die Anhänge ─────────────────────────────────────────────────────
+	// ── Attachments ───────────────────────────────────────────────────
 	anzahl, uebersprungen, err := s.anhaengeSichern(ctx, archiv, wurzel)
 	if err != nil {
 		log.Printf("Sicherung: Anhänge: %v", err)
 		return
 	}
 
-	// ── Die Marke ───────────────────────────────────────────────────────
+	// ── The marker ─────────────────────────────────────────────────────
 	inhalt := fmt.Sprintf("Sicherung vollstaendig.\nErstellt: %s\nAnhaenge: %d\n",
 		time.Now().Format(time.RFC3339), anzahl)
 	if uebersprungen > 0 {
@@ -262,9 +262,9 @@ func (s *Server) Sicherung(w http.ResponseWriter, r *http.Request) {
 	}
 	fertig = true
 
-	// Jeder Abruf in die Prüfspur, mit der Adresse. Bei einem Skript ist das
-	// die einzige Spur, die es hinterlässt: es hat kein Konto, an dem sich
-	// später ablesen ließe, wer den ganzen Bestand abgeholt hat.
+	// Every retrieval is recorded in the audit trail with its source
+	// address. For a script this is the only trace it leaves: it has no
+	// account to later identify who fetched the whole dataset.
 	if ueberToken {
 		s.spur(ctx, models.Spureintrag{
 			Aktion: AktSicherung, ObjektArt: "system", ObjektTitel: "Sicherung",
@@ -287,15 +287,15 @@ func (s *Server) schreibeEintrag(archiv *zip.Writer, name string, inhalt []byte)
 	return err
 }
 
-// pgDump ruft das Werkzeug und schreibt seine Ausgabe weiter.
+// `pgDump` invokes the tool and streams its output.
 func (s *Server) pgDump(ctx context.Context, ziel io.Writer) error {
 	befehl := exec.CommandContext(ctx, "pg_dump",
-		// Ohne Eigentümer und Rechte: beim Einspielen heißt das Konto oft
-		// anders, und ein Dump, der auf einem fremden Rollennamen besteht,
-		// scheitert an etwas, das mit den Daten nichts zu tun hat.
+		// Do not include ownership and privileges: on restore the role names
+		// often differ, and a dump that insists on a foreign role name fails
+		// for reasons unrelated to the data.
 		"--no-owner", "--no-privileges",
-		// Räumt vor dem Einspielen auf, damit sich derselbe Dump auch in eine
-		// Datenbank legen lässt, in der schon etwas steht.
+		// Clean before restore so the same dump can be applied into a
+		// database that already contains objects.
 		"--clean", "--if-exists",
 		s.DatenbankURL)
 	// Das Losungswort steht in der Adresse und hat in keiner Fehlermeldung
@@ -315,11 +315,12 @@ func letzteZeile(s string) string {
 	return zeilen[len(zeilen)-1]
 }
 
-// anhaengeSichern legt jede Datei ins Archiv, gelesen über die Ablage.
+// anhaengeSichern places every attachment into the archive, read via the
+// storage interface.
 //
-// Eine fehlende Datei bricht nicht ab, sondern wird gezählt. Genau dafür ist
-// eine Sicherung da: sie soll retten, was da ist, und nicht an dem scheitern,
-// was ohnehin schon fehlt. Die Zahl steht am Ende in der Marke.
+// A missing file does not abort the backup but is counted as skipped. That is
+// the purpose of a backup: to rescue what exists rather than fail on what is
+// already missing. The count is recorded in the final marker.
 func (s *Server) anhaengeSichern(ctx context.Context, archiv *zip.Writer, wurzel string) (int, int, error) {
 	rows, err := s.Pool.Query(ctx,
 		`SELECT id::text, filename FROM attachments ORDER BY created_at`)
@@ -343,9 +344,9 @@ func (s *Server) anhaengeSichern(ctx context.Context, archiv *zip.Writer, wurzel
 			uebersprungen++
 			continue
 		}
-		// Der Dateiname im Archiv ist die Kennung, nicht der ursprüngliche
-		// Name: mehrere Anhänge dürfen gleich heißen, und die Datenbank findet
-		// sie über die Kennung wieder. Der Klarname steht in der Datenbank.
+		// The filename in the archive is the ID, not the original name: many
+		// attachments may share the same display name and the database finds
+		// them by ID. The human-readable name is stored in the database.
 		ziel, err := archiv.Create(fmt.Sprintf("%s/anhaenge/%s", wurzel, a.id))
 		if err != nil {
 			quelle.Close()

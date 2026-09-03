@@ -25,8 +25,8 @@ type zugangsArt string
 
 const perTokenSchluessel zugangsArt = "sicherung.perToken"
 
-// SicherungToken ist das Losungswort für den Abruf ohne Sitzung. Leer heißt:
-// diesen Weg gibt es nicht, es bleibt bei der Anmeldung.
+// `SicherungToken` is the passphrase for retrieval without a session. Empty
+// means this path is disabled and only the login-based access remains.
 func SicherungToken() string { return wert("sicherung_token") }
 
 // SicherungZugang allows either a valid token or a logged-in session.

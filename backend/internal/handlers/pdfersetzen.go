@@ -1,20 +1,19 @@
-// Eine markierte PDF-Datei an die Stelle der alten schreiben.
+// Write an annotated PDF in place of the original.
 //
-// Markiert wird im Browser: dort liegt die Seite vor Augen, dort wird gezogen,
-// und dort steht auch die Bibliothek, die eine PDF-Datei ergänzen kann. Dieser
-// Weg nimmt das Ergebnis entgegen und legt es unter derselben Kennung ab wie
-// die Vorlage.
+// The annotation is created in the browser: the page is displayed there, the
+// user marks it, and the browser's library produces a PDF to be uploaded. This
+// endpoint accepts that result and stores it under the same attachment ID as
+// the original.
 //
-// Ersetzt und nicht danebengelegt, so gewollt: eine markierte Fassung ist nicht
-// ein zweites Dokument, sondern dasselbe Dokument, nachdem jemand etwas
-// angestrichen hat. Der Anhang behält damit seine Adresse, und jeder Verweis
-// darauf -- aus dem Text, aus einem Kommentar, aus einem Lesezeichen -- zeigt
-// weiterhin auf das, was gemeint war.
+// It intentionally replaces rather than appends: an annotated version is not
+// a second document but the same document after someone highlighted it. The
+// attachment therefore keeps its address and any references — from the page
+// content, a comment or a bookmark — still point to the intended file.
 //
-// Was das kostet, steht in der Prüfspur: die alte Fassung ist danach fort. Wer
-// sie behalten will, lädt sie vorher herunter; ein Versionsverlauf für Anhänge
-// wäre etwas anderes, und diesen Weg hier hat der Betreiber ausdrücklich so
-// bestellt.
+// The cost is recorded in the audit trail: the previous version is lost. If
+// someone wishes to keep it they should download it beforehand; a versioning
+// system for attachments would be a different feature and this endpoint was
+// deliberately implemented without it.
 package handlers
 
 import (
@@ -29,24 +28,24 @@ import (
 	"nexora/internal/middleware"
 )
 
-// pdfMagie steht am Anfang jeder PDF-Datei. Geprüft wird sie, weil hier Bytes
-// hereinkommen, die gleich eine vorhandene Datei überschreiben: was das nicht
-// ist, darf nicht durch.
+// `pdfMagie` appears at the start of every PDF file. We check it because
+// bytes arriving here will immediately replace an existing file: anything
+// that is not a PDF must be rejected.
 var pdfMagie = []byte("%PDF-")
 
 func istPDF(mime, name string) bool {
 	if strings.EqualFold(mime, "application/pdf") {
 		return true
 	}
-	// Auch nach dem Namen, denn ein Anhang aus einer Einfuhr trägt manchmal nur
-	// application/octet-stream.
+	// Also check the filename, because an attachment from an import may be
+	// stored as application/octet-stream.
 	return strings.HasSuffix(strings.ToLower(name), ".pdf")
 }
 
-// PDFErsetzen nimmt die markierte Fassung entgegen.
+// `PDFErsetzen` accepts the annotated version.
 func (s *Server) PDFErsetzen(w http.ResponseWriter, r *http.Request) {
-	// Derselbe Zusatz wie beim Lesen und Schreiben von Word-Dateien: es geht um
-	// Anhänge.
+	// The same add-on applies as for reading and writing Word documents: this
+	// concerns attachments.
 	if !lizenz.Frei(lizenz.Anhaenge) {
 		writeErr(w, http.StatusPaymentRequired, "Anhänge sind ein Zusatz")
 		return
@@ -76,8 +75,8 @@ func (s *Server) PDFErsetzen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Dieselbe Obergrenze wie beim Hochladen. Eine markierte Fassung ist etwas
-	// größer als die Vorlage, aber nicht um Größenordnungen.
+	// The same upper limit as for uploads. An annotated version is somewhat
+	// larger than the original but not by orders of magnitude.
 	r.Body = http.MaxBytesReader(w, r.Body, MaxAnhangBytes())
 	roh, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -89,9 +88,9 @@ func (s *Server) PDFErsetzen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Unter derselben Kennung: der Anhang behält seine Adresse, jeder Verweis
-	// bleibt gültig. Erst schreiben, dann die Größe nachtragen -- andersherum
-	// trüge die Zeile eine Zahl, die nicht zur Datei gehört.
+	// Under the same ID: the attachment keeps its address and references
+	// remain valid. Write first, then update the size — doing it the other
+	// way would record a size that does not belong to the file.
 	if _, err := s.Ablage.Schreiben(r.Context(), attID, bytes.NewReader(roh),
 		int64(len(roh)), "application/pdf"); err != nil {
 		writeErr(w, http.StatusInternalServerError, "Ablage nicht erreichbar")
@@ -99,8 +98,8 @@ func (s *Server) PDFErsetzen(w http.ResponseWriter, r *http.Request) {
 	}
 	s.Pool.Exec(r.Context(), `UPDATE attachments SET size=$2 WHERE id=$1`, attID, len(roh))
 
-	// Der Volltext wird nachgezogen, sonst fände die Suche weiter die alte
-	// Fassung -- ein Fehler, den man erst Wochen später bemerkt.
+	// Update the full-text index; otherwise searches would still find the
+	// old version — a bug that might only be noticed weeks later.
 	if lizenz.Frei(lizenz.Anhangsuche) {
 		if txt := textAusAnhang(r.Context(), roh, "application/pdf", name); txt != "" {
 			s.Pool.Exec(r.Context(),
@@ -108,9 +107,9 @@ func (s *Server) PDFErsetzen(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Eigene Aktion und nicht "hochgeladen": eine Datei zu ersetzen ist etwas
-	// anderes, als eine hinzuzufügen, und die Prüfspur muss beides
-	// auseinanderhalten können.
+	// This is an edit action, not an "upload": replacing a file is a
+	// different event from adding one, and the audit trail must distinguish
+	// the two.
 	s.spurAusRequest(r, AktAnhangBearbeitet, "anhang", attID, name,
 		map[string]any{"bytes": len(roh), "art": "pdf-markiert"})
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "bytes": len(roh)})

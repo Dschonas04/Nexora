@@ -30,16 +30,16 @@ type RedisSpeicher struct {
 	vorsilbe string
 }
 
-// RedisTLS beschreibt, ob und wie verschlüsselt gesprochen wird. Nil heißt:
-// unverschlüsselt, wie es für einen Zwischenspeicher auf demselben Rechner in
-// Ordnung ist.
+// RedisTLS describes whether and how the connection is encrypted. Nil means
+// unencrypted, which is acceptable for a cache on the same host.
 //
-// Verschlüsselt gehört er, sobald er über ein Netz erreichbar ist: hier liegen
-// Sitzungskennungen, und wer eine mitliest, ist angemeldet.
+// It must be encrypted when the cache is reachable over a network: session
+// tokens live there and anyone reading them is effectively signed in.
 type RedisTLS struct {
 	Wurzeln *x509.CertPool
-	// Name ist der Name im Zertifikat. Leer heißt: der aus der Adresse, was
-	// stimmt, solange man den Dienst unter seinem Namen anspricht.
+	// Name is the name in the certificate. Empty means: use the hostname
+	// from the address, which is correct when the service is addressed by
+	// its name.
 	Name string
 }
 
