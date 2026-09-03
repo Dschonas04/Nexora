@@ -90,8 +90,8 @@ func (s *Server) UploadAttachment(w http.ResponseWriter, r *http.Request) {
 	gepuffert := bufio.NewReaderSize(file, 512)
 	anfang, _ := gepuffert.Peek(len(elfMagie))
 	if istLinuxProgramm(anfang) {
-		// 415: die Datei ist verstanden worden, sie ist nur nicht erwünscht.
-		// 400 hieße "kaputt", und das stimmt nicht.
+		// 415: the file is understood but not accepted.
+		// 400 would mean "corrupt", which is not correct.
 		writeErr(w, http.StatusUnsupportedMediaType, programmMeldung)
 		return
 	}

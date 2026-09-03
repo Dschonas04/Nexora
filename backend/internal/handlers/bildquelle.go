@@ -81,8 +81,8 @@ func (s *Server) bildquelle(ctx context.Context, uid string) dok.Bildquelle {
 			return nil, false
 		}
 		defer f.Close()
-		// Ein Byte mehr als erlaubt wird mitgelesen: nur so laesst sich
-		// unterscheiden, ob die Datei genau an die Grenze reicht oder darueber.
+		// One byte more than the limit is read so we can distinguish whether the
+		// file exactly reaches the limit or is over it.
 		daten, err := io.ReadAll(io.LimitReader(f, maxBildBytes+1))
 		if err != nil || len(daten) > maxBildBytes {
 			gelesen[anhang] = nil

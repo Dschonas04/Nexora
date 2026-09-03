@@ -209,8 +209,8 @@ func TestLeitungTraegtPaketeZwischenBrowsern(t *testing.T) {
 	b := waehle("b")
 	defer b.Close()
 
-	// Warten, bis beide eingetragen sind: das Verbinden ist fertig, sobald der
-	// Aufschlag durch ist, das Eintragen geschieht davor im Handler.
+	// Wait until both are registered: the connection completes once the
+	// handshake is done, registration happens earlier in the handler.
 	for i := 0; i < 100 && ImRaum(seite) < 2; i++ {
 		time.Sleep(5 * time.Millisecond)
 	}
@@ -218,7 +218,7 @@ func TestLeitungTraegtPaketeZwischenBrowsern(t *testing.T) {
 		t.Fatalf("es sitzen %d im Raum, erwartet 2", ImRaum(seite))
 	}
 
-	// Ein Paket von a geht an b UND an a zurück: das Echo ist der Herzschlag.
+	// A packet from a goes to b AND back to a: the echo is the heartbeat.
 	if err := websocket.Message.Send(a, []byte{0x01, 0x02, 0x03}); err != nil {
 		t.Fatalf("senden: %v", err)
 	}
@@ -233,7 +233,7 @@ func TestLeitungTraegtPaketeZwischenBrowsern(t *testing.T) {
 		}
 	}
 
-	// Legt einer auf, ist der Raum um einen leerer.
+	// If one hangs up, the room has one fewer participant.
 	a.Close()
 	for i := 0; i < 200 && ImRaum(seite) > 1; i++ {
 		time.Sleep(5 * time.Millisecond)

@@ -72,12 +72,12 @@ func (s *Server) LDAPAnmeldung(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
-// ldapBefund ist, was das Verzeichnis über ein Konto gesagt hat.
+// `ldapBefund` records what the directory reported about an account.
 //
-// Mehr als die Anmeldung braucht: sie will Name und Adresse, die Verwaltung
-// will zusätzlich sehen, welcher Eintrag überhaupt getroffen wurde und in
-// welchen Gruppen er steht. Wenn LDAP nicht tut, was es soll, liegt es fast
-// immer an einem dieser beiden Punkte und nicht am Passwort.
+// More than a login is needed: the UI wants name and email, and the
+// administration additionally needs to see which entry matched and which
+// groups it is a member of. LDAP misconfiguration almost always fails on one
+// of those points rather than on the password itself.
 type ldapBefund struct {
 	DN               string   `json:"dn"`
 	Name             string   `json:"name"`
@@ -87,12 +87,13 @@ type ldapBefund struct {
 	PasswortGeprueft bool     `json:"passwortGeprueft"`
 }
 
-// ldapAbfragen verbindet, sucht den Eintrag und prüft auf Wunsch das Passwort.
+// `ldapAbfragen` connects, searches for the entry and optionally verifies the
+// password.
 //
-// Ohne Passwort hört die Abfrage nach der Suche auf. Das ist der Weg, den die
-// Verwaltung geht: Verbindung, Dienstkonto, Filter und Feldnamen lassen sich so
-// prüfen, ohne dass jemand sein Passwort in ein fremdes Formular tippt. Und
-// genau diese vier sind es, an denen eine LDAP-Einrichtung scheitert.
+// Without a password the query stops after the search. This is the typical
+// admin workflow: connection, service account, filter and attribute names can
+// be verified without anyone typing their password into a third-party form.
+// LDAP setup most often fails at one of those four steps.
 func (s *Server) ldapAbfragen(benutzer, passwort string, mitPasswort bool) (ldapBefund, error) {
 	var b ldapBefund
 	k := s.SSO.Konf
@@ -171,8 +172,8 @@ func (s *Server) ldapAbfragen(benutzer, passwort string, mitPasswort bool) (ldap
 	return b, nil
 }
 
-// ldapPruefen ist der Weg der Anmeldung: Eintrag suchen, Passwort prüfen, und
-// ohne Adresse geht es nicht weiter.
+// `ldapPruefen` is the login path: search the entry, verify the password and
+// require an email address to continue.
 func (s *Server) ldapPruefen(benutzer, passwort string) (string, string, bool, error) {
 	b, err := s.ldapAbfragen(benutzer, passwort, true)
 	if err != nil {

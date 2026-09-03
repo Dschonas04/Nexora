@@ -33,8 +33,8 @@ type Dienst struct {
 	Name    string `json:"name"`
 	Rolle   string `json:"rolle"`
 	Adresse string `json:"adresse"`
-	// One of "läuft", "fehlt", "nicht eingerichtet". The values stay German
-	// because they are shown as they are.
+	// Possible state values (in German): running, missing, not configured.
+	// The values remain in German because they are displayed verbatim in the UI.
 	Zustand   string `json:"zustand"`
 	Fassung   string `json:"fassung,omitempty"`
 	Antwort   string `json:"antwort,omitempty"` // gemessene Zeit
@@ -274,8 +274,8 @@ func kurz(s string) string {
 	return s
 }
 
-// mehrzahl picks singular or plural. A "1 Einträge" in an overview looks like a
-// bug in the program even when it is not one.
+// `mehrzahl` picks singular or plural. A "1 entries" label in an overview
+// looks like a bug even when it is not.
 func mehrzahl(n int, eins, viele string) string {
 	if n == 1 {
 		return eins

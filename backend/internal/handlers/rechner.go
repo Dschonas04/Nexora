@@ -1,22 +1,20 @@
-// Eigene Rechner: eine gepflegte Liste von Adressen, bei denen diese Instanz
-// anklopft, damit an einer Stelle steht, wer im Haus noch antwortet.
+// Local hosts: a curated list of addresses this instance probes so the
+// dashboard shows which hosts in the network still respond.
 //
-// Der Nachbar dieser Datei ist verbund.go, und die Aufteilung ist die: dort
-// stehen die Dienste, die Nexora zum Laufen braucht und deshalb von selbst
-// kennt. Hier stehen die, die jemand einträgt, weil er sie im Blick behalten
-// will. Nexora weiß von denen nichts, außer was in der Zeile steht.
+// The neighbor of this file is `verbund.go`: that file lists services Nexora
+// itself needs and therefore knows about automatically. This file lists hosts
+// entered by a user to keep an eye on. Nexora knows nothing about them other
+// than the data in the table.
 //
-// Gemessen wird ohne fremde Hilfe. Kein Prometheus, kein Grafana, kein Zugang
-// zum fremden Rechner: was in der Tabelle steht, hat diese Instanz selbst
-// gesehen, als sie angeklopft hat. Das ist weniger, als ein Überwacher mit
-// Agenten auf jedem Gerät wüsste, und es ist dafür sofort da und hängt an
-// nichts.
+// Measurements are self-contained. No Prometheus, no Grafana, no agent on the
+// remote host: whatever appears in the table is what this instance observed
+// when it probed the address. That is less than a dedicated monitor would
+// know, but it is immediate and requires no extra infrastructure.
 //
-// Erstaunlich viel fällt dabei ohnehin ab. Wer eine Verbindung annimmt, sagt
-// meist im ersten Atemzug, wer er ist: ein SSH-Dienst nennt seine Fassung,
-// bevor überhaupt jemand nach einem Passwort gefragt hat, ein Webserver nennt
-// sie in der Kopfzeile Server, und ein verschlüsselter Dienst zeigt sein
-// Zertifikat samt Ablaufdatum. Genau das steht in den Spalten.
+// Much information is revealed by default. A service usually announces its
+// identity when a connection is made: an SSH server states its version before
+// any password prompt, a web server sends a Server header, and a TLS service
+// presents its certificate with expiry. Those are the fields shown.
 package handlers
 
 import (
@@ -37,64 +35,63 @@ import (
 )
 
 const (
-	// So lange gilt eine Messung als frisch. Die Oberfläche fragt im Takt von
-	// wenigen Sekunden nach; ohne diesen Puffer klopfte jede Anfrage erneut an
-	// jedem Rechner an, und aus einer Übersicht würde eine Belastung.
+	// How long a measurement is considered fresh. The UI polls every few
+	// seconds; without this buffer every request would re-probe all hosts and
+	// the dashboard would become a load generator.
 	rechnerFrisch = 15 * time.Second
-	// Kurz, weil die Übersicht auch dann erscheinen muss, wenn ein Rechner
-	// hängt -- gerade dann.
+	// Short because the dashboard must return even when a host is unresponsive
+	// — especially then.
 	rechnerGeduld = 3 * time.Second
-	// Eine Obergrenze, damit die Liste eine Übersicht bleibt und nicht zum
-	// Netzwerkscanner wird.
+	// An upper bound so the list remains an overview and does not become a
+	// network scanner.
 	hoechstensRechner = 50
 )
 
-// Rechner ist eine Zeile der Liste, wie die Oberfläche sie sieht: das
-// Eingetragene und das gerade Gemessene in einem Stück.
+// `Rechner` is one row of the list as the UI sees it: the entered data and
+// the latest measurement together.
 type Rechner struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Ziel  string `json:"ziel"`
 	Notiz string `json:"notiz,omitempty"`
 
-	// Gemessen: "antwortet", "still" oder "unbekannt", solange nichts geprüft
-	// wurde. Deutsch, weil es so angezeigt wird.
+	// Measured state: "antwortet" (responding), "still" (silent) or
+	// "unbekannt" (unknown) while not yet probed. The strings are German as
+	// they are shown in the UI.
 	Zustand string `json:"zustand"`
 	Antwort string `json:"antwort,omitempty"`
 	Hinweis string `json:"hinweis,omitempty"`
 
-	// Was der Rechner beim Anklopfen von sich erzählt hat: die Kennung des
-	// Dienstes, und bei einer verschlüsselten Verbindung, wie lange sein
-	// Zertifikat noch gilt.
+	// What the host announced when probed: the service identifier and, for a
+	// TLS connection, how long its certificate remains valid.
 	Fassung    string `json:"fassung,omitempty"`
 	Zertifikat string `json:"zertifikat,omitempty"`
-	// TageBisAblauf ist dieselbe Angabe als Zahl, damit die Oberfläche eine
-	// Zeile einfärben kann, ohne Text auszuwerten. Negativ heißt: abgelaufen.
+	// `TageBisAblauf` provides the same information as a number so the UI can
+	// colour a row without parsing text. Negative means expired.
 	TageBisAblauf *int `json:"tageBisAblauf,omitempty"`
 }
 
-// RechnerListe ist die Antwort: die Zeilen und wann zuletzt gemessen wurde.
+// `RechnerListe` is the response: the rows and when they were last measured.
 type RechnerListe struct {
 	Rechner    []Rechner `json:"rechner"`
 	GeprueftUm string    `json:"geprueftUm,omitempty"`
 }
 
-// rechnerSpeicher hält die letzte Messung. Ein Zustand im Arbeitsspeicher und
-// nicht in der Datenbank: nach einem Neustart ist nichts gemessen, und das ist
-// die Wahrheit, während eine gespeicherte Zeile von gestern behaupten würde,
-// der Rechner sei erreichbar.
+// rechnerSpeicher keeps the last measurement. Stored in memory not in the
+// database: after a restart nothing is measured, which is the truth, whereas
+// a stored row from yesterday would falsely claim reachability.
 var rechnerSpeicher = struct {
 	sync.Mutex
 	stand   map[string]Rechner
 	geprüft time.Time
 }{stand: map[string]Rechner{}}
 
-// zielPruefen nimmt die Eingabe an oder sagt, was ihr fehlt.
+// zielPruefen validates the input or reports what is missing.
 //
-// Erlaubt ist "host:port" oder eine vollständige HTTP-Adresse. Ein Rechnername
-// ohne Port wird abgelehnt statt geraten: welcher Port gemeint ist, weiß nur
-// der, der die Zeile schreibt, und ein geratener Port meldet einen Rechner als
-// still, der bloß auf einem anderen hört.
+// Allowed forms are "host:port" or a full HTTP URL. A hostname without port
+// is rejected rather than guessed: only the person creating the entry knows
+// which port is intended, and guessing would mark a host as silent when it
+// simply listens on a different port.
 func zielPruefen(roh string) (string, error) {
 	ziel := strings.TrimSpace(roh)
 	if ziel == "" {
@@ -130,8 +127,8 @@ type messung struct {
 	Hinweis    string
 }
 
-// anklopfen misst, ob unter der Adresse jemand antwortet, und nimmt mit, was
-// er dabei von sich erzählt.
+// `anklopfen` measures whether someone responds at the address and records
+// what it reveals about itself.
 func anklopfen(ctx context.Context, ziel string) messung {
 	ctx, abbruch := context.WithTimeout(ctx, rechnerGeduld)
 	defer abbruch()
@@ -149,13 +146,12 @@ func anklopfen(ctx context.Context, ziel string) messung {
 		defer antwort.Body.Close()
 
 		m := messung{Da: true, Dauer: time.Since(beginn)}
-		// Die Kopfzeile Server ist die Fassung, die der Dienst selbst nennt.
-		// Manche verschweigen sie, und das ist ihr gutes Recht -- dann bleibt
-		// die Spalte leer, statt dass hier etwas geraten wird.
+		// The Server header is the version the service claims. Some omit it and
+		// that is fine — the field stays empty rather than guessing.
 		m.Fassung = kurzeKennung(antwort.Header.Get("Server"))
-		// Auch eine 404 ist eine Antwort: gefragt ist, ob dort ein Dienst
-		// läuft, nicht ob er diesen einen Weg kennt. Der Status steht daneben,
-		// falls jemand mehr erwartet hat.
+		// A 404 is still a response: we ask whether a service is running there,
+		// not whether it recognises this particular path. The status is shown in
+		// case someone expected more.
 		if antwort.StatusCode >= 400 {
 			m.Hinweis = "antwortet mit " + strconv.Itoa(antwort.StatusCode)
 		}
@@ -176,17 +172,16 @@ func anklopfen(ctx context.Context, ziel string) messung {
 	return m
 }
 
-// begruessung liest, was ein Dienst von sich aus sagt, sobald die Verbindung
-// steht.
+// begruessung reads what a service says unprompted as soon as the connection
+// is established.
 //
-// Viele tun das: ein SSH-Dienst nennt seine Fassung, bevor irgendjemand nach
-// einem Passwort gefragt hat, ein Postfachdienst grüßt mit 220 und seinem
-// Namen. Genau das ist die Antwort auf "welche Fassung läuft da", ohne dass
-// sich Nexora irgendwo anmelden müsste.
+// Many services do this: an SSH server announces its version before any
+// password prompt, an SMTP server greets with 220 and its name. That answers
+// "which release is running" without Nexora having to log in.
 //
-// Wer nichts sagt, sagt nichts: die kurze Frist läuft ab, die Spalte bleibt
-// leer, und niemand hat gewartet. Geschrieben wird nie -- diese Prüfung klopft
-// an und tritt nicht ein.
+// If nothing is sent within the short deadline the field stays empty and
+// nothing has waited. This probe never writes — it knocks and does not
+// enter.
 func begruessung(verbindung net.Conn) string {
 	if err := verbindung.SetReadDeadline(time.Now().Add(600 * time.Millisecond)); err != nil {
 		return ""
@@ -199,12 +194,12 @@ func begruessung(verbindung net.Conn) string {
 	return string(puffer[:n])
 }
 
-// kurzeKennung macht aus dem, was hereinkam, eine Zeile für die Tabelle.
+// kurzeKennung turns the raw input into a single table line.
 //
-// Nur die erste Zeile, nur Druckbares, und bei sechzig Zeichen ist Schluss:
-// hier kommt an, was ein fremder Rechner sagen wollte, und das gehört
-// beschnitten, bevor es in einer Oberfläche steht. Ein Dienst, der statt einer
-// Kennung eine Seite Text schickt, soll die Tabelle nicht sprengen.
+// Only the first line and printable characters are kept, and truncated at 60
+// characters: this is what a remote host wanted to say and should be clipped
+// before appearing in the UI. A service that sends a whole page of text must
+// not break the table.
 func kurzeKennung(roh string) string {
 	roh = strings.SplitN(roh, "\n", 2)[0]
 	roh = strings.TrimSpace(strings.SplitN(roh, "\r", 2)[0])
@@ -221,12 +216,11 @@ func kurzeKennung(roh string) string {
 	return sauber.String()
 }
 
-// zertifikatsAlter sagt, wie lange das Zertifikat noch gilt.
+// zertifikatsAlter reports how long the certificate is still valid.
 //
-// Die Zahl steht daneben, weil ein abgelaufenes Zertifikat der häufigste Grund
-// dafür ist, dass ein Dienst im eigenen Haus plötzlich nicht mehr erreichbar
-// ist -- und der einzige, den man Wochen vorher sehen könnte, wenn ihn nur
-// jemand anzeigte.
+// The numeric value is provided because an expired cert is the most common
+// reason a local service suddenly becomes unreachable — and the only one you
+// can see weeks in advance if someone bothered to display it.
 func zertifikatsAlter(bis time.Time) (string, *int) {
 	tage := int(time.Until(bis).Hours() / 24)
 	switch {
@@ -241,20 +235,19 @@ func zertifikatsAlter(bis time.Time) (string, *int) {
 	}
 }
 
-// klopfer ist der Browser dieser Prüfung, und er unterscheidet sich in zwei
-// Punkten von einem gewöhnlichen.
+// `klopfer` is the HTTP client used by the probe and differs from a normal
+// client in two ways.
 //
-// Er folgt keiner Umleitung: eine 301 ist bereits eine Antwort, und wohin sie
-// zeigt, ist eine andere Frage als die, ob unter dieser Adresse jemand da ist.
-// Ohne die Bremse stünde am Ende die Erreichbarkeit eines fremden Rechners in
-// der Zeile.
+// It does not follow redirects: a 301 is already a response and where it
+// points is a different question than whether anything responds at this
+// address. Without this restriction the row could end up showing reachability
+// of a remote host.
 //
-// Und er prüft das Zertifikat nicht. Das ist hier kein Loch, sondern die
-// einzige brauchbare Einstellung: gefragt wird, ob etwas antwortet, gelesen
-// wird nichts. Ein Proxmox, ein NAS, ein Backup-Server -- alles, was man im
-// eigenen Haus überwachen will, trägt ein selbst unterschriebenes Zertifikat,
-// und mit Prüfung stünden sie samt und sonders als "still" da, obwohl sie
-// laufen. Eine Übersicht, die die halbe Wohnung für tot erklärt, ist wertlos.
+// It does not validate certificates. This is not a security hole but a
+// practical necessity: the question is whether something answers, not whether
+// its certificate chains to a CA. Many local services present self-signed
+// certs and would appear "silent" if checked strictly. A dashboard that
+// marks half the home as dead is worthless.
 var klopfer = &http.Client{
 	CheckRedirect: func(*http.Request, []*http.Request) error {
 		return http.ErrUseLastResponse
@@ -307,11 +300,11 @@ func (s *Server) rechnerLesen(ctx context.Context) ([]Rechner, error) {
 	return liste, rows.Err()
 }
 
-// rechnerMessen klopft an allen Adressen gleichzeitig an.
-//
-// Gleichzeitig, weil nacheinander die Wartezeiten aufeinanderlägen: bei zehn
-// stillen Rechnern wären das dreißig Sekunden, und so lange sieht niemand einer
-// Übersicht beim Laden zu.
+// `rechnerMessen` probes all addresses concurrently.
+
+// Concurrent probing avoids cumulative wait times: probing ten silent hosts
+// sequentially would take thirty seconds, during which the UI would appear
+// unresponsive.
 func (s *Server) rechnerMessen(ctx context.Context, eintraege []Rechner) []Rechner {
 	rechnerSpeicher.Lock()
 	frisch := time.Since(rechnerSpeicher.geprüft) < rechnerFrisch
@@ -367,7 +360,7 @@ type rechnerReq struct {
 	Notiz string `json:"notiz"`
 }
 
-// RechnerAnlegen trägt einen Rechner in die Liste ein.
+// `RechnerAnlegen` inserts a host into the list.
 func (s *Server) RechnerAnlegen(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "admin only")
@@ -385,8 +378,8 @@ func (s *Server) RechnerAnlegen(w http.ResponseWriter, r *http.Request) {
 	}
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
-		// Ohne Namen tut es die Adresse. Eine Liste mit leeren Zellen sähe aus,
-		// als fehlte etwas.
+		// Use the address if no name is provided. A list with empty cells looks
+		// like something is missing.
 		name = ziel
 	}
 
@@ -415,7 +408,7 @@ func (s *Server) RechnerAnlegen(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, e)
 }
 
-// RechnerAendern ändert eine Zeile.
+// `RechnerAendern` modifies a row.
 func (s *Server) RechnerAendern(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "admin only")
@@ -453,7 +446,7 @@ func (s *Server) RechnerAendern(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, e)
 }
 
-// RechnerLoeschen nimmt einen Rechner aus der Liste.
+// `RechnerLoeschen` removes a host from the list.
 func (s *Server) RechnerLoeschen(w http.ResponseWriter, r *http.Request) {
 	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
 		writeErr(w, http.StatusForbidden, "admin only")
@@ -482,9 +475,9 @@ func (s *Server) RechnerLoeschen(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// rechnerVergessen wirft die letzte Messung weg. Nach einer Änderung an der
-// Liste wäre sie falsch: sie enthielte einen Zustand zu einer Adresse, die es
-// so nicht mehr gibt.
+// `rechnerVergessen` discards the last measurement. After a change to the
+// list it would be wrong: it could contain a state for an address that no
+// longer exists.
 func rechnerVergessen() {
 	rechnerSpeicher.Lock()
 	rechnerSpeicher.stand = map[string]Rechner{}

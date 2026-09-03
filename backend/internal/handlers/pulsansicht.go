@@ -1,14 +1,13 @@
-// Der Weg, den die Systemansicht im Sekundentakt abfragt.
+// The endpoint polled by the system view every second.
 //
-// Er fasst drei Quellen zusammen, die ohne einander wenig sagen: die Anfragen
-// der letzten Minute, den Zustand des Verbindungsvorrats zur Datenbank und den
-// Speicher des Prozesses.
+// It combines three sources that say little on their own: requests in the
+// last minute, the state of the DB connection pool, and the process memory.
 //
-// Der Verbindungsvorrat ist der eigentliche Grund für diese Ansicht. pgx nimmt
-// ohne Angabe so viele Verbindungen wie Kerne, und wenn die alle belegt sind,
-// wartet jede weitere Anfrage — von außen sieht das aus wie eine langsame
-// Datenbank, obwohl die Datenbank Langeweile hat. Diese Verwechslung kostet
-// Stunden, wenn man die Wartezeit nicht sieht. Hier steht sie.
+// The connection pool is the main reason for this view. Without tuning pgx
+// allows as many connections as CPU cores, and when they are all used every
+// further request waits — from outside this looks like a slow database even
+// though the DB is idle. Confusing the two costs hours of debugging; the
+// waiting time is shown here.
 package handlers
 
 import (
@@ -34,18 +33,16 @@ func (s *Server) PulsAnsicht(w http.ResponseWriter, r *http.Request) {
 	// Der Vorrat an Datenbankverbindungen.
 	st := s.Pool.Stat()
 
-	// Die mittlere Wartezeit auf eine Verbindung, und nicht die Zahl der
-	// Wartenden.
+	// The average wait time for a connection, not the number of waiters.
 	//
-	// EmptyAcquireCount zählt jeden Zugriff, der keine freie Verbindung vorfand,
-	// und dazu gehören die ersten Zugriffe nach dem Start: der Vorrat ist dann
-	// leer und muss die Verbindung erst aufbauen. Diese Zahl steht also auch auf
-	// einer Instanz, die nie unter Last war, bei ein paar Dutzend. Sie rot zu
-	// färben hieße, auf jeder frischen Installation Alarm zu schlagen.
+	// `EmptyAcquireCount` increments on every attempt that found no free
+	// connection, including early startup accesses while the pool builds
+	// connections. That count therefore shows non-zero even on a fresh
+	// instance and alarmingly coloring it would trigger false alerts.
 	//
-	// Die mittlere Wartezeit hat das Problem nicht: das Aufbauen einer Handvoll
-	// Verbindungen verschwindet darin, und echte Knappheit, bei der jeder
-	// Zugriff wartet, hebt sie sofort an.
+	// The average wait time avoids that problem: the cost of building a few
+	// connections is absorbed, while genuine contention where every request
+	// waits raises the average immediately.
 	var mittelWarteMS float64
 	if st.AcquireCount() > 0 {
 		mittelWarteMS = float64(st.AcquireDuration().Microseconds()) /
@@ -72,9 +69,9 @@ func (s *Server) PulsAnsicht(w http.ResponseWriter, r *http.Request) {
 		"kerne":       runtime.NumCPU(),
 	}
 
-	// Die Datenbank über sich selbst. Zwei Zahlen, die zusammen die Frage
-	// beantworten, ob mehr Arbeitsspeicher etwas brächte: solange die
-	// Trefferquote oben steht, liest PostgreSQL ohnehin aus dem Speicher.
+	// Database statistics about itself. Two numbers that together indicate
+	// whether more RAM would help: while the hit rate is high PostgreSQL
+	// already serves from memory.
 	ctx := r.Context()
 	var groesse string
 	var quote *float64

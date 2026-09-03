@@ -150,9 +150,8 @@ func (s *Server) ProfilAendern(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "ein Name wird gebraucht")
 		return
 	}
-	// Eine Grenze, damit eine Namensspalte eine Spalte bleibt. Gezählt werden
-	// Zeichen und nicht Bytes, sonst reichte ein Name mit Umlauten weniger weit
-	// als einer ohne.
+	// A limit so a name column remains a column. Count runes (characters), not
+	// bytes, otherwise a name with umlauts would be shorter than one without.
 	if len([]rune(name)) > 80 {
 		writeErr(w, http.StatusBadRequest, "der Name ist zu lang, höchstens 80 Zeichen")
 		return
