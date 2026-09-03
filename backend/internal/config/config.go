@@ -114,11 +114,6 @@ type Konfig struct {
 	// internal/vertrauen.
 	TLSWurzel string
 
-	// Kennzahlen für Prometheus. Leer heißt: den Weg gibt es nicht. Ein
-	// Losungswort und kein Ja/Nein, weil die Zahlen verraten, wie viele Leute
-	// hier arbeiten und wann; wer sie abholt, soll sich ausweisen.
-	MetrikenToken string
-
 	// LDAP / Active Directory
 	LDAPAktiv          bool
 	LDAPServer         string
@@ -313,8 +308,6 @@ func Laden(pfad string) Konfig {
 	text(&k.TLSZertifikat, "tls_zertifikat", "NEXORA_TLS_ZERTIFIKAT")
 	text(&k.TLSSchluessel, "tls_schluessel", "NEXORA_TLS_SCHLUESSEL")
 	text(&k.TLSWurzel, "tls_wurzel", "NEXORA_TLS_WURZEL")
-
-	text(&k.MetrikenToken, "metriken_token", "NEXORA_METRIKEN_TOKEN")
 
 	jaNein(&k.LDAPAktiv, "ldap_aktiv", "NEXORA_LDAP_AKTIV")
 	text(&k.LDAPServer, "ldap_server", "NEXORA_LDAP_SERVER")

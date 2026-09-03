@@ -189,12 +189,119 @@ a {
 
 .sidebar-footer {
   border-top: 1px solid var(--border);
-  padding: 8px 12px;
+  padding: 6px 8px;
   font-size: 13px;
   color: var(--muted);
+  /* Anker für das Menü darüber: das klappt nach OBEN auf, weil unten die
+     Bildschirmkante ist. */
+  position: relative;
+}
+
+/* Das Gesicht am Konto. Als Kreis, weil ein rechteckiges Foto in einer Zeile
+   wie ein Anhang aussieht und nicht wie eine Person. */
+.profilbild {
+  border-radius: 50%;
+  flex: none;
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.profilbild-kuerzel {
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  /* Die Farbe kommt aus der Kennung und steht deshalb am Element. */
+  user-select: none;
+}
+
+.konto-knopf {
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.konto-knopf:hover {
+  background: var(--hover, rgba(55, 53, 47, 0.06));
+}
+.konto-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.konto-pfeil {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.konto-menue {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% - 2px);
+  z-index: 40;
+  background: var(--flaeche, #fff);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(15, 15, 15, 0.18);
+  padding: 4px;
+  overflow: hidden;
+}
+.konto-menue-kopf {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.konto-menue-kopf strong {
+  display: block;
+  color: var(--text);
+}
+/* Alle drei Einträge gleich: Profil, Passwort und Abmelden wiegen dasselbe. */
+.konto-menue-zeile {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.konto-menue-zeile:hover {
+  background: var(--hover, rgba(55, 53, 47, 0.06));
+}
+
+/* Der Kopf im Profilfenster: Bild links, Name und Knöpfe daneben. */
+.profil-kopf {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.profil-kopf-text {
+  min-width: 0;
+}
+.profil-kopf-text > strong {
+  display: block;
+  font-size: 15px;
+}
+.profil-kopf-text .knopfreihe {
+  margin-top: 8px;
 }
 
 .search-box {
@@ -2855,9 +2962,46 @@ textarea::placeholder {
   align-items: flex-start;
   gap: 10px;
   cursor: pointer;
+  /* Innen statt aussen: die Hervorhebung beim Ueberfahren soll die Zeile
+     umfassen und nicht am Text kleben, und der Rundung braucht es Platz. */
+  padding: 10px 10px;
+  border-radius: 6px;
+  border-bottom: 1px solid var(--border);
 }
 .postfach-zeile:hover {
   background: var(--hover);
+}
+.postfach-zeile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* Das Gesicht sitzt neben dem Punkt und richtet sich an der ersten Zeile aus,
+   nicht an der Mitte: bei einer Nachricht mit Auszug stuende es sonst
+   zwischen den Zeilen. */
+.postfach-zeile .profilbild {
+  margin-top: 1px;
+}
+/* Eine Nachricht, deren Seite es nicht mehr gibt, fuehrt nirgendwohin. Der
+   Zeiger sagt das, bevor jemand klickt und sich fragt, warum nichts geschieht. */
+.postfach-zeile.ohne-ziel {
+  cursor: default;
+}
+
+.postfach-leer {
+  margin: 48px auto;
+  max-width: 380px;
+  text-align: center;
+  color: var(--text);
+}
+.postfach-leer-zeichen {
+  font-size: 40px;
+  line-height: 1;
+  color: var(--muted);
+  opacity: 0.5;
+  margin-bottom: 12px;
+}
+.postfach-leer p {
+  margin-top: 6px;
 }
 /* The dot carries the read/unread distinction, not the font weight alone: with
    twenty rows one sees a dot faster than a slightly bolder word. */

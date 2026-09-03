@@ -13,6 +13,12 @@ export interface User {
   benutzername: string;
   role: string;
   createdAt: string;
+  /**
+   * Wann das Profilbild zuletzt gesetzt wurde; fehlt, wenn es keines gibt.
+   * Beantwortet beides auf einmal: OB ein Bild da ist, und WELCHES -- der Stand
+   * hängt an der Adresse, damit ein neues sofort erscheint.
+   */
+  bildStand?: string;
 }
 
 export interface Tag {
@@ -489,18 +495,6 @@ export interface Puls {
   };
 }
 
-// MetrikenZustand: ob die Kennzahlen an sind, wann zuletzt abgeholt wurde, und
-// der fertige Abschnitt für prometheus.yml mit dem Losungswort darin.
-export interface MetrikenZustand {
-  aktiv: boolean;
-  token: string;
-  abholungen: number;
-  ausDerDatei: boolean;
-  zuletztAbgeholt?: string;
-  vorSekunden?: number;
-  prometheus: string;
-}
-
 // SicherungUmfang sagt vorher, was in eine Sicherung ginge. Vorher, weil bei
 // einem Bestand von mehreren Gigabyte niemand den Knopf drücken und dann raten
 // soll, ob es hängt oder nur dauert.
@@ -589,7 +583,11 @@ export interface Nachricht {
   art: "kommentar" | "antwort" | "erwaehnung" | "freigabe";
   pageId: string | null;
   kommentarId: string | null;
+  /** Wer sie ausgelöst hat. Null, wenn das Konto gelöscht wurde. */
+  ausloeserId: string | null;
   ausloeserName: string;
+  /** Stand des Profilbildes dieses Kontos; fehlt, wenn es keines hat. */
+  ausloeserBild?: string;
   seitenTitel: string;
   text: string;
   gelesenAm: string | null;
@@ -708,6 +706,34 @@ export const api = {
     return (await res.json()) as { ok: boolean; bytes: number };
   },
 
+  // Das eigene Profil. Der Name als JSON, das Bild roh: es ist bereits Bytes,
+  // und es durch Base64 zu schicken machte es um ein Drittel größer.
+  profilAendern: (name: string) =>
+    req<{ ok: boolean; name: string }>("/profil", {
+      method: "PUT",
+      body: JSON.stringify({ name }),
+    }),
+  profilbildSetzen: async (bild: Blob) => {
+    const res = await fetch("/api/profil/bild", {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": bild.type || "image/jpeg" },
+      body: bild,
+    });
+    if (!res.ok) {
+      let msg = res.statusText;
+      try {
+        const j = await res.json();
+        if (j && j.error) msg = j.error;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(msg);
+    }
+    return (await res.json()) as { ok: boolean; bildStand: string };
+  },
+  profilbildWeg: () => req<{ ok: boolean }>("/profil/bild", { method: "DELETE" }),
+
   sitzungen: () => req<Sitzung[]>("/sitzungen"),
   sitzungBeenden: (id: string) => req<void>(`/sitzungen/${id}`, { method: "DELETE" }),
   sitzungenBeenden: () => req<{ beendet: number }>("/sitzungen", { method: "DELETE" }),
@@ -784,9 +810,6 @@ export const api = {
   // Kein req: die Antwort ist ein Archiv und kein JSON, und sie kann Gigabyte
   // groß sein. Der Browser lädt sie selbst herunter, der Keks geht mit.
   sicherungAdresse: "/api/system/sicherung",
-  metriken: () => req<MetrikenZustand>("/system/metriken"),
-  metrikenTokenNeu: () => req<MetrikenZustand>("/system/metriken/token", { method: "POST" }),
-  metrikenAus: () => req<MetrikenZustand>("/system/metriken/token", { method: "DELETE" }),
   ldapEinrichtung: () => req<LDAPEinrichtung>("/system/ldap"),
   ldapTesten: (benutzer: string, passwort: string) =>
     req<LDAPTestErgebnis>("/system/ldap/test", {

@@ -224,8 +224,9 @@ func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var u models.User
 	err := s.Pool.QueryRow(r.Context(),
-		`SELECT id, email, name, coalesce(benutzername, ''), role, created_at FROM users WHERE id = $1`, uid,
-	).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &u.Role, &u.CreatedAt)
+		`SELECT id, email, name, coalesce(benutzername, ''), role, created_at, bild_stand
+		 FROM users WHERE id = $1`, uid,
+	).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &u.Role, &u.CreatedAt, &u.BildStand)
 	if err != nil {
 		writeErr(w, http.StatusUnauthorized, "unauthorized")
 		return

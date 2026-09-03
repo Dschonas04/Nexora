@@ -8,14 +8,17 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Nachricht, api } from "../api/client";
+import Profilbild from "../components/Profilbild";
 
-// The sentence per kind. The name of whoever triggered it stands in front, so
-// every sentence starts with a verb.
-const SATZ: Record<Nachricht["art"], string> = {
-  kommentar: "hat kommentiert auf",
-  antwort: "hat auf deinen Kommentar geantwortet in",
-  erwaehnung: "hat dich erwähnt in",
-  freigabe: "hat eine Seite mit dir geteilt:",
+// Der Satz je Art, zweigeteilt: was jemand getan hat, und wie der Seitentitel
+// daran anschließt. Vorher stand beides in einem Stück und ergab "hat
+// kommentiert auf Seitenname" -- verständlich, aber kein Deutsch, das jemand
+// so schreiben würde.
+const SATZ: Record<Nachricht["art"], { tat: string; vor: string }> = {
+  kommentar: { tat: "hat kommentiert", vor: "in" },
+  antwort: { tat: "hat auf deinen Kommentar geantwortet", vor: "in" },
+  erwaehnung: { tat: "hat dich erwähnt", vor: "in" },
+  freigabe: { tat: "hat eine Seite mit dir geteilt", vor: "" },
 };
 
 export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
@@ -37,6 +40,13 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
   const oeffnen = async (n: Nachricht) => {
     if (!n.gelesenAm) {
       await api.postfachGelesen(n.id).catch(() => {});
+      // Örtlich mitziehen statt neu zu laden: die Zeile soll sofort gelesen
+      // aussehen, und die Liste soll dabei nicht unter der Hand umspringen --
+      // besonders nicht, wenn "Nur ungelesene" an ist und die eben angeklickte
+      // Zeile sonst unter dem Zeigefinger verschwände.
+      setItems((vorher) =>
+        vorher.map((m) => (m.id === n.id ? { ...m, gelesenAm: new Date().toISOString() } : m)),
+      );
       onGelesen();
     }
     if (n.pageId) nav(`/page/${n.pageId}`);
@@ -54,6 +64,7 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
   };
 
   const ungelesen = items.filter((n) => !n.gelesenAm).length;
+  const gelesene = items.length - ungelesen;
 
   return (
     <div className="editor-scroll">
@@ -79,28 +90,71 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
               Alle als gelesen
             </button>
           )}
-          <button className="btn" onClick={aufraeumen} title="Entfernt nur die gelesenen">
-            Gelesene wegräumen
-          </button>
+          {/* Nur zeigen, was auch etwas bewirkt. Ein Knopf, der bei leerem
+              Postfach dasteht und beim Drücken nichts tut, sieht defekt aus. */}
+          {gelesene > 0 && (
+            <button className="btn" onClick={aufraeumen} title="Entfernt nur die gelesenen">
+              Gelesene wegräumen
+            </button>
+          )}
         </div>
 
         {items.length === 0 ? (
-          <div className="muted" style={{ marginTop: 20 }}>
-            {nurUngelesen ? "Nichts Ungelesenes." : "Das Postfach ist leer."}
+          <div className="postfach-leer">
+            <div className="postfach-leer-zeichen" aria-hidden="true">
+              &#9993;
+            </div>
+            {nurUngelesen ? (
+              <>
+                <strong>Nichts Ungelesenes.</strong>
+                <p className="muted small">
+                  Alles gelesen. Der Schalter oben zeigt wieder die ganze Liste.
+                </p>
+              </>
+            ) : (
+              <>
+                <strong>Das Postfach ist leer.</strong>
+                <p className="muted small">
+                  Hier landet, was geschieht, während du nicht hinsiehst.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <div className="list">
             {items.map((n) => (
               <div
                 key={n.id}
-                className={"list-row postfach-zeile" + (n.gelesenAm ? "" : " ungelesen")}
+                className={
+                  "list-row postfach-zeile" +
+                  (n.gelesenAm ? "" : " ungelesen") +
+                  (n.pageId ? "" : " ohne-ziel")
+                }
+                role="button"
+                tabIndex={0}
                 onClick={() => oeffnen(n)}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && oeffnen(n)}
               >
                 <span className="postfach-punkt" aria-hidden="true" />
+                <Profilbild
+                  id={n.ausloeserId ?? n.id}
+                  name={n.ausloeserName || "Jemand"}
+                  stand={n.ausloeserBild}
+                />
                 <span className="postfach-inhalt">
                   <span className="postfach-kopf">
-                    <strong>{n.ausloeserName || "Jemand"}</strong> {SATZ[n.art]}{" "}
-                    <span className="postfach-seite">{n.seitenTitel}</span>
+                    <strong>{n.ausloeserName || "Jemand"}</strong> {SATZ[n.art].tat}
+                    {/* Ohne Titel keine leere unterstrichene Lücke: eine Seite,
+                        die inzwischen fort ist, wird benannt und nicht
+                        verschwiegen. */}
+                    {n.seitenTitel ? (
+                      <>
+                        {SATZ[n.art].vor ? " " + SATZ[n.art].vor : ""}{" "}
+                        <span className="postfach-seite">{n.seitenTitel}</span>
+                      </>
+                    ) : (
+                      <span className="muted"> &mdash; die Seite gibt es nicht mehr</span>
+                    )}
                   </span>
                   {n.text && <span className="muted small postfach-auszug">{n.text}</span>}
                 </span>

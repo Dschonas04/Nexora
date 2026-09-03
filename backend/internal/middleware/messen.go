@@ -60,17 +60,16 @@ func (s *schreiberMitStatus) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 func Messen(m *puls.Messer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Die beiden Wege, über die gemessen wird, zählen sich nicht selbst
-			// mit. Die Oberfläche ruft den einen im Sekundentakt ab und
-			// Prometheus den anderen alle fünfzehn; sie stünden sonst als
-			// Grundrauschen in jeder Messung, die sie anzeigen sollen, und die
-			// Rate der Anfragen wäre nie null, auch wenn niemand arbeitet.
+			// Der Weg, über den gemessen wird, zählt sich nicht selbst mit: die
+			// Oberfläche ruft ihn im Sekundentakt ab, und er stünde sonst als
+			// Grundrauschen in jeder Messung, die er anzeigen soll -- die Rate
+			// der Anfragen wäre nie null, auch wenn niemand arbeitet.
 			// Und das gemeinsame Schreiben zählt auch nicht mit. Es ist keine
 			// Anfrage, die beantwortet wird, sondern eine Leitung, die
 			// stundenlang offen steht; als eine Anfrage von zwei Stunden
 			// gezählt verdürbe sie jeden Mittelwert, den die Anzeige daneben
 			// zeigt.
-			if r.URL.Path == "/api/system/puls" || r.URL.Path == "/metrics" ||
+			if r.URL.Path == "/api/system/puls" ||
 				strings.HasPrefix(r.URL.Path, "/api/echtzeit/") {
 				next.ServeHTTP(w, r)
 				return

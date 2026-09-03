@@ -9,6 +9,13 @@ interface AuthCtx {
   login: (kennung: string, password: string) => Promise<void>;
   register: (email: string, name: string, password: string, benutzername?: string) => Promise<void>;
   logout: () => Promise<void>;
+  /**
+   * Das Konto noch einmal lesen. Gebraucht, nachdem jemand am eigenen Profil
+   * etwas geändert hat: Name und Bild stehen an mehreren Stellen der
+   * Oberfläche, und die sollen es sofort zeigen und nicht erst nach einem
+   * Neuladen.
+   */
+  neuLaden: () => Promise<void>;
 }
 
 // No default value: every consumer sits under the provider, and the cast keeps
@@ -41,8 +48,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api.logout();
     setUser(null);
   };
+  // Ein Fehlschlag lässt den bisherigen Stand stehen: er ist veraltet, aber
+  // brauchbar. Abzumelden, weil eine Nachfrage scheiterte, wäre schlimmer.
+  const neuLaden = async () => {
+    try {
+      setUser(await api.me());
+    } catch {
+      /* der bisherige Stand bleibt */
+    }
+  };
 
-  return <Ctx.Provider value={{ user, loading, login, register, logout }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, loading, login, register, logout, neuLaden }}>{children}</Ctx.Provider>;
 }
 
 export const useAuth = () => useContext(Ctx);

@@ -469,6 +469,19 @@ BEGIN
 		VALUES ('breite_umgestellt', 'ja', 'Umstellung beim Start');
 	END IF;
 END $$;
+
+-- Das Profilbild. In der Datenbank und nicht in der Ablage, obwohl dort die
+-- Anhaenge liegen: Anhaenge sind ein kostenpflichtiger Zusatz, ein Gesicht am
+-- eigenen Konto darf das nicht sein. Klein genug ist es auch -- die Oberflaeche
+-- rechnet vor dem Hochladen auf 256 Pixel herunter, was ein paar Dutzend
+-- Kilobyte ergibt, und der Dienst laesst nichts Groesseres als 512 KB zu.
+--
+-- bild_stand wandert bei jeder Aenderung weiter. Das Bild wird mit langer
+-- Frist zwischengespeichert, sonst holte es jede Seite neu; ohne eine Zahl, die
+-- sich mitbewegt, saehe man sein neues Bild erst am naechsten Tag.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bild       bytea;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bild_mime  text NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bild_stand timestamptz;
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

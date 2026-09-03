@@ -175,6 +175,10 @@ when the database approaches a gigabyte, not before.
   annotations carrying their author. The marked-up file **replaces** the old
   one under the same id — every link to it keeps working, and the unmarked
   version is gone afterwards; the interface says so before you save
+- **Your own profile**: a display name and a picture, set by the account itself
+  rather than by an administrator. The picture is cropped and scaled to 256 × 256
+  in the browser before it goes up, and the server accepts it only after
+  decoding it as an actual image — the claimed content type decides nothing
 - **Audit trail**: who did what, when — sign-ins including the failed ones,
   accounts, pages, trash, permanent deletion, shares and public links. Entries
   survive the deletion of the page or account they refer to, because deleting is
@@ -360,7 +364,8 @@ repository:
 ## Data Model
 
 ```
-users        id, email, name, benutzername, password_hash, role, created_at
+users        id, email, name, benutzername, password_hash, role, created_at,
+             bild, bild_mime, bild_stand
 spaces       id, owner_id, name, created_at
 pages        id, owner_id, parent_id, space_id, title, content (jsonb),
              content_text, such_tsv (generated), icon, is_public,
@@ -525,6 +530,11 @@ DELETE /tags/{id}                         delete
 GET    /pages/{id}/attachments/{attId}/word    a .docx as editor blocks
 PUT    /pages/{id}/attachments/{attId}/word    write the blocks back as .docx
 PUT    /pages/{id}/attachments/{attId}/pdf     replace a PDF with a marked-up one
+
+PUT    /profil                            your own display name
+PUT    /profil/bild                       your own profile picture (raw bytes)
+DELETE /profil/bild                       remove it
+GET    /users/{id}/bild                   an account's picture, 404 when none
 GET    /auth/sso                         which sign-in methods this instance offers
 GET    /auth/oidc/start                  begin an OIDC sign-in (redirects to the provider)
 GET    /auth/oidc/zurueck                the provider's callback

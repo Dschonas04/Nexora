@@ -43,16 +43,11 @@ type Messer struct {
 	laufend atomic.Int64 // gerade in Bearbeitung
 	seit    time.Time
 
-	// Zähler über die ganze Laufzeit, neben den Fächern.
-	//
-	// Die Fächer vergessen nach einer Minute, und das ist für die Anzeige
-	// richtig. Prometheus braucht das Gegenteil: Zähler, die nur steigen. Es
-	// bildet die Rate selbst aus zwei Abfragen, und ein Wert, der zwischendurch
-	// zurückspringt, wird dort als Neustart des Dienstes gelesen.
-	gesamt    atomic.Int64
-	abgelehnt atomic.Int64
-	fehler    atomic.Int64
-	dauerNS   atomic.Int64
+	// Wie viele Anfragen der Dienst seit dem Start beantwortet hat. Die Fächer
+	// vergessen nach einer Minute -- richtig für die Anzeige des Verlaufs, aber
+	// die Frage "wie viel hat dieser Dienst insgesamt getan" beantwortet nur
+	// ein Zähler, der nie zurückgeht.
+	gesamt atomic.Int64
 }
 
 func Neu() *Messer {
@@ -70,14 +65,6 @@ func (m *Messer) Beginn() func(status int) {
 		m.gesamt.Add(1)
 
 		jetzt := time.Now()
-		m.dauerNS.Add(jetzt.Sub(start).Nanoseconds())
-		switch {
-		case status >= 500:
-			m.fehler.Add(1)
-		case status >= 400:
-			m.abgelehnt.Add(1)
-		}
-
 		sek := jetzt.Unix()
 		f := &m.faecher[sek%Faecher]
 		// Gehört das Fach noch zu einer früheren Minute, wird es geleert statt
@@ -185,12 +172,4 @@ func (m *Messer) Lies() Stand {
 		s.MittelMS = float64(summeDauer) / float64(summeAnfragen) / 1e6
 	}
 	return s
-}
-
-// SeitDemStart gibt die Zähler über die ganze Laufzeit zurück: beantwortet,
-// davon abgewiesen und gescheitert, dazu die aufsummierte Dauer und wie viele
-// gerade laufen. Für Prometheus, das die Rate selbst bildet.
-func (m *Messer) SeitDemStart() (gesamt, abgelehnt, fehler int64, dauer time.Duration, laufend int64) {
-	return m.gesamt.Load(), m.abgelehnt.Load(), m.fehler.Load(),
-		time.Duration(m.dauerNS.Load()), m.laufend.Load()
 }

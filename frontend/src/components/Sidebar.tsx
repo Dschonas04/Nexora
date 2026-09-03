@@ -11,6 +11,8 @@ import { useAussenklick } from "../klappen";
 import SpaceRechte from "./SpaceRechte";
 import Einfuhr from "./Einfuhr";
 import PasswortDialog from "./PasswortDialog";
+import ProfilDialog from "./ProfilDialog";
+import Profilbild from "./Profilbild";
 
 // Keys in the browser's storage. Collapsed is remembered, not open: that way a
 // newly created space is expanded by itself without having to be recorded
@@ -113,6 +115,29 @@ export default function Sidebar(props: Props) {
   } = props;
   const { user, logout } = useAuth();
   const [passwortOffen, setPasswortOffen] = useState(false);
+  const [profilOffen, setProfilOffen] = useState(false);
+  // Das Menü unten links. Zu, bis jemand auf sein Gesicht klickt: die Leiste
+  // ist schmal, und drei Knöpfe nebeneinander drängten den Namen heraus, für
+  // den sie da sind.
+  const [kontoMenue, setKontoMenue] = useState(false);
+  const kontoEcke = useRef<HTMLDivElement>(null);
+
+  // Ein Klick daneben und Esc schließen das Menü. Ohne das bliebe es offen
+  // stehen, während man schon wieder etwas anderes tut, und verdeckte den
+  // unteren Teil des Baums.
+  useEffect(() => {
+    if (!kontoMenue) return;
+    const daneben = (e: MouseEvent) => {
+      if (!kontoEcke.current?.contains(e.target as Node)) setKontoMenue(false);
+    };
+    const taste = (e: KeyboardEvent) => e.key === "Escape" && setKontoMenue(false);
+    document.addEventListener("mousedown", daneben);
+    document.addEventListener("keydown", taste);
+    return () => {
+      document.removeEventListener("mousedown", daneben);
+      document.removeEventListener("keydown", taste);
+    };
+  }, [kontoMenue]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // Eingeklappte Abschnitte der Leiste. Getrennt von `expanded`, das die
   // Verzweigungen INNERHALB eines Baums steuert, hier geht es um den
@@ -1303,23 +1328,80 @@ export default function Sidebar(props: Props) {
         />
       )}
 
-      <div className="sidebar-footer">
-        <span className="tree-label">{user?.name}</span>
-        {/* Das eigene Passwort. Steht hier und nicht in den Einstellungen:
-            die sind der Verwaltung vorbehalten, das Passwort geht jeden an. */}
+      <div className="sidebar-footer" ref={kontoEcke}>
         <button
-          className="btn-schlicht"
-          onClick={() => setPasswortOffen(true)}
-          title="Passwort ändern"
+          className="konto-knopf"
+          onClick={() => setKontoMenue((auf) => !auf)}
+          aria-haspopup="menu"
+          aria-expanded={kontoMenue}
+          title={user?.email}
         >
-          Passwort
+          <Profilbild
+            id={user?.id ?? ""}
+            name={user?.name ?? ""}
+            email={user?.email}
+            stand={user?.bildStand}
+          />
+          <span className="konto-name">{user?.name}</span>
+          <span className="konto-pfeil" aria-hidden="true">
+            {kontoMenue ? "\u25be" : "\u25b4"}
+          </span>
         </button>
-        <button className="btn" onClick={logout}>
-          Abmelden
-        </button>
+
+        {kontoMenue && (
+          <div className="konto-menue" role="menu">
+            <div className="konto-menue-kopf">
+              <Profilbild
+                id={user?.id ?? ""}
+                name={user?.name ?? ""}
+                email={user?.email}
+                stand={user?.bildStand}
+                groesse={40}
+              />
+              <div>
+                <strong>{user?.name}</strong>
+                <div className="muted small">{user?.email}</div>
+              </div>
+            </div>
+            {/* Drei gleiche Knöpfe untereinander: Profil, Passwort, Abmelden
+                sind derselbe Rang, und einer davon sah bisher aus wie ein
+                Nebensatz. */}
+            <button
+              className="konto-menue-zeile"
+              role="menuitem"
+              onClick={() => {
+                setKontoMenue(false);
+                setProfilOffen(true);
+              }}
+            >
+              Profil bearbeiten
+            </button>
+            <button
+              className="konto-menue-zeile"
+              role="menuitem"
+              onClick={() => {
+                setKontoMenue(false);
+                setPasswortOffen(true);
+              }}
+            >
+              Passwort ändern
+            </button>
+            <button
+              className="konto-menue-zeile"
+              role="menuitem"
+              onClick={() => {
+                setKontoMenue(false);
+                logout();
+              }}
+            >
+              Abmelden
+            </button>
+          </div>
+        )}
       </div>
 
       {passwortOffen && <PasswortDialog onClose={() => setPasswortOffen(false)} />}
+      {profilOffen && <ProfilDialog onClose={() => setProfilOffen(false)} />}
     </div>
   );
 }
