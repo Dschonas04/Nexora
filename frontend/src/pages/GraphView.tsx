@@ -1,10 +1,10 @@
-// Der Graf über den ganzen Arbeitsbereich.
+// The graph for the whole workspace.
 //
-// Die Seite holt die Daten und setzt den Rahmen; gezeichnet und gerechnet wird
-// im Grafbild, das sich diese Ansicht mit dem kleinen Graf unter einer Seite
-// teilt. Vorher stand die ganze Simulation hier, und der kleine Graf war ein
-// starrer Stern aus fest gerechneten Winkeln -- dasselbe Bild, nur ohne alles,
-// was den großen brauchbar macht.
+// This page fetches the data and provides the frame; rendering and physics
+// are handled by Grafbild, which this view shares with the small inline
+// graph under a page. Previously the whole simulation lived here and the
+// small graph was a static star layout with fixed angles — the same picture
+// but missing all the features that make the large one useful.
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -14,9 +14,9 @@ import Grafbild from "../components/Grafbild";
 export default function GraphView() {
   const nav = useNavigate();
   const [graph, setGraph] = useState<Graph>({ nodes: [], edges: [] });
-  // Die Ablagen nur wegen ihrer Farben und wegen der Frage, wer sie ändern
-  // darf. Wer eine Ablage nicht verwalten darf, sieht ihre Farbe und kann sie
-  // nicht setzen -- eine Farbe gilt für alle, also entscheidet sie nicht jeder.
+  // Spaces are fetched only for their colors and to know who may change them.
+  // If you cannot manage a space you still see its color but cannot set it —
+  // a color applies to everyone, so it is not decided by each user.
   const [ablagen, setAblagen] = useState<Space[]>([]);
 
   useEffect(() => {
@@ -26,13 +26,13 @@ export default function GraphView() {
 
   const eigeneFarben: Record<string, string> = {};
   for (const a of ablagen) if (a.farbe) eigeneFarben[a.id] = a.farbe;
-  // Je Ablage und nicht pauschal: wer EINE Ablage verwaltet, verwaltet darum
-  // nicht jede, die im Grafen vorkommt -- fremde stehen dort mit, sobald eine
-  // Seite daraus geteilt ist.
+  // Per-space, not blanket: managing one space does not imply managing every
+  // space that appears in the graph — foreign spaces appear when a page from
+  // them is shared.
   const faerbbar = new Set(ablagen.filter((a) => a.darfVerwalten).map((a) => a.id));
 
-  // Sofort im Bild und erst danach in der Datenbank: eine Farbe, die eine
-  // Zehntelsekunde später umspringt, fühlt sich an wie ein Aussetzer.
+  // Apply color immediately in the UI and then persist it to the database:
+  // a color that toggles a fraction of a second later feels like a glitch.
   const farbeSetzen = (spaceId: string, farbe: string) => {
     setAblagen((vorher) => vorher.map((a) => (a.id === spaceId ? { ...a, farbe } : a)));
     api.spaceFarbe(spaceId, farbe).catch(() => {
