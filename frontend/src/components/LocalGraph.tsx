@@ -1,21 +1,12 @@
-
 // Small inline graph under a page: the page in the center and its immediate
 // neighbors.
-
+//
 // It reuses the same `Grafbild` as the larger view and therefore supports
 // dragging, panning and zooming. Previously this was a static star layout
 // with fixed angles; nodes could overlap and remain stuck.
-
+//
 // The data comes from the graph the page already requested, so no extra API
 // call is required.
-//
-// Er benutzt dasselbe Grafbild wie die große Ansicht und ist damit ebenso zum
-// Ziehen, Schieben und Zoomen. Vorher war er ein starrer Stern: Winkel fest
-// gerechnet, nichts bewegte sich, und wo zwei Namen auf denselben Punkt fielen,
-// blieben sie liegen.
-//
-// Die Daten kommen aus dem Graf, den die Seite ohnehin schon geholt hat, also
-// kostet er keinen weiteren Aufruf.
 import { Graph } from "../api/client";
 import Grafbild, { PHYSIK_KLEIN } from "./Grafbild";
 
