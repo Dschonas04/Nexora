@@ -26,12 +26,29 @@ const kopf = [
   " */",
 ].join("\n");
 
+// Haengt den Kopf an jedes erzeugte JavaScript-Buendel. Als eigener Schritt,
+// weil die Auflage aus MPL-2.0 lautlos bricht: ohne Hinweis geht fremder
+// Quelltext hinaus, und niemand sieht es dem Erzeugnis an.
+const lizenzkopf = {
+  name: "nexora-lizenzkopf",
+  generateBundle(_einstellungen: unknown, buendel: Record<string, { type: string; code?: string }>) {
+    for (const stueck of Object.values(buendel)) {
+      if (stueck.type === "chunk" && typeof stueck.code === "string") {
+        stueck.code = kopf + "\n" + stueck.code;
+      }
+    }
+  },
+};
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), lizenzkopf],
   build: {
-    rollupOptions: {
-      output: { banner: kopf },
-    },
+    // Der Kopf wird von Hand vorangestellt und nicht ueber eine Einstellung
+    // des Buendlers. Grund: der Name dieser Einstellung hat sich mit Vite 8
+    // geaendert (rollupOptions wurde rolldownOptions), der alte wurde
+    // stillschweigend uebergangen, und der Lizenzkopf fiel damit aus jedem
+    // Buendel -- ohne Fehler, ohne Warnung. Ein eigener Schritt haengt an
+    // keinem Namen, den die naechste Fassung umbenennen kann.
   },
   server: {
     port: 5173,
