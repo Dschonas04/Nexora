@@ -567,7 +567,12 @@ export default function Grafbild({
   return (
     <div className="graph-wrap" ref={rahmenRef} style={hoehe ? { height: hoehe } : undefined}>
       {hinweis && <div className="graph-hint">{hinweis}</div>}
-      {legende && abgeleitet.legende.length > 1 && (
+      {/* Eine Legende aus einem einzigen Eintrag sagt nichts, was der Graf
+          nicht schon zeigt -- ausser wenn an ihrem Punkt die Farbe gewaehlt
+          wird. Dann ist sie kein Schild mehr, sondern der Bedienplatz, und
+          fehlte sie, koennte eine Ablage in einem Arbeitsbereich mit nur
+          einer Ablage ihre Farbe nirgends bekommen. */}
+      {legende && abgeleitet.legende.length > (onFarbe ? 0 : 1) && (
         <div className="graph-legend">
           {abgeleitet.legende.map((l) => (
             <span key={l.key} className="graph-legend-item">

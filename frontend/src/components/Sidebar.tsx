@@ -9,7 +9,6 @@ import { useAuth } from "../auth";
 import PageTree, { TreeGap } from "./PageTree";
 import { useAussenklick } from "../klappen";
 import SpaceRechte from "./SpaceRechte";
-import { ABLAGE_FARBEN } from "../ablagefarben";
 import Einfuhr from "./Einfuhr";
 import PasswortDialog from "./PasswortDialog";
 import ProfilDialog from "./ProfilDialog";
@@ -76,7 +75,6 @@ interface Props {
   onDeleteSpace: (id: string) => void;
   onSpaceOeffentlich: (id: string, wert: "nein" | "lesen" | "schreiben") => void;
   /** The color of a space. Empty value means: revert to the palette color. */
-  onSpaceFarbe: (id: string, farbe: string) => void;
   onMovePage: (id: string, parentId: string | null, spaceId: string | null) => void;
     /** Reparenting AND reordering in one: the target names the parent level and
       the sibling before which the page will be placed. */
@@ -107,7 +105,6 @@ export default function Sidebar(props: Props) {
     onRenameSpace,
     onDeleteSpace,
     onSpaceOeffentlich,
-    onSpaceFarbe,
     onMovePage,
     onOrdnePage,
     onOrdneSpaces,
@@ -270,7 +267,6 @@ export default function Sidebar(props: Props) {
   // The same for the color menu. Two separate values rather than one with a
   // kind field: the two menus are mutually exclusive and this makes the
   // intent clearer than overloading a single field.
-  const [farbeFuer, setFarbeFuer] = useState<string | null>(null);
   // The same for the export menu of a space.
   // The two menus in the toolbar. `exportFuer` holds the selected space so
   // the same control can switch to showing export formats instead of a list.
@@ -953,24 +949,9 @@ export default function Sidebar(props: Props) {
                         <button
                           className="icon-btn"
                           title="Sichtbarkeit dieser Ablage"
-                          onClick={() => {
-                            setFarbeFuer(null);
-                            setSichtbarkeitFuer((v) => (v === sp.id ? null : sp.id));
-                          }}
+                          onClick={() => setSichtbarkeitFuer((v) => (v === sp.id ? null : sp.id))}
                         >
                           ◎
-                        </button>
-                      )}
-                      {sp.darfVerwalten && (
-                        <button
-                          className="icon-btn"
-                          title="Farbe dieser Ablage"
-                          onClick={() => {
-                            setSichtbarkeitFuer(null);
-                            setFarbeFuer((v) => (v === sp.id ? null : sp.id));
-                          }}
-                        >
-                          ◐
                         </button>
                       )}
                       {frei("gruppen") && sp.darfVerwalten && (
@@ -1033,58 +1014,6 @@ export default function Sidebar(props: Props) {
                       <div className="sichtbarkeit-hinweis muted small">
                         Betrifft nur angemeldete Konten dieser Instanz. Ohne Anmeldung bleibt die
                         Ablage unerreichbar.
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Die Farbtafel. Eine feste Auswahl statt eines freien
-                      Farbwählers: die zehn Töne sind gegeneinander
-                      unterscheidbar und auf beiden Grundtönen lesbar, und wer
-                      frei wählen darf, trifft irgendwann zweimal fast dasselbe
-                      Grau. Wer es doch genau wissen will, findet den freien
-                      Wähler am Punkt in der Legende des Grafen. */}
-                  {farbeFuer === sp.id && (
-                    <div className="sichtbarkeit-menue farbmenue">
-                      <div className="sichtbarkeit-kopf">Farbe dieser Ablage</div>
-                      <div className="farbmenue-tafel">
-                        {ABLAGE_FARBEN.map((f) => (
-                          <button
-                            key={f}
-                            className={"farbmenue-feld" + (sp.farbe === f ? " gewaehlt" : "")}
-                            style={{ background: f }}
-                            title={f}
-                            aria-label={"Farbe " + f}
-                            aria-pressed={sp.farbe === f}
-                            onClick={() => {
-                              onSpaceFarbe(sp.id, f);
-                              setFarbeFuer(null);
-                            }}
-                          />
-                        ))}
-                      </div>
-                      {/* Zurücksetzen und nicht "keine Farbe": ohne eigene Wahl
-                          bekommt die Ablage eine aus der Reihe, sie ist also
-                          nie farblos. */}
-                      <button
-                        className="sichtbarkeit-eintrag"
-                        onClick={() => {
-                          onSpaceFarbe(sp.id, "");
-                          setFarbeFuer(null);
-                        }}
-                      >
-                        <span className="sichtbarkeit-text">
-                          <span className="sichtbarkeit-titel">Zurücksetzen</span>
-                          <span className="sichtbarkeit-erklaerung">
-                            Wieder die Farbe, die sich aus der Ablage selbst ergibt
-                          </span>
-                        </span>
-                        <span className="sichtbarkeit-haken" aria-hidden="true">
-                          {sp.farbe ? "" : "✓"}
-                        </span>
-                      </button>
-                      <div className="sichtbarkeit-hinweis muted small">
-                        Zu sehen ist die Farbe im Grafen: dort trägt jede Seite die Farbe
-                        ihrer Ablage. In der Leiste bleibt es beim Namen.
                       </div>
                     </div>
                   )}

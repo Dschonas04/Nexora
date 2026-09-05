@@ -153,11 +153,6 @@ export default function Workspace() {
   // Die Farbe einer Ablage. Nur die Ablagen neu holen und nicht die Seiten: an
   // den Seiten ändert sich nichts, und ein zweiter Abruf ließe den Baum ohne
   // Not flackern.
-  const setSpaceFarbe = async (id: string, farbe: string) => {
-    await api.spaceFarbe(id, farbe);
-    await refreshSpaces();
-  };
-
   // Reparent or move a page after a sidebar drag. Both are one update, since a
   // page dropped into a different space usually changes its parent as well.
   // parentId null means top level, spaceId null means no space.
@@ -209,7 +204,6 @@ export default function Workspace() {
         onRenameSpace={renameSpace}
         onDeleteSpace={deleteSpace}
         onSpaceOeffentlich={setSpaceOeffentlich}
-        onSpaceFarbe={setSpaceFarbe}
         onMovePage={movePage}
         onOrdnePage={ordnePage}
         onOrdneSpaces={ordneSpaces}
