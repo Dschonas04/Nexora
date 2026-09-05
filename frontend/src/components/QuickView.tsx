@@ -5,14 +5,25 @@
 // list: anything that can produce a list of files can open it. The caller hands
 // over the whole list and which entry to start on, so browsing between files
 // happens in here and every caller gets it for free.
-import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { api } from "../api/client";
-import Editor from "./Editor";
 import Fehlergrenze from "./Fehlergrenze";
 // Loaded on demand, not bundled: pdf.js and pdf-lib together are large, and
 // most users only view PDFs.
 const PdfMarker = lazy(() => import("./PdfMarker"));
+// Ebenso nachgeladen: die Word-Vorschau baut denselben Editor auf, und der
+// zieht BlockNote hinter sich her. Stuende er hier fest, laege das groesste
+// Stueck des Buendels wieder im Hauptbuendel -- QuickView haengt an der
+// Seitenansicht.
+const Editor = lazy(() => import("./Editor"));
 
 export interface Datei {
   id: string;
@@ -51,18 +62,26 @@ const NACH_ENDUNG: Record<string, string> = {
 };
 
 export function echterTyp(mime: string, dateiname = ""): string {
-  const brauchbar = mime && mime !== "application/octet-stream" && mime !== "binary/octet-stream";
+  const brauchbar =
+    mime &&
+    mime !== "application/octet-stream" &&
+    mime !== "binary/octet-stream";
   if (brauchbar) return mime;
-  const endung = dateiname.includes(".") ? dateiname.split(".").pop()!.toLowerCase() : "";
+  const endung = dateiname.includes(".")
+    ? dateiname.split(".").pop()!.toLowerCase()
+    : "";
   return NACH_ENDUNG[endung] ?? mime ?? "";
 }
 
 export const istBild = (m: string) => m.startsWith("image/");
 export const istPdf = (m: string) => m === "application/pdf";
-export const istText = (m: string) => m.startsWith("text/") || m === "application/json";
+export const istText = (m: string) =>
+  m.startsWith("text/") || m === "application/json";
 export const istWord = (m: string) =>
-  m === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-export const zeigbar = (m: string) => istBild(m) || istPdf(m) || istText(m) || istWord(m);
+  m ===
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+export const zeigbar = (m: string) =>
+  istBild(m) || istPdf(m) || istText(m) || istWord(m);
 
 // Zoom bounds. Below a quarter nothing is recognisable, above eight times the
 // browser starts to struggle with large images.
@@ -77,7 +96,9 @@ interface Props {
 }
 
 export default function QuickView({ dateien, start, onClose }: Props) {
-  const [i, setI] = useState(() => Math.min(Math.max(start, 0), dateien.length - 1));
+  const [i, setI] = useState(() =>
+    Math.min(Math.max(start, 0), dateien.length - 1),
+  );
   const [zoom, setZoom] = useState(1);
   const [drehung, setDrehung] = useState(0);
   const [text, setText] = useState<string | null>(null);
@@ -90,7 +111,10 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   const [textFehler, setTextFehler] = useState(false);
 
   // Word: content as editor blocks, plus the title and the editing state.
-  const [word, setWord] = useState<{ titel: string; bloecke: unknown[] } | null>(null);
+  const [word, setWord] = useState<{
+    titel: string;
+    bloecke: unknown[];
+  } | null>(null);
   const [wordFehler, setWordFehler] = useState<string | null>(null);
   const [bearbeiten, setBearbeiten] = useState(false);
   const [gespeichert, setGespeichert] = useState<string | null>(null);
@@ -161,7 +185,12 @@ export default function QuickView({ dateien, start, onClose }: Props) {
       // as "zoom out". Without this guard typing an annotation could trigger
       // the viewer shortcuts.
       const ziel = e.target as HTMLElement | null;
-      if (ziel && (ziel.tagName === "INPUT" || ziel.tagName === "TEXTAREA" || ziel.isContentEditable)) {
+      if (
+        ziel &&
+        (ziel.tagName === "INPUT" ||
+          ziel.tagName === "TEXTAREA" ||
+          ziel.isContentEditable)
+      ) {
         return;
       }
       // While annotating the keyboard belongs to the annotation UI: paging and
@@ -189,7 +218,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
           setDrehung(0);
           break;
         case "r":
-       	case "R":
+        case "R":
           setDrehung((d) => (d + 90) % 360);
           break;
       }
@@ -274,7 +303,14 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                 >
                   −
                 </button>
-                <button className="btn" title="Zurücksetzen (0)" onClick={() => { setZoom(1); setDrehung(0); }}>
+                <button
+                  className="btn"
+                  title="Zurücksetzen (0)"
+                  onClick={() => {
+                    setZoom(1);
+                    setDrehung(0);
+                  }}
+                >
                   {Math.round(zoom * 100)} %
                 </button>
                 <button
@@ -284,16 +320,23 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                 >
                   +
                 </button>
-                <button className="btn" title="Drehen (R)" onClick={() => setDrehung((d) => (d + 90) % 360)}>
+                <button
+                  className="btn"
+                  title="Drehen (R)"
+                  onClick={() => setDrehung((d) => (d + 90) % 360)}
+                >
                   ⟳
                 </button>
               </>
             )}
-            {istPdf(typ) && datei.darfSchreiben && datei.seiteId && !markieren && (
-              <button className="btn" onClick={() => setMarkieren(true)}>
-                Markieren
-              </button>
-            )}
+            {istPdf(typ) &&
+              datei.darfSchreiben &&
+              datei.seiteId &&
+              !markieren && (
+                <button className="btn" onClick={() => setMarkieren(true)}>
+                  Markieren
+                </button>
+              )}
             <a className="btn" href={datei.url} download={datei.filename}>
               Herunterladen
             </a>
@@ -305,13 +348,22 @@ export default function QuickView({ dateien, start, onClose }: Props) {
 
         <div className="qv-body">
           {mehrere && (
-            <button className="qv-nav qv-nav-links" title="Vorheriges (←)" onClick={() => weiter(-1)}>
+            <button
+              className="qv-nav qv-nav-links"
+              title="Vorheriges (←)"
+              onClick={() => weiter(-1)}
+            >
               ‹
             </button>
           )}
 
           {istBild(typ) && (
-            <img className="qv-image" style={bildStil} src={datei.url} alt={datei.filename} />
+            <img
+              className="qv-image"
+              style={bildStil}
+              src={datei.url}
+              alt={datei.filename}
+            />
           )}
           {istPdf(typ) && markieren && datei.seiteId && (
             <Suspense fallback={<div className="qv-none">Wird geladen…</div>}>
@@ -342,13 +394,23 @@ export default function QuickView({ dateien, start, onClose }: Props) {
               // The query parameter is appended to force the browser to reload
               // the resource after a replacement instead of showing a cached
               // copy.
-              data={datei.url + (frisch ? (datei.url.includes("?") ? "&" : "?") + "v=" + frisch : "")}
+              data={
+                datei.url +
+                (frisch
+                  ? (datei.url.includes("?") ? "&" : "?") + "v=" + frisch
+                  : "")
+              }
               type="application/pdf"
               aria-label={datei.filename}
             >
               <div className="qv-none">
                 Dieser Browser zeigt PDF-Dateien nicht selbst an.
-                <a className="btn" href={datei.url} target="_blank" rel="noreferrer">
+                <a
+                  className="btn"
+                  href={datei.url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   In neuem Tab öffnen
                 </a>
               </div>
@@ -356,7 +418,9 @@ export default function QuickView({ dateien, start, onClose }: Props) {
           )}
           {istText(typ) && (
             <pre className="qv-text">
-              {textFehler ? "(Vorschau konnte nicht geladen werden)" : (text ?? "Lädt…")}
+              {textFehler
+                ? "(Vorschau konnte nicht geladen werden)"
+                : (text ?? "Lädt…")}
             </pre>
           )}
           {istWord(typ) && (
@@ -370,7 +434,10 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                   <div className="qv-word-kopf">
                     <strong>{word.titel}</strong>
                     {datei.darfSchreiben && !bearbeiten && (
-                      <button className="btn" onClick={() => setBearbeiten(true)}>
+                      <button
+                        className="btn"
+                        onClick={() => setBearbeiten(true)}
+                      >
                         Bearbeiten
                       </button>
                     )}
@@ -395,33 +462,44 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                           }
                         }}
                       >
-                        {gespeichert === "speichert" ? "Speichert…" : "Speichern"}
+                        {gespeichert === "speichert"
+                          ? "Speichert…"
+                          : "Speichern"}
                       </button>
                     )}
                   </div>
-                    {/* The note explains that saving rewrites the file: editing here
+                  {/* The note explains that saving rewrites the file: editing here
                       produces a fresh document with the edited content rather
                       than an in-place line edit of the original file. */}
                   {bearbeiten && (
                     <div className="qv-word-hinweis muted small">
-                      Beim Speichern wird die Datei neu geschrieben. Text, Überschriften,
-                      Listen, Tabellen und Verweise bleiben; Kopfzeilen, Formatvorlagen,
-                      Kommentare und Schriftarten gehen verloren. Bilder werden hier
-                      angezeigt, beim Speichern aber nicht zurückgeschrieben.
+                      Beim Speichern wird die Datei neu geschrieben. Text,
+                      Überschriften, Listen, Tabellen und Verweise bleiben;
+                      Kopfzeilen, Formatvorlagen, Kommentare und Schriftarten
+                      gehen verloren. Bilder werden hier angezeigt, beim
+                      Speichern aber nicht zurückgeschrieben.
                     </div>
                   )}
                   <Fehlergrenze
-                    key={"grenze:" + datei.id + (bearbeiten ? ":schreiben" : ":lesen")}
+                    key={
+                      "grenze:" +
+                      datei.id +
+                      (bearbeiten ? ":schreiben" : ":lesen")
+                    }
                     text="Diese Datei liess sich nicht darstellen."
                   >
-                    <Editor
-                      key={datei.id + (bearbeiten ? ":schreiben" : ":lesen")}
-                      initialContent={word.bloecke}
-                      editable={!!bearbeiten}
-                      onChange={(bloecke) => {
-                        wordStand.current = { titel: word.titel, bloecke };
-                      }}
-                    />
+                    <Suspense
+                      fallback={<div className="qv-none">Wird geladen…</div>}
+                    >
+                      <Editor
+                        key={datei.id + (bearbeiten ? ":schreiben" : ":lesen")}
+                        initialContent={word.bloecke}
+                        editable={!!bearbeiten}
+                        onChange={(bloecke) => {
+                          wordStand.current = { titel: word.titel, bloecke };
+                        }}
+                      />
+                    </Suspense>
                   </Fehlergrenze>
                   {gespeichert === "gespeichert" && (
                     <div className="hinweis-ok">Gespeichert.</div>
@@ -432,12 +510,17 @@ export default function QuickView({ dateien, start, onClose }: Props) {
           )}
           {!zeigbar(typ) && (
             <div className="qv-none">
-              Keine Vorschau für diesen Dateityp. Über „Herunterladen“ lässt er sich öffnen.
+              Keine Vorschau für diesen Dateityp. Über „Herunterladen“ lässt er
+              sich öffnen.
             </div>
           )}
 
           {mehrere && (
-            <button className="qv-nav qv-nav-rechts" title="Nächstes (→)" onClick={() => weiter(1)}>
+            <button
+              className="qv-nav qv-nav-rechts"
+              title="Nächstes (→)"
+              onClick={() => weiter(1)}
+            >
               ›
             </button>
           )}
