@@ -281,3 +281,119 @@ func TestPlanNimmtNotionOrdnernotizDaneben(t *testing.T) {
 		t.Fatalf("Unterseite fehlt: %+v", baum[0])
 	}
 }
+
+// koerperVon returns the plain text of a page's blocks, so a test can ask
+// whether a body survived at all without knowing the block format.
+func koerperVon(sp *einfuhrSeite) string {
+	roh, err := json.Marshal(sp.bloecke)
+	if err != nil {
+		return ""
+	}
+	return MarkdownAusInhalt(roh)
+}
+
+// Every page that has a file behind it must carry that file's text. This is
+// the check for the complaint that an import "loses" pages: they are there,
+// but empty, and an empty page looks like a lost one.
+func TestPlanJedeSeiteBehaeltIhrenText(t *testing.T) {
+	// The shape of a real Notion export: the note about a folder lies BESIDE
+	// the folder, every name carries a 32 digit id, and it goes three levels
+	// deep.
+	dateien := []einfuhrDatei{
+		{pfad: "Handbuch 1111111111111111111111111111aaaa.md",
+			inhalt: []byte("# Handbuch\n\nDas Handbuch sagt hallo.\n")},
+		{pfad: "Handbuch 1111111111111111111111111111aaaa/Technik 2222222222222222222222222222bbbb.md",
+			inhalt: []byte("# Technik\n\nHier steht der Netzplan.\n")},
+		{pfad: "Handbuch 1111111111111111111111111111aaaa/Technik 2222222222222222222222222222bbbb/Router 3333333333333333333333333333cccc.md",
+			inhalt: []byte("# Router\n\nDer Router hat zwei Netze.\n")},
+		{pfad: "Handbuch 1111111111111111111111111111aaaa/Notizen 4444444444444444444444444444dddd.md",
+			inhalt: []byte("# Notizen\n\nEine lose Notiz.\n")},
+	}
+	plan := planen(dateien)
+
+	will := map[string]string{
+		"Handbuch": "Das Handbuch sagt hallo.",
+		"Technik":  "Hier steht der Netzplan.",
+		"Router":   "Der Router hat zwei Netze.",
+		"Notizen":  "Eine lose Notiz.",
+	}
+	if len(plan) != len(will) {
+		t.Fatalf("erwartet %d Seiten, bekam %d", len(will), len(plan))
+	}
+	for _, sp := range plan {
+		text, gesucht := will[sp.titel]
+		if !gesucht {
+			t.Errorf("unerwartete Seite %q", sp.titel)
+			continue
+		}
+		if k := koerperVon(sp); !strings.Contains(k, text) {
+			t.Errorf("Seite %q hat ihren Text verloren, bekam %q", sp.titel, k)
+		}
+		delete(will, sp.titel)
+	}
+	for titel := range will {
+		t.Errorf("Seite %q fehlt ganz", titel)
+	}
+}
+
+// Two folders whose notes carry the same title must not take each other's
+// text. The pages differ only by their id, and an import that keys on the
+// title alone would empty one of them.
+func TestPlanGleicherTitelZweiOrdner(t *testing.T) {
+	plan := planen([]einfuhrDatei{
+		{pfad: "Kunde A 1111111111111111111111111111aaaa.md",
+			inhalt: []byte("# Rechnung\n\nRechnung von Kunde A.\n")},
+		{pfad: "Kunde A 1111111111111111111111111111aaaa/Rechnung 5555555555555555555555555555eeee.md",
+			inhalt: []byte("# Rechnung\n\nErste Rechnung.\n")},
+		{pfad: "Kunde B 2222222222222222222222222222bbbb.md",
+			inhalt: []byte("# Rechnung\n\nRechnung von Kunde B.\n")},
+		{pfad: "Kunde B 2222222222222222222222222222bbbb/Rechnung 6666666666666666666666666666ffff.md",
+			inhalt: []byte("# Rechnung\n\nZweite Rechnung.\n")},
+	})
+	if len(plan) != 4 {
+		t.Fatalf("erwartet vier Seiten, bekam %d", len(plan))
+	}
+	gefunden := map[string]bool{}
+	for _, sp := range plan {
+		gefunden[strings.TrimSpace(koerperVon(sp))] = true
+	}
+	for _, text := range []string{"Rechnung von Kunde A.", "Erste Rechnung.", "Rechnung von Kunde B.", "Zweite Rechnung."} {
+		if !gefunden[text] {
+			t.Errorf("Text %q kam nirgends an", text)
+		}
+	}
+}
+
+// A folder note that lies INSIDE the folder and one that lies BESIDE it are
+// two conventions for the same thing. When an archive holds both, one page
+// must keep each text -- neither may fall away silently.
+func TestPlanOrdnernotizDrinnenUndDaneben(t *testing.T) {
+	plan := planen([]einfuhrDatei{
+		{pfad: "Ordner.md", inhalt: []byte("# Ordner daneben\n\nText von daneben.\n")},
+		{pfad: "Ordner/Ordner.md", inhalt: []byte("# Ordner drinnen\n\nText von drinnen.\n")},
+	})
+	gefunden := map[string]bool{}
+	for _, sp := range plan {
+		gefunden[strings.TrimSpace(koerperVon(sp))] = true
+	}
+	for _, text := range []string{"Text von daneben.", "Text von drinnen."} {
+		if !gefunden[text] {
+			t.Errorf("Text %q fiel weg, Plan: %d Seiten", text, len(plan))
+		}
+	}
+}
+
+// A page whose body holds nothing but a table must not come out empty: Notion
+// files a database view that way, and a table is the whole content there.
+func TestPlanSeiteNurAusTabelle(t *testing.T) {
+	plan := planen([]einfuhrDatei{
+		{pfad: "Bestand 7777777777777777777777777777aaaa.md",
+			inhalt: []byte("# Bestand\n\n| Ding | Zahl |\n| --- | --- |\n| Schraube | 12 |\n")},
+	})
+	if len(plan) != 1 {
+		t.Fatalf("erwartet eine Seite, bekam %d", len(plan))
+	}
+	if k := koerperVon(plan[0]); !strings.Contains(k, "Schraube") {
+		t.Errorf("Tabelle verloren, bekam %q", k)
+	}
+}

@@ -434,6 +434,7 @@ func istAusfuhrVerzeichnis(inhalt []byte) bool {
 		return false
 	}
 	gesehen := false
+	datiert := false
 	for _, z := range zeilen[1:] {
 		z = strings.TrimSpace(z)
 		switch {
@@ -441,11 +442,15 @@ func istAusfuhrVerzeichnis(inhalt []byte) bool {
 		case strings.HasPrefix(z, "- [") && strings.Contains(z, "](<"):
 			gesehen = true
 		case strings.Contains(z, "ausgegeben am"):
+			datiert = true
 		default:
 			return false
 		}
 	}
-	return gesehen
+	// Both, not either: a heading with a list of links below it is an ordinary
+	// page somebody wrote, and dropping it would mean losing text that nothing
+	// else holds. Only the date line makes it our own output.
+	return gesehen && datiert
 }
 
 func istMarkdown(name string) bool {
