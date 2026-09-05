@@ -22,3 +22,13 @@ func TestIstAusfuhrVerzeichnis(t *testing.T) {
 		}
 	}
 }
+
+// Ein von Hand geschriebenes Verzeichnis besteht aus einer Ueberschrift und
+// Verweisen und sonst nichts. Ohne die Zeile mit dem Datum ist es keine
+// Ausfuhr, und es faellt beim Einlesen nicht weg.
+func TestVerzeichnisOhneDatumBleibt(t *testing.T) {
+	vonHand := "# Meine Sammlung\n\n- [Eins](<eins.md>)\n- [Zwei](<zwei.md>)\n"
+	if istAusfuhrVerzeichnis([]byte(vonHand)) {
+		t.Error("eine eigene Seite aus lauter Verweisen wurde als Ausfuhr genommen und faellt damit weg")
+	}
+}
