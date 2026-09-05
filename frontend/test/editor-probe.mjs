@@ -26,6 +26,7 @@ globalThis.Node = fenster.window.Node;
 globalThis.DOMParser = fenster.window.DOMParser;
 globalThis.MutationObserver = fenster.window.MutationObserver;
 globalThis.getComputedStyle = fenster.window.getComputedStyle;
+globalThis.ShadowRoot = fenster.window.ShadowRoot;
 globalThis.requestAnimationFrame = (f) => setTimeout(f, 0);
 globalThis.cancelAnimationFrame = (h) => clearTimeout(h);
 
@@ -47,6 +48,10 @@ const editor = BlockNoteEditor.create({
   _tiptapOptions: { extensions: [fettKursivErweiterung] },
 });
 editor.mount(fenster.window.document.getElementById("e"));
+
+// Das Einhaengen laeuft ueber einen Mikroschritt: gleich danach steht die
+// Sicht noch nicht. Ein Wimpernschlag genuegt.
+await new Promise((weiter) => setTimeout(weiter, 200));
 
 const sicht = editor.prosemirrorView;
 melde(!!sicht, "der Editor haengt in der Seite");
