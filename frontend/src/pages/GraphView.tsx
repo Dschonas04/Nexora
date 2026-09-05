@@ -6,7 +6,7 @@
 // small graph was a static star layout with fixed angles — the same picture
 // but missing all the features that make the large one useful.
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { Graph, Space, api } from "../api/client";
 import Grafbild from "../components/Grafbild";

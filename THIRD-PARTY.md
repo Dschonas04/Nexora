@@ -7,7 +7,7 @@ Listed is what is **delivered**, not what the package files name. The
 difference is not cosmetic: `go.mod` names 48 modules, 34 are linked in. The
 difference is the Kerberos branch of `go-ldap`, which no call reaches and which
 is therefore not compiled in; with it, the only MPL-licensed Go module stays
-out. On the npm side 173 packages end up in the bundle, the rest in the
+out. On the npm side 82 packages end up in the production tree, the rest in the
 directory are build tools.
 
 As of: 01.09.2026. This can be recounted at any time:
@@ -24,7 +24,7 @@ of the two images does as well. Everything else is MIT, BSD, Apache-2.0 or ISC.
 
 ### BlockNote, the editor: MPL-2.0
 
-`@blocknote/core`, `@blocknote/react` and `@blocknote/mantine`, each 0.15.11.
+`@blocknote/core`, `@blocknote/react` and `@blocknote/mantine`, each 0.54.0.
 
 The Mozilla Public License 2.0 is **file-level** copyleft, not viral. Nexora's
 own source is unaffected, and the product may be sold. Two things are required:
@@ -34,7 +34,10 @@ own source is unaffected, and the product may be sold. Two things are required:
    packages' licence headers included. That is why `frontend/vite.config.ts`
    sets a header of its own that stands in every generated bundle. If something
    is changed there, that is the spot where the obligation breaks without
-   anybody noticing.
+   anybody noticing. That is exactly what happened with the move to Vite 8: the
+   bundler renamed the setting, silently skipped the old one, and the header
+   dropped out of every bundle. Since then it hangs on a build step of its own,
+   and the CI check looks whether it really stands in every artefact.
 2. Changes to the MPL files themselves would have to stay under the MPL and be
    available. Nexora uses the packages unchanged from the registry; the source
    lives at <https://github.com/TypeCellOS/BlockNote>.
@@ -128,23 +131,19 @@ solution fails on font encodings, columns and embedded images in real PDF files.
 | `golang.org/x/text` | v0.41.0 | BSD-3-Clause |
 | `gopkg.in/ini.v1` | v1.67.3 | Apache-2.0 |
 
-## npm, production tree (247)
+## npm, production tree (82)
 
 | Distribution | |
 |---|---|
-| MIT | 235 |
+| MIT | 75 |
 | MPL-2.0 | 3 |
-| 0BSD | 2 |
+| 0BSD | 1 |
 | Apache-2.0 | 1 |
-| BSD-2-Clause | 1 |
-| BSD-3-Clause | 1 |
-| ISC | 1 |
-| Python-2.0 | 1 |
 | MIT and Zlib | 1 |
 | MIT or CC0-1.0 | 1 |
 
-Listing all 247 individually would mean maintaining a list that silently goes
-stale at the next `npm install`. Named here are therefore the thirteen direct
+Listing all 82 individually would mean maintaining a list that silently goes
+stale at the next `npm install`. Named here are therefore the sixteen direct
 dependencies and every package in the tree that is not MIT. The rest is the
 usual foundation of React and ProseMirror and MIT throughout; it can be looked
 up with the command above.
@@ -153,17 +152,20 @@ up with the command above.
 
 | Package | Version | Licence |
 |---|---|---|
-| `@blocknote/core` | 0.15.11 | **MPL-2.0** |
-| `@blocknote/mantine` | 0.15.11 | **MPL-2.0** |
-| `@blocknote/react` | 0.15.11 | **MPL-2.0** |
-| `@tiptap/core` | 2.27.2 | MIT |
-| `@tiptap/pm` | 2.27.2 | MIT |
+| `@blocknote/core` | 0.54.0 | **MPL-2.0** |
+| `@blocknote/mantine` | 0.54.0 | **MPL-2.0** |
+| `@blocknote/react` | 0.54.0 | **MPL-2.0** |
+| `@mantine/core` | 8.3.18 | MIT |
+| `@mantine/hooks` | 8.3.18 | MIT |
+| `@tiptap/core` | 3.31.3 | MIT |
+| `@tiptap/pm` | 3.31.3 | MIT |
 | `lib0` | 0.2.117 | MIT |
 | `pdf-lib` | 1.17.1 | MIT |
 | `pdfjs-dist` | 6.3.289 | **Apache-2.0** |
-| `react` | 18.3.1 | MIT |
-| `react-dom` | 18.3.1 | MIT |
-| `react-router-dom` | 6.26.2 | MIT |
+| `react` | 19.2.8 | MIT |
+| `react-dom` | 19.2.8 | MIT |
+| `react-router` | 7.18.3 | MIT |
+| `y-prosemirror` | 1.3.7 | MIT |
 | `y-protocols` | 1.0.7 | MIT |
 | `yjs` | 13.6.32 | MIT |
 
@@ -171,12 +173,8 @@ up with the command above.
 
 | Package | Version | Licence |
 |---|---|---|
-| `argparse` | 2.0.1 | Python-2.0 |
-| `diff` | 5.2.2 | BSD-3-Clause |
-| `entities` | 4.5.0 | BSD-2-Clause |
-| `hast-util-from-dom` | 4.2.0 | ISC |
 | `pako` | 1.0.11 | MIT and Zlib |
-| `tslib` | 1.14.1, 2.8.1 | 0BSD |
+| `tslib` | 2.8.1 | 0BSD |
 | `type-fest` | 4.41.0 | MIT or CC0-1.0 |
 
 `pdfjs-dist` is licensed under Apache-2.0 and is thus the first delivered

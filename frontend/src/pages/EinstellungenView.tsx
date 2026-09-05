@@ -10,7 +10,7 @@
 // start. Mixing them would produce switches that quietly do nothing, so the
 // fixed ones are always marked as belonging to config.conf.
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 
 import {
   Anmeldungen,

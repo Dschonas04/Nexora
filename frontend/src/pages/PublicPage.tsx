@@ -2,7 +2,7 @@
 // without a sidebar, and reaches the API through the one unauthenticated
 // endpoint, so it also works for a visitor with no account.
 import { Suspense, lazy, useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 import { PublicPage as PublicPageData, api } from "../api/client";
 import Fehlergrenze from "../components/Fehlergrenze";
 
