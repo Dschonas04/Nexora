@@ -25,7 +25,7 @@ oder ISC.
 
 ### BlockNote, der Editor: MPL-2.0
 
-`@blocknote/core`, `@blocknote/react` und `@blocknote/mantine`, jeweils 0.15.11.
+`@blocknote/core`, `@blocknote/react` und `@blocknote/mantine`, jeweils 0.54.0.
 
 Die Mozilla Public License 2.0 ist **dateiweises** Copyleft und nicht virales.
 Der eigene Quelltext bleibt davon unberührt, und das Erzeugnis darf verkauft
@@ -35,7 +35,11 @@ werden. Verlangt ist zweierlei:
    gebaute Bündel, und der Minimierer wirft Kommentare weg, auch die
    Lizenzköpfe der Pakete. Deshalb setzt `frontend/vite.config.ts` einen
    eigenen Kopf, der in jedem erzeugten Bündel steht. Wird dort etwas geändert,
-   ist das die Stelle, an der die Auflage bricht, ohne dass es auffällt.
+   ist das die Stelle, an der die Auflage bricht, ohne dass es auffällt. Genau
+   das ist beim Sprung auf Vite 8 passiert: der Bündler benannte die
+   Einstellung um, überging die alte stillschweigend, und der Kopf fiel aus
+   jedem Bündel. Seither hängt er an einem eigenen Bauschritt, und die Prüfung
+   in der CI sieht nach, ob er wirklich in jedem Erzeugnis steht.
 2. Änderungen an den MPL-Dateien selbst müssten unter MPL bleiben und verfügbar
    sein. Nexora benutzt die Pakete unverändert aus der Registry; der Quelltext
    liegt unter <https://github.com/TypeCellOS/BlockNote>.
@@ -130,23 +134,19 @@ echten PDF-Dateien.
 | `golang.org/x/text` | v0.41.0 | BSD-3-Clause |
 | `gopkg.in/ini.v1` | v1.67.3 | Apache-2.0 |
 
-## npm, Produktivbaum (247)
+## npm, Produktivbaum (82)
 
 | Verteilung | |
 |---|---|
-| MIT | 235 |
+| MIT | 75 |
 | MPL-2.0 | 3 |
-| 0BSD | 2 |
+| 0BSD | 1 |
 | Apache-2.0 | 1 |
-| BSD-2-Clause | 1 |
-| BSD-3-Clause | 1 |
-| ISC | 1 |
-| Python-2.0 | 1 |
 | MIT und Zlib | 1 |
 | MIT oder CC0-1.0 | 1 |
 
-Alle 247 einzeln aufzuführen hieße, eine Liste zu pflegen, die beim nächsten
-`npm install` still veraltet. Namentlich stehen hier deshalb die dreizehn
+Alle 82 einzeln aufzuführen hieße, eine Liste zu pflegen, die beim nächsten
+`npm install` still veraltet. Namentlich stehen hier deshalb die sechzehn
 direkten Abhängigkeiten und jedes Paket im Baum, das nicht MIT ist. Der Rest ist
 der übliche Unterbau von React und ProseMirror und durchgehend MIT; nachsehen
 lässt er sich mit dem Befehl oben.
@@ -155,17 +155,20 @@ lässt er sich mit dem Befehl oben.
 
 | Paket | Fassung | Lizenz |
 |---|---|---|
-| `@blocknote/core` | 0.15.11 | **MPL-2.0** |
-| `@blocknote/mantine` | 0.15.11 | **MPL-2.0** |
-| `@blocknote/react` | 0.15.11 | **MPL-2.0** |
-| `@tiptap/core` | 2.27.2 | MIT |
-| `@tiptap/pm` | 2.27.2 | MIT |
+| `@blocknote/core` | 0.54.0 | **MPL-2.0** |
+| `@blocknote/mantine` | 0.54.0 | **MPL-2.0** |
+| `@blocknote/react` | 0.54.0 | **MPL-2.0** |
+| `@mantine/core` | 8.3.18 | MIT |
+| `@mantine/hooks` | 8.3.18 | MIT |
+| `@tiptap/core` | 3.31.3 | MIT |
+| `@tiptap/pm` | 3.31.3 | MIT |
 | `lib0` | 0.2.117 | MIT |
 | `pdf-lib` | 1.17.1 | MIT |
 | `pdfjs-dist` | 6.3.289 | **Apache-2.0** |
-| `react` | 18.3.1 | MIT |
-| `react-dom` | 18.3.1 | MIT |
-| `react-router-dom` | 6.26.2 | MIT |
+| `react` | 19.2.8 | MIT |
+| `react-dom` | 19.2.8 | MIT |
+| `react-router` | 7.18.3 | MIT |
+| `y-prosemirror` | 1.3.7 | MIT |
 | `y-protocols` | 1.0.7 | MIT |
 | `yjs` | 13.6.32 | MIT |
 
@@ -173,12 +176,8 @@ lässt er sich mit dem Befehl oben.
 
 | Paket | Fassung | Lizenz |
 |---|---|---|
-| `argparse` | 2.0.1 | Python-2.0 |
-| `diff` | 5.2.2 | BSD-3-Clause |
-| `entities` | 4.5.0 | BSD-2-Clause |
-| `hast-util-from-dom` | 4.2.0 | ISC |
 | `pako` | 1.0.11 | MIT und Zlib |
-| `tslib` | 1.14.1, 2.8.1 | 0BSD |
+| `tslib` | 2.8.1 | 0BSD |
 | `type-fest` | 4.41.0 | MIT oder CC0-1.0 |
 
 `pdfjs-dist` steht unter Apache-2.0 und ist damit das erste ausgelieferte Paket

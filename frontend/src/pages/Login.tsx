@@ -1,7 +1,7 @@
 // Sign-in form. On success AuthProvider sets the user, and App swaps this
 // screen for the workspace; there is no explicit redirect here.
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 import { api } from "../api/client";
 import { useAuth } from "../auth";
 

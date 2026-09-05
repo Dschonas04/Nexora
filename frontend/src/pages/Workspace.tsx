@@ -5,7 +5,7 @@
 // sidebar has to follow. The refresh callbacks passed down are how a view says
 // "something you display has changed".
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
-import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router";
 import { PageMeta, Space, Tag, api } from "../api/client";
 import Sidebar from "../components/Sidebar";
 import { TreeGap } from "../components/PageTree";

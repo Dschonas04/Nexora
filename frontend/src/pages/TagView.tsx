@@ -5,7 +5,7 @@
 // cannot follow is worse than no label — it promises an order that is not
 // actually reachable.
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 
 import { PageMeta, Tag, api } from "../api/client";
 import { useRueckfrage } from "../components/Rueckfrage";

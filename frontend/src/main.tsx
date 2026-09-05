@@ -6,7 +6,7 @@
 // this app has to tolerate running twice.
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter } from "react-router";
 import { AuthProvider } from "./auth";
 import { LizenzProvider } from "./lizenz";
 import { DesignProvider } from "./design";
