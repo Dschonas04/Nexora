@@ -146,7 +146,13 @@ export class Leitung {
   }
 
   private sende(paket: Uint8Array) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(paket);
+    // Die Enge kommt von TypeScript 7: send() nimmt keine Sicht auf einen
+    // SharedArrayBuffer an, und ein blankes Uint8Array laesst offen, auf
+    // welcher Art Puffer es sitzt. Hier kommt jedes Paket aus lib0, und das
+    // legt gewoehnliche Puffer an -- ein geteilter kann es nicht sein.
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(paket as Uint8Array<ArrayBuffer>);
+    }
   }
 
   private lies(paket: Uint8Array) {
