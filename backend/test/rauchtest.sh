@@ -14,8 +14,30 @@ set -euo pipefail
 
 WURZEL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARBEIT="$(mktemp -d)"
-PGPORT="${PGPORT:-55432}"
-APIPORT="${APIPORT:-58080}"
+# Ein freier Port statt eines festen.
+#
+# Feste Nummern gingen so lange gut, bis zwei Laeufe sich ueberschnitten: dann
+# stand die Datenbank des einen schon auf dem Port, den der andere haben
+# wollte, und der zweite Lauf fiel mit "could not start server" durch, ohne
+# dass an ihm selbst etwas falsch gewesen waere. Wer eine Nummer vorgibt,
+# bekommt sie weiterhin.
+freier_port() {
+    # Von der genannten Nummer aufwaerts, bis eine niemandem gehoert. Der
+    # Versuch, sich zu verbinden, ist die Probe: gelingt er, horcht dort schon
+    # jemand.
+    local p="$1"
+    while [ "$p" -lt $((${1} + 200)) ]; do
+        if ! (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then
+            echo "$p"
+            return 0
+        fi
+        exec 3>&- 2>/dev/null
+        p=$((p + 1))
+    done
+    echo "$1" # nichts frei: mit der Vorgabe weitermachen und den Fehler zeigen
+}
+PGPORT="${PGPORT:-$(freier_port 55432)}"
+APIPORT="${APIPORT:-$(freier_port 58080)}"
 BASIS="http://127.0.0.1:${APIPORT}"
 KEKSE="$ARBEIT/kekse.txt"
 
@@ -47,8 +69,23 @@ pruefe() {
 
 echo "== Datenbank anwerfen"
 initdb -D "$ARBEIT/db" -U nexora --auth=trust --encoding=UTF8 --locale=C >/dev/null
-pg_ctl -D "$ARBEIT/db" -l "$ARBEIT/pg.log" \
-       -o "-p $PGPORT -k $ARBEIT -h 127.0.0.1" -w start >/dev/null
+# Kommt die Datenbank nicht hoch, ist ihr Protokoll das Einzige, was die Frage
+# beantwortet -- und es liegt in einem Verzeichnis, das der Aufräumer gleich
+# darauf entfernt. Es muss also vorher heraus, sonst steht am Ende nur
+# "Examine the log output" da und das Protokoll ist schon weg.
+if ! pg_ctl -D "$ARBEIT/db" -l "$ARBEIT/pg.log" \
+            -o "-p $PGPORT -k $ARBEIT -h 127.0.0.1" -w start >/dev/null; then
+    echo "Die Datenbank kam nicht hoch. Ihr Protokoll:"
+    sed "s/^/    /" "$ARBEIT/pg.log" 2>/dev/null || echo "    (kein Protokoll geschrieben)"
+    echo "Wer horcht auf Port $PGPORT:"
+    if (exec 3<>"/dev/tcp/127.0.0.1/$PGPORT") 2>/dev/null; then
+        exec 3>&- 2>/dev/null
+        echo "    jemand -- auf dem Port horcht bereits ein Dienst"
+    else
+        echo "    niemand -- der Port war frei, es lag also nicht daran"
+    fi
+    exit 1
+fi
 createdb -h 127.0.0.1 -p "$PGPORT" -U nexora nexora
 
 echo "== Backend bauen"
