@@ -2,10 +2,17 @@
 // Nexora sits around it: [[wiki-links]] as clickable text, and an "@" menu that
 // inserts one. BlockNote itself knows nothing about either.
 import { useEffect, useRef } from "react";
-import { DefaultReactSuggestionItem, SuggestionMenuController, useCreateBlockNote } from "@blocknote/react";
+import {
+  DefaultReactSuggestionItem,
+  SuggestionMenuController,
+  useCreateBlockNote,
+} from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
-import { locales } from "@blocknote/core";
+// Seit 0.5x liegen die Sprachdateien in einem eigenen Einstieg, und jede
+// Sprache steht einzeln da statt in einem Sammelobjekt.
+import { de as deutsch } from "@blocknote/core/locales";
+import { withCollaboration } from "@blocknote/core/yjs";
 import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
 import type { XmlFragment } from "yjs";
 import { Extension, InputRule } from "@tiptap/core";
@@ -36,7 +43,10 @@ function geradegeruecktes(wert: unknown): unknown {
   for (const [schluessel, inhalt] of Object.entries(alt)) {
     neu[schluessel] = geradegeruecktes(inhalt);
   }
-  if (alt.type === "text" && (neu.styles === undefined || neu.styles === null)) {
+  if (
+    alt.type === "text" &&
+    (neu.styles === undefined || neu.styles === null)
+  ) {
     neu.styles = {};
   }
   return neu;
@@ -45,10 +55,16 @@ function geradegeruecktes(wert: unknown): unknown {
 // caretInfo returns the text node and character offset under a screen point,
 // bridging two different browser APIs. Used to detect whether a click landed
 // inside a [[wiki-link]] token.
-function caretInfo(x: number, y: number): { node: Node; offset: number } | null {
+function caretInfo(
+  x: number,
+  y: number,
+): { node: Node; offset: number } | null {
   const doc = document as Document & {
     caretRangeFromPoint?: (x: number, y: number) => Range | null;
-    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+    caretPositionFromPoint?: (
+      x: number,
+      y: number,
+    ) => { offsetNode: Node; offset: number } | null;
   };
   if (doc.caretRangeFromPoint) {
     const r = doc.caretRangeFromPoint(x, y);
@@ -66,7 +82,9 @@ function caretInfo(x: number, y: number): { node: Node; offset: number } | null 
 // renames but also indistinguishable from normal text. This extension draws
 // decorations over occurrences without modifying the text itself. The
 // decoration style depends on whether the link resolves to an existing page.
-function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) | undefined) {
+function verweisErweiterung(
+  aufloesen: () => ((titel: string) => string | null) | undefined,
+) {
   return Extension.create({
     name: "nexoraVerweise",
     addProseMirrorPlugins() {
@@ -86,13 +104,21 @@ function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) 
                   const von = pos + m.index;
                   const bis = von + m[0].length;
                   const kennung = loeser(m[1].trim());
-                  deko.push(Decoration.inline(von, von + 2, { class: "verweis-klammer" }));
+                  deko.push(
+                    Decoration.inline(von, von + 2, {
+                      class: "verweis-klammer",
+                    }),
+                  );
                   deko.push(
                     Decoration.inline(von + 2, bis - 2, {
                       class: kennung ? "verweis" : "verweis tot",
                     }),
                   );
-                  deko.push(Decoration.inline(bis - 2, bis, { class: "verweis-klammer" }));
+                  deko.push(
+                    Decoration.inline(bis - 2, bis, {
+                      class: "verweis-klammer",
+                    }),
+                  );
                 }
               });
               return DecorationSet.create(zustand.doc, deko);
@@ -103,7 +129,6 @@ function verweisErweiterung(aufloesen: () => ((titel: string) => string | null) 
     },
   });
 }
-
 
 // Bold AND italic in one go.
 //
@@ -143,7 +168,10 @@ function beidesRegel(muster: RegExp) {
   });
 }
 
-const fettKursivErweiterung = Extension.create({
+// Ausgefuehrt, damit die kopflose Probe denselben Editor bauen kann wie die
+// Anwendung. Wer die Regel nur hier drin haette, pruefte in der Probe einen
+// anderen Editor als den, den ein Benutzer vor sich hat.
+export const fettKursivErweiterung = Extension.create({
   name: "fettKursiv",
   // Ahead of the built in rules for bold and italic. Otherwise the bold rule
   // grabs "**_both_**" first and what is left standing is a bold "_both_".
@@ -201,7 +229,11 @@ export default function Editor({
   // Collaborative editing. When present the text comes from the shared
   // document rather than `initialContent`: the page is merged character-by-
   // character instead of being saved and reloaded as a whole.
-  mitschrift?: { fragment: XmlFragment; provider: unknown; user: { name: string; color: string } };
+  mitschrift?: {
+    fragment: XmlFragment;
+    provider: unknown;
+    user: { name: string; color: string };
+  };
 }) {
   const { design } = useDesign();
   const grundton = design.grundton;
@@ -234,9 +266,9 @@ export default function Editor({
   const ladenRef = useRef(dateiHochladen);
   ladenRef.current = dateiHochladen;
 
-  const editor = useCreateBlockNote({
+  const grundeinstellungen = {
     initialContent: content,
-    dictionary: locales.de,
+    dictionary: deutsch,
     // The image, video and file blocks get their own upload from this. It is
     // the same path an attachment takes, so a picture in the text lies where
     // every other file of this page lies: on the disk or in the bucket, and
@@ -246,12 +278,31 @@ export default function Editor({
       if (!laden) throw new Error("Hochladen ist hier nicht eingerichtet");
       return laden(datei);
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    collaboration: mitschrift as any,
     _tiptapOptions: {
-      extensions: [verweisErweiterung(() => loeserRef.current), fettKursivErweiterung],
+      extensions: [
+        verweisErweiterung(() => loeserRef.current),
+        fettKursivErweiterung,
+      ],
     },
-  });
+  };
+
+  // Gemeinsames Schreiben geht seit 0.5x nicht mehr als Einstellung mit,
+  // sondern durch withCollaboration: die Erweiterung wird um die uebrigen
+  // Einstellungen herumgelegt. Ohne Mitschrift bleibt sie ganz weg, sonst
+  // haengte an jeder allein geoeffneten Seite ein Yjs-Dokument ohne Gegenüber.
+  //
+  // Die Umgehung des Typs bleibt: Nexora fuehrt Yjs 13, die Typen von
+  // BlockNote nennen die Fassung 14. Am Draht sprechen beide dasselbe, und
+  // y-prosemirror haelt beide Seiten aus -- deshalb ist es hier eine Frage der
+  // Typen und keine des Verhaltens.
+  const einstellungen: typeof grundeinstellungen = mitschrift
+    ? (withCollaboration({
+        ...grundeinstellungen,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        collaboration: mitschrift as any,
+      }) as typeof grundeinstellungen)
+    : grundeinstellungen;
+  const editor = useCreateBlockNote(einstellungen);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   // Read the latest page list on each "@" trigger without recreating the editor.
@@ -346,7 +397,9 @@ export default function Editor({
       if (bloecke.length === 0) return;
       const hier = editor.getTextCursorPosition().block;
       const leer =
-        Array.isArray(hier.content) && hier.content.length === 0 && hier.type === "paragraph";
+        Array.isArray(hier.content) &&
+        hier.content.length === 0 &&
+        hier.type === "paragraph";
       // Into an empty paragraph instead of below it: otherwise an empty line
       // would remain above the pasted text.
       if (leer) {

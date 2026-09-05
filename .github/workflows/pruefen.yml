@@ -104,6 +104,18 @@ jobs:
             --outfile="$RUNNER_TEMP/mitschrift.mjs" --log-level=warning
           node test/mitschrift-probe.mjs "$RUNNER_TEMP/mitschrift.mjs"
 
+      - name: Greifen die Eingaberegeln des Editors noch
+        run: |
+          # Ob aus "**fett**" beim Tippen fetter Text wird, entscheidet keine
+          # Typpruefung, sondern ProseMirror zur Laufzeit. Die Probe stellt
+          # einen Browser nach, haengt einen echten Editor hinein und tippt
+          # Zeichen fuer Zeichen. Eine Fassung von BlockNote kann diese Regeln
+          # aendern, ohne dass sich eine einzige Signatur bewegt.
+          npx esbuild test/editorprobe-eingang.ts --bundle --format=esm \
+            --conditions=style --loader:.css=empty \
+            --outfile="$RUNNER_TEMP/editor.mjs" --log-level=warning
+          node test/editor-probe.mjs "$RUNNER_TEMP/editor.mjs"
+
       - name: Markierungen in einer PDF-Datei
         run: |
           # Ob eine Markierung an der richtigen Stelle landet, entscheidet eine
