@@ -1,11 +1,14 @@
 // A single open page: title, editor, tags, attachments, links and the panels
 // for version history and sharing. The largest view in the app, because a page
 // is where nearly every feature meets.
-import { useEffect, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
 import { Graph, Page, PageMeta, PagePatch, Tag, api } from "../api/client";
-import Editor from "../components/Editor";
+// Der Editor bringt BlockNote mit, und das ist das groesste einzelne Stueck
+// des Buendels. Wer die Liste durchblaettert, den Grafen ansieht oder in die
+// Einstellungen geht, braucht davon nichts.
+const Editor = lazy(() => import("../components/Editor"));
 import { useMitschrift } from "../mitschrift";
 import VersionPanel from "../components/VersionPanel";
 import ShareDialog from "../components/ShareDialog";
@@ -34,7 +37,14 @@ interface Props {
 
 // New tags get a random color from a fixed palette, so they are distinguishable
 // at a glance without asking the user to pick one.
-const PALETTE = ["#e0507a", "#e08a2b", "#3aa675", "#2383e2", "#8b5cf6", "#6b7280"];
+const PALETTE = [
+  "#e0507a",
+  "#e08a2b",
+  "#3aa675",
+  "#2383e2",
+  "#8b5cf6",
+  "#6b7280",
+];
 const randomColor = () => PALETTE[Math.floor(Math.random() * PALETTE.length)];
 
 // The skeleton stands while a page is being fetched: sidebar, title and a few
@@ -113,7 +123,11 @@ export default function PageView({
   const { design } = useDesign();
   const vorgabe = design.seitenbreite || "voll";
   const vorgabeName =
-    vorgabe === "normal" ? "normal" : vorgabe === "breit" ? "breit" : "volle Breite";
+    vorgabe === "normal"
+      ? "normal"
+      : vorgabe === "breit"
+        ? "breit"
+        : "volle Breite";
 
   // The state this editor starts from. As a ref, not as state: it is read while
   // saving but shall not trigger a new render.
@@ -145,8 +159,12 @@ export default function PageView({
   // Auch hier: ein Klick daneben und Escape machen zu. Ein offenes Menü über
   // dem Text ist schlimmer als eines in der Leiste, denn darunter liegt der
   // Editor.
-  const exportBereich = useAussenklick<HTMLDivElement>(exportOffen, () => setExportOffen(false));
-  const breiteBereich = useAussenklick<HTMLDivElement>(breiteOffen, () => setBreiteOffen(false));
+  const exportBereich = useAussenklick<HTMLDivElement>(exportOffen, () =>
+    setExportOffen(false),
+  );
+  const breiteBereich = useAussenklick<HTMLDivElement>(breiteOffen, () =>
+    setBreiteOffen(false),
+  );
   // Refs rather than state: changing either must not trigger a render. The timer
   // drives the debounced autosave, the editor handle is needed for the markdown
   // export.
@@ -157,7 +175,11 @@ export default function PageView({
   // als ein Konto schreiben darf: das entscheidet der Dienst und sagt es in
   // page.gemeinsam. Eine Seite, die nur ihrem Besitzer gehört, macht keine
   // Sitzung auf, in der nie jemand zweites sitzen wird.
-  const mitschrift = useMitschrift(id, !!page?.gemeinsam && !!page?.canEdit, user);
+  const mitschrift = useMitschrift(
+    id,
+    !!page?.gemeinsam && !!page?.canEdit,
+    user,
+  );
   // Für welche Seite die Saat schon gelegt wurde. Ohne das säte jeder Durchlauf
   // erneut.
   const saatRef = useRef<string | null>(null);
@@ -188,9 +210,18 @@ export default function PageView({
       })
       .catch(() => setPage(null))
       .finally(() => setLoading(false));
-    api.backlinks(id).then(setBacklinks).catch(() => setBacklinks([]));
-    api.listLinks(id).then(setLinks).catch(() => setLinks([]));
-    api.graph().then(setGraph).catch(() => setGraph({ nodes: [], edges: [] }));
+    api
+      .backlinks(id)
+      .then(setBacklinks)
+      .catch(() => setBacklinks([]));
+    api
+      .listLinks(id)
+      .then(setLinks)
+      .catch(() => setLinks([]));
+    api
+      .graph()
+      .then(setGraph)
+      .catch(() => setGraph({ nodes: [], edges: [] }));
     return () => window.clearTimeout(saveTimer.current);
   }, [id]);
 
@@ -297,7 +328,11 @@ export default function PageView({
   const trotzdemSpeichern = async () => {
     if (!id || !page) return;
     try {
-      await api.updatePage(id, { title: page.title, content: page.content, icon: page.icon });
+      await api.updatePage(id, {
+        title: page.title,
+        content: page.content,
+        icon: page.icon,
+      });
       setKonflikt(false);
       onMetaChange();
     } catch {
@@ -362,7 +397,10 @@ export default function PageView({
       onTagsChange();
     }
     await api.attachTag(page.id, tag.id);
-    setPage({ ...page, tags: [...page.tags.filter((t) => t.id !== tag!.id), tag] });
+    setPage({
+      ...page,
+      tags: [...page.tags.filter((t) => t.id !== tag!.id), tag],
+    });
   };
 
   const detachTag = async (tagId: string) => {
@@ -381,9 +419,18 @@ export default function PageView({
   // page linking to something the mini-graph does not know about yet.
   const refreshLinks = () => {
     if (!id) return;
-    api.listLinks(id).then(setLinks).catch(() => {});
-    api.backlinks(id).then(setBacklinks).catch(() => {});
-    api.graph().then(setGraph).catch(() => {});
+    api
+      .listLinks(id)
+      .then(setLinks)
+      .catch(() => {});
+    api
+      .backlinks(id)
+      .then(setBacklinks)
+      .catch(() => {});
+    api
+      .graph()
+      .then(setGraph)
+      .catch(() => {});
   };
   const addLink = async (targetId: string) => {
     if (!id || !targetId) return;
@@ -438,9 +485,12 @@ export default function PageView({
       if (v && typeof v === "object") {
         const o = { ...(v as Record<string, unknown>) };
         if (typeof o.text === "string") {
-          o.text = o.text.replace(re, (mm) => mm.replace(/^\[\[\s*/, "").replace(/\s*\]\]$/, ""));
+          o.text = o.text.replace(re, (mm) =>
+            mm.replace(/^\[\[\s*/, "").replace(/\s*\]\]$/, ""),
+          );
         }
-        for (const key of Object.keys(o)) if (key !== "text") o[key] = strip(o[key]);
+        for (const key of Object.keys(o))
+          if (key !== "text") o[key] = strip(o[key]);
         return o;
       }
       return v;
@@ -458,7 +508,9 @@ export default function PageView({
     .filter((n) => n.id !== page.id && !links.some((l) => l.id === n.id))
     .sort((a, b) => (a.title || "").localeCompare(b.title || ""));
   const filteredCandidates = linkCandidates
-    .filter((n) => (n.title || "").toLowerCase().includes(linkQuery.toLowerCase()))
+    .filter((n) =>
+      (n.title || "").toLowerCase().includes(linkQuery.toLowerCase()),
+    )
     .slice(0, 8);
   // Picking a suggestion adds the link and closes the box, so the next one
   // starts from an empty query.
@@ -536,19 +588,28 @@ export default function PageView({
                 Reihe zu zeigen, die nach "niemand da" aussieht und in
                 Wahrheit "ich weiß es nicht" heißt. */}
             {mitschrift && !mitschrift.verbunden && (
-              <span className="pill readonly" title="Die Verbindung für das gemeinsame Bearbeiten steht gerade nicht. Getippt wird weiter, abgeglichen wird, sobald sie wieder steht.">
+              <span
+                className="pill readonly"
+                title="Die Verbindung für das gemeinsame Bearbeiten steht gerade nicht. Getippt wird weiter, abgeglichen wird, sobald sie wieder steht."
+              >
                 Nicht verbunden
               </span>
             )}
             {mitschrift?.verbunden && mitschrift.anwesend.length > 1 && (
-              <span className="mitschreibende" title="Sitzen gerade mit an dieser Seite">
+              <span
+                className="mitschreibende"
+                title="Sitzen gerade mit an dieser Seite"
+              >
                 {mitschrift.anwesend
                   .filter((a) => !a.ichSelbst)
                   .map((a) => (
                     <span
                       key={a.kennung}
                       className="mitschreibender"
-                      style={{ background: a.farbe, color: schriftAuf(a.farbe) }}
+                      style={{
+                        background: a.farbe,
+                        color: schriftAuf(a.farbe),
+                      }}
                       title={a.name}
                     >
                       {(a.name.trim()[0] || "?").toUpperCase()}
@@ -567,11 +628,17 @@ export default function PageView({
                 Unterseite
               </button>
             )}
-            <button className={"btn" + (page.isFavorite ? " active" : "")} onClick={toggleFav}>
+            <button
+              className={"btn" + (page.isFavorite ? " active" : "")}
+              onClick={toggleFav}
+            >
               {page.isFavorite ? "Favorisiert" : "Favorit"}
             </button>
             {frei("versionen") && (
-              <button className="btn" onClick={() => setShowVersions((v) => !v)}>
+              <button
+                className="btn"
+                onClick={() => setShowVersions((v) => !v)}
+              >
                 Verlauf
               </button>
             )}
@@ -593,18 +660,32 @@ export default function PageView({
                   Breite ▾
                 </button>
                 {breiteOffen && (
-                  <div className="klappliste" onMouseLeave={() => setBreiteOffen(false)}>
+                  <div
+                    className="klappliste"
+                    onMouseLeave={() => setBreiteOffen(false)}
+                  >
                     {(
                       [
-                        ["", "Vorgabe", `Wie die Instanz es setzt (${vorgabeName})`],
+                        [
+                          "",
+                          "Vorgabe",
+                          `Wie die Instanz es setzt (${vorgabeName})`,
+                        ],
                         ["normal", "Normal", "Zum Lesen gesetzt"],
-                        ["breit", "Breit", "Mehr Platz für Tabellen und Bilder"],
+                        [
+                          "breit",
+                          "Breit",
+                          "Mehr Platz für Tabellen und Bilder",
+                        ],
                         ["voll", "Volle Breite", "So breit wie das Fenster"],
                       ] as const
                     ).map(([wert, titel, erklaerung]) => (
                       <button
                         key={wert}
-                        className={"klappeintrag" + ((page.breite ?? "") === wert ? " gewaehlt" : "")}
+                        className={
+                          "klappeintrag" +
+                          ((page.breite ?? "") === wert ? " gewaehlt" : "")
+                        }
                         onClick={async () => {
                           setBreiteOffen(false);
                           // Erst anzeigen, dann speichern: die Breite ist ein
@@ -615,7 +696,9 @@ export default function PageView({
                         }}
                       >
                         {titel}
-                        <span className="klappeintrag-hinweis">{erklaerung}</span>
+                        <span className="klappeintrag-hinweis">
+                          {erklaerung}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -630,8 +713,14 @@ export default function PageView({
                 Export ▾
               </button>
               {exportOffen && (
-                <div className="klappliste" onMouseLeave={() => setExportOffen(false)}>
-                  <button className="klappeintrag" onClick={() => exportieren("markdown")}>
+                <div
+                  className="klappliste"
+                  onMouseLeave={() => setExportOffen(false)}
+                >
+                  <button
+                    className="klappeintrag"
+                    onClick={() => exportieren("markdown")}
+                  >
                     Markdown (.md)
                   </button>
                   {/* PDF and Word belong to the paid extras. Markdown does not:
@@ -639,10 +728,16 @@ export default function PageView({
                       licence. */}
                   {frei("export") && (
                     <>
-                      <button className="klappeintrag" onClick={() => exportieren("pdf")}>
+                      <button
+                        className="klappeintrag"
+                        onClick={() => exportieren("pdf")}
+                      >
                         PDF (.pdf)
                       </button>
-                      <button className="klappeintrag" onClick={() => exportieren("word")}>
+                      <button
+                        className="klappeintrag"
+                        onClick={() => exportieren("word")}
+                      >
                         Word (.docx)
                       </button>
                     </>
@@ -651,7 +746,10 @@ export default function PageView({
               )}
             </div>
             {page.isOwner && frei("freigeben") && (
-              <button className={"btn" + (page.isPublic ? " active" : "")} onClick={() => setShowShare(true)}>
+              <button
+                className={"btn" + (page.isPublic ? " active" : "")}
+                onClick={() => setShowShare(true)}
+              >
                 Teilen
               </button>
             )}
@@ -669,7 +767,11 @@ export default function PageView({
               blieb links und rechts eine Handbreit Papier leer, während die
               Tabelle daneben umbrach. Wer es schmal will, sagt es an der Seite
               oder für die ganze Instanz. */}
-          <div className={"page" + (breiteWirksam !== "normal" ? " " + breiteWirksam : "")}>
+          <div
+            className={
+              "page" + (breiteWirksam !== "normal" ? " " + breiteWirksam : "")
+            }
+          >
             <input
               className="page-title"
               value={page.title}
@@ -707,24 +809,28 @@ export default function PageView({
               key={`grenze:${page.id}:${editorKey}:${mitschrift ? "gemeinsam" : "allein"}`}
               text="Der Inhalt dieser Seite liess sich nicht anzeigen."
             >
-              <Editor
-                /* Der Schlüssel trägt mit, ob gemeinsam geschrieben wird: der
+              <Suspense fallback={<div className="qv-none">Wird geladen…</div>}>
+                <Editor
+                  /* Der Schlüssel trägt mit, ob gemeinsam geschrieben wird: der
                    Editor wird einmal gebaut, und ob sein Text aus der Seite oder
                    aus dem geteilten Dokument kommt, entscheidet sich beim Bauen.
                    Die Leitung steht erst einen Wimpernschlag nach dem Öffnen,
                    also fällt die Entscheidung ohne den Schlüssel immer auf
                    "allein". */
-                key={`${page.id}:${editorKey}:${mitschrift ? "gemeinsam" : "allein"}`}
-                mitschrift={mitschrift ?? undefined}
-                initialContent={page.content}
-                editable={canEdit}
-                onChange={onContent}
-                onEditorReady={(e) => (editorRef.current = e)}
-                linkResolver={resolveLink}
-                onOpenLink={(pid) => nav(`/page/${pid}`)}
-                mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}
-                dateiHochladen={dateiAbwurfMoeglich ? bildHochladen : undefined}
-              />
+                  key={`${page.id}:${editorKey}:${mitschrift ? "gemeinsam" : "allein"}`}
+                  mitschrift={mitschrift ?? undefined}
+                  initialContent={page.content}
+                  editable={canEdit}
+                  onChange={onContent}
+                  onEditorReady={(e) => (editorRef.current = e)}
+                  linkResolver={resolveLink}
+                  onOpenLink={(pid) => nav(`/page/${pid}`)}
+                  mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}
+                  dateiHochladen={
+                    dateiAbwurfMoeglich ? bildHochladen : undefined
+                  }
+                />
+              </Suspense>
             </Fehlergrenze>
             {frei("anhaenge") && (
               <Attachments
@@ -742,11 +848,18 @@ export default function PageView({
                 <div className="page-links-list">
                   {links.map((l) => (
                     <span key={l.id} className="page-link-chip">
-                      <button className="page-link-open" onClick={() => nav(`/page/${l.id}`)}>
+                      <button
+                        className="page-link-open"
+                        onClick={() => nav(`/page/${l.id}`)}
+                      >
                         {l.title || "Ohne Titel"}
                       </button>
                       {canEdit && (
-                        <span className="x" title="Verknüpfung entfernen" onClick={() => removeLink(l.id)}>
+                        <span
+                          className="x"
+                          title="Verknüpfung entfernen"
+                          onClick={() => removeLink(l.id)}
+                        >
                           ✕
                         </span>
                       )}
@@ -761,7 +874,10 @@ export default function PageView({
                         title="Aus dem Text ([[…]] / @-Erwähnung)"
                       >
                         {tid ? (
-                          <button className="page-link-open" onClick={() => nav(`/page/${tid}`)}>
+                          <button
+                            className="page-link-open"
+                            onClick={() => nav(`/page/${tid}`)}
+                          >
                             {t}
                           </button>
                         ) : (
@@ -791,7 +907,8 @@ export default function PageView({
                         }}
                         onFocus={() => setLinkOpen(true)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" && filteredCandidates[0]) pickLink(filteredCandidates[0].id);
+                          if (e.key === "Enter" && filteredCandidates[0])
+                            pickLink(filteredCandidates[0].id);
                           if (e.key === "Escape") setLinkOpen(false);
                         }}
                         onBlur={() => setTimeout(() => setLinkOpen(false), 150)}
@@ -815,7 +932,8 @@ export default function PageView({
                 </div>
                 {links.length === 0 && textLinkTitles.length === 0 && (
                   <div className="page-links-hint">
-                    Noch keine Verknüpfungen. Wähle oben eine Seite, oder tippe @ bzw. [[…]] im Text.
+                    Noch keine Verknüpfungen. Wähle oben eine Seite, oder tippe
+                    @ bzw. [[…]] im Text.
                   </div>
                 )}
               </div>
@@ -823,18 +941,27 @@ export default function PageView({
             {backlinks.length > 0 && (
               <div className="backlinks">
                 <div className="backlinks-title">
-                  Verlinkt von {backlinks.length} {backlinks.length === 1 ? "Seite" : "Seiten"}
+                  Verlinkt von {backlinks.length}{" "}
+                  {backlinks.length === 1 ? "Seite" : "Seiten"}
                 </div>
                 <div className="backlinks-list">
                   {backlinks.map((b) => (
-                    <button key={b.id} className="backlink" onClick={() => nav(`/page/${b.id}`)}>
+                    <button
+                      key={b.id}
+                      className="backlink"
+                      onClick={() => nav(`/page/${b.id}`)}
+                    >
                       {b.title || "Ohne Titel"}
                     </button>
                   ))}
                 </div>
               </div>
             )}
-            <LocalGraph graph={graph} pageId={page.id} onOpen={(pid) => nav(`/page/${pid}`)} />
+            <LocalGraph
+              graph={graph}
+              pageId={page.id}
+              onOpen={(pid) => nav(`/page/${pid}`)}
+            />
           </div>
         </div>
       </div>
@@ -842,9 +969,12 @@ export default function PageView({
       {konflikt && (
         <div className="konflikt-banner">
           <div>
-            <strong>Die Seite wurde inzwischen an anderer Stelle geändert.</strong>
+            <strong>
+              Die Seite wurde inzwischen an anderer Stelle geändert.
+            </strong>
             <div className="muted small">
-              Automatisches Speichern ist angehalten, damit nichts überschrieben wird.
+              Automatisches Speichern ist angehalten, damit nichts überschrieben
+              wird.
             </div>
           </div>
           <div className="konflikt-aktionen">
@@ -872,7 +1002,9 @@ export default function PageView({
           pageId={page.id}
           isPublic={page.isPublic}
           publicToken={page.publicToken}
-          onPublicChange={(isPublic, token) => setPage({ ...page, isPublic, publicToken: token })}
+          onPublicChange={(isPublic, token) =>
+            setPage({ ...page, isPublic, publicToken: token })
+          }
           onClose={() => setShowShare(false)}
         />
       )}

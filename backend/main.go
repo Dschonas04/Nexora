@@ -174,6 +174,9 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(chimw.RealIP) // trust X-Forwarded-For, the SPA is served through nginx
+	// Vor allem anderen, damit auch eine Antwort die Kopfzeilen traegt, die
+	// ein Filter weiter hinten abweist.
+	r.Use(middleware.Sicherheitskopfzeilen)
 	// Ganz vorn, damit auch gezählt wird, was an der Anmeldung oder an der
 	// Lizenz scheitert: wer sucht, warum es hängt, will gerade die sehen.
 	r.Use(middleware.Messen(h.Puls))
