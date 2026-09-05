@@ -5,7 +5,7 @@
 // were not looking, and the only two questions are "what" and "where", both
 // answered by a line and a click.
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { Nachricht, api } from "../api/client";
 import Profilbild from "../components/Profilbild";

@@ -2,7 +2,7 @@
 // for version history and sharing. The largest view in the app, because a page
 // is where nearly every feature meets.
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
 import { Graph, Page, PageMeta, PagePatch, Tag, api } from "../api/client";
 // The editor brings BlockNote along, and that is the largest single piece of
