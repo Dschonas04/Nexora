@@ -35,7 +35,22 @@ import { GRUND, anwenden, useDesign } from "../design";
 import { ausHex, kontrast, lesbarAuf, schriftAuf } from "../farbe";
 import { useRueckfrage } from "../components/Rueckfrage";
 
+// Ein Bereich ist ein Eintrag in der Leiste, ein Teil eine Sachgruppe darin.
+// Fuenfzehn Eintraege waren keine Gliederung mehr, sondern eine Liste, in der
+// man suchen musste, weil ein Teil davon aus einer einzigen Einstellung
+// bestand. Die Teile sind geblieben, sie stehen jetzt zu mehreren auf einer
+// Seite untereinander.
 type Bereich =
+  | "uebersicht"
+  | "konten"
+  | "zugang"
+  | "inhalte"
+  | "datenbank"
+  | "aussehen"
+  | "lizenz"
+  | "system";
+
+type Teil =
   | "uebersicht"
   | "nutzer"
   | "gruppen"
@@ -52,26 +67,81 @@ type Bereich =
   | "system"
   | "wartung";
 
-const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
-  { id: "uebersicht", titel: "Übersicht", unter: "Zustand, Kennzahlen, Puls" },
-  // Accounts and groups each used to have an entry of their own in the sidebar.
-  // Both are administration and are rarely touched; they belong where one looks
-  // anyway when one wants to set something.
-  { id: "nutzer", titel: "Nutzer", unter: "Konten, Rollen" },
-  { id: "gruppen", titel: "Gruppen", unter: "Ablage-Rechte" },
-  { id: "zusammen", titel: "Zusammenarbeit", unter: "echtzeit" },
-  { id: "sicherheit", titel: "Sicherheit", unter: "Registrierung, Sitzungsdauer" },
-  { id: "anmeldungen", titel: "Anmeldungen", unter: "Versuche, Adressen" },
-  { id: "sitzungen", titel: "Sitzungen", unter: "Geräte, einzeln beendbar" },
-  { id: "ldap", titel: "Verzeichnis", unter: "LDAP / AD" },
-  { id: "datenbank", titel: "Datenbank", unter: "PostgreSQL, Tabellen, Belegung" },
-  { id: "suche", titel: "Suche", unter: "Wörterbuch, Index" },
-  { id: "anhaenge", titel: "Anhänge", unter: "Grenze, Ablage, Belegung" },
-  { id: "aussehen", titel: "Aussehen", unter: "Grundton, Akzent" },
-  { id: "lizenz", titel: "Lizenz", unter: "Umfang, Laufzeit" },
-  { id: "system", titel: "System", unter: "config.conf, nur beim Start" },
-  { id: "wartung", titel: "Wartung", unter: "Datei, Neustart, Sicherung" },
+const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] = [
+  { id: "uebersicht", titel: "Übersicht", unter: "Zustand, Kennzahlen, Puls", teile: ["uebersicht"] },
+  {
+    id: "konten",
+    titel: "Konten",
+    unter: "Nutzer, Rollen, Gruppen",
+    teile: ["nutzer", "gruppen"],
+  },
+  // Wer hier steht, klaert eine einzige Frage: wer kommt herein und womit.
+  // Registrierung, Verzeichnis, Versuche und laufende Sitzungen sind vier
+  // Antworten darauf und standen bisher an vier Stellen.
+  {
+    id: "zugang",
+    titel: "Zugang",
+    unter: "Registrierung, Verzeichnis, Sitzungen",
+    teile: ["sicherheit", "ldap", "anmeldungen", "sitzungen"],
+  },
+  {
+    id: "inhalte",
+    titel: "Inhalte",
+    unter: "Zusammenarbeit, Suche, Anhänge",
+    teile: ["zusammen", "suche", "anhaenge"],
+  },
+  {
+    id: "datenbank",
+    titel: "Datenbank",
+    unter: "PostgreSQL, Tabellen, Belegung",
+    teile: ["datenbank"],
+  },
+  { id: "aussehen", titel: "Aussehen", unter: "Grundton, Akzent", teile: ["aussehen"] },
+  { id: "lizenz", titel: "Lizenz", unter: "Umfang, Laufzeit", teile: ["lizenz"] },
+  {
+    id: "system",
+    titel: "System",
+    unter: "config.conf, Neustart, Sicherung",
+    teile: ["system", "wartung"],
+  },
 ];
+
+// Die Ueberschrift einer Sachgruppe, sobald mehrere auf einer Seite stehen.
+// Auf einer Seite mit nur einem Teil waere sie eine Wiederholung des
+// Leisteneintrags und faellt deshalb weg.
+const TEIL_TITEL: Record<Teil, string> = {
+  uebersicht: "Übersicht",
+  nutzer: "Nutzer und Rollen",
+  gruppen: "Gruppen",
+  zusammen: "Zusammenarbeit",
+  sicherheit: "Registrierung und Sitzungsdauer",
+  ldap: "Verzeichnis (LDAP / AD)",
+  anmeldungen: "Anmeldeversuche",
+  sitzungen: "Laufende Sitzungen",
+  datenbank: "Datenbank",
+  suche: "Suche",
+  anhaenge: "Anhänge",
+  aussehen: "Aussehen",
+  lizenz: "Lizenz",
+  system: "Konfiguration",
+  wartung: "Wartung",
+};
+
+// Die alten Adressen bleiben gueltig. Ein Lesezeichen auf /einstellungen/ldap
+// und die beiden Weiterleitungen aus dem Arbeitsbereich sollen nicht auf der
+// Uebersicht landen, sondern dort, wo die Sache jetzt steht.
+const ALTE_ADRESSE: Record<string, Bereich> = {
+  nutzer: "konten",
+  gruppen: "konten",
+  sicherheit: "zugang",
+  ldap: "zugang",
+  anmeldungen: "zugang",
+  sitzungen: "zugang",
+  zusammen: "inhalte",
+  suche: "inhalte",
+  anhaenge: "inhalte",
+  wartung: "system",
+};
 
 const ZUSATZ: Record<string, string> = {
   versionen: "Versionsverlauf",
@@ -416,10 +486,33 @@ export default function EinstellungenView() {
   // addresses for users and groups can point here.
   const nav = useNavigate();
   const { bereich: ausAdresse } = useParams();
-  const bereich: Bereich = (BEREICHE.some((b) => b.id === ausAdresse)
-    ? ausAdresse
-    : "uebersicht") as Bereich;
+  const bereich: Bereich = BEREICHE.some((b) => b.id === ausAdresse)
+    ? (ausAdresse as Bereich)
+    : (ALTE_ADRESSE[ausAdresse ?? ""] ?? "uebersicht");
   const setBereich = (b: Bereich) => nav("/einstellungen/" + b);
+  const teile: Teil[] = BEREICHE.find((b) => b.id === bereich)?.teile ?? ["uebersicht"];
+  // Nachgeladen wird weiter je Sachgruppe und nicht je Seite: die Liste der
+  // Anmeldeversuche soll nicht mitkommen, nur weil jemand die Sitzungsdauer
+  // aendert. Sie stehen jetzt lediglich untereinander.
+  const zeigt = (t: Teil) => teile.includes(t);
+
+  // Ein Verweis auf eine Sachgruppe. Frueher war das ein Wechsel der Seite;
+  // liegt die Gruppe jetzt weiter unten auf derselben, muss die Seite dorthin
+  // rollen, sonst passiert auf den Klick sichtbar nichts.
+  const [sprung, setSprung] = useState<Teil | null>(null);
+  const zuTeil = (t: Teil) => {
+    const b = BEREICHE.find((x) => x.teile.includes(t));
+    if (!b) return;
+    if (b.id !== bereich) setBereich(b.id);
+    setSprung(t);
+  };
+  useEffect(() => {
+    if (!sprung) return;
+    const ziel = document.getElementById("teil-" + sprung);
+    if (!ziel) return;
+    ziel.scrollIntoView({ block: "start", behavior: "smooth" });
+    setSprung(null);
+  }, [sprung, bereich]);
   const [liste, setListe] = useState<Einstellung[]>([]);
   const [zustand, setZustand] = useState<SystemZustand | null>(null);
   const [entwurf, setEntwurf] = useState<Record<string, string>>({});
@@ -508,7 +601,7 @@ export default function EinstellungenView() {
   // Sitzung dauert Minuten, und die Liste soll nicht flackern.
   const [zusammen, setZusammen] = useState<MitschriftZustand | null>(null);
   useEffect(() => {
-    if (bereich !== "zusammen") {
+    if (!zeigt("zusammen")) {
       setZusammen(null);
       return;
     }
@@ -615,7 +708,7 @@ export default function EinstellungenView() {
   // Der Umfang einer Sicherung, beim Öffnen der Wartung geholt.
   const [sicherung, setSicherung] = useState<SicherungUmfang | null>(null);
   useEffect(() => {
-    if (bereich !== "wartung") return;
+    if (!zeigt("wartung")) return;
     api.sicherungUmfang().then(setSicherung).catch(() => setSicherung(null));
   }, [bereich]);
 
@@ -638,7 +731,7 @@ export default function EinstellungenView() {
   const [ldapProbe, setLdapProbe] = useState({ benutzer: "", passwort: "" });
   const [ldapErgebnis, setLdapErgebnis] = useState<LDAPTestErgebnis | null>(null);
   useEffect(() => {
-    if (bereich === "ldap" && !ldap) {
+    if (zeigt("ldap") && !ldap) {
       api.ldapEinrichtung().then(setLdap).catch(() => setLdap(null));
     }
   }, [bereich, ldap]);
@@ -754,7 +847,7 @@ export default function EinstellungenView() {
       .catch(() => setSitzungen([]));
   }, []);
   useEffect(() => {
-    if (bereich === "sitzungen") sitzungenLaden();
+    if (zeigt("sitzungen")) sitzungenLaden();
   }, [bereich, sitzungenLaden]);
 
   // Anmeldeversuche. Wie die Sitzungen erst beim Öffnen geholt, und mit einem
@@ -774,11 +867,11 @@ export default function EinstellungenView() {
       .catch(() => setAnmeldungen(null));
   }, [anmeldeFilter]);
   useEffect(() => {
-    if (bereich === "anmeldungen") anmeldungenLaden();
+    if (zeigt("anmeldungen")) anmeldungenLaden();
   }, [bereich, anmeldungenLaden]);
 
   useEffect(() => {
-    if (bereich !== "wartung" || konfig) return;
+    if (!zeigt("wartung") || konfig) return;
     api
       .konfigLesen()
       .then((k) => {
@@ -1099,8 +1192,11 @@ export default function EinstellungenView() {
 
   // ── Bereiche ────────────────────────────────────────────────────────────
 
-  const inhalt = () => {
-    switch (bereich) {
+  // Eine Sachgruppe fuer sich. Der Schalter ist geblieben, wie er war -- was
+  // sich geaendert hat, ist nur, wie viele seiner Zweige gleichzeitig auf einer
+  // Seite landen.
+  const teilInhalt = (teil: Teil) => {
+    switch (teil) {
       case "sitzungen":
         return (
           <>
@@ -1231,7 +1327,7 @@ export default function EinstellungenView() {
             sich?.fehlversuche24h ? (
               <>
                 {sich.fehlversuche24h}{" "}
-                <button className="btn-schlicht" onClick={() => setBereich("anmeldungen")}>
+                <button className="btn-schlicht" onClick={() => zuTeil("anmeldungen")}>
                   ansehen
                 </button>
               </>
@@ -1382,7 +1478,7 @@ export default function EinstellungenView() {
             </table>
             <p className="muted small">
               Jeder Versuch mit Adresse und Grund unter{" "}
-              <button className="btn-schlicht" onClick={() => setBereich("anmeldungen")}>
+              <button className="btn-schlicht" onClick={() => zuTeil("anmeldungen")}>
                 Anmeldungen
               </button>
               . Passwörter werden nicht festgehalten.
@@ -3007,7 +3103,16 @@ export default function EinstellungenView() {
         {meldung && (
           <div className={meldung.art === "ok" ? "hinweis-ok" : "fehler"}>{meldung.text}</div>
         )}
-        {inhalt()}
+        {teile.map((t) => (
+          <Fragment key={t}>
+            {teile.length > 1 && (
+              <h2 className="teil-titel" id={"teil-" + t}>
+                {TEIL_TITEL[t]}
+              </h2>
+            )}
+            {teilInhalt(t)}
+          </Fragment>
+        ))}
       </div>
     </div>
   );

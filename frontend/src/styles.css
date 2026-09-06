@@ -3955,3 +3955,21 @@ textarea::placeholder {
   min-width: 260px;
   font-size: 13px;
 }
+
+/* Trennt zwei Sachgruppen auf einer Seite. Die Leiste hat weniger Eintraege,
+   dafuer stehen hier mehrere Gruppen untereinander -- ohne einen Schnitt liefe
+   das eine ins andere. Erste Gruppe ohne Abstand nach oben, sonst klafft ueber
+   der Seite eine Luecke. */
+.teil-titel {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 34px 0 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.einstellungen-inhalt > .teil-titel:first-of-type {
+  margin-top: 0;
+}
