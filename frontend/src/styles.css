@@ -3825,3 +3825,10 @@ textarea::placeholder {
 .einstellungen-manager .kachel-wert {
   font-variant-numeric: tabular-nums;
 }
+/* Die Umgebungsvariable steht neben dem Schluessel, aber blasser: sie ist der
+   zweite Weg zum selben Wert und gilt nur beim Start. Nicht jede Einstellung
+   hat einen — die Marke fehlt dann einfach. */
+.einstellung-schluessel.umgebung {
+  background: none;
+  border-style: dashed;
+}

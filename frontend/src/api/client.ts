@@ -278,6 +278,8 @@ export interface Einstellung {
   erklaerung: string;
   warnung?: string;
   vorgabe: string;
+  /** Environment variable that overrides this key at start; absent when none does. */
+  umgebung?: string;
   /** true while the value still comes from config.conf, untouched here. */
   ausDatei: boolean;
   geaendertVon?: string;
