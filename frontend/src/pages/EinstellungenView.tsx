@@ -52,24 +52,24 @@ type Bereich =
   | "wartung";
 
 const BEREICHE: { id: Bereich; titel: string; unter: string }[] = [
-  { id: "uebersicht", titel: "Übersicht", unter: "Zahlen und Zustand auf einen Blick" },
+  { id: "uebersicht", titel: "Übersicht", unter: "Zustand, Kennzahlen, Puls" },
   // Accounts and groups each used to have an entry of their own in the sidebar.
   // Both are administration and are rarely touched; they belong where one looks
   // anyway when one wants to set something.
-  { id: "nutzer", titel: "Nutzer", unter: "Konten, Rollen, Zugänge" },
-  { id: "gruppen", titel: "Gruppen", unter: "Konten bündeln für Ablage-Rechte" },
-  { id: "zusammen", titel: "Zusammenarbeit", unter: "Gemeinsames Bearbeiten, wer gerade schreibt" },
-  { id: "sicherheit", titel: "Sicherheit", unter: "Registrierung, Laufzeiten, Administratoren" },
-  { id: "anmeldungen", titel: "Anmeldungen", unter: "Jeder Versuch, mit Adresse und Herkunft" },
-  { id: "sitzungen", titel: "Sitzungen", unter: "Angemeldete Geräte, einzeln beendbar" },
-  { id: "ldap", titel: "Verzeichnis", unter: "LDAP und Active Directory, mit Probe" },
-  { id: "datenbank", titel: "Datenbank", unter: "Größe, Tabellen, Belegung" },
-  { id: "suche", titel: "Suche", unter: "Wörterbuch und Suchindex" },
-  { id: "anhaenge", titel: "Anhänge", unter: "Größenbegrenzung und Belegung" },
-  { id: "aussehen", titel: "Aussehen", unter: "Grundton und Akzentfarbe" },
-  { id: "lizenz", titel: "Lizenz", unter: "Umfang und Laufzeit" },
-  { id: "system", titel: "System", unter: "Was nur beim Start gilt" },
-  { id: "wartung", titel: "Wartung", unter: "Konfigurationsdatei, Neustart, Aufräumen" },
+  { id: "nutzer", titel: "Nutzer", unter: "Konten, Rollen" },
+  { id: "gruppen", titel: "Gruppen", unter: "Ablage-Rechte" },
+  { id: "zusammen", titel: "Zusammenarbeit", unter: "echtzeit" },
+  { id: "sicherheit", titel: "Sicherheit", unter: "Registrierung, Sitzungsdauer" },
+  { id: "anmeldungen", titel: "Anmeldungen", unter: "Versuche, Adressen" },
+  { id: "sitzungen", titel: "Sitzungen", unter: "Geräte, einzeln beendbar" },
+  { id: "ldap", titel: "Verzeichnis", unter: "LDAP / AD" },
+  { id: "datenbank", titel: "Datenbank", unter: "PostgreSQL, Tabellen, Belegung" },
+  { id: "suche", titel: "Suche", unter: "Wörterbuch, Index" },
+  { id: "anhaenge", titel: "Anhänge", unter: "Grenze, Ablage, Belegung" },
+  { id: "aussehen", titel: "Aussehen", unter: "Grundton, Akzent" },
+  { id: "lizenz", titel: "Lizenz", unter: "Umfang, Laufzeit" },
+  { id: "system", titel: "System", unter: "config.conf, nur beim Start" },
+  { id: "wartung", titel: "Wartung", unter: "Datei, Neustart, Sicherung" },
 ];
 
 const ZUSATZ: Record<string, string> = {
@@ -901,7 +901,10 @@ export default function EinstellungenView() {
       <div className="einstellung" key={e.schluessel}>
         <div className="einstellung-kopf">
           <div>
-            <div className="einstellung-titel">{e.titel}</div>
+            <div className="einstellung-titel">
+              {e.titel}
+              <code className="einstellung-schluessel">{e.schluessel}</code>
+            </div>
             <div className="einstellung-erklaerung">{e.erklaerung}</div>
             {e.warnung && <div className="einstellung-warnung">{e.warnung}</div>}
           </div>
@@ -982,11 +985,7 @@ export default function EinstellungenView() {
           <>
             <h3>Angemeldete Geräte</h3>
             <p className="muted small">
-              Jede Anmeldung steht als Zeile in der Datenbank. Deshalb lässt sich eine
-              einzelne beenden, ein verlorenes Gerät auszusperren, ohne alle anderen
-              mitzunehmen, geht nur so. Wer täglich arbeitet, bleibt angemeldet: eine
-              Sitzung, die mehr als die Hälfte ihrer Zeit hinter sich hat, wird beim
-              nächsten Aufruf verlängert.
+              Eine Zeile je Sitzung, einzeln beendbar. Verlängerung ab der halben Laufzeit.
             </p>
             {sitzungen === null ? (
               <p className="muted">Wird geladen…</p>
@@ -1169,8 +1168,8 @@ export default function EinstellungenView() {
             {feld("echtzeit")}
             {zusammen && !zusammen.lizenziert && (
               <p className="muted small">
-                Die Lizenz enthält das gemeinsame Bearbeiten nicht. Der Schalter steht
-                trotzdem hier: er gilt, sobald ein Schlüssel es freischaltet.
+                Nicht in der Lizenz enthalten. Der Schalter greift, sobald ein Schlüssel ihn
+                freischaltet.
               </p>
             )}
 
@@ -1182,9 +1181,8 @@ export default function EinstellungenView() {
             </div>
             {raeume.length === 0 ? (
               <p className="muted small">
-                An keiner Seite wird gerade gemeinsam geschrieben. Eine Sitzung entsteht,
-                sobald jemand eine Seite öffnet, die mit einem anderen Konto zum Bearbeiten
-                geteilt ist, und sie endet, sobald der Letzte den Reiter schließt.
+                Keine aktive Sitzung. Eine entsteht beim Öffnen einer zum Bearbeiten geteilten
+                Seite und endet mit dem letzten Reiter.
               </p>
             ) : (
               <table className="tabelle">
@@ -1207,8 +1205,8 @@ export default function EinstellungenView() {
               </table>
             )}
             <p className="muted small">
-              Nur der Augenblick. Wer wann was geschrieben hat, steht im Versionsverlauf der
-              Seite und, sofern lizenziert, im Protokoll.
+              Momentaufnahme. Wer wann was geschrieben hat: Versionsverlauf der Seite, mit
+              Lizenz zusätzlich das Protokoll.
             </p>
           </>
         );
@@ -1224,9 +1222,7 @@ export default function EinstellungenView() {
 
             <h3>Administratoren</h3>
             <p className="muted small">
-              Diese Konten dürfen jede Seite lesen und bearbeiten, auch fremde. Das ist keine
-              Nebenwirkung, sondern Absicht — es sollte trotzdem jeder hier stehen, von dem
-              du es erwartest.
+              Lesen und Bearbeiten auf allen Seiten, auch fremden.
             </p>
             <table className="tabelle">
               <tbody>
@@ -1261,12 +1257,11 @@ export default function EinstellungenView() {
               </tbody>
             </table>
             <p className="muted small">
-              Jeder einzelne Versuch steht unter{" "}
+              Jeder Versuch mit Adresse und Grund unter{" "}
               <button className="btn-schlicht" onClick={() => setBereich("anmeldungen")}>
                 Anmeldungen
               </button>
-              , mit Adresse und Grund. Passwörter werden nirgends festgehalten, auch nicht bei
-              einem Fehlversuch.
+              . Passwörter werden nicht festgehalten.
             </p>
           </>
         );
@@ -1304,9 +1299,8 @@ export default function EinstellungenView() {
 
             <h3>Herkunft</h3>
             <p className="muted small">
-              Die Adressen der letzten sieben Tage, die mit den meisten Fehlversuchen zuerst.
-              Viele Fehlversuche von einer Adresse auf viele verschiedene Konten sind das
-              Muster, nach dem man hier sucht.
+              Adressen der letzten 7 Tage, meiste Fehlversuche zuerst. Muster: eine Adresse
+              gegen viele Konten.
             </p>
             <div className="tabelle-rollen">
               <table className="tabelle">
@@ -1428,8 +1422,7 @@ export default function EinstellungenView() {
               </table>
             </div>
             <p className="muted small">
-              Höchstens 300 Zeilen auf einmal. Ältere Einträge stehen weiter im Protokoll und
-              werden nie gelöscht. Was ein Konto danach getan hat, steht dort ebenfalls.
+              Höchstens 300 Zeilen. Ältere Einträge bleiben im Protokoll.
             </p>
           </>
         );
@@ -1452,10 +1445,8 @@ export default function EinstellungenView() {
           <>
             <h3>Einrichtung</h3>
             <p className="muted small">
-              Diese Werte stehen in <code>config.conf</code> und sind von hier aus nur zu
-              lesen. Ein Passwort für das Dienstkonto gehört in die Datei und nicht in eine
-              Datenbankzeile, die jeder Dump mitnimmt. Geändert wird es unter Wartung, wirksam
-              nach einem Neustart.
+              Aus <code>config.conf</code>, hier nur lesbar. Geändert wird unter Wartung,
+              wirksam nach Neustart.
             </p>
             <table className="tabelle uebersicht-tabelle">
               <tbody>
@@ -1511,11 +1502,8 @@ export default function EinstellungenView() {
 
             <h3>Probe</h3>
             <p className="muted small">
-              Fragt das Verzeichnis nach einem Konto. Ohne Passwort wird nur gesucht, und
-              genau das ist der übliche Fall: damit lassen sich Verbindung, Dienstkonto,
-              Filter und Feldnamen prüfen, ohne dass jemand sein Passwort in ein fremdes
-              Formular tippt. Mit Passwort wird zusätzlich gebunden, dann ist die ganze Kette
-              geprüft. Ein Konto in Nexora entsteht dabei nicht.
+              Ohne Passwort nur Suche: prüft Verbindung, Dienstkonto, Filter und Feldnamen.
+              Mit Passwort zusätzlich Bind. Legt kein Konto an.
             </p>
             <div className="einstellung">
               <div className="s3-felder">
@@ -1607,8 +1595,8 @@ export default function EinstellungenView() {
               {kachel(bytes(z.anhaengeBytes ?? 0), "Anhänge (auf Platte)")}
             </div>
             <p className="muted small">
-              Anhänge liegen als Dateien im Datenverzeichnis, nicht in der Datenbank. Eine
-              Sicherung nur der Datenbank ist deshalb keine vollständige.
+              Anhänge liegen als Dateien im Datenverzeichnis, nicht in der Datenbank. Ein
+              reiner Datenbank-Dump ist unvollständig.
             </p>
 
             <h3>Größte Tabellen</h3>
@@ -1633,8 +1621,7 @@ export default function EinstellungenView() {
               </tbody>
             </table>
             <p className="muted small">
-              Die Zeilenzahl ist eine Schätzung aus der Statistik von PostgreSQL, nicht
-              gezählt — deshalb kann sie kurz nach vielen Änderungen etwas danebenliegen.
+              Zeilenzahl ist eine Schätzung aus der PostgreSQL-Statistik, nicht gezählt.
             </p>
           </>
         );
@@ -1651,13 +1638,9 @@ export default function EinstellungenView() {
                   <div className="einstellung-titel">Suchindex neu aufbauen</div>
                   <div className="einstellung-erklaerung">
                     Zieht den Fließtext aller Seiten neu aus dem Editor-Inhalt. Nach einem
-                    Wechsel des Wörterbuchs ist das nötig. Sonst hilft es, wenn die Suche
-                    etwas nicht findet, das sichtbar auf der Seite steht.
+                    Wechsel des Wörterbuchs nötig.
                   </div>
-                  <div className="einstellung-warnung">
-                    Läuft in Stapeln und blockiert nichts. Bei vielen Seiten dauert es einen
-                    Moment.
-                  </div>
+                  <div className="einstellung-warnung">Läuft in Stapeln, blockiert nichts.</div>
                 </div>
                 <div className="einstellung-feld">
                   <button className="btn" disabled={laeuft === "suchindex"} onClick={indexNeu}>
@@ -1672,15 +1655,12 @@ export default function EinstellungenView() {
                 <div>
                   <div className="einstellung-titel">Volltext aus Anhängen nachziehen</div>
                   <div className="einstellung-erklaerung">
-                    Liest Anhänge, die noch keinen Suchtext haben, und holt ihn nach. Das
-                    betrifft alles, was vor dieser Funktion hochgeladen wurde. Gelesen werden
-                    Textdateien und PDF, sofern sie eine Textebene haben.
+                    Holt den Suchtext für Anhänge nach, die noch keinen haben. Gelesen werden
+                    Textdateien und PDF mit Textebene.
                   </div>
                   <div className="einstellung-warnung">
-                    Jede Datei muss dafür einmal aus der Ablage zurückgeholt werden, bei einem
-                    Objektspeicher also übers Netz. Darum steht hier ein Knopf und läuft das
-                    nicht beim Start von allein. Pro Durchlauf werden bis zu 500 Anhänge
-                    bearbeitet.
+                    Jede Datei wird einmal aus der Ablage zurückgeholt, bei Objektspeicher übers
+                    Netz. Bis zu 500 Anhänge je Durchlauf.
                   </div>
                 </div>
                 <div className="einstellung-feld">
@@ -1700,8 +1680,8 @@ export default function EinstellungenView() {
               {kachel(z.zahlen?.ohneSuchtext ?? 0, "ohne Suchtext")}
             </div>
             <p className="muted small">
-              Seiten ohne Suchtext sind meistens einfach leere Seiten. Bleibt die Zahl nach
-              einem Neuaufbau hoch, stimmt etwas mit dem Editor-Inhalt nicht.
+              Seiten ohne Suchtext sind meist leer. Bleibt die Zahl nach einem Neuaufbau hoch,
+              stimmt der Editor-Inhalt nicht.
             </p>
           </>
         );
@@ -1720,14 +1700,12 @@ export default function EinstellungenView() {
                 <div>
                   <div className="einstellung-titel">Wirksame Grenze messen</div>
                   <div className="einstellung-erklaerung">
-                    Schickt aus diesem Browser eine Übertragung von der eingestellten Größe
-                    los und sieht nach, ob sie ankommt. Kommt sie nicht durch, wird die
-                    Grenze eingeschachtelt, bis sie auf ein halbes Megabyte genau feststeht.
-                    Gemessen wird damit die ganze Strecke, also auch jeder nginx dazwischen.
+                    Schickt eine Übertragung der eingestellten Größe los und schachtelt die
+                    Grenze auf 0,5 MB genau ein. Gemessen wird die ganze Strecke, jeder nginx
+                    eingeschlossen.
                   </div>
                   <div className="einstellung-warnung">
-                    Dabei werden ein paar Dutzend Megabyte übertragen und sofort verworfen.
-                    Über eine langsame Leitung dauert das entsprechend.
+                    Überträgt dabei einige Dutzend MB und verwirft sie sofort.
                   </div>
                 </div>
                 <div className="einstellung-feld">
@@ -1757,17 +1735,14 @@ export default function EinstellungenView() {
             <h3>Wo die Dateien liegen</h3>
             <div className="kachelreihe">{kachel(ablage || "—", "Aktuelle Ablage")}</div>
             <p className="muted small">
-              Vorgabe ist die lokale Platte. Ein Objektspeicher löst zwei Dinge: ein
-              Datenbank-Dump wird zur vollständigen Sicherung, und zwei Instanzen können
-              sich dieselben Dateien teilen — ein lokales Verzeichnis können sie nicht.
+              Vorgabe: lokale Platte. Objektspeicher macht den Datenbank-Dump vollständig und
+              erlaubt zwei Instanzen auf denselben Dateien.
             </p>
 
             <h3>Objektspeicher prüfen</h3>
             <p className="muted small">
-              Hier wird nichts gespeichert. Die Zugangsdaten bleiben in diesem Formular und
-              werden nur für den Test benutzt — ein geheimer Schlüssel gehört in{" "}
-              <code>config.conf</code> oder in die Umgebung, nicht in eine Datenbankzeile,
-              die jeder Dump mitnimmt.
+              Wird nicht gespeichert, nur für den Test benutzt. Geheime Schlüssel gehören in{" "}
+              <code>config.conf</code> oder in die Umgebung.
             </p>
             <div className="einstellung">
               <div className="s3-felder">
@@ -1844,8 +1819,7 @@ export default function EinstellungenView() {
           <>
             <h3>Grundton</h3>
             <p className="muted small">
-              Gilt für alle Konten dieser Instanz. Die Auswahl wird sofort angezeigt und erst
-              beim Anklicken gespeichert.
+              Instanzweit. Auswahl wird sofort angezeigt, beim Anklicken gespeichert.
             </p>
             <div className="tonauswahl">
               {GRUNDTOENE.map((g) => (
@@ -1869,9 +1843,7 @@ export default function EinstellungenView() {
             {grundton && herkunft(grundton)}
 
             <h3>Akzentfarbe</h3>
-            <p className="muted small">
-              Wird für Verknüpfungen, ausgewählte Einträge und Knöpfe benutzt.
-            </p>
+            <p className="muted small">Verknüpfungen, ausgewählte Einträge, Knöpfe.</p>
             <div className="farbauswahl">
               {AKZENTE.map((a) => (
                 <button
@@ -1972,9 +1944,8 @@ export default function EinstellungenView() {
             )}
             <h3>Stufen</h3>
             <p className="muted small">
-              Jede Stufe enthält die kleineren mit. Geprüft wird immer die einzelne Funktion
-              und nie die Stufe. Deshalb kann ein Schlüssel eine Stufe und zusätzlich
-              einzelne Funktionen tragen.
+              Jede Stufe enthält die kleineren. Geprüft wird die einzelne Funktion, nie die
+              Stufe.
             </p>
             <table className="tabelle">
               <thead>
@@ -2003,9 +1974,8 @@ export default function EinstellungenView() {
 
             <h3>Schlüssel einlesen</h3>
             <p className="muted small">
-              Der Schlüssel wird geprüft und in der Datenbank abgelegt. Er wirkt sofort,
-              übersteht einen Neustart und hat Vorrang vor <code>config.conf</code>. Ein
-              leeres Feld nimmt die Lizenz wieder zurück.
+              Wird geprüft und in der Datenbank abgelegt: sofort wirksam, übersteht den
+              Neustart, Vorrang vor <code>config.conf</code>. Leer nimmt die Lizenz zurück.
             </p>
             <textarea
               className="konfig-feld"
@@ -2024,10 +1994,8 @@ export default function EinstellungenView() {
               <>
                 <h3>Schlüssel ausstellen</h3>
                 <p className="muted small">
-                  Das geht hier, weil auf dieser Installation ein privater Signierschlüssel
-                  hinterlegt ist (<code>NEXORA_SIGNIERSCHLUESSEL</code>). Auf einer normalen
-                  Installation fehlt er und dieser Abschnitt erscheint gar nicht. Sonst könnte
-                  sich jeder seine Lizenz selbst ausstellen.
+                  Möglich, weil hier ein privater Signierschlüssel liegt (
+                  <code>NEXORA_SIGNIERSCHLUESSEL</code>). Ohne ihn erscheint dieser Abschnitt nicht.
                 </p>
                 <div className="knopfreihe">
                   <input
@@ -2060,9 +2028,8 @@ export default function EinstellungenView() {
                   </button>
                 </div>
                 <p className="muted small">
-                  Ohne Datum gilt ein Jahr, länger wird nicht ausgestellt. Geprüft wird
-                  offline. Ein ausgegebener Schlüssel lässt sich deshalb nicht zurückrufen,
-                  das Ablaufdatum ist der einzige Hebel.
+                  Ohne Datum ein Jahr, mehr wird nicht ausgestellt. Prüfung offline, also kein
+                  Rückruf — nur das Ablaufdatum.
                 </p>
                 {ausgestellt && (
                   <textarea className="konfig-feld" rows={3} readOnly value={ausgestellt} />
@@ -2070,8 +2037,8 @@ export default function EinstellungenView() {
               </>
             ) : (
               <p className="muted small">
-                Schlüssel <strong>ausstellen</strong> kann diese Installation nicht. Dafür
-                braucht es den privaten Signierschlüssel, und der liegt beim Herausgeber.
+                Ausstellen kann diese Installation nicht: der private Signierschlüssel liegt beim
+                Herausgeber.
               </p>
             )}
           </>
@@ -2129,11 +2096,9 @@ export default function EinstellungenView() {
                 {verlauf(puls)}
 
                 <p className="muted small">
-                  Die letzte Minute, alle zwei Sekunden nachgeladen, solange dieser Bereich
-                  offen ist. Der eigene Abfrageweg zählt sich nicht mit. Die laufende Sekunde
-                  fehlt in der Kurve: sie ist erst halb vergangen und sähe wie ein Einbruch
-                  aus. Striche auf der Grundlinie sind Sekunden mit abgewiesenen (gelb) oder
-                  gescheiterten (rot) Anfragen.
+                  Letzte Minute, Nachladen alle 2 s, solange dieser Bereich offen ist. Der eigene
+                  Abfrageweg zählt nicht mit, die laufende Sekunde fehlt. Striche auf der
+                  Grundlinie: abgewiesen (gelb), gescheitert (rot).
                 </p>
 
                 {(puls.anfragen?.fehler ?? 0) > 0 && (
@@ -2245,10 +2210,8 @@ export default function EinstellungenView() {
 
             <h3>Verbund</h3>
             <p className="muted small">
-              Die Dienste, mit denen Nexora spricht, samt Antwortzeit. Die übrigen Container
-              des Docker-Verbunds stehen nicht dabei. Dafür bräuchte dieser Container den
-              Steuerkanal von Docker, und wer den hat, kann auf dem Wirt alles. So viel ist
-              eine Liste von Containern nicht wert.
+              Dienste, mit denen Nexora spricht, samt Antwortzeit. Die übrigen Container des
+              Verbunds fehlen: dafür bräuchte es den Steuerkanal von Docker.
             </p>
             <div className="tabelle-rollen">
               <table className="tabelle verbund-tabelle">
@@ -2304,17 +2267,13 @@ export default function EinstellungenView() {
 
             <h3>Eigene Rechner</h3>
             <p className="muted small">
-              Adressen, bei denen diese Instanz anklopft, damit an einer Stelle steht, wer im
-              Haus noch antwortet. Gemessen wird ohne fremde Hilfe: keine Überwachung, die
-              erst eingerichtet sein will, kein Zugang zum fremden Rechner. Was hier steht,
-              hat Nexora selbst gesehen.
+              Adressen, bei denen diese Instanz selbst anklopft. Kein Agent, kein Zugang zum
+              fremden Rechner.
             </p>
             <p className="muted small">
-              Erstaunlich viel fällt dabei ab. Wer eine Verbindung annimmt, sagt meist im
-              ersten Atemzug, wer er ist: ein SSH-Dienst nennt seine Fassung, bevor überhaupt
-              jemand nach einem Passwort gefragt hat, ein Webserver nennt sie in der Kopfzeile{" "}
-              <code>Server</code>, und ein verschlüsselter Dienst zeigt sein Zertifikat samt
-              Ablauf. Wer schweigt, bleibt in der Spalte leer — geraten wird nichts.
+              Erkannt wird aus dem Banner: SSH nennt seine Fassung, HTTP die Kopfzeile{" "}
+              <code>Server</code>, TLS das Zertifikat samt Ablauf. Wer schweigt, bleibt leer —
+              geraten wird nichts.
             </p>
 
             <div className="tabelle-rollen">
@@ -2432,9 +2391,8 @@ export default function EinstellungenView() {
 
             <h3>Nur beim Start änderbar</h3>
             <p className="muted small">
-              Diese Werte stehen in <code>config.conf</code> oder in der Umgebung. Nexora
-              braucht sie schon, bevor die Datenbank offen ist. Aus dem Browser lassen sie
-              sich deshalb nicht ändern, wohl aber unter Wartung in der Datei selbst.
+              Aus <code>config.conf</code> oder der Umgebung, gelesen vor der Datenbank.
+              Änderbar nur unter Wartung in der Datei.
             </p>
             <table className="tabelle">
               <tbody>
@@ -2488,10 +2446,8 @@ export default function EinstellungenView() {
           <>
             <h3>Sicherung</h3>
             <p className="muted small">
-              Datenbank und Anhänge in einem Archiv, als Strom durch den Browser. Beides
-              zusammen, weil die Datenbank nicht der ganze Bestand ist: Anhänge liegen als
-              Dateien daneben, und ein Dump allein hinterlässt Zeilen, die auf nichts mehr
-              zeigen. Wer das erst beim Zurückspielen merkt, merkt es zu spät.
+              Datenbank und Anhänge in einem Archiv, als Strom durch den Browser. Ein Dump
+              allein lässt Zeilen zurück, die auf nichts mehr zeigen.
             </p>
             {sicherung && (
               <>
@@ -2540,14 +2496,12 @@ export default function EinstellungenView() {
                 </div>
 
                 <p className="muted small">
-                  Im Archiv liegt eine <code>LIESMICH.md</code> mit den Befehlen zum
-                  Zurückspielen. Ganz am Ende steht eine Datei <code>FERTIG</code>: fehlt sie,
-                  ist die Sicherung mittendrin abgebrochen. Ein halbes ZIP bleibt nämlich ein
-                  gültiges ZIP und ließe sich sonst nicht von einem ganzen unterscheiden.
+                  Im Archiv: <code>LIESMICH.md</code> mit den Befehlen zum Zurückspielen, am Ende
+                  die Datei <code>FERTIG</code>. Fehlt sie, brach die Sicherung ab — ein halbes ZIP
+                  bleibt ein gültiges ZIP.
                 </p>
                 <p className="muted small">
-                  Der Suchindex ist nicht enthalten und muss es nicht sein: PostgreSQL
-                  berechnet ihn beim Einspielen aus Titel und Text neu.
+                  Der Suchindex fehlt absichtlich: PostgreSQL berechnet ihn beim Einspielen neu.
                 </p>
 
                 <h3>Sicherung einspielen</h3>
@@ -2585,17 +2539,16 @@ export default function EinstellungenView() {
                 )}
                 {laeuft === "einspielen" && (
                   <p className="muted small">
-                    Läuft. Erst wird der jetzige Stand gesichert, dann eingespielt, dann die
-                    Anhänge geschrieben. Das Fenster bitte offen lassen.
+                    Läuft: erst Sicherung des jetzigen Standes, dann Einspielen, dann die Anhänge.
+                    Fenster offen lassen.
                   </p>
                 )}
                 {einspielErgebnis && <div className="hinweis-ok">{einspielErgebnis}</div>}
 
                 <h3>Regelmäßig sichern</h3>
                 <p className="muted small">
-                  Ein Knopf im Browser ist keine Sicherung, sondern eine Handlung. Für einen
-                  Zeitplan braucht ein Skript einen Weg herein, und einen Keks hat es nicht.
-                  Ein Losungswort ist dieser Weg.
+                  Für einen Zeitplan braucht ein Skript einen Weg herein, und einen Keks hat es
+                  nicht. Das Losungswort ist dieser Weg.
                 </p>
                 <div className="warnkasten">
                   <strong>Dieses Wort wiegt schwerer als jedes andere hier</strong>
@@ -2626,9 +2579,8 @@ export default function EinstellungenView() {
                 {sicherung.tokenGesetzt && (
                   <>
                     <p className="muted small">
-                      Fertiges Skript, mit dem Wort und der Adresse darin. Es prüft die Marke{" "}
-                      <code>FERTIG</code>, bevor es ein Archiv gelten lässt, und räumt Ältere
-                      nach vierzehn Tagen weg.
+                      Fertiges Skript mit Wort und Adresse. Prüft die Marke <code>FERTIG</code> und
+                      räumt Archive nach 14 Tagen weg.
                     </p>
                     <textarea className="konfig-feld" rows={14} readOnly value={sicherung.skript} />
                     <div className="knopfreihe">
@@ -2666,9 +2618,8 @@ export default function EinstellungenView() {
                     them for lost and writes them anew, of all things the ones
                     that are correct. */}
                 <p className="muted small">
-                  Zugangsdaten sind unkenntlich gemacht. Zeilen mit{" "}
-                  <code>********</code> bleiben beim Speichern unverändert; wer einen Wert ändern
-                  will, schreibt den neuen an diese Stelle.
+                  Zugangsdaten maskiert. Zeilen mit <code>********</code> bleiben beim Speichern
+                  unverändert; neuen Wert an diese Stelle schreiben.
                 </p>
                 <textarea
                   className="konfig-feld"
@@ -2714,8 +2665,8 @@ export default function EinstellungenView() {
                     Bekannte Schlüssel ({konfig.schluessel.length})
                   </summary>
                   <p className="muted small">
-                    Alles, was diese Fassung auswertet. Was hier nicht steht, wird beim Start
-                    stillschweigend übergangen.
+                    Alles, was diese Fassung auswertet. Unbekannte Schlüssel werden beim Start
+                    übergangen.
                   </p>
                   <div className="schluesselliste">
                     {konfig.schluessel.map((k) => (
@@ -2728,10 +2679,9 @@ export default function EinstellungenView() {
 
             <h3>Dienst neu starten</h3>
             <p className="muted small">
-              Nötig, damit Änderungen an der Konfigurationsdatei greifen: gelesen wird sie nur beim
-              Start. Betroffen ist <strong>allein dieser Dienst</strong> — die Oberfläche und die
-              Datenbank laufen in eigenen Containern weiter und werden nicht angefasst. Für die
-              Dauer des Starts, ein bis zwei Sekunden, antwortet die Anwendung nicht.
+              Nötig, damit Änderungen an der Konfigurationsdatei greifen — gelesen wird sie nur
+              beim Start. Betrifft <strong>allein diesen Dienst</strong>; Oberfläche und
+              Datenbank laufen weiter. 1–2 s ohne Antwort.
             </p>
             <p className="muted small">
               Der Dienst beendet sich selbst; hochgefahren wird er von dem, was ihn betreibt —
@@ -2754,14 +2704,12 @@ export default function EinstellungenView() {
               </button>
             </div>
             <p className="muted small">
-              Zur Bestätigung <code>neustart</code> eintippen. Ein Knopf, der beim
-              Danebenklicken den Dienst abschaltet, wäre an dieser Stelle falsch.
+              Zur Bestätigung <code>neustart</code> eintippen.
             </p>
 
             <h3>Papierkorb der Instanz</h3>
             <p className="muted small">
-              Löscht alle Seiten im Papierkorb endgültig — auch die anderer Konten. Der Papierkorb
-              eines Kontos bleibt davon unberührt nur, solange niemand ihn benutzt hat.
+              Löscht alle Seiten im Papierkorb endgültig, auch die anderer Konten.
             </p>
             <button className="btn" disabled={laeuft !== null} onClick={papierkorbLeeren}>
               {laeuft === "papierkorb" ? "Löscht…" : "Papierkorb endgültig leeren"}

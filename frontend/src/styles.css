@@ -3764,3 +3764,61 @@ textarea::placeholder {
   justify-content: space-between;
   margin-top: 4px;
 }
+
+/* ── Einstellungen: eckig und technisch ──────────────────────────────────────
+   Die Verwaltung ist kein Lesetext, sondern ein Schaltpult. Runde Ecken sagen
+   „Karte", rechte Winkel sagen „Feld", und ein Feld ist hier alles: jeder
+   Kasten steht fuer genau einen Wert, der an oder aus ist oder eine Zahl
+   traegt. Darum sind die Radien in diesem Bereich auf null gesetzt, und zwar
+   nur hier — im uebrigen Wiki bleibt es weich.
+
+   Alles ist auf .einstellungen-manager eingeschraenkt, damit dieselben Klassen
+   (.kachel, .pill, .btn) ausserhalb unveraendert bleiben. */
+.einstellungen-manager .einstellung,
+.einstellungen-manager .kachel,
+.einstellungen-manager .kennzahl,
+.einstellungen-manager .warnkasten,
+.einstellungen-manager .hinweis-ok,
+.einstellungen-manager .tonkachel,
+.einstellungen-manager .tonprobe,
+.einstellungen-manager .konfig-feld,
+.einstellungen-manager .konfig-schluessel,
+.einstellungen-manager .fuellstand,
+.einstellungen-manager .btn,
+.einstellungen-manager .pill,
+.einstellungen-manager .farbwaehler,
+.einstellungen-manager .einstellungen-nav-eintrag,
+.einstellungen-manager input[type="text"],
+.einstellungen-manager input[type="number"],
+.einstellungen-manager input[type="password"],
+.einstellungen-manager input[type="date"],
+.einstellungen-manager select,
+.einstellungen-manager textarea {
+  border-radius: 0;
+}
+/* Die Farbknoepfe bleiben Kreise: sie zeigen eine Farbe, keinen Zustand, und
+   ein Quadrat neben dem quadratischen Waehler waere nicht zu unterscheiden. */
+
+/* Der Schluessel steht so in config.conf und in der Tabelle. Wer hier etwas
+   umstellt, sucht spaeter danach — also gehoert er sichtbar an die Zeile und
+   nicht in die Dokumentation. */
+.einstellung-titel {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.einstellung-schluessel {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--muted);
+  background: var(--hover);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+}
+/* Zahlen in Tabellenziffern: in den Kacheln stehen sie untereinander, und dort
+   soll die Spalte stehen, nicht die einzelne Ziffer wackeln. */
+.einstellungen-manager .kachel-wert {
+  font-variant-numeric: tabular-nums;
+}
