@@ -25,8 +25,9 @@ import (
 )
 
 // Einstellung describes one setting for the interface: what it is called, what
-// it means, and what happens at the extremes. The descriptions travel to the
-// browser so the page does not carry its own copy that drifts.
+// it means, and what can go wrong. The descriptions travel to the
+// browser so the page does not carry its own copy that drifts. Short lines on
+// purpose: the settings page is a switchboard, not a manual.
 type Einstellung struct {
 	Schluessel   string `json:"schluessel"`
 	Wert         string `json:"wert"`
@@ -52,65 +53,65 @@ var bekannt = map[string]struct {
 	"sicherung_token": {
 		Art:        "text",
 		Titel:      "Losungswort für die Sicherung",
-		Erklaerung: "Leer heißt: die Sicherung gibt es nur aus dem Panel heraus, mit Anmeldung. Gesetzt heißt: ein Skript kann sie abholen, indem es dieses Wort mitschickt.",
-		Warnung:    "Dieses Wort wiegt schwerer als jedes andere hier: es gibt den gesamten Bestand heraus, samt Passwort-Hashes und Freigabe-Tokens. Verwaltet wird es unter Wartung.",
+		Erklaerung: "Leer: Sicherung nur über das Panel, mit Anmeldung. Gesetzt: Abruf per Skript mit diesem Wort.",
+		Warnung:    "Gibt den gesamten Bestand heraus, samt Passwort-Hashes und Freigabe-Tokens. Verwaltung unter Wartung.",
 	},
 	"registrierung_offen": {
 		Art:        "janein",
 		Titel:      "Selbstregistrierung",
-		Erklaerung: "Darf sich jeder mit der Adresse dieser Instanz ein Konto anlegen? Steht sie aus, legen nur Administratoren Konten an.",
-		Warnung:    "Für eine Firmeninstanz gehört das aus. Sonst kann sich jeder eintragen, der die Adresse kennt.",
+		Erklaerung: "An: jeder mit der Adresse legt sich ein Konto an. Aus: nur Administratoren.",
+		Warnung:    "Für eine Firmeninstanz aus.",
 	},
 	"erlaubte_domaenen": {
 		Art:        "liste",
 		Titel:      "Erlaubte E-Mail-Domänen",
-		Erklaerung: "Kommagetrennt. Leer heißt: keine Einschränkung. Wirkt auf die Selbstregistrierung, nicht auf Konten, die ein Administrator anlegt.",
+		Erklaerung: "Kommagetrennt, leer = keine Einschränkung. Greift nur bei der Selbstregistrierung.",
 	},
 	"max_anhang_mb": {
 		Art:        "zahl",
 		Titel:      "Größte Datei je Anhang (MB)",
-		Erklaerung: "Die eigentliche Grenze ist der Platz auf der Platte hinter dem Datenverzeichnis.",
-		Warnung:    "Der nginx davor hat eine eigene Grenze. Ein hier erhöhter Wert bringt nichts, solange client_max_body_size im vorgeschalteten nginx kleiner ist: der bricht die Übertragung schon ab, bevor Nexora sie überhaupt sieht. Was von beidem wirklich gilt, sagt die Messung weiter unten.",
+		Erklaerung: "Harte Grenze bleibt der Platz hinter dem Datenverzeichnis.",
+		Warnung:    "nginx client_max_body_size davor bricht früher ab. Es gilt der kleinere Wert; die Messung unten zeigt, welcher.",
 	},
 	"sitzung_stunden": {
 		Art:        "zahl",
 		Titel:      "Gültigkeit einer Anmeldung (Stunden)",
-		Erklaerung: "Eine Sitzung, die benutzt wird, verlängert sich selbst, sobald die Hälfte der Zeit verstrichen ist. Wer täglich arbeitet, wird also nicht abgemeldet; wer wegbleibt, schon.",
-		Warnung:    "Wirkt auf neue und auf verlängerte Sitzungen. Bereits offene behalten ihre Frist bis zur nächsten Verlängerung.",
+		Erklaerung: "Sitzung verlängert sich bei Nutzung ab der halben Laufzeit.",
+		Warnung:    "Gilt für neue und verlängerte Sitzungen; offene behalten ihre Frist.",
 	},
 	"papierkorb_tage": {
 		Art:        "zahl",
 		Titel:      "Papierkorb leert sich nach (Tagen)",
-		Erklaerung: "0 heißt: nie von selbst. Gilt für die ganze Instanz und läuft stündlich; gelöschte Seiten verschwinden dann endgültig, samt ihrer Anhänge.",
-		Warnung:    "Endgültig heißt endgültig. Danach hilft nur noch eine Sicherung der Datenbank.",
+		Erklaerung: "0 = nie. Stündlicher Lauf, instanzweit, samt Anhängen.",
+		Warnung:    "Endgültig. Danach nur noch über eine Sicherung der Datenbank.",
 	},
 	"such_woerterbuch": {
 		Art:        "text",
 		Titel:      "Wörterbuch der Volltextsuche",
-		Erklaerung: "german, english oder simple. simple stemmt gar nicht und trifft dafür in keiner Sprache daneben.",
-		Warnung:    "Eine Änderung wirkt erst nach einem Neuaufbau des Suchindex. Die Spalte wurde mit dem alten Wörterbuch erzeugt.",
+		Erklaerung: "german, english oder simple. simple stemmt nicht.",
+		Warnung:    "Wirkt erst nach Neuaufbau des Suchindex.",
 	},
 	"echtzeit": {
 		Art:        "janein",
 		Titel:      "Gemeinsames Bearbeiten",
-		Erklaerung: "Mehrere Konten schreiben gleichzeitig an derselben Seite, jeder sieht die Änderungen der anderen sofort. Wer mitschreiben darf, entscheidet die Freigabe der Seite: nur wer sie bearbeiten darf.",
-		Warnung:    "Aus heißt nicht abgeschaltet, sondern zurück auf das alte Verhalten: die Seite wird beim Speichern ganz geschrieben, und wer zuletzt speichert, gewinnt. Der Hinweis auf den Konflikt bleibt.",
+		Erklaerung: "Mehrere Konten schreiben gleichzeitig, Änderungen sofort sichtbar. Rechte kommen aus der Freigabe der Seite.",
+		Warnung:    "Aus = ganze Seite beim Speichern schreiben, letzter Schreiber gewinnt.",
 	},
 	"seitenbreite": {
 		Art:        "auswahl",
 		Titel:      "Breite einer Seite",
-		Erklaerung: "Wie breit der Text steht, wenn eine Seite nichts eigenes sagt. „voll“ nutzt das ganze Fenster, „normal“ hält einen schmalen Satzspiegel wie in einem Buch.",
-		Warnung:    "Eine Seite, an der jemand die Breite selbst gesetzt hat, behält sie. Diese Angabe gilt für alle übrigen.",
+		Erklaerung: "Vorgabe für Seiten ohne eigene Angabe. voll = ganzes Fenster, normal = schmaler Satzspiegel.",
+		Warnung:    "Seiten mit eigener Breite bleiben unberührt.",
 	},
 	"design_grundton": {
 		Art:        "auswahl",
 		Titel:      "Grundton",
-		Erklaerung: "Gilt für alle Konten dieser Instanz, nicht nur für das eigene.",
+		Erklaerung: "Instanzweit, nicht je Konto.",
 	},
 	"design_akzent": {
 		Art:        "farbe",
 		Titel:      "Akzentfarbe",
-		Erklaerung: "Wird für Verknüpfungen, ausgewählte Einträge und Knöpfe benutzt.",
+		Erklaerung: "Verknüpfungen, ausgewählte Einträge, Knöpfe.",
 	},
 }
 
