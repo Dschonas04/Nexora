@@ -3773,7 +3773,11 @@ textarea::placeholder {
    nur hier — im uebrigen Wiki bleibt es weich.
 
    Alles ist auf .einstellungen-manager eingeschraenkt, damit dieselben Klassen
-   (.kachel, .btn) ausserhalb unveraendert bleiben.
+   (.kachel, .kennzahl) ausserhalb unveraendert bleiben.
+
+   Die Knoepfe (.btn) sind ausgenommen und ueberall gleich rund. Sie sind das
+   eine Stueck, das man auf jeder Seite wiedererkennt; zwei Formen fuer
+   denselben Knopf, je nachdem wo man steht, waere eine Naht ohne Gewinn.
 
    Die Marken (.pill) bleiben aussen vor: dort traegt die Ecke schon eine
    Bedeutung — rund heisst Etikett, fast eckig heisst Zustand (siehe .pill.frei).
@@ -3788,7 +3792,6 @@ textarea::placeholder {
 .einstellungen-manager .konfig-feld,
 .einstellungen-manager .konfig-schluessel,
 .einstellungen-manager .fuellstand,
-.einstellungen-manager .btn,
 .einstellungen-manager .farbwaehler,
 .einstellungen-manager .einstellungen-nav-eintrag,
 .einstellungen-manager input[type="text"],
