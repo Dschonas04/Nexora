@@ -1998,87 +1998,111 @@ textarea::placeholder {
 .einstellung,
 .kachel,
 .warnkasten,
-.tonkachel {
-  background: var(--flaeche);
-}
+/* Palette als Tabelle.
 
-/* Grundton-Auswahl */
-.tonauswahl {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 10px;
+   Vorher standen hier drei Kacheln mit Fliesstext und eine Reihe runder
+   Farbpunkte. Die Punkte zeigten die Farbe und sonst nichts: nicht ihren Wert,
+   nicht was sie traegt, und vor allem nicht, ob Schrift darauf noch lesbar
+   bleibt. Genau das entscheidet aber, ob eine Hausfarbe brauchbar ist. In
+   Spalten steht es nebeneinander und laesst sich vergleichen. */
+.palette-tabelle td,
+.palette-tabelle th {
+  vertical-align: middle;
 }
-.tonkachel {
-  flex: 1 1 200px;
-  text-align: left;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
+.palette-tabelle tbody tr {
   cursor: pointer;
-  color: inherit;
-  font: inherit;
 }
-.tonkachel:hover {
-  border-color: var(--muted);
+.palette-tabelle tbody tr:hover {
+  background: var(--hover);
 }
-/* The choice made is marked by a stronger border, not by a coloured ring; the
-   tile already shows a colour, and two colours side by side say less than
-   one. */
-.tonkachel.gewaehlt {
-  border-color: var(--text);
+/* Die gewaehlte Zeile traegt einen Balken an der Kante statt einer Flaeche:
+   eine eingefaerbte Zeile haette mit den Farbproben darin um dieselbe Aussage
+   gestritten. */
+.palette-tabelle tbody tr.gewaehlt {
+  box-shadow: inset 3px 0 0 var(--accent);
 }
-.tonkachel-titel {
-  display: block;
-  font-weight: 600;
-  font-size: 14px;
-  margin-top: 8px;
+.palette-wahl {
+  width: 28px;
+  padding-right: 0;
 }
-.tonkachel-text {
-  display: block;
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.45;
-  margin-top: 2px;
-}
-/* The sample shows the tone instead of describing it: two stripes for ground
-   and surface, so that the difference between white and greyed becomes visible
-   too, which is hard to put into words. */
-.tonprobe {
-  display: block;
-  height: 34px;
-  border-radius: 5px;
-  border: 1px solid var(--border);
-}
-.tonprobe.ton-weiss {
-  background: linear-gradient(to right, #ffffff 60%, #fbfbfa 60%);
-}
-.tonprobe.ton-grau {
-  background: linear-gradient(to right, #f7f7f6 60%, #efefed 60%);
-}
-.tonprobe.ton-dunkel {
-  background: linear-gradient(to right, #1f1f1e 60%, #191918 60%);
-}
-
-/* Akzentfarbe */
-.farbauswahl {
-  display: flex;
+.marke-zelle {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
+}
+.marke-probe {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 1px solid var(--border);
+}
+/* Die Probe traegt die Schrift, um die es in der Spalte geht -- ein Kaestchen
+   mit "Aa" beantwortet die Frage schneller als die Zahl daneben. */
+.marke-probe.schriftprobe {
+  width: 30px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.palette-urteil {
+  font-size: 12px;
+  font-weight: 600;
+}
+.palette-urteil.knapp {
+  color: var(--lesen-text, #9a6700);
+}
+.palette-urteil.schlecht {
+  color: var(--fehler-text, #cf222e);
+}
+
+/* Eine Hausfarbe kommt als Hexwert aus einem Handbuch, nicht aus dem Farbrad
+   des Betriebssystems. Deshalb das Feld voran, der Waehler daneben. */
+.akzent-eigen {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+.akzent-eigen label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.hex-feld {
+  width: 110px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-transform: lowercase;
+}
+
+/* Die Bauteile, die --accent wirklich tragen. */
+.wirkprobe {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   flex-wrap: wrap;
   margin-top: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg);
 }
-.farbknopf {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  cursor: pointer;
-  padding: 0;
+.wirkprobe-verweis {
+  color: var(--accent-lesbar);
+  text-decoration: underline;
+  font-size: 13px;
 }
-.farbknopf.gewaehlt {
-  border-color: var(--text);
+.wirkprobe-zeile {
+  font-size: 13px;
+  padding: 4px 10px;
+  color: var(--accent-lesbar);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-left: 2px solid var(--accent);
 }
+
 .farbwaehler {
   width: 40px;
   height: 30px;
@@ -3787,8 +3811,8 @@ textarea::placeholder {
 .einstellungen-manager .kennzahl,
 .einstellungen-manager .warnkasten,
 .einstellungen-manager .hinweis-ok,
-.einstellungen-manager .tonkachel,
-.einstellungen-manager .tonprobe,
+.einstellungen-manager .marke-probe,
+.einstellungen-manager .wirkprobe,
 .einstellungen-manager .konfig-feld,
 .einstellungen-manager .konfig-schluessel,
 .einstellungen-manager .fuellstand,
@@ -3802,9 +3826,6 @@ textarea::placeholder {
 .einstellungen-manager textarea {
   border-radius: 0;
 }
-/* Die Farbknoepfe bleiben Kreise: sie zeigen eine Farbe, keinen Zustand, und
-   ein Quadrat neben dem quadratischen Waehler waere nicht zu unterscheiden. */
-
 /* Der Schluessel steht so in config.conf und in der Tabelle. Wer hier etwas
    umstellt, sucht spaeter danach — also gehoert er sichtbar an die Zeile und
    nicht in die Dokumentation. */
@@ -3834,4 +3855,103 @@ textarea::placeholder {
 .einstellung-schluessel.umgebung {
   background: none;
   border-style: dashed;
+}
+
+/* Lizenz-Kopfband.
+
+   Vorher standen Inhaber, Laufzeit und Umfang als drei Zeilen einer
+   Zwei-Spalten-Tabelle. Eine Tabelle mit drei Zeilen ist keine Tabelle, sie ist
+   eine Liste mit Linien drum herum. Nebeneinander in einem Band steht dasselbe
+   in einem Blick, und der Zustand steht vorne statt in einer Zelle. */
+.lizenz-kopf {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--erfolg-text, #2ea043);
+  background: var(--flaeche);
+}
+.lizenz-kopf.ungueltig {
+  border-left-color: var(--fehler-text, #cf222e);
+}
+.lizenz-marke {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.lizenz-punkt {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: var(--erfolg-text, #2ea043);
+}
+.lizenz-kopf.ungueltig .lizenz-punkt {
+  background: var(--fehler-text, #cf222e);
+}
+.lizenz-felder {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+.lizenz-feldname {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.lizenz-feldwert {
+  display: block;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+/* Funktionsmatrix: Zeilen sind Funktionen, Spalten Stufen. */
+.matrix-tabelle .matrix-zelle,
+.matrix-tabelle .matrix-spalte {
+  text-align: center;
+  width: 96px;
+}
+/* Die laufende Stufe bekommt eine eigene Flaeche. Ohne sie muss man die
+   Spaltenkoepfe lesen, um zu wissen, welche Haken gerade gelten. */
+.matrix-tabelle .laufend {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.matrix-tabelle th.laufend {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+/* Ein gesetztes Quadrat statt eines Hakens: dieselbe Aussage, und es faellt in
+   einer Spalte aus zwanzig Zeilen als Muster auf, statt gelesen zu werden. */
+.matrix-ja {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  background: var(--text);
+}
+.zustand-frei {
+  font-weight: 600;
+}
+
+/* Kopf einer Liste: Ueberschrift links, Filter rechts. */
+.listenkopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.listenkopf h3 {
+  margin-bottom: 0;
+}
+.listenfilter {
+  min-width: 260px;
+  font-size: 13px;
 }

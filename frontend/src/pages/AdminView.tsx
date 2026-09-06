@@ -26,6 +26,9 @@ export default function AdminView() {
   const [err, setErr] = useState("");
   const [hinweis, setHinweis] = useState("");
   const [busy, setBusy] = useState(false);
+  // Ein Filter statt einer Suche im Browser. Ab etwa zwanzig Konten ist das
+  // Blaettern durch die Tabelle laenger als das Tippen von drei Buchstaben.
+  const [filter, setFilter] = useState("");
 
   const refresh = () => api.listUsers().then(setUsers).catch(() => setUsers([]));
   useEffect(() => {
@@ -119,11 +122,19 @@ export default function AdminView() {
     refresh();
   };
 
+  const suche = filter.trim().toLowerCase();
+  const sichtbar = suche
+    ? users.filter((u) =>
+        [u.name, u.email, u.benutzername].some((f) => (f ?? "").toLowerCase().includes(suche)),
+      )
+    : users;
+
   return (
     <>
       <h3>Nutzer &amp; Rollen</h3>
       <p className="muted small">
-        Administratoren können jede Seite im Arbeitsbereich lesen und bearbeiten.
+        Administratoren können jede Seite im Arbeitsbereich lesen und bearbeiten. Rollen
+        gelten sofort; eine laufende Sitzung wird dafür nicht beendet.
       </p>
 
       <h3>Konto anlegen</h3>
@@ -173,7 +184,24 @@ export default function AdminView() {
 
       {hinweis && <div className="hinweis-ok">{hinweis}</div>}
 
-      <h3>Vorhandene Konten</h3>
+      {/* Die Zahlen stehen an der Ueberschrift, weil eine Verwaltung sie
+          ohnehin zaehlt, sobald sie die Tabelle sieht. */}
+      <div className="listenkopf">
+        <h3>
+          Vorhandene Konten
+          <span className="muted small">
+            {" "}
+            {users.length} gesamt · {users.filter((u) => u.role === "admin").length} mit
+            Verwaltungsrecht
+          </span>
+        </h3>
+        <input
+          className="listenfilter"
+          placeholder="Filtern nach Name, Adresse, Anmeldename"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
+      </div>
       <div className="tabelle-rollen">
         <table className="tabelle konten-tabelle">
           <thead>
@@ -182,11 +210,12 @@ export default function AdminView() {
               <th>E-Mail</th>
               <th>Anmeldename</th>
               <th>Rolle</th>
+              <th>Angelegt</th>
               <th />
             </tr>
           </thead>
           <tbody>
-            {users.map((u) => (
+            {sichtbar.map((u) => (
               <tr key={u.id}>
                 <td>
                   {u.name}
@@ -210,6 +239,9 @@ export default function AdminView() {
                     <option value="user">Nutzer</option>
                     <option value="admin">Admin</option>
                   </select>
+                </td>
+                <td className="muted einzeilig">
+                  {u.createdAt ? new Date(u.createdAt).toLocaleDateString("de-DE") : ""}
                 </td>
                 <td className="zeilen-aktionen">
                   <button className="btn-schlicht" onClick={() => setBenutzernameVon(u)}>
@@ -241,10 +273,12 @@ export default function AdminView() {
                 </td>
               </tr>
             ))}
-            {users.length === 0 && (
+            {sichtbar.length === 0 && (
               <tr>
-                <td colSpan={5} className="muted">
-                  Noch kein Konto angelegt.
+                <td colSpan={6} className="muted">
+                  {users.length === 0
+                    ? "Noch kein Konto angelegt."
+                    : "Kein Konto passt auf den Filter."}
                 </td>
               </tr>
             )}

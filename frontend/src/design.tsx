@@ -27,7 +27,7 @@ const Ctx = createContext<{ design: Design; neuLaden: () => void }>({
 // The ground the accent lands on, per base tone. Has to match the values in
 // styles.css; repeating them here is not pretty, but the alternative would be to
 // read them from the stylesheet at runtime, and that costs more than it brings.
-const GRUND: Record<string, string> = {
+export const GRUND: Record<string, string> = {
   weiss: "#ffffff",
   grau: "#f7f7f6",
   dunkel: "#1f1f1e",
