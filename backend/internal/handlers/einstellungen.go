@@ -36,7 +36,8 @@ type Einstellung struct {
 	Erklaerung   string `json:"erklaerung"`
 	Warnung      string `json:"warnung,omitempty"`
 	Vorgabe      string `json:"vorgabe"`
-	AusDatei     bool   `json:"ausDatei"` // true: value still comes from config.conf
+	Umgebung     string `json:"umgebung,omitempty"` // env var that overrides this key at start
+	AusDatei     bool   `json:"ausDatei"`           // true: value still comes from config.conf
 	GeaendertVon string `json:"geaendertVon,omitempty"`
 	GeaendertAm  string `json:"geaendertAm,omitempty"`
 }
@@ -53,66 +54,78 @@ var bekannt = map[string]struct {
 	"sicherung_token": {
 		Art:        "text",
 		Titel:      "Losungswort für die Sicherung",
-		Erklaerung: "Leer: Sicherung nur über das Panel, mit Anmeldung. Gesetzt: Abruf per Skript mit diesem Wort.",
-		Warnung:    "Gibt den gesamten Bestand heraus, samt Passwort-Hashes und Freigabe-Tokens. Verwaltung unter Wartung.",
+		Erklaerung: "Leer: Sicherung nur aus dem Panel, mit Anmeldung. Gesetzt: GET /api/system/sicherung nimmt statt der Sitzung dieses Wort an.",
+		Warnung:    "Der Strom enthält den vollständigen Bestand: Passwort-Hashes, Freigabe-Tokens, Anhänge. Gesetzt und verwaltet unter Wartung.",
 	},
 	"registrierung_offen": {
 		Art:        "janein",
 		Titel:      "Selbstregistrierung",
-		Erklaerung: "An: jeder mit der Adresse legt sich ein Konto an. Aus: nur Administratoren.",
-		Warnung:    "Für eine Firmeninstanz aus.",
+		Erklaerung: "An: POST /api/auth/register steht offen. Aus: 403, Konten legt nur ein Administrator an. Das allererste Konto entsteht in beiden Fällen und wird Administrator.",
+		Warnung:    "Für eine erreichbare Instanz aus, sonst genügt die Adresse zum Anlegen eines Kontos.",
 	},
 	"erlaubte_domaenen": {
 		Art:        "liste",
 		Titel:      "Erlaubte E-Mail-Domänen",
-		Erklaerung: "Kommagetrennt, leer = keine Einschränkung. Greift nur bei der Selbstregistrierung.",
+		Erklaerung: "Kommagetrennt, verglichen wird der Teil hinter dem @ auf Gleichheit, in Kleinbuchstaben. Leer = keine Prüfung. Greift nur bei der Selbstregistrierung, nicht bei LDAP, SSO oder angelegten Konten.",
 	},
 	"max_anhang_mb": {
 		Art:        "zahl",
 		Titel:      "Größte Datei je Anhang (MB)",
-		Erklaerung: "Harte Grenze bleibt der Platz hinter dem Datenverzeichnis.",
-		Warnung:    "nginx client_max_body_size davor bricht früher ab. Es gilt der kleinere Wert; die Messung unten zeigt, welcher.",
+		Erklaerung: "Grenze je einzelner Datei, geprüft beim Hochladen. Darüber liegt der Platz hinter dem Datenverzeichnis oder im Eimer.",
+		Warnung:    "In der Kette gilt der kleinste Wert. client_max_body_size im vorgeschalteten nginx bricht die Übertragung ab, bevor Nexora sie sieht. Die Messung unten ermittelt, was wirklich durchkommt.",
 	},
 	"sitzung_stunden": {
 		Art:        "zahl",
 		Titel:      "Gültigkeit einer Anmeldung (Stunden)",
-		Erklaerung: "Sitzung verlängert sich bei Nutzung ab der halben Laufzeit.",
-		Warnung:    "Gilt für neue und verlängerte Sitzungen; offene behalten ihre Frist.",
+		Erklaerung: "Laufzeit einer Zeile in der Tabelle sitzungen und des dazugehörigen JWT. Ab der Hälfte der Laufzeit setzt der nächste Aufruf beides neu, samt Keks.",
+		Warnung:    "Wirkt auf neu angelegte und auf verlängerte Sitzungen. Bereits offene behalten ihre Frist bis zur nächsten Verlängerung.",
 	},
 	"papierkorb_tage": {
 		Art:        "zahl",
 		Titel:      "Papierkorb leert sich nach (Tagen)",
-		Erklaerung: "0 = nie. Stündlicher Lauf, instanzweit, samt Anhängen.",
-		Warnung:    "Endgültig. Danach nur noch über eine Sicherung der Datenbank.",
+		Erklaerung: "Frist ab dem Löschen. 0 = kein Ablauf. Ein Lauf je Stunde, instanzweit, entfernt Seite, Versionen und Anhänge.",
+		Warnung:    "Löscht endgültig, ohne Rückfrage. Wiederherstellung nur aus einer Sicherung der Datenbank.",
 	},
 	"such_woerterbuch": {
 		Art:        "text",
 		Titel:      "Wörterbuch der Volltextsuche",
-		Erklaerung: "german, english oder simple. simple stemmt nicht.",
-		Warnung:    "Wirkt erst nach Neuaufbau des Suchindex.",
+		Erklaerung: "PostgreSQL-Textsuchkonfiguration für to_tsvector: german, english oder simple. simple stemmt nicht und trifft dafür in keiner Sprache daneben.",
+		Warnung:    "Die Spalte ist mit dem alten Wörterbuch erzeugt. Erst ein Neuaufbau des Suchindex stellt sie um.",
 	},
 	"echtzeit": {
 		Art:        "janein",
 		Titel:      "Gemeinsames Bearbeiten",
-		Erklaerung: "Mehrere Konten schreiben gleichzeitig, Änderungen sofort sichtbar. Rechte kommen aus der Freigabe der Seite.",
-		Warnung:    "Aus = ganze Seite beim Speichern schreiben, letzter Schreiber gewinnt.",
+		Erklaerung: "Änderungen laufen als einzelne Schritte über WebSocket, jeder Reiter sieht sie sofort. Schreibrecht kommt aus der Freigabe der Seite.",
+		Warnung:    "Aus = die Seite wird beim Speichern vollständig geschrieben, der letzte Schreiber gewinnt. Die Konflikterkennung bleibt.",
 	},
 	"seitenbreite": {
 		Art:        "auswahl",
 		Titel:      "Breite einer Seite",
-		Erklaerung: "Vorgabe für Seiten ohne eigene Angabe. voll = ganzes Fenster, normal = schmaler Satzspiegel.",
-		Warnung:    "Seiten mit eigener Breite bleiben unberührt.",
+		Erklaerung: "Vorgabe für Seiten ohne eigene Angabe. voll = ganze Fensterbreite, normal = fester Satzspiegel.",
+		Warnung:    "Seiten mit eigenem Wert behalten ihn.",
 	},
 	"design_grundton": {
 		Art:        "auswahl",
 		Titel:      "Grundton",
-		Erklaerung: "Instanzweit, nicht je Konto.",
+		Erklaerung: "Setzt die Farbtafel im Stylesheet, instanzweit für alle Konten. Kein Wert je Konto.",
 	},
 	"design_akzent": {
 		Art:        "farbe",
 		Titel:      "Akzentfarbe",
-		Erklaerung: "Verknüpfungen, ausgewählte Einträge, Knöpfe.",
+		Erklaerung: "Hexwert für --akzent: Verknüpfungen, ausgewählte Einträge, Knöpfe.",
 	},
+}
+
+// umgebungsname maps a setting to the environment variable that overrides it at
+// start. Only the keys that config.go actually reads are in here — naming one
+// that is never read would send someone hunting for an effect that cannot
+// happen. What is missing lives in the database alone.
+var umgebungsname = map[string]string{
+	"registrierung_offen": "NEXORA_REGISTRIERUNG_OFFEN",
+	"erlaubte_domaenen":   "NEXORA_ERLAUBTE_DOMAENEN",
+	"max_anhang_mb":       "NEXORA_MAX_ANHANG_MB",
+	"sitzung_stunden":     "NEXORA_SESSION_HOURS",
+	"such_woerterbuch":    "NEXORA_SUCH_WOERTERBUCH",
 }
 
 // grundtoene are the permitted values for design_grundton. A fixed list rather
@@ -360,6 +373,7 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 			Erklaerung: b.Erklaerung,
 			Warnung:    b.Warnung,
 			Vorgabe:    ausDatei(k, basis),
+			Umgebung:   umgebungsname[k],
 			AusDatei:   !gesetzt[k],
 		}
 		if a, ok := art[k]; ok {

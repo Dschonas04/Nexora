@@ -904,6 +904,11 @@ export default function EinstellungenView() {
             <div className="einstellung-titel">
               {e.titel}
               <code className="einstellung-schluessel">{e.schluessel}</code>
+              {e.umgebung && (
+                <code className="einstellung-schluessel umgebung" title="Umgebungsvariable, gelesen beim Start">
+                  {e.umgebung}
+                </code>
+              )}
             </div>
             <div className="einstellung-erklaerung">{e.erklaerung}</div>
             {e.warnung && <div className="einstellung-warnung">{e.warnung}</div>}
@@ -985,7 +990,8 @@ export default function EinstellungenView() {
           <>
             <h3>Angemeldete Geräte</h3>
             <p className="muted small">
-              Eine Zeile je Sitzung, einzeln beendbar. Verlängerung ab der halben Laufzeit.
+              Eine Zeile je Sitzung in der Tabelle sitzungen, jede einzeln widerrufbar. Ab
+              der halben Laufzeit setzt der nächste Aufruf Frist und Keks neu.
             </p>
             {sitzungen === null ? (
               <p className="muted">Wird geladen…</p>
@@ -1168,8 +1174,8 @@ export default function EinstellungenView() {
             {feld("echtzeit")}
             {zusammen && !zusammen.lizenziert && (
               <p className="muted small">
-                Nicht in der Lizenz enthalten. Der Schalter greift, sobald ein Schlüssel ihn
-                freischaltet.
+                Die eingespielte Lizenz enthält echtzeit nicht. Der Schalter bleibt wirkungslos,
+                bis ein Schlüssel die Funktion freischaltet.
               </p>
             )}
 
@@ -1205,8 +1211,9 @@ export default function EinstellungenView() {
               </table>
             )}
             <p className="muted small">
-              Momentaufnahme. Wer wann was geschrieben hat: Versionsverlauf der Seite, mit
-              Lizenz zusätzlich das Protokoll.
+              Momentaufnahme der offenen Verbindungen, nichts davon wird festgehalten. Wer
+              wann was geschrieben hat, steht im Versionsverlauf der Seite und, mit
+              Lizenz, im Protokoll.
             </p>
           </>
         );
@@ -1222,7 +1229,8 @@ export default function EinstellungenView() {
 
             <h3>Administratoren</h3>
             <p className="muted small">
-              Lesen und Bearbeiten auf allen Seiten, auch fremden.
+              Rolle admin: Lesen und Bearbeiten auf jeder Seite, unabhängig von der
+              Freigabe.
             </p>
             <table className="tabelle">
               <tbody>
@@ -1299,8 +1307,8 @@ export default function EinstellungenView() {
 
             <h3>Herkunft</h3>
             <p className="muted small">
-              Adressen der letzten 7 Tage, meiste Fehlversuche zuerst. Muster: eine Adresse
-              gegen viele Konten.
+              Adressen der letzten sieben Tage, nach Fehlversuchen absteigend. Das gesuchte
+              Muster ist eine Adresse gegen viele verschiedene Konten.
             </p>
             <div className="tabelle-rollen">
               <table className="tabelle">
@@ -1422,7 +1430,8 @@ export default function EinstellungenView() {
               </table>
             </div>
             <p className="muted small">
-              Höchstens 300 Zeilen. Ältere Einträge bleiben im Protokoll.
+              Höchstens 300 Zeilen je Abfrage. Ältere Versuche bleiben im Protokoll und
+              werden nicht gelöscht.
             </p>
           </>
         );
@@ -1445,8 +1454,9 @@ export default function EinstellungenView() {
           <>
             <h3>Einrichtung</h3>
             <p className="muted small">
-              Aus <code>config.conf</code>, hier nur lesbar. Geändert wird unter Wartung,
-              wirksam nach Neustart.
+              Aus <code>config.conf</code>, hier nur lesbar. Ein Passwort für das Dienstkonto
+              gehört in die Datei und nicht in eine Datenbankzeile, die jeder Dump
+              mitnimmt. Geändert wird unter Wartung, wirksam nach einem Neustart.
             </p>
             <table className="tabelle uebersicht-tabelle">
               <tbody>
@@ -1621,7 +1631,9 @@ export default function EinstellungenView() {
               </tbody>
             </table>
             <p className="muted small">
-              Zeilenzahl ist eine Schätzung aus der PostgreSQL-Statistik, nicht gezählt.
+              Die Zeilenzahl kommt aus <code>pg_stat_user_tables.n_live_tup</code>, ist also
+              geschätzt und nicht gezählt. Nach vielen Änderungen liegt sie daneben, bis
+              ANALYZE lief.
             </p>
           </>
         );
@@ -1741,8 +1753,10 @@ export default function EinstellungenView() {
 
             <h3>Objektspeicher prüfen</h3>
             <p className="muted small">
-              Wird nicht gespeichert, nur für den Test benutzt. Geheime Schlüssel gehören in{" "}
-              <code>config.conf</code> oder in die Umgebung.
+              Hier wird nichts gespeichert; die Zugangsdaten bleiben im Formular und gelten
+              nur für diesen Test. Ein geheimer Schlüssel gehört in <code>config.conf</code>
+              {" "}oder in die Umgebung, nicht in eine Datenbankzeile, die jeder Dump
+              mitnimmt.
             </p>
             <div className="einstellung">
               <div className="s3-felder">
@@ -1819,7 +1833,8 @@ export default function EinstellungenView() {
           <>
             <h3>Grundton</h3>
             <p className="muted small">
-              Instanzweit. Auswahl wird sofort angezeigt, beim Anklicken gespeichert.
+              Gilt für alle Konten dieser Instanz. Die Auswahl wird sofort angezeigt und beim
+              Anklicken gespeichert.
             </p>
             <div className="tonauswahl">
               {GRUNDTOENE.map((g) => (
@@ -1843,7 +1858,10 @@ export default function EinstellungenView() {
             {grundton && herkunft(grundton)}
 
             <h3>Akzentfarbe</h3>
-            <p className="muted small">Verknüpfungen, ausgewählte Einträge, Knöpfe.</p>
+            <p className="muted small">
+              Wird als <code>--akzent</code> gesetzt: Verknüpfungen, ausgewählte Einträge,
+              Knöpfe.
+            </p>
             <div className="farbauswahl">
               {AKZENTE.map((a) => (
                 <button
@@ -1944,8 +1962,9 @@ export default function EinstellungenView() {
             )}
             <h3>Stufen</h3>
             <p className="muted small">
-              Jede Stufe enthält die kleineren. Geprüft wird die einzelne Funktion, nie die
-              Stufe.
+              Jede Stufe enthält die kleineren. Geprüft wird immer die einzelne Funktion und
+              nie die Stufe — deshalb kann ein Schlüssel eine Stufe und zusätzlich
+              einzelne Funktionen tragen.
             </p>
             <table className="tabelle">
               <thead>
@@ -2028,8 +2047,9 @@ export default function EinstellungenView() {
                   </button>
                 </div>
                 <p className="muted small">
-                  Ohne Datum ein Jahr, mehr wird nicht ausgestellt. Prüfung offline, also kein
-                  Rückruf — nur das Ablaufdatum.
+                  Ohne Datum gilt ein Jahr, länger wird nicht ausgestellt. Geprüft wird offline,
+                  ohne Rückfrage beim Herausgeber; ein ausgegebener Schlüssel lässt sich
+                  deshalb nicht zurückrufen, das Ablaufdatum ist der einzige Hebel.
                 </p>
                 {ausgestellt && (
                   <textarea className="konfig-feld" rows={3} readOnly value={ausgestellt} />
@@ -2210,8 +2230,9 @@ export default function EinstellungenView() {
 
             <h3>Verbund</h3>
             <p className="muted small">
-              Dienste, mit denen Nexora spricht, samt Antwortzeit. Die übrigen Container des
-              Verbunds fehlen: dafür bräuchte es den Steuerkanal von Docker.
+              Die Dienste, mit denen Nexora spricht, samt Antwortzeit. Die übrigen Container
+              des Verbunds fehlen: sichtbar wären sie nur über den Steuerkanal von Docker,
+              und wer den hat, kann auf dem Wirt alles.
             </p>
             <div className="tabelle-rollen">
               <table className="tabelle verbund-tabelle">
@@ -2267,8 +2288,9 @@ export default function EinstellungenView() {
 
             <h3>Eigene Rechner</h3>
             <p className="muted small">
-              Adressen, bei denen diese Instanz selbst anklopft. Kein Agent, kein Zugang zum
-              fremden Rechner.
+              Adressen, an denen diese Instanz selbst einen TCP-Verbindungsversuch macht.
+              Kein Agent auf der Gegenseite, kein Zugang zum fremden Rechner — was hier
+              steht, hat Nexora selbst gesehen.
             </p>
             <p className="muted small">
               Erkannt wird aus dem Banner: SSH nennt seine Fassung, HTTP die Kopfzeile{" "}
@@ -2501,7 +2523,8 @@ export default function EinstellungenView() {
                   bleibt ein gültiges ZIP.
                 </p>
                 <p className="muted small">
-                  Der Suchindex fehlt absichtlich: PostgreSQL berechnet ihn beim Einspielen neu.
+                  Der Suchindex ist nicht enthalten und muss es nicht sein: PostgreSQL berechnet
+                  ihn beim Einspielen aus Titel und Text neu.
                 </p>
 
                 <h3>Sicherung einspielen</h3>
@@ -2547,7 +2570,8 @@ export default function EinstellungenView() {
 
                 <h3>Regelmäßig sichern</h3>
                 <p className="muted small">
-                  Für einen Zeitplan braucht ein Skript einen Weg herein, und einen Keks hat es
+                  Ein Knopf im Browser ist keine Sicherung, sondern eine Handlung. Für einen
+                  Zeitplan braucht ein Skript einen Weg herein, und einen Keks hat es
                   nicht. Das Losungswort ist dieser Weg.
                 </p>
                 <div className="warnkasten">
@@ -2704,12 +2728,14 @@ export default function EinstellungenView() {
               </button>
             </div>
             <p className="muted small">
-              Zur Bestätigung <code>neustart</code> eintippen.
+              Zur Bestätigung <code>neustart</code> eintippen. Ein Knopf, der beim
+              Danebenklicken den Dienst abschaltet, wäre hier falsch.
             </p>
 
             <h3>Papierkorb der Instanz</h3>
             <p className="muted small">
-              Löscht alle Seiten im Papierkorb endgültig, auch die anderer Konten.
+              Löscht alle Seiten im Papierkorb endgültig, auch die anderer Konten. Kein
+              Ablaufdatum, kein Aufschub — der Lauf ist sofort.
             </p>
             <button className="btn" disabled={laeuft !== null} onClick={papierkorbLeeren}>
               {laeuft === "papierkorb" ? "Löscht…" : "Papierkorb endgültig leeren"}
