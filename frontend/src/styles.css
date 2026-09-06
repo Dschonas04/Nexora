@@ -3773,7 +3773,11 @@ textarea::placeholder {
    nur hier — im uebrigen Wiki bleibt es weich.
 
    Alles ist auf .einstellungen-manager eingeschraenkt, damit dieselben Klassen
-   (.kachel, .pill, .btn) ausserhalb unveraendert bleiben. */
+   (.kachel, .btn) ausserhalb unveraendert bleiben.
+
+   Die Marken (.pill) bleiben aussen vor: dort traegt die Ecke schon eine
+   Bedeutung — rund heisst Etikett, fast eckig heisst Zustand (siehe .pill.frei).
+   Alles auf null zu ziehen haette genau diesen Unterschied eingeebnet. */
 .einstellungen-manager .einstellung,
 .einstellungen-manager .kachel,
 .einstellungen-manager .kennzahl,
@@ -3785,7 +3789,6 @@ textarea::placeholder {
 .einstellungen-manager .konfig-schluessel,
 .einstellungen-manager .fuellstand,
 .einstellungen-manager .btn,
-.einstellungen-manager .pill,
 .einstellungen-manager .farbwaehler,
 .einstellungen-manager .einstellungen-nav-eintrag,
 .einstellungen-manager input[type="text"],
