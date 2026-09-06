@@ -31,7 +31,8 @@ import { useAuth } from "../auth";
 import { useLizenz } from "../lizenz";
 import AdminView from "./AdminView";
 import GruppenView from "./GruppenView";
-import { anwenden, useDesign } from "../design";
+import { GRUND, anwenden, useDesign } from "../design";
+import { ausHex, kontrast, lesbarAuf, schriftAuf } from "../farbe";
 import { useRueckfrage } from "../components/Rueckfrage";
 
 type Bereich =
@@ -107,11 +108,22 @@ const WEG_TITEL: Record<string, string> = {
   sso: "SSO",
 };
 
-const GRUNDTOENE: { wert: string; titel: string; erklaerung: string }[] = [
-  { wert: "grau", titel: "Gegrautes Weiß", erklaerung: "Vorgabe. Nimmt dem reinen Weiß die Härte, ohne dunkel zu wirken." },
-  { wert: "weiss", titel: "Reines Weiß", erklaerung: "Maximaler Kontrast. Auf großen Bildschirmen auf Dauer anstrengend." },
-  { wert: "dunkel", titel: "Dunkel", erklaerung: "Für dunkle Räume und lange Sitzungen." },
+const GRUNDTOENE: { wert: string; titel: string }[] = [
+  { wert: "grau", titel: "Gegrautes Weiß" },
+  { wert: "weiss", titel: "Reines Weiß" },
+  { wert: "dunkel", titel: "Dunkel" },
 ];
+
+// Die vier tragenden Marken je Grundton, in der Reihenfolge der Spalten:
+// --bg, --flaeche, --border, --text. Sie stehen so auch in styles.css; die
+// Wiederholung ist der Preis dafuer, dass die Tabelle die Werte zeigen kann,
+// ohne das Stylesheet zur Laufzeit auszulesen. Aendert sich dort ein Ton, muss
+// er hier mit.
+const TON_MARKEN: Record<string, string[]> = {
+  grau: ["#f7f7f6", "#ffffff", "#e2e2df", "#37352f"],
+  weiss: ["#ffffff", "#ffffff", "#ededec", "#37352f"],
+  dunkel: ["#1f1f1e", "#2a2a28", "#3a3a37", "#e6e5e2"],
+};
 
 const AKZENTE = [
   { wert: "#2383e2", titel: "Blau" },
@@ -288,6 +300,110 @@ function zeitpunkt(iso: string): string {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+/**
+ * Verbleibende Tage bis zum Ablaufdatum, oder null, wenn kein brauchbares Datum
+ * dasteht -- unbefristet, leer oder unlesbar. Ein negativer Wert kommt nicht
+ * vor: eine abgelaufene Lizenz ist nicht mehr gueltig und das Kopfband sagt das
+ * dann selbst.
+ */
+function restlaufzeit(bis: string): number | null {
+  if (!bis) return null;
+  const ziel = Date.parse(bis);
+  if (Number.isNaN(ziel)) return null;
+  const tage = Math.ceil((ziel - Date.now()) / 86400000);
+  return tage > 0 ? tage : null;
+}
+
+/**
+ * Das Urteil zu einem Kontrastverhältnis nach WCAG 2.1.
+ *
+ * 4,5 ist die Schwelle für Fließtext, 7 die für die strengere Stufe AAA. 3,0
+ * gilt für große Schrift und für die Umrisse von Bedienelementen: eine Farbe
+ * darüber ist als Fläche mit Beschriftung brauchbar und fällt nur im Fließtext
+ * durch. Ohne diese Mitte stünde die Hälfte einer üblichen Palette in Rot da.
+ */
+function stufe(verhaeltnis: number): { wort: string; rang: "gut" | "knapp" | "schlecht" } {
+  if (verhaeltnis >= 7) return { wort: "AAA", rang: "gut" };
+  if (verhaeltnis >= 4.5) return { wort: "AA", rang: "gut" };
+  if (verhaeltnis >= 3) return { wort: "nur große Schrift", rang: "knapp" };
+  return { wort: "unter AA", rang: "schlecht" };
+}
+
+const zahl = (v: number) => v.toFixed(2).replace(".", ",");
+
+/**
+ * Eine Zeile der Akzent-Palette.
+ *
+ * Die beiden rechten Spalten sind der Grund, warum hier eine Tabelle steht und
+ * keine Reihe von Farbpunkten: eine Farbe kann als Fläche taugen und als Text
+ * auf demselben Grund durchfallen. Gerechnet wird mit genau den Funktionen, die
+ * die Oberfläche im Betrieb benutzt -- die Zahl in der Spalte ist also die Zahl,
+ * die nach dem Speichern gilt, und keine zweite Meinung darüber.
+ */
+function PaletteZeile({
+  titel,
+  farbe,
+  grund,
+  gewaehlt,
+  waehlen,
+}: {
+  titel: string;
+  farbe: string;
+  grund: string;
+  gewaehlt: boolean;
+  waehlen: () => void;
+}) {
+  // Ein halb getippter Hexwert darf die Rechnung nicht mit NaN füllen.
+  if (!/^#[0-9a-f]{6}$/.test(farbe)) return null;
+
+  const schrift = schriftAuf(farbe);
+  const aufFlaeche = kontrast(ausHex(schrift), ausHex(farbe));
+  const alsText = lesbarAuf(farbe, grund);
+  const aufGrund = kontrast(ausHex(alsText), ausHex(grund));
+  const verschoben = alsText.toLowerCase() !== farbe.toLowerCase();
+  const sF = stufe(aufFlaeche);
+  const sG = stufe(aufGrund);
+  const urteil = (r: string) => (r === "gut" ? "muted small" : "palette-urteil " + r);
+
+  return (
+    <tr className={gewaehlt ? "gewaehlt" : undefined} onClick={waehlen}>
+      <td className="palette-wahl">
+        <input type="radio" name="akzent" checked={gewaehlt} onChange={waehlen} />
+      </td>
+      <td>{titel}</td>
+      <td>
+        <span className="marke-zelle">
+          <span className="marke-probe" style={{ background: farbe }} />
+          <code>{farbe}</code>
+        </span>
+      </td>
+      <td>
+        <span className="marke-zelle">
+          <span className="marke-probe schriftprobe" style={{ background: farbe, color: schrift }}>
+            Aa
+          </span>
+          <span className={urteil(sF.rang)}>
+            {zahl(aufFlaeche)} · {sF.wort}
+          </span>
+        </span>
+      </td>
+      <td>
+        <span className="marke-zelle">
+          <span className="marke-probe schriftprobe" style={{ background: grund, color: alsText }}>
+            Aa
+          </span>
+          <span className={urteil(sG.rang)}>
+            {zahl(aufGrund)} · {sG.wort}
+            {/* Wer eine Hausfarbe einträgt, soll sehen, dass Text sie nicht
+                unverändert trägt -- sonst sucht er den Unterschied im Browser. */}
+            {verschoben && <> · verschoben auf <code>{alsText}</code></>}
+          </span>
+        </span>
+      </td>
+    </tr>
+  );
 }
 
 export default function EinstellungenView() {
@@ -1827,68 +1943,171 @@ export default function EinstellungenView() {
         const grundton = holen("design_grundton");
         const akzent = holen("design_akzent");
         const aktuellerTon = entwurf["design_grundton"] ?? grundton?.wert ?? "grau";
-        const aktuellerAkzent = entwurf["design_akzent"] ?? akzent?.wert ?? "#2383e2";
+        const aktuellerAkzent = (entwurf["design_akzent"] ?? akzent?.wert ?? "#2383e2").toLowerCase();
+        const grund = GRUND[aktuellerTon] ?? GRUND.grau;
+
+        const tonSetzen = (wert: string) => {
+          // Apply right away, then save: seeing a colour only after the
+          // server's answer makes picking one a torment.
+          anwenden({ grundton: wert, akzent: aktuellerAkzent });
+          setEntwurf((v) => ({ ...v, design_grundton: wert }));
+          if (grundton) speichern(grundton, wert);
+        };
+        const akzentSetzen = (wert: string, sichern: boolean) => {
+          anwenden({ grundton: aktuellerTon, akzent: wert });
+          setEntwurf((v) => ({ ...v, design_akzent: wert }));
+          if (sichern && akzent) speichern(akzent, wert);
+        };
 
         return (
           <>
             <h3>Grundton</h3>
             <p className="muted small">
-              Gilt für alle Konten dieser Instanz. Die Auswahl wird sofort angezeigt und beim
-              Anklicken gespeichert.
+              Setzt <code>data-grundton</code> am Wurzelelement und damit die Marken der
+              Oberfläche. Gilt für alle Konten der Instanz, nicht je Browser.
             </p>
-            <div className="tonauswahl">
-              {GRUNDTOENE.map((g) => (
-                <button
-                  key={g.wert}
-                  className={"tonkachel" + (aktuellerTon === g.wert ? " gewaehlt" : "")}
-                  onClick={() => {
-                    // Apply right away, then save: seeing a colour only after
-                    // the server's answer makes picking one a torment.
-                    anwenden({ grundton: g.wert, akzent: aktuellerAkzent });
-                    setEntwurf((v) => ({ ...v, design_grundton: g.wert }));
-                    if (grundton) speichern(grundton, g.wert);
-                  }}
-                >
-                  <span className={"tonprobe ton-" + g.wert} />
-                  <span className="tonkachel-titel">{g.titel}</span>
-                  <span className="tonkachel-text">{g.erklaerung}</span>
-                </button>
-              ))}
-            </div>
+            <table className="tabelle palette-tabelle">
+              <thead>
+                <tr>
+                  <th className="palette-wahl" />
+                  <th>Ton</th>
+                  <th>--bg</th>
+                  <th>--flaeche</th>
+                  <th>--border</th>
+                  <th>--text</th>
+                </tr>
+              </thead>
+              <tbody>
+                {GRUNDTOENE.map((g) => {
+                  const gewaehlt = aktuellerTon === g.wert;
+                  return (
+                    <tr
+                      key={g.wert}
+                      className={gewaehlt ? "gewaehlt" : undefined}
+                      onClick={() => tonSetzen(g.wert)}
+                    >
+                      <td className="palette-wahl">
+                        <input
+                          type="radio"
+                          name="grundton"
+                          checked={gewaehlt}
+                          onChange={() => tonSetzen(g.wert)}
+                        />
+                      </td>
+                      <td>
+                        {g.titel}
+                        {g.wert === "grau" && <span className="muted small"> · Vorgabe</span>}
+                      </td>
+                      {TON_MARKEN[g.wert].map((m) => (
+                        <td key={m}>
+                          <span className="marke-zelle">
+                            <span className="marke-probe" style={{ background: m }} />
+                            <code>{m}</code>
+                          </span>
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
             {grundton && herkunft(grundton)}
 
             <h3>Akzentfarbe</h3>
             <p className="muted small">
-              Wird als <code>--akzent</code> gesetzt: Verknüpfungen, ausgewählte Einträge,
-              Knöpfe.
+              Steht als <code>--accent</code>. Zwei Werte werden daraus abgeleitet, und
+              beide entscheiden über die Lesbarkeit: <code>--accent-text</code> ist die
+              Schrift auf der Akzentfläche, <code>--accent-lesbar</code> der Akzent als
+              Text auf dem Grund. Die Verhältnisse sind nach WCAG gerechnet, 4,5 ist die
+              Schwelle für Fließtext.
             </p>
-            <div className="farbauswahl">
-              {AKZENTE.map((a) => (
-                <button
-                  key={a.wert}
-                  title={a.titel}
-                  className={"farbknopf" + (aktuellerAkzent.toLowerCase() === a.wert ? " gewaehlt" : "")}
-                  style={{ background: a.wert }}
-                  onClick={() => {
-                    anwenden({ grundton: aktuellerTon, akzent: a.wert });
-                    setEntwurf((v) => ({ ...v, design_akzent: a.wert }));
-                    if (akzent) speichern(akzent, a.wert);
+            <table className="tabelle palette-tabelle">
+              <thead>
+                <tr>
+                  <th className="palette-wahl" />
+                  <th>Farbe</th>
+                  <th>--accent</th>
+                  <th>Als Fläche</th>
+                  <th>Als Text auf dem Grund</th>
+                </tr>
+              </thead>
+              <tbody>
+                {AKZENTE.map((a) => (
+                  <PaletteZeile
+                    key={a.wert}
+                    titel={a.titel}
+                    farbe={a.wert}
+                    grund={grund}
+                    gewaehlt={aktuellerAkzent === a.wert}
+                    waehlen={() => akzentSetzen(a.wert, true)}
+                  />
+                ))}
+                {!AKZENTE.some((a) => a.wert === aktuellerAkzent) && (
+                  <PaletteZeile
+                    titel="Eigene Farbe"
+                    farbe={aktuellerAkzent}
+                    grund={grund}
+                    gewaehlt
+                    waehlen={() => {}}
+                  />
+                )}
+              </tbody>
+            </table>
+
+            {/* Eine Hausfarbe kommt als Hex aus einem Gestaltungshandbuch und
+                nicht aus dem Farbrad des Betriebssystems. Deshalb steht das
+                Feld voran und der Waehler nur daneben. */}
+            <div className="akzent-eigen">
+              <label>
+                <span>Eigener Wert</span>
+                <input
+                  className="hex-feld"
+                  value={aktuellerAkzent}
+                  spellCheck={false}
+                  maxLength={7}
+                  placeholder="#2383e2"
+                  onChange={(ev) => {
+                    const w = ev.target.value.trim().toLowerCase();
+                    setEntwurf((v) => ({ ...v, design_akzent: w }));
+                    if (/^#[0-9a-f]{6}$/.test(w)) anwenden({ grundton: aktuellerTon, akzent: w });
+                  }}
+                  onBlur={() => {
+                    if (!/^#[0-9a-f]{6}$/.test(aktuellerAkzent)) {
+                      // Ein halb getippter Wert darf nicht in die Datenbank.
+                      const zurueck = akzent?.wert ?? "#2383e2";
+                      akzentSetzen(zurueck, false);
+                      return;
+                    }
+                    if (akzent && aktuellerAkzent !== akzent.wert) speichern(akzent, aktuellerAkzent);
                   }}
                 />
-              ))}
+              </label>
               <input
                 type="color"
                 className="farbwaehler"
-                value={aktuellerAkzent}
-                onChange={(ev) => {
-                  anwenden({ grundton: aktuellerTon, akzent: ev.target.value });
-                  setEntwurf((v) => ({ ...v, design_akzent: ev.target.value }));
-                }}
+                aria-label="Farbwähler"
+                value={/^#[0-9a-f]{6}$/.test(aktuellerAkzent) ? aktuellerAkzent : "#2383e2"}
+                onChange={(ev) => akzentSetzen(ev.target.value.toLowerCase(), false)}
                 onBlur={() => {
                   if (akzent && aktuellerAkzent !== akzent.wert) speichern(akzent, aktuellerAkzent);
                 }}
               />
-              <code className="muted">{aktuellerAkzent}</code>
+            </div>
+
+            {/* Die Farbpunkte allein sagten nicht, was sie anrichten. Hier
+                stehen genau die Bauteile, die --accent tragen. */}
+            <h3>Wirkung</h3>
+            <div className="wirkprobe">
+              <button className="btn btn-primary" type="button">
+                Primärer Knopf
+              </button>
+              <button className="btn" type="button">
+                Sekundärer Knopf
+              </button>
+              <a className="wirkprobe-verweis" href="#aussehen" onClick={(e) => e.preventDefault()}>
+                Verknüpfung im Fließtext
+              </a>
+              <span className="wirkprobe-zeile">Ausgewählter Eintrag</span>
             </div>
             {akzent && herkunft(akzent)}
           </>
@@ -1899,97 +2118,120 @@ export default function EinstellungenView() {
         return (
           <>
             <h3>Lizenz</h3>
-            {z.lizenz.gueltig ? (
-              <>
-                <table className="tabelle uebersicht-tabelle">
-                  <tbody>
-                    <tr>
-                      <td>Inhaber</td>
-                      <td className="zahl">{z.lizenz.inhaber}</td>
-                    </tr>
-                    <tr>
-                      <td>Gültig bis</td>
-                      <td className="zahl">{z.lizenz.laeuftAb || "unbefristet"}</td>
-                    </tr>
-                    <tr>
-                      <td>Freigeschaltete Funktionen</td>
-                      <td className="zahl">
-                        {(z.lizenz.freigeschaltet ?? []).length} von {z.lizenz.alle}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <h3>Funktionen</h3>
-                {/* Frei oder gesperrt steht als Wort in der Spalte. Vorher war
-                    es ein Schild, das Gesperrte zusaetzlich durchgestrichen und
-                    halb durchsichtig: drei Mittel fuer eine Angabe, von denen
-                    zwei die Zeile nur schlechter lesbar machten. */}
-                <table className="tabelle">
-                  <thead>
-                    <tr>
-                      <th>Funktion</th>
-                      <th>Zustand</th>
-                      <th>Name im Schlüssel</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(ZUSATZ).map(([k, titel]) => {
-                      const frei = (z.lizenz.freigeschaltet ?? []).includes(k);
-                      return (
-                        <tr key={k}>
-                          <td>{titel}</td>
-                          <td className={frei ? undefined : "muted"}>
-                            {frei ? "frei" : "gesperrt"}
-                          </td>
-                          <td className="muted small">
-                            <code>{k}</code>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </>
-            ) : (
+            {/* Kopfband statt einer Zwei-Spalten-Tabelle: Zustand, Inhaber,
+                Stufe und Restlaufzeit sind das, wonach jemand hier zuerst
+                sieht, und sie stehen in einer Zeile nebeneinander statt
+                untereinander. */}
+            <div className={"lizenz-kopf" + (z.lizenz.gueltig ? "" : " ungueltig")}>
+              <div className="lizenz-marke">
+                <span className="lizenz-punkt" />
+                {z.lizenz.gueltig ? "Aktiv" : "Keine gültige Lizenz"}
+              </div>
+              <div className="lizenz-felder">
+                <div>
+                  <span className="lizenz-feldname">Inhaber</span>
+                  <span className="lizenz-feldwert">{z.lizenz.inhaber || "—"}</span>
+                </div>
+                <div>
+                  <span className="lizenz-feldname">Stufe</span>
+                  <span className="lizenz-feldwert">{lizenzJetzt?.stufe || "Grundumfang"}</span>
+                </div>
+                <div>
+                  <span className="lizenz-feldname">Laufzeit</span>
+                  <span className="lizenz-feldwert">
+                    {z.lizenz.laeuftAb || "unbefristet"}
+                    {restlaufzeit(z.lizenz.laeuftAb) !== null && (
+                      <span className="muted small">
+                        {" "}
+                        · noch {restlaufzeit(z.lizenz.laeuftAb)} Tage
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div>
+                  <span className="lizenz-feldname">Umfang</span>
+                  <span className="lizenz-feldwert">
+                    {(z.lizenz.freigeschaltet ?? []).length} von {z.lizenz.alle} Funktionen
+                  </span>
+                </div>
+              </div>
+            </div>
+            {!z.lizenz.gueltig && (
               <div className="warnkasten">
-                <strong>Keine gültige Lizenz</strong>
+                <strong>{z.lizenz.grund || "Kein Schlüssel hinterlegt."}</strong>
                 <div className="muted small">
-                  {z.lizenz.grund || "Kein Schlüssel hinterlegt."} Nexora läuft im freien
-                  Umfang. Aufrufe für gesperrte Funktionen antworten mit 402.
+                  Nexora läuft im freien Umfang. Aufrufe für gesperrte Funktionen antworten
+                  mit 402.
                 </div>
               </div>
             )}
-            <h3>Stufen</h3>
+
+            {/* Aus zwei Tabellen ist eine geworden. Vorher stand in der einen,
+                was freigeschaltet ist, und in der anderen, welche Stufe was
+                enthaelt -- die Frage, was ein Wechsel braechte, liess sich nur
+                beantworten, indem man zwischen beiden hin und her sah. */}
+            <h3>Funktionsumfang</h3>
             <p className="muted small">
-              Jede Stufe enthält die kleineren. Geprüft wird immer die einzelne Funktion und
-              nie die Stufe — deshalb kann ein Schlüssel eine Stufe und zusätzlich
-              einzelne Funktionen tragen.
+              Zeilen sind die einzelnen Funktionen, Spalten die Stufen. Geprüft wird immer die
+              Funktion und nie die Stufe — ein Schlüssel kann eine Stufe und zusätzlich
+              einzelne Funktionen tragen. Die laufende Stufe steht hervorgehoben.
             </p>
-            <table className="tabelle">
-              <thead>
-                <tr>
-                  <th>Stufe</th>
-                  <th>Enthält</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {(lizenzJetzt?.stufen ?? []).map((st) => (
-                  <tr key={st.name}>
-                    <td>{st.name}</td>
-                    <td className="muted small">
-                      {st.funktionen.length === 0
-                        ? "Grundumfang"
-                        : st.funktionen.map((f) => ZUSATZ[f] ?? f).join(", ")}
-                    </td>
-                    <td className="einzeilig">
-                      {lizenzJetzt?.stufe === st.name && "in Betrieb"}
-                    </td>
+            <div className="tabelle-rollen">
+              <table className="tabelle matrix-tabelle">
+                <thead>
+                  <tr>
+                    <th>Funktion</th>
+                    <th>Name im Schlüssel</th>
+                    {(lizenzJetzt?.stufen ?? []).map((st) => (
+                      <th
+                        key={st.name}
+                        className={
+                          "matrix-spalte" +
+                          (lizenzJetzt?.stufe === st.name ? " laufend" : "")
+                        }
+                      >
+                        {st.name}
+                      </th>
+                    ))}
+                    <th>Zustand</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {Object.entries(ZUSATZ).map(([k, titel]) => {
+                    const frei = (z.lizenz.freigeschaltet ?? []).includes(k);
+                    return (
+                      <tr key={k}>
+                        <td>{titel}</td>
+                        <td className="muted small">
+                          <code>{k}</code>
+                        </td>
+                        {(lizenzJetzt?.stufen ?? []).map((st) => (
+                          <td
+                            key={st.name}
+                            className={
+                              "matrix-zelle" +
+                              (lizenzJetzt?.stufe === st.name ? " laufend" : "")
+                            }
+                          >
+                            {st.funktionen.includes(k) && (
+                              <span className="matrix-ja" title="in dieser Stufe enthalten" />
+                            )}
+                          </td>
+                        ))}
+                        {/* Frei oder gesperrt steht als Wort in der Spalte.
+                            Vorher war es ein Schild, das Gesperrte zusaetzlich
+                            durchgestrichen und halb durchsichtig: drei Mittel
+                            fuer eine Angabe, von denen zwei die Zeile nur
+                            schlechter lesbar machten. */}
+                        <td className={frei ? "zustand-frei" : "muted"}>
+                          {frei ? "frei" : "gesperrt"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
             <h3>Schlüssel einlesen</h3>
             <p className="muted small">
