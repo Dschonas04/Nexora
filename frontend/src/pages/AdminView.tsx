@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { User, api } from "../api/client";
 import { useAuth } from "../auth";
 import Fenster from "../components/Fenster";
+import Listenkopf from "../components/Listenkopf";
 import { useRueckfrage } from "../components/Rueckfrage";
 
 /** Eine Zeile aus dem Feld für mehrere Konten, schon zerlegt. */
@@ -97,27 +98,20 @@ export default function AdminView() {
 
   return (
     <>
-      <div className="listenkopf">
-        <h3>
-          Nutzer und Rollen
-          <span className="muted small">
-            {" "}
-            {users.length} gesamt · {users.filter((u) => u.role === "admin").length} mit
-            Verwaltungsrecht · {users.filter((u) => u.zweitfaktor).length} mit zweitem Faktor
-          </span>
-        </h3>
-        <div className="listenkopf-werkzeug">
-          <input
-            className="listenfilter"
-            placeholder="Filtern nach Name, Adresse, Anmeldename"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          />
-          <button className="btn btn-primary" onClick={() => setAnlegen(true)}>
-            Konten anlegen
-          </button>
-        </div>
-      </div>
+      <Listenkopf
+        titel="Nutzer und Rollen"
+        zahl={
+          `${users.length} gesamt · ${users.filter((u) => u.role === "admin").length} mit ` +
+          `Verwaltungsrecht · ${users.filter((u) => u.zweitfaktor).length} mit zweitem Faktor`
+        }
+        filter={filter}
+        setFilter={setFilter}
+        platzhalter="Filtern nach Name, Adresse, Anmeldename"
+      >
+        <button className="btn btn-primary" onClick={() => setAnlegen(true)}>
+          Konten anlegen
+        </button>
+      </Listenkopf>
       <p className="muted small">
         Administratoren können jede Seite im Arbeitsbereich lesen und bearbeiten. Rollen
         gelten sofort; eine laufende Sitzung wird dafür nicht beendet.

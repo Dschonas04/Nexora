@@ -192,6 +192,10 @@ a {
   padding: 6px 8px;
   font-size: 13px;
   color: var(--muted);
+  /* Name und Zahnrad in einer Zeile. Der Name nimmt, was übrig ist. */
+  display: flex;
+  align-items: center;
+  gap: 2px;
   /* Anker für das Menü darüber: das klappt nach OBEN auf, weil unten die
      Bildschirmkante ist. */
   position: relative;
@@ -217,7 +221,10 @@ a {
 }
 
 .konto-knopf {
-  width: 100%;
+  /* In der Fusszeile steht das Zahnrad daneben: der Knopf nimmt, was uebrig
+     bleibt, und min-width: 0 laesst den Namen kuerzen statt ueberzulaufen. */
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -3797,7 +3804,6 @@ textarea::placeholder {
 .einstellungen-manager .hinweis-ok,
 .einstellungen-manager .tonkachel,
 .einstellungen-manager .wirkprobe,
-.einstellungen-manager .fenster,
 .einstellungen-manager .konfig-feld,
 .einstellungen-manager .konfig-schluessel,
 .einstellungen-manager .fuellstand,
@@ -3984,7 +3990,7 @@ textarea::placeholder {
    Der Rahmen steht hier ausdruecklich, weil ein <input> ohne type-Angabe sonst
    den Rahmen des Browsers behaelt und neben einem <select> mit eigenem Rahmen
    wie ein anderes Bauteil aussieht. */
-.fenster-felder input,
+.fenster-felder input:not([type="checkbox"]):not([type="radio"]),
 .fenster-felder select,
 .fenster-zeile input,
 .listenfilter,
@@ -4014,6 +4020,12 @@ textarea::placeholder {
 }
 .feld-breit {
   grid-column: 1 / -1;
+}
+/* Ein Haken steht neben seiner Beschriftung und nicht darunter. Ohne diese
+   Zeile zoege ihn die Spaltenregel des Rasters hochkant. */
+.fenster-felder .schalter {
+  flex-direction: row;
+  color: var(--text);
 }
 /* Ein Abschnitt im Fenster, für das, was neben dem Formular noch geht:
    Passwort zurücksetzen, zweiter Faktor. Eine Linie darüber, weil es eigene
@@ -4049,6 +4061,12 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+/* Der Knopf bricht nicht um. Ohne diese Zeile zog das Filterfeld daneben so
+   viel Breite, dass aus "Rechner hinzufuegen" zwei Zeilen wurden. */
+.listenkopf-werkzeug .btn {
+  white-space: nowrap;
+  flex: none;
 }
 
 /* Der zweite Faktor am eigenen Konto. */
@@ -4151,4 +4169,86 @@ textarea::placeholder {
 .mahnstreifen a {
   color: var(--accent-lesbar);
   text-decoration: underline;
+}
+
+/* Das Zahnrad neben dem Namen: das eigene Konto.
+   Dasselbe Symbol wie oben an der Verwaltung -- dort die Instanz, hier das
+   Konto. Es steht sichtbar da und nicht im Menü, denn was jemand an seinem
+   Konto einstellen kann, soll man finden, ohne danach zu suchen. */
+.konto-zahnrad {
+  flex: none;
+  color: var(--muted);
+}
+.konto-zahnrad:hover {
+  color: var(--text);
+}
+/* Dieselbe Zeichnung wie am Kopf der Verwaltung: Striche in der Schriftfarbe,
+   keine Fuellung. Ohne diese Regel malt der Browser die beiden Kreise voll aus
+   und aus dem Zahnrad wird ein schwarzer Punkt. */
+.konto-zahnrad svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  fill: none;
+}
+
+/* Das Fenster "Mein Konto": Leiste links, Inhalt rechts -- dieselbe Aufteilung
+   wie die Verwaltung daneben. */
+.konto-fenster {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.konto-leiste {
+  flex: none;
+  width: 180px;
+  border-right: 1px solid var(--border);
+  padding-right: 12px;
+}
+.konto-leiste-eintrag {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  margin-bottom: 2px;
+}
+.konto-leiste-eintrag:hover {
+  background: var(--hover);
+}
+.konto-leiste-eintrag.aktiv {
+  background: var(--hover);
+  font-weight: 500;
+}
+.konto-inhalt {
+  flex: 1;
+  min-width: 0;
+}
+/* Die erste Überschrift im Inhalt hat keinen Abstand nach oben: sie steht auf
+   derselben Höhe wie der erste Eintrag der Leiste daneben. */
+.konto-inhalt > h3:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 620px) {
+  .konto-fenster {
+    flex-direction: column;
+  }
+  .konto-leiste {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-right: 0;
+    padding-bottom: 8px;
+  }
 }
