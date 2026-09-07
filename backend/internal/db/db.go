@@ -482,6 +482,35 @@ END $$;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bild       bytea;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bild_mime  text NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bild_stand timestamptz;
+
+-- Der zweite Faktor.
+--
+-- totp_geheim steht verschluesselt in der Spalte und nicht gehasht: der Dienst
+-- muss damit rechnen koennen. Der Schluessel dafuer kommt aus dem
+-- Signaturgeheimnis der Instanz, siehe auth/zweitfaktor.go -- ein Abzug der
+-- Datenbank allein gibt also keine Codes her.
+--
+-- totp_seit trennt das Einrichten vom Betrieb: waehrend jemand den QR-Code
+-- abfotografiert, steht das Geheimnis schon da, gilt aber noch nicht. Erst der
+-- erste richtige Code setzt den Zeitpunkt, und erst dann verlangt die Anmeldung
+-- den zweiten Schritt. Ohne diese Trennung sperrte ein abgebrochenes Einrichten
+-- das Konto aus.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_geheim text NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_seit   timestamptz;
+
+-- Die Ersatzcodes fuer den Fall, dass das Telefon weg ist. Sie liegen als
+-- bcrypt-Hash da, denn sie sind Zugangsdaten: wer die Liste im Klartext liest,
+-- kommt an jedem zweiten Faktor vorbei. Benutzte Codes bleiben mit Zeitstempel
+-- stehen, statt geloescht zu werden -- die Pruefspur soll sagen koennen, dass
+-- einer verbraucht wurde.
+CREATE TABLE IF NOT EXISTS zweitfaktor_codes (
+	id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	user_id    uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	hash       text NOT NULL,
+	angelegt   timestamptz NOT NULL DEFAULT now(),
+	benutzt_am timestamptz
+);
+CREATE INDEX IF NOT EXISTS zweitfaktor_codes_konto ON zweitfaktor_codes(user_id);
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

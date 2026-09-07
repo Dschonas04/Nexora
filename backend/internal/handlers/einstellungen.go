@@ -63,6 +63,17 @@ var bekannt = map[string]struct {
 		Erklaerung: "An: POST /api/auth/register steht offen. Aus: 403, Konten legt nur ein Administrator an. Das allererste Konto entsteht in beiden Fällen und wird Administrator.",
 		Warnung:    "Für eine erreichbare Instanz aus, sonst genügt die Adresse zum Anlegen eines Kontos.",
 	},
+	"zweitfaktor_pflicht": {
+		Art:        "janein",
+		Titel:      "Zweiter Faktor vorgeschrieben",
+		Erklaerung: "An: jedes Konto wird nach dem Anmelden zur Einrichtung geführt und kann den zweiten Faktor nicht mehr selbst abschalten. Aus: jeder entscheidet für sich. Konten aus SSO bringen ihren zweiten Faktor vom Anbieter mit und sind davon nicht betroffen.",
+		Warnung:    "Vor dem Einschalten selbst einrichten. Wer keinen zweiten Faktor hat, kommt sonst nur noch über die Einrichtung weiter.",
+	},
+	"zweitfaktor_aussteller": {
+		Art:        "text",
+		Titel:      "Name in der Authenticator-App",
+		Erklaerung: "Steht als Aussteller im QR-Code und damit über dem Code in der App. Leer: Nexora. Sinnvoll, wenn jemand mehrere Instanzen im selben Telefon hat.",
+	},
 	"erlaubte_domaenen": {
 		Art:        "liste",
 		Titel:      "Erlaubte E-Mail-Domänen",
@@ -200,6 +211,10 @@ func ausDatei(schluessel string, k config.Konfig) string {
 		return "grau"
 	case "design_akzent":
 		return "#2383e2"
+	case "zweitfaktor_pflicht":
+		return "nein"
+	case "zweitfaktor_aussteller":
+		return "Nexora"
 	}
 	return ""
 }
@@ -215,6 +230,20 @@ func janein(b bool) string {
 // handlers actually ask. They read from the cache so a change takes effect at
 // once, without a restart.
 func RegistrierungOffen() bool { return wert("registrierung_offen") == "ja" }
+
+// ZweitfaktorPflicht sagt, ob die Instanz den zweiten Faktor von jedem Konto
+// verlangt.
+func ZweitfaktorPflicht() bool { return wert("zweitfaktor_pflicht") == "ja" }
+
+// ZweitfaktorAussteller ist der Name, unter dem der Eintrag in der
+// Authenticator-App steht. Leer waere dort eine namenlose Zeile, deshalb faellt
+// er auf den Namen des Programms zurueck.
+func ZweitfaktorAussteller() string {
+	if a := strings.TrimSpace(wert("zweitfaktor_aussteller")); a != "" {
+		return a
+	}
+	return "Nexora"
+}
 
 // echtzeitAn reports whether collaborative editing is allowed. The UI asks
 // first and the realtime layer checks again: a disabled feature that can be
@@ -356,6 +385,7 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 	// places on every load is unusable.
 	reihenfolge := []string{
 		"registrierung_offen", "erlaubte_domaenen",
+		"zweitfaktor_pflicht", "zweitfaktor_aussteller",
 		"max_anhang_mb", "sitzung_stunden", "papierkorb_tage", "such_woerterbuch",
 		"echtzeit",
 		"seitenbreite",

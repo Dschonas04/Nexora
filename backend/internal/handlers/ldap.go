@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-ldap/ldap/v3"
 
+	"nexora/internal/auth"
 	"nexora/internal/lizenz"
 )
 
@@ -65,6 +66,18 @@ func (s *Server) LDAPAnmeldung(w http.ResponseWriter, r *http.Request) {
 	u, err := s.kontoAusSSO(r.Context(), email, name, admin, "ldap")
 	if err != nil {
 		writeErr(w, http.StatusConflict, err.Error())
+		return
+	}
+	// Auch hier gilt der zweite Faktor, wenn das Konto einen hat. Das
+	// Verzeichnis prueft das Passwort, den Code prueft diese Instanz -- der
+	// zweite Faktor haengt am Konto und nicht am Weg, ueber den es sich meldet.
+	if s.zweitfaktorAktiv(r.Context(), u.ID) {
+		ticket, err := auth.ZweitTicket(s.Secret, u.ID)
+		if err != nil {
+			writeErr(w, http.StatusInternalServerError, "ticket failed")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{"zweiterSchritt": true, "ticket": ticket})
 		return
 	}
 	s.issueSession(w, r, u.ID)

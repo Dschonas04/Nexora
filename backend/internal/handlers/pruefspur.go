@@ -93,6 +93,10 @@ const (
 	AktNeustart           = "dienst.neustart"
 	AktPapierkorbLeer     = "papierkorb.geleert"
 	AktEinfuhr            = "seiten.eingefuehrt"
+	AktZweitfaktorAn      = "zweitfaktor.eingeschaltet"
+	AktZweitfaktorAus     = "zweitfaktor.ausgeschaltet"
+	AktZweitfaktorReset   = "zweitfaktor.zurueckgesetzt"
+	AktZweitfaktorCodes   = "zweitfaktor.ersatzcodes"
 )
 
 // spur writes one entry. Callers pass what they know; empty fields stay empty.
