@@ -22,7 +22,6 @@ import { useEingabe, useRueckfrage } from "../components/Rueckfrage";
 // application starts faster for everybody else.
 const TrashView = lazy(() => import("./TrashView"));
 const GraphView = lazy(() => import("./GraphView"));
-const PruefspurView = lazy(() => import("./PruefspurView"));
 const EinstellungenView = lazy(() => import("./EinstellungenView"));
 const PostfachView = lazy(() => import("./PostfachView"));
 
@@ -256,7 +255,10 @@ export default function Workspace() {
                 stay valid and lead there; a bookmark shall not run into the
                 void. */}
             <Route path="admin" element={<Navigate to="/einstellungen/nutzer" replace />} />
-            <Route path="pruefspur" element={<PruefspurView />} />
+            {/* Das Protokoll steht jetzt in der Verwaltung. Die alte Adresse
+                bleibt gueltig: sie stand in der Leiste, und wer sie als
+                Lesezeichen hat, soll nicht auf einer leeren Seite landen. */}
+            <Route path="pruefspur" element={<Navigate to="/einstellungen/protokoll" replace />} />
             <Route path="einstellungen" element={<EinstellungenView />} />
             <Route path="einstellungen/:bereich" element={<EinstellungenView />} />
             <Route path="gruppen" element={<Navigate to="/einstellungen/gruppen" replace />} />
