@@ -19,6 +19,30 @@ export interface User {
    * hängt an der Adresse, damit ein neues sofort erscheint.
    */
   bildStand?: string;
+  /** Ob an diesem Konto ein zweiter Faktor steht. */
+  zweitfaktor?: boolean;
+}
+
+/**
+ * Die Antwort auf eine Anmeldung. Entweder das Konto -- dann steht die Sitzung
+ * bereits im Keks -- oder die Aufforderung zum zweiten Schritt samt Ticket.
+ * Beides in einem Typ, weil der Server es an einer Stelle entscheidet und die
+ * Oberfläche die Unterscheidung ohnehin treffen muss.
+ */
+export type Anmeldung = User | { zweiterSchritt: true; ticket: string };
+
+export const brauchtZweitenSchritt = (
+  a: Anmeldung,
+): a is { zweiterSchritt: true; ticket: string } => "zweiterSchritt" in a;
+
+/** Der Stand des zweiten Faktors am eigenen Konto. */
+export interface ZweitfaktorStand {
+  aktiv: boolean;
+  seit?: string;
+  /** Noch nicht verbrauchte Ersatzcodes. */
+  offen: number;
+  /** Ob die Instanz ihn von jedem Konto verlangt. */
+  pflicht: boolean;
 }
 
 export interface Tag {
@@ -654,7 +678,7 @@ export const api = {
   // kennung ist Adresse oder Benutzername; welches von beidem, entscheidet der
   // Server am @.
   login: (kennung: string, password: string) =>
-    req<User>("/auth/login", { method: "POST", body: JSON.stringify({ kennung, password }) }),
+    req<Anmeldung>("/auth/login", { method: "POST", body: JSON.stringify({ kennung, password }) }),
   register: (email: string, name: string, password: string, benutzername = "") =>
     req<User>("/auth/register", {
       method: "POST",
@@ -673,7 +697,40 @@ export const api = {
       anbieter: string;
     }>("/auth/sso"),
   ldapAnmelden: (benutzer: string, passwort: string) =>
-    req<User>("/auth/ldap", { method: "POST", body: JSON.stringify({ benutzer, passwort }) }),
+    req<Anmeldung>("/auth/ldap", { method: "POST", body: JSON.stringify({ benutzer, passwort }) }),
+
+  // Der zweite Faktor.
+  //
+  // Der Ablauf hat drei Aufrufe, weil er drei Zustände hat: start legt ein
+  // Geheimnis an, das noch nicht gilt, an schaltet es mit dem ersten richtigen
+  // Code ein und gibt dabei die Ersatzcodes zurück, aus nimmt es zurück. Ohne
+  // die Trennung von start und an sperrte ein abgebrochenes Einrichten -- der
+  // Blick auf den QR-Code, dann ein geschlossener Reiter -- das Konto aus.
+  zweitfaktorStand: () => req<ZweitfaktorStand>("/auth/zweitfaktor"),
+  zweitfaktorStart: () =>
+    req<{ geheim: string; uri: string; qr: string }>("/auth/zweitfaktor/start", { method: "POST" }),
+  zweitfaktorAn: (code: string) =>
+    req<{ ersatzcodes: string[] }>("/auth/zweitfaktor/an", {
+      method: "POST",
+      body: JSON.stringify({ code }),
+    }),
+  zweitfaktorAus: (passwort: string) =>
+    req<{ ok: boolean }>("/auth/zweitfaktor/aus", {
+      method: "POST",
+      body: JSON.stringify({ passwort }),
+    }),
+  zweitfaktorCodesNeu: (passwort: string) =>
+    req<{ ersatzcodes: string[] }>("/auth/zweitfaktor/codes", {
+      method: "POST",
+      body: JSON.stringify({ passwort }),
+    }),
+  // Der zweite Schritt der Anmeldung. Angenommen wird der laufende Code aus der
+  // App oder einer der Ersatzcodes.
+  zweitfaktorPruefen: (ticket: string, code: string) =>
+    req<User>("/auth/zweitfaktor/pruefen", {
+      method: "POST",
+      body: JSON.stringify({ ticket, code }),
+    }),
 
   // Word attachments: read as editor blocks and write back as .docx.
   wordLesen: (seiteId: string, anhangId: string) =>
@@ -1059,6 +1116,10 @@ export const api = {
       body: JSON.stringify({ email, name, password, role, benutzername }),
     }),
   deleteUser: (id: string) => req<void>(`/users/${id}`, { method: "DELETE" }),
+  // Den zweiten Faktor eines fremden Kontos entfernen, für das verlorene
+  // Telefon. Das Konto meldet sich danach wieder mit dem Passwort allein an.
+  zweitfaktorZuruecksetzen: (id: string) =>
+    req<{ ok: boolean }>(`/users/${id}/zweitfaktor`, { method: "DELETE" }),
   setUserRole: (id: string, role: string) =>
     req<{ role: string }>(`/users/${id}/role`, { method: "PUT", body: JSON.stringify({ role }) }),
   benutzernameSetzen: (id: string, benutzername: string) =>

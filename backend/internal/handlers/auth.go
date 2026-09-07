@@ -183,6 +183,20 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Steht ein zweiter Faktor, endet der erste Schritt hier: keine Sitzung,
+	// kein Keks, nur ein Ticket, das fuenf Minuten gilt. Der Versuch wird noch
+	// nicht als Anmeldung vermerkt -- angemeldet ist niemand, solange der Code
+	// fehlt, und die Pruefspur soll das nicht anders behaupten.
+	if s.zweitfaktorAktiv(r.Context(), u.ID) {
+		ticket, err := auth.ZweitTicket(s.Secret, u.ID)
+		if err != nil {
+			writeErr(w, http.StatusInternalServerError, "ticket failed")
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{"zweiterSchritt": true, "ticket": ticket})
+		return
+	}
+
 	s.issueSession(w, r, u.ID)
 	s.anmeldeSpur(r, WegPasswort, kennung, "", &u)
 	writeJSON(w, http.StatusOK, u)
@@ -223,9 +237,11 @@ func (s *Server) Me(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var u models.User
 	err := s.Pool.QueryRow(r.Context(),
-		`SELECT id, email, name, coalesce(benutzername, ''), role, created_at, bild_stand
+		`SELECT id, email, name, coalesce(benutzername, ''), role, created_at, bild_stand,
+		        (totp_geheim <> '' AND totp_seit IS NOT NULL)
 		 FROM users WHERE id = $1`, uid,
-	).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &u.Role, &u.CreatedAt, &u.BildStand)
+	).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &u.Role, &u.CreatedAt, &u.BildStand,
+		&u.Zweitfaktor)
 	if err != nil {
 		writeErr(w, http.StatusUnauthorized, "unauthorized")
 		return

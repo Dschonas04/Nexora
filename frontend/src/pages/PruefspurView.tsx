@@ -21,6 +21,10 @@ const BESCHRIFTUNG: Record<string, string> = {
   "konto.passwort": "Passwort gewechselt",
   "konto.passwort.gesetzt": "Passwort zurückgesetzt",
   "konto.passwort.fehlgeschlagen": "Passwortwechsel abgelehnt",
+  "zweitfaktor.eingeschaltet": "Zweiter Faktor eingeschaltet",
+  "zweitfaktor.ausgeschaltet": "Zweiter Faktor abgeschaltet",
+  "zweitfaktor.zurueckgesetzt": "Zweiter Faktor von der Verwaltung entfernt",
+  "zweitfaktor.ersatzcodes": "Ersatzcodes neu erzeugt",
   "seite.angelegt": "Seite angelegt",
   "seite.geaendert": "Seite geändert",
   "seite.geloescht": "In den Papierkorb",
@@ -87,6 +91,10 @@ const AUFFAELLIG = new Set([
   "konto.rolle",
   "konto.passwort.gesetzt",
   "konto.passwort.fehlgeschlagen",
+  // Den zweiten Faktor eines fremden Kontos zu entfernen ist der Weg, ueber
+  // den eine Uebernahme laeuft, wenn jemand die Verwaltung ueberredet. Er
+  // gehoert zu dem, wonach eine Pruefung sucht.
+  "zweitfaktor.zurueckgesetzt",
   "oeffentlich.an",
 ]);
 

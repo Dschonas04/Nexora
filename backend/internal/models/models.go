@@ -25,6 +25,11 @@ type User struct {
 	// Adresse traegt den Stand, damit ein neues Bild sofort erscheint statt aus
 	// dem Zwischenspeicher zu kommen).
 	BildStand *time.Time `json:"bildStand,omitempty"`
+	// Zweitfaktor sagt, ob an diesem Konto ein zweiter Faktor steht. Es steht
+	// hier und nicht nur in der eigenen Abfrage, weil eine Verwaltung in der
+	// Kontenliste sehen soll, wer noch keinen hat -- das ist die Frage, die man
+	// an eine solche Liste stellt.
+	Zweitfaktor bool `json:"zweitfaktor"`
 }
 
 // Space is a top-level container grouping pages beyond simple nesting.

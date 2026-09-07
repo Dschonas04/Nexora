@@ -1,12 +1,20 @@
 // Session state for the whole app. The token itself is an httpOnly cookie and
 // therefore invisible here; "signed in" simply means /auth/me answered.
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { api, User } from "./api/client";
+import { Anmeldung, api, brauchtZweitenSchritt, User } from "./api/client";
 
 interface AuthCtx {
   user: User | null;
   loading: boolean;
-  login: (kennung: string, password: string) => Promise<void>;
+  /**
+   * Anmelden. Zurück kommt entweder das Konto -- dann steht die Sitzung und der
+   * Zustand hier ist gesetzt -- oder die Aufforderung zum zweiten Schritt. Die
+   * Entscheidung liegt beim Server; die Anmeldeseite liest sie hier ab, statt
+   * sie selbst zu treffen.
+   */
+  login: (kennung: string, password: string) => Promise<Anmeldung>;
+  /** Der zweite Schritt: Code aus der App oder ein Ersatzcode. */
+  zweiterSchritt: (ticket: string, code: string) => Promise<void>;
   register: (email: string, name: string, password: string, benutzername?: string) => Promise<void>;
   logout: () => Promise<void>;
   /**
@@ -37,7 +45,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (kennung: string, password: string) => {
-    setUser(await api.login(kennung, password));
+    const antwort = await api.login(kennung, password);
+    // Beim zweiten Schritt bleibt der Zustand leer: angemeldet ist noch
+    // niemand, und ein hier gesetztes Konto liesse die Oberfläche den
+    // Arbeitsbereich zeigen, den der Server gar nicht herausgibt.
+    if (!brauchtZweitenSchritt(antwort)) setUser(antwort);
+    return antwort;
+  };
+  const zweiterSchritt = async (ticket: string, code: string) => {
+    setUser(await api.zweitfaktorPruefen(ticket, code));
   };
   const register = async (email: string, name: string, password: string, benutzername = "") => {
     setUser(await api.register(email, name, password, benutzername));
@@ -58,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  return <Ctx.Provider value={{ user, loading, login, register, logout, neuLaden }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, loading, login, zweiterSchritt, register, logout, neuLaden }}>{children}</Ctx.Provider>;
 }
 
 export const useAuth = () => useContext(Ctx);

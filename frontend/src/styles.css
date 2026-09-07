@@ -1998,80 +1998,67 @@ textarea::placeholder {
 .einstellung,
 .kachel,
 .warnkasten,
-/* Palette als Tabelle.
+/* Die drei Grundtoene als Kacheln, jede in ihrem eigenen Ton.
 
-   Vorher standen hier drei Kacheln mit Fliesstext und eine Reihe runder
-   Farbpunkte. Die Punkte zeigten die Farbe und sonst nichts: nicht ihren Wert,
-   nicht was sie traegt, und vor allem nicht, ob Schrift darauf noch lesbar
-   bleibt. Genau das entscheidet aber, ob eine Hausfarbe brauchbar ist. In
-   Spalten steht es nebeneinander und laesst sich vergleichen. */
-.palette-tabelle td,
-.palette-tabelle th {
-  vertical-align: middle;
+   Hier stand eine Tabelle mit den vier Farbmarken je Ton und ihren Hexwerten in
+   vier Spalten, dazu eine zweite mit Kontrastverhaeltnissen und WCAG-Urteilen.
+   Das las sich wie ein Auszug aus dem Stilblatt und beantwortete die einzige
+   Frage nicht, die an dieser Stelle gestellt wird: wie sieht das aus. */
+.tonwahl {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
 }
-.palette-tabelle tbody tr {
-  cursor: pointer;
-}
-.palette-tabelle tbody tr:hover {
-  background: var(--hover);
-}
-/* Die gewaehlte Zeile traegt einen Balken an der Kante statt einer Flaeche:
-   eine eingefaerbte Zeile haette mit den Farbproben darin um dieselbe Aussage
-   gestritten. */
-.palette-tabelle tbody tr.gewaehlt {
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-.palette-wahl {
-  width: 28px;
-  padding-right: 0;
-}
-.marke-zelle {
-  display: inline-flex;
+.tonkachel {
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+/* Die gewaehlte Kachel traegt einen Rahmen in der Akzentfarbe. Keine Flaeche:
+   die Kachel zeigt selbst einen Grundton, und eine zweite Farbe darueber
+   verfaelschte genau das, was zu sehen sein soll. */
+.tonkachel.gewaehlt {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.tonkachel-probe {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: 1px solid;
+}
+.tonkachel-name {
   white-space: nowrap;
 }
-.marke-probe {
-  display: inline-flex;
+
+/* Die Akzentfarben als Reihe von Punkten, mit dem Feld fuer eine Hausfarbe am
+   Ende. Ein Punkt zeigt eine Farbe -- mehr will an dieser Stelle niemand
+   wissen, und die Probe darunter zeigt, was sie anrichtet. */
+.akzentwahl {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.akzentknopf {
+  width: 26px;
+  height: 26px;
   flex: none;
   border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
 }
-/* Die Probe traegt die Schrift, um die es in der Spalte geht -- ein Kaestchen
-   mit "Aa" beantwortet die Frage schneller als die Zahl daneben. */
-.marke-probe.schriftprobe {
-  width: 30px;
-  font-size: 11px;
-  font-weight: 600;
-}
-.palette-urteil {
-  font-size: 12px;
-  font-weight: 600;
-}
-.palette-urteil.knapp {
-  color: var(--lesen-text, #9a6700);
-}
-.palette-urteil.schlecht {
-  color: var(--fehler-text, #cf222e);
-}
-
-/* Eine Hausfarbe kommt als Hexwert aus einem Handbuch, nicht aus dem Farbrad
-   des Betriebssystems. Deshalb das Feld voran, der Waehler daneben. */
-.akzent-eigen {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  margin-top: 12px;
-}
-.akzent-eigen label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  color: var(--muted);
+.akzentknopf.gewaehlt {
+  box-shadow: 0 0 0 2px var(--flaeche), 0 0 0 4px var(--text);
 }
 .hex-feld {
   width: 110px;
@@ -3621,6 +3608,17 @@ textarea::placeholder {
 .btn-schlicht.gefaehrlich {
   color: var(--fehler-text);
 }
+/* Derselbe Gedanke am ausgewachsenen Knopf, wie in der Rueckfrage: die Flaeche
+   bleibt zurueckhaltend, die Schrift traegt die Warnung. Ein leuchtend roter
+   Block draengte zum Klicken, und das soll er hier gerade nicht. */
+.btn.gefaehrlich {
+  background: var(--fehler-bg);
+  border-color: var(--fehler-rand);
+  color: var(--fehler-text);
+}
+.btn.gefaehrlich:hover:not(:disabled) {
+  border-color: var(--fehler-text);
+}
 .btn-schlicht:disabled {
   color: var(--muted);
   cursor: default;
@@ -3635,20 +3633,6 @@ textarea::placeholder {
 }
 .konten-tabelle select {
   font-size: 13px;
-}
-
-/* Die Mitglieder einer Gruppe klappen unter ihrer Zeile auf. Keine eigene
-   Trennlinie nach oben: sie gehoeren zu der Zeile darueber und saehen sonst wie
-   eine eigene Gruppe aus. */
-.gruppen-tabelle tr.gruppen-mitglieder > td {
-  padding-top: 0;
-  background: var(--sidebar-bg);
-}
-.gruppen-tabelle tr.gruppen-mitglieder input[type="text"],
-.gruppen-tabelle tr.gruppen-mitglieder input:not([type]) {
-  width: 100%;
-  max-width: 320px;
-  margin-bottom: 8px;
 }
 
 /* Ein DN und eine Liste von Gruppen sind lang und enthalten keine Leerzeichen,
@@ -3811,8 +3795,9 @@ textarea::placeholder {
 .einstellungen-manager .kennzahl,
 .einstellungen-manager .warnkasten,
 .einstellungen-manager .hinweis-ok,
-.einstellungen-manager .marke-probe,
+.einstellungen-manager .tonkachel,
 .einstellungen-manager .wirkprobe,
+.einstellungen-manager .fenster,
 .einstellungen-manager .konfig-feld,
 .einstellungen-manager .konfig-schluessel,
 .einstellungen-manager .fuellstand,
@@ -3871,30 +3856,7 @@ textarea::placeholder {
   padding: 14px 16px;
   margin-top: 10px;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--erfolg-text, #2ea043);
   background: var(--flaeche);
-}
-.lizenz-kopf.ungueltig {
-  border-left-color: var(--fehler-text, #cf222e);
-}
-.lizenz-marke {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.lizenz-punkt {
-  width: 8px;
-  height: 8px;
-  flex: none;
-  background: var(--erfolg-text, #2ea043);
-}
-.lizenz-kopf.ungueltig .lizenz-punkt {
-  background: var(--fehler-text, #cf222e);
 }
 .lizenz-felder {
   display: flex;
@@ -3914,32 +3876,6 @@ textarea::placeholder {
   margin-top: 2px;
 }
 
-/* Funktionsmatrix: Zeilen sind Funktionen, Spalten Stufen. */
-.matrix-tabelle .matrix-zelle,
-.matrix-tabelle .matrix-spalte {
-  text-align: center;
-  width: 96px;
-}
-/* Die laufende Stufe bekommt eine eigene Flaeche. Ohne sie muss man die
-   Spaltenkoepfe lesen, um zu wissen, welche Haken gerade gelten. */
-.matrix-tabelle .laufend {
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-}
-.matrix-tabelle th.laufend {
-  box-shadow: inset 0 -2px 0 var(--accent);
-}
-/* Ein gesetztes Quadrat statt eines Hakens: dieselbe Aussage, und es faellt in
-   einer Spalte aus zwanzig Zeilen als Muster auf, statt gelesen zu werden. */
-.matrix-ja {
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  background: var(--text);
-}
-.zustand-frei {
-  font-weight: 600;
-}
-
 /* Kopf einer Liste: Ueberschrift links, Filter rechts. */
 .listenkopf {
   display: flex;
@@ -3952,8 +3888,8 @@ textarea::placeholder {
   margin-bottom: 0;
 }
 .listenfilter {
-  min-width: 260px;
-  font-size: 13px;
+  width: 260px;
+  max-width: 100%;
 }
 
 /* Trennt zwei Sachgruppen auf einer Seite. Die Leiste hat weniger Eintraege,
@@ -3972,4 +3908,247 @@ textarea::placeholder {
 }
 .einstellungen-inhalt > .teil-titel:first-of-type {
   margin-top: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Fenster über der Seite (components/Fenster.tsx)
+
+   Die Verwaltung hatte ihre Formulare untereinander auf der Seite stehen: erst
+   das Formular zum Anlegen mit fünf Feldern, darunter die Liste. Das kostete
+   die obere Hälfte des Bildschirms für etwas, das man einmal in der Woche
+   braucht, und drängte die Liste unter den Rand. Was selten gebraucht wird,
+   gehört in ein Fenster.
+
+   Es benutzt .modal und .modal-header aus dem Freigabedialog weiter, damit
+   nicht zwei Sorten Fenster nebeneinander stehen. */
+.fenster {
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+}
+.fenster-breit {
+  width: 720px;
+}
+/* Der Inhalt rollt, Kopf und Fuss bleiben stehen. Ohne das schoebe eine Liste
+   aus vierzig Konten die Knopfreihe aus dem Bild. */
+.fenster-inhalt {
+  padding: 16px 18px;
+  overflow-y: auto;
+  flex: 1;
+}
+.fenster-fuss {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+}
+/* Der Platzhalter zwischen dem, was links steht (Löschen, eine Umschaltung),
+   und den Knöpfen rechts. Ohne ihn stünde alles in einer Reihe zusammen, und
+   Löschen säße neben Speichern. */
+.fuss-luecke {
+  flex: 1;
+}
+.fenster-zu {
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 4px;
+}
+.fenster-zu:hover {
+  color: var(--text);
+}
+.fenster-felder {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+}
+.fenster-felder label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.fenster-felder label > span {
+  font-weight: 500;
+}
+/* Die Felder muessen sich auf die Spalte zusammenziehen lassen. Ohne
+   min-width: 0 behaelt ein Eingabefeld im Raster seine Eigenbreite von rund
+   zwanzig Zeichen, und die Spalte waechst mit -- im Fenster stand das Feld
+   darauf ueber den rechten Rand hinaus.
+
+   Der Rahmen steht hier ausdruecklich, weil ein <input> ohne type-Angabe sonst
+   den Rahmen des Browsers behaelt und neben einem <select> mit eigenem Rahmen
+   wie ein anderes Bauteil aussieht. */
+.fenster-felder input,
+.fenster-felder select,
+.fenster-zeile input,
+.listenfilter,
+.mengenfeld,
+.codefeld {
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  /* Ausdruecklich die Textfarbe und nicht inherit: das Feld steht in einem
+     <label>, das gedaempft ist, und erbte sonst dessen Grau -- der eingetragene
+     Wert saehe aus wie ein Platzhalter. */
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.fenster-felder input:focus,
+.fenster-zeile input:focus,
+.listenfilter:focus,
+.mengenfeld:focus,
+.codefeld:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.feld-breit {
+  grid-column: 1 / -1;
+}
+/* Ein Abschnitt im Fenster, für das, was neben dem Formular noch geht:
+   Passwort zurücksetzen, zweiter Faktor. Eine Linie darüber, weil es eigene
+   Sachen sind und nicht mit dem Speichern-Knopf zusammenhängen. */
+.fenster-abschnitt {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.fenster-zeile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.fenster-zeile input {
+  flex: 1 1 180px;
+  width: auto;
+}
+/* Das Feld für mehrere Konten auf einmal. Fest auf eine Schrift mit gleicher
+   Laufweite, damit die Spalten einer eingefügten Tabellenzeile untereinander
+   stehen. */
+.mengenfeld {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+/* Kopf einer Liste, rechte Seite: Filter und der Knopf, der das Fenster
+   aufmacht. */
+.listenkopf-werkzeug {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Der zweite Faktor am eigenen Konto. */
+.zweit-karte {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  background: var(--flaeche);
+}
+.zweit-lage {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 62ch;
+}
+.zweit-knoepfe {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+/* Der QR-Code steht auf seiner eigenen weißen Fläche, auch im dunklen
+   Grundton: eine Kamera liest ihn nur dunkel auf hell. */
+.qr-kasten {
+  width: 190px;
+  padding: 10px;
+  margin: 0 auto 12px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+}
+.qr-kasten svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* Der Schlüssel zum Abtippen, wenn die Kamera nicht in Frage kommt. */
+.zweit-geheim {
+  display: block;
+  padding: 8px 10px;
+  margin: 6px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  word-break: break-all;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+/* Das Feld für den Code: wenige Zeichen, groß, mit Abstand dazwischen. Es
+   wird abgelesen und abgetippt, nicht gelesen. */
+.codefeld {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 18px;
+  letter-spacing: 0.16em;
+  width: 180px;
+  text-align: center;
+}
+/* Die Ersatzcodes in zwei Spalten. Sie werden abgeschrieben, deshalb stehen
+   sie untereinander und nicht in einem Fließtext. */
+.codeliste {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.codeliste code {
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+/* Ein Satz, der eine Warnung trägt, ohne einen ganzen Kasten dafür zu
+   brauchen. */
+.fehlertext {
+  color: var(--fehler-text, #cf222e);
+}
+
+@media (max-width: 620px) {
+  .fenster-felder {
+    grid-template-columns: 1fr;
+  }
+  .codeliste {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Ein Streifen über dem Arbeitsbereich, wenn die Instanz den zweiten Faktor
+   verlangt und das eigene Konto keinen hat. Zurückhaltend und nicht rot: es ist
+   eine offene Aufgabe, kein Fehler, und wer hier steht, arbeitet gerade. */
+.mahnstreifen {
+  padding: 9px 18px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--lesen-bg, #fff8e5);
+  border-bottom: 1px solid var(--border);
+}
+.mahnstreifen a {
+  color: var(--accent-lesbar);
+  text-decoration: underline;
 }

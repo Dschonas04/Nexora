@@ -205,6 +205,10 @@ func main() {
 		r.Get("/auth/oidc/start", h.OIDCStart)
 		r.Get("/auth/oidc/zurueck", h.OIDCZurueck)
 		r.Post("/auth/ldap", h.LDAPAnmeldung)
+		// Der zweite Schritt der Anmeldung. Oeffentlich, weil an dieser Stelle
+		// noch keine Sitzung besteht -- ausgewiesen wird sich mit dem Ticket
+		// aus dem ersten Schritt, das fuenf Minuten gilt.
+		r.Post("/auth/zweitfaktor/pruefen", h.ZweitfaktorPruefen)
 		// Public links are a paid extra. The route stays in place but answers
 		// 402 without a license instead of serving the page.
 		r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
@@ -225,6 +229,13 @@ func main() {
 			// /users, weil es keinen Kontonamen braucht: gemeint ist immer das
 			// Konto, das die Anfrage stellt.
 			r.Post("/auth/passwort", h.PasswortWechseln)
+			// Der zweite Faktor des eigenen Kontos. Wie das Passwort bei
+			// /auth und nicht bei /users: gemeint ist immer, wer fragt.
+			r.Get("/auth/zweitfaktor", h.ZweitfaktorStand)
+			r.Post("/auth/zweitfaktor/start", h.ZweitfaktorStart)
+			r.Post("/auth/zweitfaktor/an", h.ZweitfaktorAn)
+			r.Post("/auth/zweitfaktor/aus", h.ZweitfaktorAus)
+			r.Post("/auth/zweitfaktor/codes", h.ZweitfaktorCodesNeu)
 
 			// Tells the interface what is unlocked so it never offers what is
 			// locked. Contains no secret.
@@ -444,6 +455,10 @@ func main() {
 			// Zuruecksetzen durch eine Verwaltung, fuer ein vergessenes
 			// Passwort. Das eigene Konto weist der Handler ab, siehe passwort.go.
 			r.Put("/users/{id}/passwort", h.PasswortSetzen)
+			// Der Weg der Verwaltung fuer das verlorene Telefon: den zweiten
+			// Faktor eines Kontos entfernen. Es meldet sich danach wieder mit
+			// dem Passwort allein an und richtet ihn neu ein.
+			r.Delete("/users/{id}/zweitfaktor", h.ZweitfaktorZuruecksetzen)
 			// Das eigene Profil: angezeigter Name und Bild. Kein Zusatz und
 			// keine Verwaltungssache -- wie jemand heisst und aussieht, geht
 			// ihn selbst an, siehe profilbild.go.

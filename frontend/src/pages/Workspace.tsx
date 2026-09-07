@@ -5,7 +5,7 @@
 // sidebar has to follow. The refresh callbacks passed down are how a view says
 // "something you display has changed".
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
-import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { PageMeta, Space, Tag, api } from "../api/client";
 import Sidebar from "../components/Sidebar";
 import { TreeGap } from "../components/PageTree";
@@ -217,6 +217,7 @@ export default function Workspace() {
         }}
       />
       <div className="main">
+        <ZweitfaktorMahnung />
         {/* Until a lazily loaded part is there the waiting text stands here,
             faded in with a delay so that a fast switch shows nothing. */}
         <Suspense fallback={<div className="empty-state spaet">Lädt…</div>}>
@@ -266,6 +267,38 @@ export default function Workspace() {
           </Routes>
         </Suspense>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Der Hinweis, wenn die Instanz den zweiten Faktor verlangt und das eigene
+ * Konto keinen hat.
+ *
+ * Ein Streifen und keine Sperre: wer hier arbeitet, ist bereits angemeldet, und
+ * ihn vor der Arbeit auszusperren hilft niemandem. Er verschwindet von selbst,
+ * sobald der Faktor steht -- ohne Knopf zum Wegklicken, denn dann stünde er
+ * genau einmal da und nie wieder.
+ */
+function ZweitfaktorMahnung() {
+  const [noetig, setNoetig] = useState(false);
+  const loc = useLocation();
+  useEffect(() => {
+    api
+      .zweitfaktorStand()
+      .then((z) => setNoetig(z.pflicht && !z.aktiv))
+      .catch(() => setNoetig(false));
+    // Nach einem Wechsel der Adresse noch einmal fragen: wer ihn gerade in den
+    // Einstellungen eingerichtet hat, soll den Streifen beim Verlassen der
+    // Seite los sein.
+  }, [loc.pathname]);
+
+  if (!noetig) return null;
+  return (
+    <div className="mahnstreifen">
+      Diese Instanz verlangt einen zweiten Faktor. Solange keiner steht, genügt zum
+      Anmelden dein Passwort allein.{" "}
+      <Link to="/einstellungen/zugang">Jetzt einrichten</Link>
     </div>
   );
 }

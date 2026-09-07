@@ -46,6 +46,7 @@ const (
 	GrundPasswort  = "Passwort falsch"
 	GrundGesperrt  = "Konto gesperrt"
 	GrundVerzeichn = "Verzeichnis hat abgelehnt"
+	GrundZweitCode = "Zweiter Faktor falsch"
 )
 
 // anmeldeSpur records one attempt.

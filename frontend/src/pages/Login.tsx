@@ -2,17 +2,22 @@
 // screen for the workspace; there is no explicit redirect here.
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { api } from "../api/client";
+import { api, brauchtZweitenSchritt } from "../api/client";
 import { useAuth } from "../auth";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, zweiterSchritt } = useAuth();
   // Eine Zeile für beides. Was drin steht, entscheidet der Server am @: eine
   // Auswahl davor wäre eine Frage, die niemand beantworten müsste.
   const [kennung, setKennung] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Das Ticket aus dem ersten Schritt. Solange es steht, ist die Anmeldung
+  // halb fertig: das Passwort stimmte, der Code fehlt. Es hält keine Sitzung,
+  // gilt fünf Minuten und öffnet für sich genommen nichts.
+  const [ticket, setTicket] = useState("");
+  const [code, setCode] = useState("");
 
   // What this instance offers. Asked of the server rather than guessed: an SSO
   // button with nothing set up behind it leads into an error message instead of
@@ -38,20 +43,84 @@ export default function Login() {
     setBusy(true);
     setError("");
     try {
-      if (ueberVerzeichnis) {
-        await api.ldapAnmelden(kennung, password);
-        // The session sits in the cookie; reloading lets AuthProvider read it
-        // and switches over to the workspace.
-        window.location.href = "/";
+      const antwort = ueberVerzeichnis
+        ? await api.ldapAnmelden(kennung, password)
+        : await login(kennung, password);
+      if (brauchtZweitenSchritt(antwort)) {
+        setTicket(antwort.ticket);
+        setCode("");
         return;
       }
-      await login(kennung, password);
+      // Beim Verzeichnis sitzt die Sitzung im Keks, ohne dass der Zustand hier
+      // davon weiß. Ein Neuladen lässt AuthProvider sie lesen.
+      if (ueberVerzeichnis) window.location.href = "/";
     } catch (err) {
       setError((err as Error).message || "Anmeldung fehlgeschlagen");
     } finally {
       setBusy(false);
     }
   };
+
+  const codeSenden = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    try {
+      await zweiterSchritt(ticket, code);
+    } catch (err) {
+      setError((err as Error).message || "Der Code stimmt nicht");
+      setCode("");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Der zweite Schritt bekommt eine eigene Karte statt eines dritten Feldes im
+  // Formular. Wer hier steht, hat das Passwort hinter sich; ein Bildschirm mit
+  // genau einer Frage darauf lässt keinen Zweifel, welche gerade dran ist.
+  if (ticket) {
+    return (
+      <div className="auth">
+        <form className="auth-card" onSubmit={codeSenden}>
+          <h1>Nexora</h1>
+          <p className="sub">Zweiter Schritt</p>
+          {error && <div className="error">{error}</div>}
+          <div className="field">
+            <label>Code aus der Authenticator-App</label>
+            <input
+              className="codefeld"
+              inputMode="text"
+              autoComplete="one-time-code"
+              placeholder="123456"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <p className="muted small">
+            Sechs Ziffern aus der App. Ist das Telefon nicht zur Hand, tut es auch einer
+            der Ersatzcodes; jeder davon gilt einmal.
+          </p>
+          <button className="btn-primary" type="submit" disabled={busy || !code.trim()}>
+            {busy ? "Prüft…" : "Anmelden"}
+          </button>
+          <div className="switch">
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => {
+                setTicket("");
+                setPassword("");
+                setError("");
+              }}
+            >
+              Zurück zur Anmeldung
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="auth">
