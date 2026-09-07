@@ -1285,15 +1285,23 @@ export default function Sidebar(props: Props) {
                   symbol={<Zahnrad />}
                   symbolTitel="Verwaltung"
                   symbolAktion={() => onNavigate("/einstellungen")}
-                  symbolAktiv={currentPath.startsWith("/einstellungen")}
+                  symbolAktiv={
+                    currentPath.startsWith("/einstellungen") &&
+                    !currentPath.startsWith("/einstellungen/protokoll")
+                  }
                   nameFolgtSymbol
                 >
                   Verwaltung
                 </Klapptitel>
+                {/* Eine Abkuerzung in die Verwaltung, keine eigene Seite mehr:
+                    das Protokoll ist dort ein Bereich wie die anderen. */}
                 {!zu.has("verwaltung") && frei("pruefspur") && (
                   <div
-                    className={"tree-row" + (currentPath === "/pruefspur" ? " active" : "")}
-                    onClick={() => onNavigate("/pruefspur")}
+                    className={
+                      "tree-row" +
+                      (currentPath.startsWith("/einstellungen/protokoll") ? " active" : "")
+                    }
+                    onClick={() => onNavigate("/einstellungen/protokoll")}
                   >
                     <span className="tree-label">Protokoll</span>
                   </div>

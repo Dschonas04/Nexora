@@ -35,6 +35,7 @@ import Zweitfaktor from "../components/Zweitfaktor";
 import { useLizenz } from "../lizenz";
 import AdminView from "./AdminView";
 import GruppenView from "./GruppenView";
+import PruefspurView from "./PruefspurView";
 import { GRUND, anwenden, useDesign } from "../design";
 import { ausHex, kontrast, lesbarAuf, schriftAuf } from "../farbe";
 import { useRueckfrage } from "../components/Rueckfrage";
@@ -52,6 +53,7 @@ type Bereich =
   | "datenbank"
   | "aussehen"
   | "lizenz"
+  | "protokoll"
   | "system";
 
 type Teil =
@@ -69,6 +71,7 @@ type Teil =
   | "anhaenge"
   | "aussehen"
   | "lizenz"
+  | "protokoll"
   | "system"
   | "wartung";
 
@@ -103,6 +106,16 @@ const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] =
   },
   { id: "aussehen", titel: "Aussehen", unter: "Grundton, Akzent", teile: ["aussehen"] },
   { id: "lizenz", titel: "Lizenz", unter: "Umfang, Laufzeit", teile: ["lizenz"] },
+  // Das Protokoll war bisher eine Seite fuer sich, mit einer eigenen Zeile in
+  // der Leiste -- die einzige Sache der Verwaltung, die nicht in der Verwaltung
+  // stand. Ein eigener Bereich und kein Anhaengsel an System: wer es oeffnet,
+  // sucht nicht nach einer Einstellung, sondern nach einem Vorgang.
+  {
+    id: "protokoll",
+    titel: "Protokoll",
+    unter: "Wer hat wann was getan",
+    teile: ["protokoll"],
+  },
   {
     id: "system",
     titel: "System",
@@ -129,6 +142,7 @@ const TEIL_TITEL: Record<Teil, string> = {
   anhaenge: "Anhänge",
   aussehen: "Aussehen",
   lizenz: "Lizenz",
+  protokoll: "Protokoll",
   system: "Konfiguration",
   wartung: "Wartung",
 };
@@ -1277,6 +1291,8 @@ export default function EinstellungenView() {
         return <AdminView />;
       case "gruppen":
         return <GruppenView />;
+      case "protokoll":
+        return <PruefspurView />;
       case "uebersicht": {
         // Eine Tabelle statt einer Reihe von Kacheln. Kacheln sehen auf dem
         // ersten Blick besser aus, aber vierzehn Stück davon sind keine

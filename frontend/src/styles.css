@@ -4064,9 +4064,14 @@ textarea::placeholder {
 }
 /* Der Knopf bricht nicht um. Ohne diese Zeile zog das Filterfeld daneben so
    viel Breite, dass aus "Rechner hinzufuegen" zwei Zeilen wurden. */
-.listenkopf-werkzeug .btn {
+.listenkopf-werkzeug .btn,
+.listenkopf-werkzeug select {
   white-space: nowrap;
   flex: none;
+}
+.listenkopf-werkzeug select {
+  font-size: 13px;
+  max-width: 260px;
 }
 
 /* Der zweite Faktor am eigenen Konto. */

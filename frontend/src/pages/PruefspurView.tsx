@@ -3,9 +3,15 @@
 // It answers one question: who did what, when. Everything here serves reading
 // it back under pressure — during an incident or an audit — which is why the
 // filters sit at the top and the newest entry is the first one.
+//
+// Sie steht innerhalb der Einstellungen und bringt deshalb keinen eigenen
+// Rahmen mit; Überschrift und Abstände kommen von dort. Vorher war sie eine
+// Seite für sich, erreichbar über eine eigene Zeile in der Leiste -- also die
+// einzige Sache der Verwaltung, die nicht in der Verwaltung stand.
 import { useEffect, useState } from "react";
 
 import { Spureintrag, api } from "../api/client";
+import Listenkopf from "../components/Listenkopf";
 import { useLizenz } from "../lizenz";
 
 // Readable German for the action names the backend records. An unknown name
@@ -139,13 +145,13 @@ export default function PruefspurView() {
 
   if (!frei("pruefspur")) {
     return (
-      <div className="page-pad">
-        <h2>Protokoll</h2>
-        <p className="muted">
+      <>
+        <h3>Protokoll</h3>
+        <p className="muted small">
           Diese Funktion gehört zum Zusatzumfang und ist in der vorliegenden Lizenz
-          nicht enthalten.
+          nicht enthalten. Aufgezeichnet wird trotzdem — nur zu lesen ist es nicht.
         </p>
-      </div>
+      </>
     );
   }
 
@@ -163,14 +169,24 @@ export default function PruefspurView() {
     : eintraege;
 
   return (
-    <div className="page-pad pruefspur">
-      <h2>Protokoll</h2>
-      <p className="muted small">
-        Wer hat wann was getan. Die Aufzeichnung läuft unabhängig von der Lizenz mit,
-        damit das Protokoll keine Lücken bekommt.
-      </p>
-
-      <div className="pruefspur-filter">
+    <div className="pruefspur">
+      {/* Zwei Filter, die verschiedene Dinge tun, und deshalb an
+          verschiedenen Stellen: die Auswahl der Vorgangsart fragt den Server
+          neu, das Textfeld engt nur ein, was schon geladen ist. Stünden beide
+          nebeneinander, sähen sie aus wie zwei Hälften derselben Sache. */}
+      <Listenkopf
+        titel="Protokoll"
+        zahl={
+          eintraege.length === 0
+            ? undefined
+            : sichtbar.length === eintraege.length
+              ? `${eintraege.length} Einträge`
+              : `${sichtbar.length} von ${eintraege.length} Einträgen`
+        }
+        filter={suche}
+        setFilter={setSuche}
+        platzhalter="In den Einträgen suchen…"
+      >
         <select value={filter} onChange={(e) => setFilter(e.target.value)}>
           <option value="">Alle Vorgänge</option>
           {aktionen.map((a) => (
@@ -179,15 +195,11 @@ export default function PruefspurView() {
             </option>
           ))}
         </select>
-        <input
-          placeholder="In den geladenen Einträgen suchen…"
-          value={suche}
-          onChange={(e) => setSuche(e.target.value)}
-        />
-        <span className="muted small">
-          {sichtbar.length} von {eintraege.length}
-        </span>
-      </div>
+      </Listenkopf>
+      <p className="muted small">
+        Wer hat wann was getan. Die Aufzeichnung läuft unabhängig von der Lizenz mit,
+        damit das Protokoll keine Lücken bekommt. Höchstens 500 Einträge je Abfrage.
+      </p>
 
       {fehler && <div className="fehler">{fehler}</div>}
       {laedt && <div className="muted">Lädt…</div>}
@@ -197,6 +209,7 @@ export default function PruefspurView() {
       )}
 
       {sichtbar.length > 0 && (
+        <div className="tabelle-rollen">
         <table className="tabelle pruefspur-tabelle">
           <thead>
             <tr>
@@ -233,6 +246,7 @@ export default function PruefspurView() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
