@@ -10,8 +10,7 @@ import PageTree, { TreeGap } from "./PageTree";
 import { useAussenklick } from "../klappen";
 import SpaceRechte from "./SpaceRechte";
 import Einfuhr from "./Einfuhr";
-import PasswortDialog from "./PasswortDialog";
-import ProfilDialog from "./ProfilDialog";
+import MeinKonto from "./MeinKonto";
 import Profilbild from "./Profilbild";
 
 // Keys in the browser's storage. Collapsed is remembered, not open: that way a
@@ -114,8 +113,10 @@ export default function Sidebar(props: Props) {
     ungelesen,
   } = props;
   const { user, logout } = useAuth();
-  const [passwortOffen, setPasswortOffen] = useState(false);
-  const [profilOffen, setProfilOffen] = useState(false);
+  // Das eigene Konto. Profil, Passwort, zweiter Faktor und die eigenen Geräte
+  // standen an drei verschiedenen Stellen, zwei davon nur für Administratoren.
+  // Jetzt liegen sie zusammen hinter dem Zahnrad neben dem Namen.
+  const [kontoOffen, setKontoOffen] = useState(false);
   // The account menu in the bottom-left. It stays closed until the avatar
   // is clicked: the sidebar is narrow and three side-by-side buttons would
   // crowd out the username the menu serves.
@@ -1321,6 +1322,10 @@ export default function Sidebar(props: Props) {
       )}
 
       <div className="sidebar-footer" ref={kontoEcke}>
+        {/* Das Zahnrad steht neben dem Namen und nicht im Menü darüber: was
+            jemand an seinem Konto einstellen kann, soll man sehen, ohne erst
+            ein Menü aufzuklappen. Dasselbe Symbol trägt oben die Verwaltung --
+            hier ist es das eigene Konto, dort die Instanz. */}
         <button
           className="konto-knopf"
           onClick={() => setKontoMenue((auf) => !auf)}
@@ -1339,6 +1344,17 @@ export default function Sidebar(props: Props) {
             {kontoMenue ? "\u25be" : "\u25b4"}
           </span>
         </button>
+        <button
+          className="icon-btn konto-zahnrad"
+          title="Mein Konto"
+          aria-label="Mein Konto"
+          onClick={() => {
+            setKontoMenue(false);
+            setKontoOffen(true);
+          }}
+        >
+          <Zahnrad />
+        </button>
 
         {kontoMenue && (
           <div className="konto-menue" role="menu">
@@ -1355,28 +1371,18 @@ export default function Sidebar(props: Props) {
                 <div className="muted small">{user?.email}</div>
               </div>
             </div>
-            {/* Drei gleiche Knöpfe untereinander: Profil, Passwort, Abmelden
-                sind derselbe Rang, und einer davon sah bisher aus wie ein
-                Nebensatz. */}
+            {/* Zwei gleiche Knöpfe untereinander. Aus "Profil bearbeiten" und
+                "Passwort ändern" ist ein Eintrag geworden: sie waren zwei Namen
+                für dieselbe Sache, nämlich das eigene Konto. */}
             <button
               className="konto-menue-zeile"
               role="menuitem"
               onClick={() => {
                 setKontoMenue(false);
-                setProfilOffen(true);
+                setKontoOffen(true);
               }}
             >
-              Profil bearbeiten
-            </button>
-            <button
-              className="konto-menue-zeile"
-              role="menuitem"
-              onClick={() => {
-                setKontoMenue(false);
-                setPasswortOffen(true);
-              }}
-            >
-              Passwort ändern
+              Mein Konto
             </button>
             <button
               className="konto-menue-zeile"
@@ -1392,8 +1398,7 @@ export default function Sidebar(props: Props) {
         )}
       </div>
 
-      {passwortOffen && <PasswortDialog onClose={() => setPasswortOffen(false)} />}
-      {profilOffen && <ProfilDialog onClose={() => setProfilOffen(false)} />}
+      {kontoOffen && <MeinKonto onClose={() => setKontoOffen(false)} />}
     </div>
   );
 }

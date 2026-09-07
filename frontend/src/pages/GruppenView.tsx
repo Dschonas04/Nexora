@@ -9,6 +9,7 @@ import { Gruppe, Mitglied, api } from "../api/client";
 import { useAuth } from "../auth";
 import { useLizenz } from "../lizenz";
 import Fenster from "../components/Fenster";
+import Listenkopf from "../components/Listenkopf";
 import { useRueckfrage } from "../components/Rueckfrage";
 
 export default function GruppenView() {
@@ -121,26 +122,17 @@ export default function GruppenView() {
 
   return (
     <div className="gruppenliste">
-      <div className="listenkopf">
-        <h3>
-          Gruppen
-          <span className="muted small">
-            {" "}
-            {gruppen.length} {gruppen.length === 1 ? "Gruppe" : "Gruppen"}
-          </span>
-        </h3>
-        <div className="listenkopf-werkzeug">
-          <input
-            className="listenfilter"
-            placeholder="Filtern nach Name"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          />
-          <button className="btn btn-primary" onClick={() => setAnlegenOffen(true)}>
-            Gruppe anlegen
-          </button>
-        </div>
-      </div>
+      <Listenkopf
+        titel="Gruppen"
+        zahl={`${gruppen.length} ${gruppen.length === 1 ? "Gruppe" : "Gruppen"}`}
+        filter={filter}
+        setFilter={setFilter}
+        platzhalter="Filtern nach Name"
+      >
+        <button className="btn btn-primary" onClick={() => setAnlegenOffen(true)}>
+          Gruppe anlegen
+        </button>
+      </Listenkopf>
       <p className="muted small">
         Eine Gruppe bündelt Konten. Zugriff bekommt sie nicht hier, sondern an der Ablage
         selbst, über das Schlüsselsymbol neben ihrem Namen in der Seitenleiste.

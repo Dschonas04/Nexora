@@ -29,6 +29,8 @@ import {
   api,
 } from "../api/client";
 import { useAuth } from "../auth";
+import Fenster from "../components/Fenster";
+import Listenkopf from "../components/Listenkopf";
 import Zweitfaktor from "../components/Zweitfaktor";
 import { useLizenz } from "../lizenz";
 import AdminView from "./AdminView";
@@ -660,6 +662,22 @@ export default function EinstellungenView() {
     }
   };
 
+  // Die Filter über den Listen der Verwaltung. Je Liste einer, weil sie
+  // nebeneinander auf einer Seite stehen können und ein gemeinsamer Filter dann
+  // zwei Tabellen gleichzeitig leerte.
+  const [sitzungFilter, setSitzungFilter] = useState("");
+  const [rechnerFilter, setRechnerFilter] = useState("");
+  const [tabellenFilter, setTabellenFilter] = useState("");
+  const [adminFilter, setAdminFilter] = useState("");
+  const [funktionFilter, setFunktionFilter] = useState("");
+  // Die Formulare, die nur selten gebraucht werden, gehen als Fenster auf
+  // statt auf der Seite zu stehen: einen Rechner traegt man einmal ein, einen
+  // Objektspeicher prueft man einmal, das Verzeichnis fragt man, wenn etwas
+  // klemmt.
+  const [rechnerOffen, setRechnerOffen] = useState(false);
+  const [ablageOffen, setAblageOffen] = useState(false);
+  const [ldapOffen, setLdapOffen] = useState(false);
+
   // Der zweite Faktor am eigenen Konto. Er gehoert nicht zu den Einstellungen
   // der Instanz und wird deshalb einzeln geholt -- und erst dann, wenn die
   // Sachgruppe wirklich auf dem Bildschirm steht.
@@ -1143,19 +1161,51 @@ export default function EinstellungenView() {
   // Seite landen.
   const teilInhalt = (teil: Teil) => {
     switch (teil) {
-      case "sitzungen":
+      case "sitzungen": {
+        const begriff = sitzungFilter.trim().toLowerCase();
+        const sichtbar = (sitzungen ?? []).filter(
+          (si) => !begriff || (si.browser + " " + si.ip).toLowerCase().includes(begriff),
+        );
         return (
           <>
-            <h3>Angemeldete Geräte</h3>
+            <Listenkopf
+              titel="Angemeldete Geräte"
+              zahl={
+                sitzungen === null
+                  ? "wird geladen"
+                  : `${sitzungen.length} ${sitzungen.length === 1 ? "Sitzung" : "Sitzungen"}`
+              }
+              filter={sitzungFilter}
+              setFilter={setSitzungFilter}
+              platzhalter="Filtern nach Gerät oder Adresse"
+            >
+              {(sitzungen?.length ?? 0) > 1 && (
+                <button
+                  className="btn"
+                  onClick={async () => {
+                    if (
+                      !(await frage({
+                        titel: "Überall sonst abmelden",
+                        text: "Alle anderen Sitzungen werden beendet. Diese hier bleibt bestehen.",
+                        bestaetigen: "Alle anderen beenden",
+                        gefaehrlich: true,
+                      }))
+                    )
+                      return;
+                    const r = await api.sitzungenBeenden().catch(() => null);
+                    if (r) setMeldung({ text: `${r.beendet} Sitzung(en) beendet.`, art: "ok" });
+                    sitzungenLaden();
+                  }}
+                >
+                  Überall sonst abmelden
+                </button>
+              )}
+            </Listenkopf>
             <p className="muted small">
               Eine Zeile je Sitzung in der Tabelle sitzungen, jede einzeln widerrufbar. Ab
               der halben Laufzeit setzt der nächste Aufruf Frist und Keks neu.
             </p>
-            {sitzungen === null ? (
-              <p className="muted">Wird geladen…</p>
-            ) : sitzungen.length === 0 ? (
-              <p className="muted">Keine gespeicherte Sitzung.</p>
-            ) : (
+            <div className="tabelle-rollen">
               <table className="tabelle">
                 <thead>
                   <tr>
@@ -1167,7 +1217,7 @@ export default function EinstellungenView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sitzungen.map((si) => (
+                  {sichtbar.map((si) => (
                     <tr key={si.id}>
                       <td>
                         {si.browser}
@@ -1180,9 +1230,9 @@ export default function EinstellungenView() {
                       <td className="muted small">{si.ip || "—"}</td>
                       <td className="muted small">{zeitpunkt(si.zuletztAm)}</td>
                       <td className="muted small">{zeitpunkt(si.laeuftAb)}</td>
-                      <td>
+                      <td className="zeilen-aktionen">
                         <button
-                          className="btn"
+                          className="btn-schlicht gefaehrlich"
                           onClick={async () => {
                             if (
                               !(await frage({
@@ -1205,34 +1255,23 @@ export default function EinstellungenView() {
                       </td>
                     </tr>
                   ))}
+                  {sichtbar.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="muted">
+                        {sitzungen === null
+                          ? "Wird geladen…"
+                          : sitzungen.length === 0
+                            ? "Keine gespeicherte Sitzung."
+                            : "Keine Sitzung passt auf den Filter."}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
-            )}
-            {(sitzungen?.length ?? 0) > 1 && (
-              <div className="knopfreihe">
-                <button
-                  className="btn"
-                  onClick={async () => {
-                    if (
-                      !(await frage({
-                        titel: "Überall sonst abmelden",
-                        text: "Alle anderen Sitzungen werden beendet. Diese hier bleibt bestehen.",
-                        bestaetigen: "Alle anderen beenden",
-                        gefaehrlich: true,
-                      }))
-                    )
-                      return;
-                    const r = await api.sitzungenBeenden().catch(() => null);
-                    if (r) setMeldung({ text: `${r.beendet} Sitzung(en) beendet.`, art: "ok" });
-                    sitzungenLaden();
-                  }}
-                >
-                  Überall sonst abmelden
-                </button>
-              </div>
-            )}
+            </div>
           </>
         );
+      }
 
       case "nutzer":
         return <AdminView />;
@@ -1381,7 +1420,15 @@ export default function EinstellungenView() {
         return (
           <>
             <h3>Am eigenen Konto</h3>
-            <Zweitfaktor stand={zweitStand} neuLaden={zweitLaden} />
+            {zweitStand === null ? (
+              <p className="muted small">Wird geladen…</p>
+            ) : (
+              <Zweitfaktor stand={zweitStand} neuLaden={zweitLaden} />
+            )}
+            <p className="muted small">
+              Dasselbe steht für jeden -- auch für Konten ohne Verwaltungsrecht -- hinter dem
+              Zahnrad neben dem Namen unten in der Leiste.
+            </p>
 
             <h3>Für die ganze Instanz</h3>
             <p className="muted small">
@@ -1406,19 +1453,33 @@ export default function EinstellungenView() {
             {feld("erlaubte_domaenen")}
             {feld("sitzung_stunden")}
 
-            <h3>Administratoren</h3>
+            <Listenkopf
+              titel="Administratoren"
+              zahl={`${(sich?.admins ?? []).length}`}
+              filter={adminFilter}
+              setFilter={setAdminFilter}
+              platzhalter="Filtern nach Name oder Adresse"
+            />
             <p className="muted small">
               Rolle admin: Lesen und Bearbeiten auf jeder Seite, unabhängig von der
-              Freigabe.
+              Freigabe. Vergeben wird sie unter Konten.
             </p>
             <table className="tabelle">
               <tbody>
-                {(sich?.admins ?? []).map((a) => (
-                  <tr key={a.email}>
-                    <td>{a.name}</td>
-                    <td className="muted">{a.email}</td>
-                  </tr>
-                ))}
+                {(sich?.admins ?? [])
+                  .filter(
+                    (a) =>
+                      !adminFilter.trim() ||
+                      (a.name + " " + a.email)
+                        .toLowerCase()
+                        .includes(adminFilter.trim().toLowerCase()),
+                  )
+                  .map((a) => (
+                    <tr key={a.email}>
+                      <td>{a.name}</td>
+                      <td className="muted">{a.email}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
 
@@ -1484,7 +1545,12 @@ export default function EinstellungenView() {
               </tbody>
             </table>
 
-            <h3>Herkunft</h3>
+            <Listenkopf
+              titel="Herkunft"
+              zahl={`${(a?.herkunft ?? []).length} ${
+                (a?.herkunft ?? []).length === 1 ? "Adresse" : "Adressen"
+              }`}
+            />
             <p className="muted small">
               Adressen der letzten sieben Tage, nach Fehlversuchen absteigend. Das gesuchte
               Muster ist eine Adresse gegen viele verschiedene Konten.
@@ -1532,7 +1598,16 @@ export default function EinstellungenView() {
               </table>
             </div>
 
-            <h3>Einzelne Versuche</h3>
+            {/* Der Filter dieser Liste ist kein Textfeld, sondern der Zeitraum
+                und das Ergebnis -- die Frage an eine Anmeldeliste lautet nicht
+                "wie hiess er", sondern "was ging in den letzten Tagen schief".
+                Deshalb steht er unter dem Kopf und nicht darin. */}
+            <Listenkopf
+              titel="Einzelne Versuche"
+              zahl={`${(a?.versuche ?? []).length} angezeigt${
+                (a?.versuche ?? []).length >= 300 ? ", auf 300 begrenzt" : ""
+              }`}
+            />
             <div className="pruefspur-filter">
               <select
                 value={anmeldeFilter.nur}
@@ -1694,8 +1769,38 @@ export default function EinstellungenView() {
               Ohne Passwort nur Suche: prüft Verbindung, Dienstkonto, Filter und Feldnamen.
               Mit Passwort zusätzlich Bind. Legt kein Konto an.
             </p>
-            <div className="einstellung">
-              <div className="s3-felder">
+            <div className="knopfreihe">
+              <button className="btn" disabled={!l.aktiv} onClick={() => setLdapOffen(true)}>
+                Verzeichnis fragen
+              </button>
+            </div>
+            {!l.aktiv && (
+              <p className="muted small">
+                Solange <code>ldap_aktiv</code> aus ist, gibt es nichts zu fragen.
+              </p>
+            )}
+            {ldapOffen && (
+            <Fenster
+              titel="Verzeichnis fragen"
+              unter="Sucht den Eintrag, legt kein Konto an"
+              schliessen={() => setLdapOffen(false)}
+              fuss={
+                <>
+                  <span className="fuss-luecke" />
+                  <button className="btn" onClick={() => setLdapOffen(false)}>
+                    Schließen
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    disabled={laeuft === "ldap" || !ldapProbe.benutzer.trim() || !l.aktiv}
+                    onClick={ldapTesten}
+                  >
+                    {laeuft === "ldap" ? "Fragt…" : "Fragen"}
+                  </button>
+                </>
+              }
+            >
+              <div className="fenster-felder">
                 <label>
                   <span>Benutzer</span>
                   <input
@@ -1714,21 +1819,6 @@ export default function EinstellungenView() {
                   />
                 </label>
               </div>
-              <div className="einstellung-aktionen">
-                <button
-                  className="btn"
-                  disabled={laeuft === "ldap" || !ldapProbe.benutzer.trim() || !l.aktiv}
-                  onClick={ldapTesten}
-                >
-                  {laeuft === "ldap" ? "Fragt…" : "Fragen"}
-                </button>
-              </div>
-
-              {!l.aktiv && (
-                <div className="einstellung-fuss muted small">
-                  Solange <code>ldap_aktiv</code> aus ist, gibt es nichts zu fragen.
-                </div>
-              )}
 
               {ldapErgebnis && !ldapErgebnis.ok && (
                 <div className="fehler">{ldapErgebnis.fehler || ldapErgebnis.hinweis}</div>
@@ -1769,7 +1859,8 @@ export default function EinstellungenView() {
                   </tbody>
                 </table>
               )}
-            </div>
+            </Fenster>
+            )}
           </>
         );
       }
@@ -1788,7 +1879,13 @@ export default function EinstellungenView() {
               reiner Datenbank-Dump ist unvollständig.
             </p>
 
-            <h3>Größte Tabellen</h3>
+            <Listenkopf
+              titel="Größte Tabellen"
+              zahl={`${(z.datenbank?.tabellen ?? []).length}`}
+              filter={tabellenFilter}
+              setFilter={setTabellenFilter}
+              platzhalter="Filtern nach Name"
+            />
             <table className="tabelle">
               <thead>
                 <tr>
@@ -1798,15 +1895,17 @@ export default function EinstellungenView() {
                 </tr>
               </thead>
               <tbody>
-                {(z.datenbank?.tabellen ?? []).map((t) => (
-                  <tr key={t.name}>
-                    <td>
-                      <code>{t.name}</code>
-                    </td>
-                    <td>{t.zeilen}</td>
-                    <td>{t.platz}</td>
-                  </tr>
-                ))}
+                {(z.datenbank?.tabellen ?? [])
+                  .filter((t) => t.name.includes(tabellenFilter.trim().toLowerCase()))
+                  .map((t) => (
+                    <tr key={t.name}>
+                      <td>
+                        <code>{t.name}</code>
+                      </td>
+                      <td>{t.zeilen}</td>
+                      <td>{t.platz}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
             <p className="muted small">
@@ -1930,15 +2029,42 @@ export default function EinstellungenView() {
               erlaubt zwei Instanzen auf denselben Dateien.
             </p>
 
-            <h3>Objektspeicher prüfen</h3>
-            <p className="muted small">
-              Hier wird nichts gespeichert; die Zugangsdaten bleiben im Formular und gelten
-              nur für diesen Test. Ein geheimer Schlüssel gehört in <code>config.conf</code>
-              {" "}oder in die Umgebung, nicht in eine Datenbankzeile, die jeder Dump
-              mitnimmt.
-            </p>
-            <div className="einstellung">
-              <div className="s3-felder">
+            <div className="knopfreihe">
+              <button className="btn" onClick={() => setAblageOffen(true)}>
+                Objektspeicher prüfen
+              </button>
+            </div>
+            {/* Sieben Felder fuer eine Probe, die man einmal im Jahr macht --
+                sie standen bisher dauerhaft auf der Seite. Im Fenster sind sie
+                da, wenn man sie ruft. */}
+            {ablageOffen && (
+            <Fenster
+              titel="Objektspeicher prüfen"
+              unter="Verbinden, schreiben, lesen, löschen"
+              schliessen={() => setAblageOffen(false)}
+              fuss={
+                <>
+                  <span className="fuss-luecke" />
+                  <button className="btn" onClick={() => setAblageOffen(false)}>
+                    Schließen
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    disabled={laeuft === "ablage" || !s3.endpunkt}
+                    onClick={ablageTesten}
+                  >
+                    {laeuft === "ablage" ? "Prüft…" : "Verbindung prüfen"}
+                  </button>
+                </>
+              }
+            >
+              <p className="muted small">
+                Hier wird nichts gespeichert; die Zugangsdaten bleiben im Formular und gelten
+                nur für diesen Test. Ein geheimer Schlüssel gehört in <code>config.conf</code>
+                {" "}oder in die Umgebung, nicht in eine Datenbankzeile, die jeder Dump
+                mitnimmt.
+              </p>
+              <div className="fenster-felder">
                 <label>
                   <span>Endpunkt</span>
                   <input
@@ -1984,21 +2110,17 @@ export default function EinstellungenView() {
                   <span>Pfadstil (MinIO, Garage)</span>
                 </label>
               </div>
-              <div className="einstellung-aktionen">
-                <button className="btn" disabled={laeuft === "ablage" || !s3.endpunkt} onClick={ablageTesten}>
-                  {laeuft === "ablage" ? "Prüft…" : "Verbindung prüfen"}
-                </button>
-              </div>
               {s3Ergebnis && (
                 <div className={s3Ergebnis.ok ? "hinweis-ok" : "fehler"}>{s3Ergebnis.text}</div>
               )}
-              <div className="einstellung-fuss muted small">
+              <p className="muted small">
                 Geprüft wird verbinden, schreiben, lesen und löschen — nur zu verbinden würde
                 zu wenig verraten. Die häufigsten Fehler zeigen sich erst beim Schreiben.
                 Übernommen wird das Ergebnis nicht: dafür die Werte in{" "}
                 <code>config.conf</code> eintragen und den Dienst neu starten.
-              </div>
-            </div>
+              </p>
+            </Fenster>
+            )}
           </>
         );
 
@@ -2196,7 +2318,15 @@ export default function EinstellungenView() {
                 Spalte je Lizenzstufe und einem Kaestchen in jeder Zelle -- die
                 beantwortete die Frage, was ein Wechsel braechte, und nicht die,
                 die man an diese Seite stellt: was laeuft gerade und was nicht. */}
-            <h3>Funktionsumfang</h3>
+            <Listenkopf
+              titel="Funktionsumfang"
+              zahl={`${(z.lizenz.freigeschaltet ?? []).length} von ${
+                Object.keys(ZUSATZ).length
+              } frei`}
+              filter={funktionFilter}
+              setFilter={setFunktionFilter}
+              platzhalter="Filtern nach Funktion"
+            />
             <p className="muted small">
               Geprüft wird immer die einzelne Funktion und nie die Stufe: ein Schlüssel kann
               eine Stufe und zusätzlich einzelne Funktionen tragen.
@@ -2210,7 +2340,15 @@ export default function EinstellungenView() {
                 </tr>
               </thead>
               <tbody>
-                {Object.entries(ZUSATZ).map(([k, titel]) => {
+                {Object.entries(ZUSATZ)
+                  .filter(
+                    ([k, titel]) =>
+                      !funktionFilter.trim() ||
+                      (k + " " + titel)
+                        .toLowerCase()
+                        .includes(funktionFilter.trim().toLowerCase()),
+                  )
+                  .map(([k, titel]) => {
                   const frei = (z.lizenz.freigeschaltet ?? []).includes(k);
                   return (
                     <tr key={k}>
@@ -2520,18 +2658,27 @@ export default function EinstellungenView() {
                 </table>
             </div>
 
-            <h3>Eigene Rechner</h3>
+            <Listenkopf
+              titel="Eigene Rechner"
+              zahl={
+                rechner === null
+                  ? "wird geladen"
+                  : `${rechner.rechner.length} eingetragen · ` +
+                    `${rechner.rechner.filter((r) => r.zustand === "antwortet").length} antworten`
+              }
+              filter={rechnerFilter}
+              setFilter={setRechnerFilter}
+              platzhalter="Filtern nach Name oder Adresse"
+            >
+              <button className="btn btn-primary" onClick={() => setRechnerOffen(true)}>
+                Rechner hinzufügen
+              </button>
+            </Listenkopf>
             <p className="muted small">
               Adressen, an denen diese Instanz selbst einen TCP-Verbindungsversuch macht.
               Kein Agent auf der Gegenseite, kein Zugang zum fremden Rechner — was hier
               steht, hat Nexora selbst gesehen.
             </p>
-            <p className="muted small">
-              Erkannt wird aus dem Banner: SSH nennt seine Fassung, HTTP die Kopfzeile{" "}
-              <code>Server</code>, TLS das Zertifikat samt Ablauf. Wer schweigt, bleibt leer —
-              geraten wird nichts.
-            </p>
-
             <div className="tabelle-rollen">
               <table className="tabelle verbund-tabelle">
                 <thead>
@@ -2546,7 +2693,15 @@ export default function EinstellungenView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(rechner?.rechner ?? []).map((r) => (
+                  {(rechner?.rechner ?? [])
+                    .filter(
+                      (r) =>
+                        !rechnerFilter.trim() ||
+                        (r.name + " " + r.ziel + " " + (r.notiz ?? ""))
+                          .toLowerCase()
+                          .includes(rechnerFilter.trim().toLowerCase()),
+                    )
+                    .map((r) => (
                     <Fragment key={r.id}>
                       <tr
                         className={
@@ -2594,10 +2749,18 @@ export default function EinstellungenView() {
                       )}
                     </Fragment>
                   ))}
-                  {(rechner?.rechner ?? []).length === 0 && (
+                  {(rechner?.rechner ?? []).filter(
+                    (r) =>
+                      !rechnerFilter.trim() ||
+                      (r.name + " " + r.ziel + " " + (r.notiz ?? ""))
+                        .toLowerCase()
+                        .includes(rechnerFilter.trim().toLowerCase()),
+                  ).length === 0 && (
                     <tr>
                       <td colSpan={7} className="muted">
-                        Noch kein Rechner eingetragen.
+                        {(rechner?.rechner ?? []).length === 0
+                          ? "Noch kein Rechner eingetragen."
+                          : "Kein Rechner passt auf den Filter."}
                       </td>
                     </tr>
                   )}
@@ -2605,45 +2768,65 @@ export default function EinstellungenView() {
               </table>
             </div>
 
-            <div className="einstellung">
-              <div className="s3-felder">
-                <label>
-                  <span>Name</span>
-                  <input
-                    placeholder="optional"
-                    value={neuerRechner.name}
-                    onChange={(e) => setNeuerRechner({ ...neuerRechner, name: e.target.value })}
-                  />
-                </label>
-                <label>
-                  <span>Adresse</span>
-                  <input
-                    placeholder="10.0.0.5:22 oder https://10.0.0.5:8006"
-                    value={neuerRechner.ziel}
-                    onChange={(e) => setNeuerRechner({ ...neuerRechner, ziel: e.target.value })}
-                    onKeyDown={(e) => e.key === "Enter" && rechnerAnlegen()}
-                  />
-                </label>
-                <label>
-                  <span>Notiz</span>
-                  <input
-                    placeholder="optional"
-                    value={neuerRechner.notiz}
-                    onChange={(e) => setNeuerRechner({ ...neuerRechner, notiz: e.target.value })}
-                  />
-                </label>
-              </div>
-              <div className="einstellung-aktionen">
-                <button
-                  className="btn"
-                  disabled={!neuerRechner.ziel.trim()}
-                  onClick={rechnerAnlegen}
-                >
-                  Hinzufügen
-                </button>
-              </div>
-              {rechnerFehler && <div className="fehler">{rechnerFehler}</div>}
-            </div>
+            {rechnerFehler && <div className="fehler">{rechnerFehler}</div>}
+
+            {rechnerOffen && (
+              <Fenster
+                titel="Rechner hinzufügen"
+                unter="Eine Adresse, an der diese Instanz anklopft"
+                schliessen={() => setRechnerOffen(false)}
+                fuss={
+                  <>
+                    <span className="fuss-luecke" />
+                    <button className="btn" onClick={() => setRechnerOffen(false)}>
+                      Abbrechen
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      disabled={!neuerRechner.ziel.trim()}
+                      onClick={async () => {
+                        await rechnerAnlegen();
+                        setRechnerOffen(false);
+                      }}
+                    >
+                      Hinzufügen
+                    </button>
+                  </>
+                }
+              >
+                <div className="fenster-felder">
+                  <label>
+                    <span>Name</span>
+                    <input
+                      placeholder="optional"
+                      value={neuerRechner.name}
+                      onChange={(e) => setNeuerRechner({ ...neuerRechner, name: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    <span>Notiz</span>
+                    <input
+                      placeholder="optional"
+                      value={neuerRechner.notiz}
+                      onChange={(e) => setNeuerRechner({ ...neuerRechner, notiz: e.target.value })}
+                    />
+                  </label>
+                  <label className="feld-breit">
+                    <span>Adresse</span>
+                    <input
+                      placeholder="10.0.0.5:22 oder https://10.0.0.5:8006"
+                      value={neuerRechner.ziel}
+                      onChange={(e) => setNeuerRechner({ ...neuerRechner, ziel: e.target.value })}
+                    />
+                  </label>
+                </div>
+                <p className="muted small">
+                  Erkannt wird aus dem Banner: SSH nennt seine Fassung, HTTP die Kopfzeile{" "}
+                  <code>Server</code>, TLS das Zertifikat samt Ablauf. Wer schweigt, bleibt
+                  leer — geraten wird nichts.
+                </p>
+              </Fenster>
+            )}
 
             <h3>Nur beim Start änderbar</h3>
             <p className="muted small">
