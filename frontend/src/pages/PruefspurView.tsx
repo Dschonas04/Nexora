@@ -149,7 +149,7 @@ export default function PruefspurView() {
         <h3>Protokoll</h3>
         <p className="muted small">
           Diese Funktion gehört zum Zusatzumfang und ist in der vorliegenden Lizenz
-          nicht enthalten. Aufgezeichnet wird trotzdem — nur zu lesen ist es nicht.
+          nicht enthalten. Aufgezeichnet wird weiter, nur lesen lässt es sich ohne Lizenz nicht.
         </p>
       </>
     );

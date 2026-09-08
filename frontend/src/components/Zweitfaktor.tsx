@@ -122,9 +122,9 @@ export default function Zweitfaktor({
           <div className="zweit-lage">
             <strong>Kein zweiter Faktor eingerichtet.</strong>
             <span className="muted small">
-              Zum Anmelden genügt das Passwort. Mit zweitem Faktor kommt eine sechsstellige
-              Zahl aus einer Authenticator-App dazu, die alle dreißig Sekunden wechselt --
-              ein abhandengekommenes Passwort allein reicht dann nicht mehr.
+              Zum Anmelden genügt das Passwort. Mit zweitem Faktor kommt eine
+              sechsstellige Zahl aus einer Authenticator-App dazu, die alle dreißig
+              Sekunden wechselt. Ein gestohlenes Passwort allein reicht dann nicht mehr.
             </span>
             {stand.pflicht && (
               <span className="fehlertext small">
@@ -220,8 +220,8 @@ function EinrichtenFenster({
               Bibliothek fuer einen einzigen Bildschirm mitbraechte. */}
           <div className="qr-kasten" dangerouslySetInnerHTML={{ __html: start.qr }} />
           <p className="muted small">
-            In der Authenticator-App scannen. Geht das nicht -- weil die App auf demselben
-            Gerät läuft --, trage diesen Schlüssel von Hand ein:
+            In der Authenticator-App scannen. Läuft die App auf demselben Gerät, trage
+            diesen Schlüssel von Hand ein:
           </p>
           <code className="zweit-geheim">{start.geheim}</code>
           <div className="fenster-abschnitt">
@@ -278,10 +278,10 @@ function CodeFenster({ codes, schliessen }: { codes: string[]; schliessen: () =>
       }
     >
       <p className="muted small">
-        Für den Fall, dass das Telefon weg ist. Leg sie irgendwohin, wo du auch ohne dieses
-        Konto herankommst -- ein Passwortspeicher tut es, ein Zettel im Portemonnaie
-        ebenfalls. Nach dem Schließen dieses Fensters lassen sie sich nicht wieder anzeigen,
-        nur neu erzeugen.
+        Für den Fall, dass das Telefon weg ist. Leg sie an einen Ort, an den du auch
+        ohne dieses Konto kommst: ein Passwortspeicher oder ein Zettel im Portemonnaie.
+        Nach dem Schließen dieses Fensters lassen sie sich nicht wieder anzeigen, nur
+        neu erzeugen.
       </p>
       <div className="codeliste">
         {codes.map((c) => (
