@@ -3918,14 +3918,25 @@ textarea::placeholder {
 }
 
 /* Kopf einer Liste: Ueberschrift links, Filter rechts. */
+/* Der Abstand nach oben sitzt am Kopf und nicht an seiner Ueberschrift.
+   Vorher trug ihn die h3 -- als Flexkind wirkte er nur innerhalb des Kastens,
+   der Kasten selbst begann also direkt an dem, was darueber stand, und das
+   Filterfeld daneben hat keinen eigenen Abstand: es lag mit seiner oberen
+   Kante im Kasten der letzten Einstellung. */
 .listenkopf {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+  margin-top: 28px;
+}
+.einstellungen-inhalt > .listenkopf:first-child,
+.pruefspur > .listenkopf:first-child {
+  margin-top: 0;
 }
 .listenkopf h3 {
+  margin-top: 0;
   margin-bottom: 0;
 }
 .listenfilter {
@@ -4299,4 +4310,12 @@ textarea::placeholder {
     padding-right: 0;
     padding-bottom: 8px;
   }
+}
+
+/* Die letzte Zeile einer gekuerzten Liste traegt den Knopf. Sie steht ohne
+   Trennlinie da: sie gehoert nicht zum Bestand, sie sagt nur, dass mehr davon
+   vorhanden ist. */
+.tabelle tr.kurz-mehr td {
+  border-bottom: none;
+  padding-top: 4px;
 }

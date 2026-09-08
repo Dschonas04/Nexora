@@ -9,6 +9,7 @@ import { Gruppe, Mitglied, api } from "../api/client";
 import { useAuth } from "../auth";
 import { useLizenz } from "../lizenz";
 import Fenster from "../components/Fenster";
+import KurzeZeilen from "../components/Kurzliste";
 import Listenkopf from "../components/Listenkopf";
 import { useRueckfrage } from "../components/Rueckfrage";
 
@@ -156,7 +157,10 @@ export default function GruppenView() {
             </tr>
           </thead>
           <tbody>
-            {gruppenSichtbar.map((g) => (
+            <KurzeZeilen
+              alle={gruppenSichtbar}
+              spalten={4}
+              zeile={(g) => (
               <tr key={g.id}>
                 <td>{g.name}</td>
                 <td className="muted">
@@ -172,7 +176,8 @@ export default function GruppenView() {
                   </button>
                 </td>
               </tr>
-            ))}
+              )}
+            />
             {gruppenSichtbar.length === 0 && (
               <tr>
                 <td colSpan={4} className="muted">
