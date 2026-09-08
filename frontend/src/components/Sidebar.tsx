@@ -1278,34 +1278,30 @@ export default function Sidebar(props: Props) {
                 list is there to read, not to configure. */}
             {user?.role === "admin" && (
               <div className="sidebar-section">
-                <Klapptitel
-                  marke="verwaltung"
-                  zu={zu}
-                  klappen={klappen}
-                  symbol={<Zahnrad />}
-                  symbolTitel="Verwaltung"
-                  symbolAktion={() => onNavigate("/einstellungen")}
-                  symbolAktiv={
-                    currentPath.startsWith("/einstellungen") &&
-                    !currentPath.startsWith("/einstellungen/protokoll")
-                  }
-                  nameFolgtSymbol
-                >
-                  Verwaltung
-                </Klapptitel>
-                {/* Eine Abkuerzung in die Verwaltung, keine eigene Seite mehr:
-                    das Protokoll ist dort ein Bereich wie die anderen. */}
-                {!zu.has("verwaltung") && frei("pruefspur") && (
-                  <div
+                {/* Kein Klapptitel mehr: unter der Verwaltung steht nichts,
+                    was sich einklappen liesse. Das Protokoll war die letzte
+                    Zeile hier und ist jetzt ein Bereich in der Verwaltung
+                    selbst, also fuehrt die Ueberschrift nur noch dorthin. */}
+                <div className="sidebar-section-title ohne-klappe">
+                  <button
                     className={
-                      "tree-row" +
-                      (currentPath.startsWith("/einstellungen/protokoll") ? " active" : "")
+                      "klapp-symbol klapp-symbol-btn" +
+                      (currentPath.startsWith("/einstellungen") ? " aktiv" : "")
                     }
-                    onClick={() => onNavigate("/einstellungen/protokoll")}
+                    title="Verwaltung"
+                    aria-label="Verwaltung"
+                    onClick={() => onNavigate("/einstellungen")}
                   >
-                    <span className="tree-label">Protokoll</span>
-                  </div>
-                )}
+                    <Zahnrad />
+                  </button>
+                  <span
+                    className="klapp-name klapp-name-fuehrt"
+                    title="Verwaltung"
+                    onClick={() => onNavigate("/einstellungen")}
+                  >
+                    Verwaltung
+                  </span>
+                </div>
               </div>
             )}
           </>
