@@ -2587,6 +2587,12 @@ textarea::placeholder {
   padding: 0;
   text-align: left;
 }
+/* Eine Ueberschrift ohne Klapp-Dreieck muss dessen Breite trotzdem einruecken,
+   sonst steht ihr Zahnrad als einziges aus der Reihe. */
+.sidebar-section-title.ohne-klappe {
+  padding-left: 34px;
+}
+
 .klapp-btn:hover {
   color: var(--text);
 }
