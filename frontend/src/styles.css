@@ -1903,11 +1903,22 @@ textarea::placeholder {
   padding: 14px 16px;
   margin-top: 10px;
 }
+/* Beschreibung links, Wert rechts -- aber beides muss mitgehen, wenn das
+   Fenster schmaler wird. Ohne min-width behaelt der linke Block seine
+   Wunschbreite (Titel, Schluessel-Chip, Umgebungsvariable, Erklaerung), und
+   das Feld rechts wurde aus der Karte geschoben: bei 1366 px ragte es 5 px
+   heraus, bei 980 px fast 200. Mit Umbruch faellt der Wert stattdessen unter
+   die Beschreibung, sobald es eng wird. */
 .einstellung-kopf {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
+  flex-wrap: wrap;
+}
+.einstellung-kopf > div:first-child {
+  min-width: 0;
+  flex: 1 1 260px;
 }
 .einstellung-titel {
   font-weight: 600;
@@ -1937,7 +1948,14 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  max-width: 100%;
+}
+/* Die Felder duerfen schrumpfen, statt ueber den Rand zu laufen. */
+.einstellung-feld select,
+.einstellung-feld input {
+  max-width: 100%;
+  box-sizing: border-box;
 }
 .einstellung-feld input[type="text"],
 .einstellung-feld input[type="number"] {
