@@ -11,6 +11,7 @@
 import { useEffect, useState } from "react";
 
 import { Spureintrag, api } from "../api/client";
+import KurzeZeilen from "../components/Kurzliste";
 import Listenkopf from "../components/Listenkopf";
 import { useLizenz } from "../lizenz";
 
@@ -221,7 +222,10 @@ export default function PruefspurView() {
             </tr>
           </thead>
           <tbody>
-            {sichtbar.map((e) => (
+            <KurzeZeilen
+              alle={sichtbar}
+              spalten={5}
+              zeile={(e) => (
               <tr key={e.id} className={AUFFAELLIG.has(e.aktion) ? "auffaellig" : undefined}>
                 <td className="einzeilig">{zeit(e.zeitpunkt)}</td>
                 <td>
@@ -243,7 +247,8 @@ export default function PruefspurView() {
                 </td>
                 <td className="muted small einzeilig">{e.ip || "—"}</td>
               </tr>
-            ))}
+              )}
+            />
           </tbody>
         </table>
         </div>

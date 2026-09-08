@@ -30,6 +30,7 @@ import {
 } from "../api/client";
 import { useAuth } from "../auth";
 import Fenster from "../components/Fenster";
+import KurzeZeilen from "../components/Kurzliste";
 import Listenkopf from "../components/Listenkopf";
 import Zweitfaktor from "../components/Zweitfaktor";
 import { useLizenz } from "../lizenz";
@@ -1181,7 +1182,10 @@ export default function EinstellungenView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sichtbar.map((si) => (
+                  <KurzeZeilen
+                    alle={sichtbar}
+                    spalten={5}
+                    zeile={(si) => (
                     <tr key={si.id}>
                       <td>
                         {si.browser}
@@ -1218,7 +1222,8 @@ export default function EinstellungenView() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    )}
+                  />
                   {sichtbar.length === 0 && (
                     <tr>
                       <td colSpan={5} className="muted">
@@ -1432,20 +1437,22 @@ export default function EinstellungenView() {
             </p>
             <table className="tabelle">
               <tbody>
-                {(sich?.admins ?? [])
-                  .filter(
+                <KurzeZeilen
+                  alle={(sich?.admins ?? []).filter(
                     (a) =>
                       !adminFilter.trim() ||
                       (a.name + " " + a.email)
                         .toLowerCase()
                         .includes(adminFilter.trim().toLowerCase()),
-                  )
-                  .map((a) => (
+                  )}
+                  spalten={2}
+                  zeile={(a) => (
                     <tr key={a.email}>
                       <td>{a.name}</td>
                       <td className="muted">{a.email}</td>
                     </tr>
-                  ))}
+                  )}
+                />
               </tbody>
             </table>
 
@@ -1534,7 +1541,10 @@ export default function EinstellungenView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(a?.herkunft ?? []).map((h) => (
+                  <KurzeZeilen
+                    alle={a?.herkunft ?? []}
+                    spalten={6}
+                    zeile={(h) => (
                     <tr key={h.ip} className={h.fehl >= 10 ? "auffaellig" : undefined}>
                       <td>
                         <code>{h.ip}</code>
@@ -1552,7 +1562,8 @@ export default function EinstellungenView() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    )}
+                  />
                   {(a?.herkunft ?? []).length === 0 && (
                     <tr>
                       <td colSpan={6} className="muted">
@@ -1619,7 +1630,10 @@ export default function EinstellungenView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(a?.versuche ?? []).map((v, i) => (
+                  <KurzeZeilen
+                    alle={a?.versuche ?? []}
+                    spalten={7}
+                    zeile={(v, i) => (
                     <tr key={i} className={v.erfolg ? undefined : "fehl"}>
                       <td className="einzeilig">{zeitpunkt(v.zeitpunkt)}</td>
                       <td className="einzeilig">{v.erfolg ? "angemeldet" : "abgewiesen"}</td>
@@ -1638,7 +1652,8 @@ export default function EinstellungenView() {
                         {geraet(v.browser)}
                       </td>
                     </tr>
-                  ))}
+                    )}
+                  />
                   {(a?.versuche ?? []).length === 0 && (
                     <tr>
                       <td colSpan={7} className="muted">

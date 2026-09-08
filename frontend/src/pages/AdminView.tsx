@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import { User, api } from "../api/client";
 import { useAuth } from "../auth";
 import Fenster from "../components/Fenster";
+import KurzeZeilen from "../components/Kurzliste";
 import Listenkopf from "../components/Listenkopf";
 import { useRueckfrage } from "../components/Rueckfrage";
 
@@ -133,7 +134,10 @@ export default function AdminView() {
             </tr>
           </thead>
           <tbody>
-            {sichtbar.map((u) => (
+            <KurzeZeilen
+              alle={sichtbar}
+              spalten={7}
+              zeile={(u) => (
               <tr key={u.id}>
                 <td>
                   {u.name}
@@ -159,7 +163,8 @@ export default function AdminView() {
                   </button>
                 </td>
               </tr>
-            ))}
+              )}
+            />
             {sichtbar.length === 0 && (
               <tr>
                 <td colSpan={7} className="muted">
