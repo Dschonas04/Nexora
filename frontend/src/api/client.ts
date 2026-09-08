@@ -824,6 +824,12 @@ export const api = {
   pruefspurAktionen: () => req<{ aktion: string; anzahl: number }[]>("/pruefspur/aktionen"),
 
   design: () => req<{ grundton: string; akzent: string; seitenbreite: string }>("/design"),
+  /** Grundton und Akzent des eigenen Kontos. Leer setzt auf die Vorgabe zurück. */
+  aussehenSpeichern: (grundton: string, akzent: string) =>
+    req<{ grundton: string; akzent: string }>("/design", {
+      method: "PUT",
+      body: JSON.stringify({ grundton, akzent }),
+    }),
 
   einstellungen: () => req<Einstellung[]>("/einstellungen"),
   einstellungSetzen: (schluessel: string, wert: string) =>

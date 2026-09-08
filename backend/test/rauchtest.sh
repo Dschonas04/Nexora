@@ -425,6 +425,32 @@ pruefe "zurueck auf die Vorgabe geht auch" "" \
        "$(hole -X PUT "$BASIS/api/pages/$BREIT/breite" -H 'Content-Type: application/json' \
           -d '{"breite":""}' | feld "['breite']")"
 
+echo "== Aussehen am eigenen Konto"
+# Grundton und Akzent liegen seit dem Umzug in der Zeile des Kontos und nicht
+# mehr in der Einstellungstabelle. Das laesst sich nur gegen eine echte
+# Datenbank pruefen: ob die Spalten da sind, ob der Wert das Neuladen ueberlebt
+# und ob Unsinn abgewiesen wird, statt in einer CSS-Variablen zu landen.
+pruefe "Vorgabe ist grau" "grau" "$(hole "$BASIS/api/design" | feld "['grundton']")"
+pruefe "Vorgabe ist Blau" "#2383e2" "$(hole "$BASIS/api/design" | feld "['akzent']")"
+pruefe "eigene Wahl wird angenommen" "200" \
+       "$(code -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
+          -d '{"grundton":"dunkel","akzent":"#8250df"}')"
+pruefe "und steht beim naechsten Abruf da" "dunkel" \
+       "$(hole "$BASIS/api/design" | feld "['grundton']")"
+pruefe "samt Akzent" "#8250df" "$(hole "$BASIS/api/design" | feld "['akzent']")"
+pruefe "ein unbekannter Ton wird abgewiesen" "400" \
+       "$(code -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
+          -d '{"grundton":"neon","akzent":"#8250df"}')"
+pruefe "und eine Farbe, die keine ist, auch" "400" \
+       "$(code -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
+          -d '{"grundton":"dunkel","akzent":"rot; background:url(x)"}')"
+pruefe "leer setzt auf die Vorgabe zurueck" "grau" \
+       "$(hole -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
+          -d '{"grundton":"","akzent":""}' | feld "['grundton']")"
+# Das Aussehen taucht nicht mehr unter den Einstellungen der Verwaltung auf.
+pruefe "keine Design-Einstellung mehr in der Verwaltung" "0" \
+       "$(hole "$BASIS/api/einstellungen" | python3 -c 'import json,sys;print(sum(1 for e in json.load(sys.stdin) if e["schluessel"].startswith("design_")))')"
+
 echo "== Anmeldeversuche"
 # Die Auswertung rechnet mit Intervallen aus einer Zahl und mit FILTER-Zählungen.
 # Beides fällt erst auf, wenn es wirklich gegen Postgres läuft, siehe der Kopf

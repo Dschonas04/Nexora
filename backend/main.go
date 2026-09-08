@@ -342,6 +342,10 @@ func main() {
 			r.Delete("/postfach", h.PostfachLeeren)
 
 			r.Get("/design", h.Design)
+			// Das Aussehen aendert jedes Konto fuer sich; es steht deshalb
+			// hier bei den Sitzungsrouten und nicht unter /einstellungen,
+			// die der Verwaltung vorbehalten sind.
+			r.Put("/design", h.AussehenSpeichern)
 
 			r.Get("/einstellungen", h.ListEinstellungen)
 			r.Put("/einstellungen", h.SetzeEinstellung)

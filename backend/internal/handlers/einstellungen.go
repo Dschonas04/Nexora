@@ -115,16 +115,6 @@ var bekannt = map[string]struct {
 		Erklaerung: "Vorgabe für Seiten ohne eigene Angabe. voll = ganze Fensterbreite, normal = fester Satzspiegel.",
 		Warnung:    "Seiten mit eigenem Wert behalten ihn.",
 	},
-	"design_grundton": {
-		Art:        "auswahl",
-		Titel:      "Grundton",
-		Erklaerung: "Setzt die Farbtafel im Stylesheet, instanzweit für alle Konten. Kein Wert je Konto.",
-	},
-	"design_akzent": {
-		Art:        "farbe",
-		Titel:      "Akzentfarbe",
-		Erklaerung: "Hexwert für --akzent: Verknüpfungen, ausgewählte Einträge, Knöpfe.",
-	},
 }
 
 // umgebungsname maps a setting to the environment variable that overrides it at
@@ -139,9 +129,10 @@ var umgebungsname = map[string]string{
 	"such_woerterbuch":    "NEXORA_SUCH_WOERTERBUCH",
 }
 
-// grundtoene are the permitted values for design_grundton. A fixed list rather
-// than free input: the colour values behind them live in the stylesheet, and an
-// unknown name would produce an interface without colours.
+// grundtoene sind die erlaubten Grundtoene. Eine feste Liste statt freier
+// Eingabe: die Farbwerte dahinter stehen im Stylesheet, und ein unbekannter
+// Name ergaebe eine Oberflaeche ohne Farben. Gewaehlt wird der Ton seit dem
+// Umzug am Konto (siehe aussehen.go), nicht mehr in der Verwaltung.
 var grundtoene = map[string]bool{"weiss": true, "grau": true, "dunkel": true}
 
 // speicher keeps the values in memory.
@@ -207,10 +198,6 @@ func ausDatei(schluessel string, k config.Konfig) string {
 		return "ja"
 	case "seitenbreite":
 		return "voll"
-	case "design_grundton":
-		return "grau"
-	case "design_akzent":
-		return "#2383e2"
 	case "zweitfaktor_pflicht":
 		return "nein"
 	case "zweitfaktor_aussteller":
@@ -331,13 +318,17 @@ func istHexFarbe(s string) bool {
 	return true
 }
 
-// Design serves the appearance to every signed-in account, not only to admins.
-// Without that an ordinary user could never see the configured colours, since
-// the settings page itself is closed to them.
+// Design liefert das Aussehen an jedes angemeldete Konto, nicht nur an
+// Administratoren: die Verwaltung steht gewoehnlichen Konten nicht offen, das
+// Aussehen aber schon -- es ist ihr eigenes.
+//
+// Grundton und Akzent kommen aus der Zeile des Kontos, die Seitenbreite bleibt
+// eine Sache der Instanz. Deshalb die beiden Herkuenfte in einer Antwort.
 func (s *Server) Design(w http.ResponseWriter, r *http.Request) {
+	a := s.aussehenLesen(r)
 	writeJSON(w, http.StatusOK, map[string]string{
-		"grundton": wert("design_grundton"),
-		"akzent":   wert("design_akzent"),
+		"grundton": a.Grundton,
+		"akzent":   a.Akzent,
 		// Die Breite steht hier und nicht bei den Einstellungen: die sind der
 		// Verwaltung vorbehalten, und diese Angabe braucht jeder, der eine
 		// Seite ansieht.
@@ -389,7 +380,6 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 		"max_anhang_mb", "sitzung_stunden", "papierkorb_tage", "such_woerterbuch",
 		"echtzeit",
 		"seitenbreite",
-		"design_grundton", "design_akzent",
 	}
 
 	liste := make([]Einstellung, 0, len(reihenfolge))
@@ -471,21 +461,10 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "auswahl":
-		if req.Schluessel == "design_grundton" && !grundtoene[wertNeu] {
-			writeErr(w, http.StatusBadRequest, "erwartet weiss, grau oder dunkel")
-			return
-		}
 		// An empty width exists only on a PAGE ("as the instance provides it");
 		// as the default itself it would be a reference to itself.
 		if req.Schluessel == "seitenbreite" && (wertNeu == "" || !breiten[wertNeu]) {
 			writeErr(w, http.StatusBadRequest, "erwartet normal, breit oder voll")
-			return
-		}
-	case "farbe":
-		// Only #rrggbb. Anything else would land unchecked in a CSS variable, and
-		// a string with brackets would be a way in.
-		if !istHexFarbe(wertNeu) {
-			writeErr(w, http.StatusBadRequest, "erwartet eine Farbe wie #2383e2")
 			return
 		}
 	case "text":
