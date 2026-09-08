@@ -2032,10 +2032,13 @@ textarea::placeholder {
    vier Spalten, dazu eine zweite mit Kontrastverhaeltnissen und WCAG-Urteilen.
    Das las sich wie ein Auszug aus dem Stilblatt und beantwortete die einzige
    Frage nicht, die an dieser Stelle gestellt wird: wie sieht das aus. */
+/* Ein Raster statt einer Reihe: die Wahl steht jetzt im Kontofenster und damit
+   in einer schmaleren Spalte als frueher in der Verwaltung. Als Flexzeile
+   brachen dort zwei Kacheln um und die dritte stand allein daneben. */
 .tonwahl {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
   gap: 10px;
-  flex-wrap: wrap;
   margin-top: 10px;
 }
 .tonkachel {
@@ -2088,10 +2091,18 @@ textarea::placeholder {
 .akzentknopf.gewaehlt {
   box-shadow: 0 0 0 2px var(--flaeche), 0 0 0 4px var(--text);
 }
+/* Der Rahmen steht ausdruecklich hier: das Feld hat kein type-Attribut und
+   fiele sonst durch jede Regel, die auf input[type="text"] zielt -- es saehe
+   dann als einziges Bauteil der Reihe nach Browservorgabe aus. */
 .hex-feld {
   width: 110px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   text-transform: lowercase;
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
 }
 
 /* Die Bauteile, die --accent wirklich tragen. */
@@ -3829,12 +3840,9 @@ textarea::placeholder {
 .einstellungen-manager .kennzahl,
 .einstellungen-manager .warnkasten,
 .einstellungen-manager .hinweis-ok,
-.einstellungen-manager .tonkachel,
-.einstellungen-manager .wirkprobe,
 .einstellungen-manager .konfig-feld,
 .einstellungen-manager .konfig-schluessel,
 .einstellungen-manager .fuellstand,
-.einstellungen-manager .farbwaehler,
 .einstellungen-manager .einstellungen-nav-eintrag,
 .einstellungen-manager input[type="text"],
 .einstellungen-manager input[type="number"],
@@ -4265,6 +4273,14 @@ textarea::placeholder {
 .konto-inhalt {
   flex: 1;
   min-width: 0;
+}
+/* Die Ueberschriften im Fenster tragen dasselbe Mass wie die in der
+   Verwaltung. Ohne die Regel greift die Vorgabe des Browsers, und eine
+   Zwischenueberschrift in 19 px wiegt in einem Fenster schwerer als der Titel
+   darueber. */
+.konto-inhalt h3 {
+  font-size: 15px;
+  margin: 22px 0 6px;
 }
 /* Die erste Überschrift im Inhalt hat keinen Abstand nach oben: sie steht auf
    derselben Höhe wie der erste Eintrag der Leiste daneben. */

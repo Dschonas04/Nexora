@@ -36,8 +36,7 @@ import { useLizenz } from "../lizenz";
 import AdminView from "./AdminView";
 import GruppenView from "./GruppenView";
 import PruefspurView from "./PruefspurView";
-import { GRUND, anwenden, useDesign } from "../design";
-import { ausHex, kontrast, lesbarAuf, schriftAuf } from "../farbe";
+import { useDesign } from "../design";
 import { useRueckfrage } from "../components/Rueckfrage";
 
 // Ein Bereich ist ein Eintrag in der Leiste, ein Teil eine Sachgruppe darin.
@@ -51,7 +50,6 @@ type Bereich =
   | "zugang"
   | "inhalte"
   | "datenbank"
-  | "aussehen"
   | "lizenz"
   | "protokoll"
   | "system";
@@ -69,7 +67,6 @@ type Teil =
   | "datenbank"
   | "suche"
   | "anhaenge"
-  | "aussehen"
   | "lizenz"
   | "protokoll"
   | "system"
@@ -104,7 +101,6 @@ const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] =
     unter: "PostgreSQL, Tabellen, Belegung",
     teile: ["datenbank"],
   },
-  { id: "aussehen", titel: "Aussehen", unter: "Grundton, Akzent", teile: ["aussehen"] },
   { id: "lizenz", titel: "Lizenz", unter: "Umfang, Laufzeit", teile: ["lizenz"] },
   // Das Protokoll war bisher eine Seite fuer sich, mit einer eigenen Zeile in
   // der Leiste -- die einzige Sache der Verwaltung, die nicht in der Verwaltung
@@ -140,7 +136,6 @@ const TEIL_TITEL: Record<Teil, string> = {
   datenbank: "Datenbank",
   suche: "Suche",
   anhaenge: "Anhänge",
-  aussehen: "Aussehen",
   lizenz: "Lizenz",
   protokoll: "Protokoll",
   system: "Konfiguration",
@@ -151,6 +146,9 @@ const TEIL_TITEL: Record<Teil, string> = {
 // und die beiden Weiterleitungen aus dem Arbeitsbereich sollen nicht auf der
 // Uebersicht landen, sondern dort, wo die Sache jetzt steht.
 const ALTE_ADRESSE: Record<string, Bereich> = {
+  // Das Aussehen ist keine Sache der Verwaltung mehr, sondern steht unter Mein
+  // Konto. Ein Lesezeichen darauf soll trotzdem irgendwo ankommen.
+  aussehen: "uebersicht",
   nutzer: "konten",
   gruppen: "konten",
   sicherheit: "zugang",
@@ -197,32 +195,6 @@ const WEG_TITEL: Record<string, string> = {
   ldap: "Verzeichnis",
   sso: "SSO",
 };
-
-const GRUNDTOENE: { wert: string; titel: string }[] = [
-  { wert: "grau", titel: "Gegrautes Weiß" },
-  { wert: "weiss", titel: "Reines Weiß" },
-  { wert: "dunkel", titel: "Dunkel" },
-];
-
-// Die vier tragenden Marken je Grundton, in der Reihenfolge der Spalten:
-// --bg, --flaeche, --border, --text. Sie stehen so auch in styles.css; die
-// Wiederholung ist der Preis dafuer, dass die Tabelle die Werte zeigen kann,
-// ohne das Stylesheet zur Laufzeit auszulesen. Aendert sich dort ein Ton, muss
-// er hier mit.
-const TON_MARKEN: Record<string, string[]> = {
-  grau: ["#f7f7f6", "#ffffff", "#e2e2df", "#37352f"],
-  weiss: ["#ffffff", "#ffffff", "#ededec", "#37352f"],
-  dunkel: ["#1f1f1e", "#2a2a28", "#3a3a37", "#e6e5e2"],
-};
-
-const AKZENTE = [
-  { wert: "#2383e2", titel: "Blau" },
-  { wert: "#2ea043", titel: "Grün" },
-  { wert: "#8250df", titel: "Violett" },
-  { wert: "#bf5b04", titel: "Bernstein" },
-  { wert: "#cf222e", titel: "Rot" },
-  { wert: "#57606a", titel: "Graphit" },
-];
 
 // Aus der Kennung des Browsers das eine Wort machen, das in einer Tabelle Platz
 // hat. Die volle Zeichenkette bleibt im title des Feldes stehen: für die Frage
@@ -404,27 +376,6 @@ function restlaufzeit(bis: string): number | null {
   if (Number.isNaN(ziel)) return null;
   const tage = Math.ceil((ziel - Date.now()) / 86400000);
   return tage > 0 ? tage : null;
-}
-
-/**
- * Der Akzent als Text auf dem Grund. Die Oberfläche rechnet ihn hell oder
- * dunkel nach, wenn er als Verknüpfung im Fließtext sonst nicht zu lesen wäre;
- * hier steht nur, ob das passiert -- die Zahl dahinter interessiert niemanden,
- * der eine Hausfarbe einträgt.
- */
-function verschobenAuf(farbe: string, grund: string): string {
-  if (!/^#[0-9a-f]{6}$/.test(farbe)) return "";
-  const alsText = lesbarAuf(farbe, grund);
-  return alsText.toLowerCase() === farbe.toLowerCase() ? "" : alsText;
-}
-
-/**
- * Ob Schrift auf dieser Fläche noch zu lesen ist. Drei ist die Schwelle, unter
- * der auch große Schrift durchfällt; darüber trägt die Farbe eine Beschriftung.
- */
-function flaecheLesbar(farbe: string): boolean {
-  if (!/^#[0-9a-f]{6}$/.test(farbe)) return true;
-  return kontrast(ausHex(schriftAuf(farbe)), ausHex(farbe)) >= 3;
 }
 
 export default function EinstellungenView() {
@@ -998,14 +949,13 @@ export default function EinstellungenView() {
     try {
       await api.einstellungSetzen(e.schluessel, wert);
       setMeldung({ text: `„${e.titel}“ gespeichert.`, art: "ok" });
-      if (e.schluessel.startsWith("design_")) designNeuLaden();
+      // Die Seitenbreite kommt aus demselben Abruf wie das Aussehen. Ohne das
+      // Nachladen zeigte der Arbeitsbereich die alte Breite bis zum Neuladen.
+      if (e.schluessel === "seitenbreite") designNeuLaden();
       laden();
     } catch (err) {
       setMeldung({ text: (err as Error).message, art: "fehler" });
       setEntwurf((v) => ({ ...v, [e.schluessel]: e.wert }));
-      // Take the preview back, otherwise the interface shows a colour the server
-      // never accepted.
-      if (e.schluessel.startsWith("design_")) designNeuLaden();
     } finally {
       setLaeuft(null);
     }
@@ -1016,7 +966,7 @@ export default function EinstellungenView() {
     try {
       await api.einstellungZuruecksetzen(e.schluessel);
       setMeldung({ text: `„${e.titel}“ folgt wieder der config.conf.`, art: "ok" });
-      if (e.schluessel.startsWith("design_")) designNeuLaden();
+      if (e.schluessel === "seitenbreite") designNeuLaden();
       laden();
     } catch (err) {
       setMeldung({ text: (err as Error).message, art: "fehler" });
@@ -2140,143 +2090,7 @@ export default function EinstellungenView() {
           </>
         );
 
-      case "aussehen": {
-        const grundton = holen("design_grundton");
-        const akzent = holen("design_akzent");
-        const aktuellerTon = entwurf["design_grundton"] ?? grundton?.wert ?? "grau";
-        const aktuellerAkzent = (entwurf["design_akzent"] ?? akzent?.wert ?? "#2383e2").toLowerCase();
-        const grund = GRUND[aktuellerTon] ?? GRUND.grau;
-
-        const tonSetzen = (wert: string) => {
-          // Erst anwenden, dann speichern: eine Farbe erst nach der Antwort des
-          // Servers zu sehen macht das Aussuchen zur Qual.
-          anwenden({ grundton: wert, akzent: aktuellerAkzent });
-          setEntwurf((v) => ({ ...v, design_grundton: wert }));
-          if (grundton) speichern(grundton, wert);
-        };
-        const akzentSetzen = (wert: string, sichern: boolean) => {
-          anwenden({ grundton: aktuellerTon, akzent: wert });
-          setEntwurf((v) => ({ ...v, design_akzent: wert }));
-          if (sichern && akzent) speichern(akzent, wert);
-        };
-
-        const verschoben = verschobenAuf(aktuellerAkzent, grund);
-
-        return (
-          <>
-            <h3>Grundton</h3>
-            <p className="muted small">
-              Gilt für alle Konten der Instanz, nicht je Browser.
-            </p>
-            {/* Drei Kacheln, jede in ihrem eigenen Ton. Hier stand einmal eine
-                Tabelle mit den vier Farbmarken je Ton und ihren Hexwerten in
-                vier Spalten -- das las sich wie ein Auszug aus dem Stilblatt und
-                beantwortete die einzige Frage nicht, die hier gestellt wird:
-                wie sieht das aus. */}
-            <div className="tonwahl">
-              {GRUNDTOENE.map((g) => {
-                const marken = TON_MARKEN[g.wert];
-                return (
-                  <button
-                    key={g.wert}
-                    type="button"
-                    className={"tonkachel" + (aktuellerTon === g.wert ? " gewaehlt" : "")}
-                    style={{ background: marken[0], borderColor: marken[2], color: marken[3] }}
-                    onClick={() => tonSetzen(g.wert)}
-                  >
-                    <span className="tonkachel-probe" style={{ background: marken[1], borderColor: marken[2] }} />
-                    <span className="tonkachel-name">{g.titel}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {grundton && herkunft(grundton)}
-
-            <h3>Akzentfarbe</h3>
-            <p className="muted small">
-              Färbt Knöpfe, Verknüpfungen und die Markierung in Listen.
-            </p>
-            <div className="akzentwahl">
-              {AKZENTE.map((a) => (
-                <button
-                  key={a.wert}
-                  type="button"
-                  className={"akzentknopf" + (aktuellerAkzent === a.wert ? " gewaehlt" : "")}
-                  style={{ background: a.wert }}
-                  title={`${a.titel} · ${a.wert}`}
-                  aria-label={a.titel}
-                  onClick={() => akzentSetzen(a.wert, true)}
-                />
-              ))}
-              {/* Eine Hausfarbe kommt als Hexwert aus einem Handbuch und nicht
-                  aus dem Farbrad des Betriebssystems. Deshalb das Feld, der
-                  Wähler nur daneben. */}
-              <input
-                className="hex-feld"
-                value={aktuellerAkzent}
-                spellCheck={false}
-                maxLength={7}
-                aria-label="Eigener Wert"
-                placeholder="#2383e2"
-                onChange={(ev) => {
-                  const w = ev.target.value.trim().toLowerCase();
-                  setEntwurf((v) => ({ ...v, design_akzent: w }));
-                  if (/^#[0-9a-f]{6}$/.test(w)) anwenden({ grundton: aktuellerTon, akzent: w });
-                }}
-                onBlur={() => {
-                  if (!/^#[0-9a-f]{6}$/.test(aktuellerAkzent)) {
-                    // Ein halb getippter Wert darf nicht in die Datenbank.
-                    akzentSetzen(akzent?.wert ?? "#2383e2", false);
-                    return;
-                  }
-                  if (akzent && aktuellerAkzent !== akzent.wert) speichern(akzent, aktuellerAkzent);
-                }}
-              />
-              <input
-                type="color"
-                className="farbwaehler"
-                aria-label="Farbwähler"
-                value={/^#[0-9a-f]{6}$/.test(aktuellerAkzent) ? aktuellerAkzent : "#2383e2"}
-                onChange={(ev) => akzentSetzen(ev.target.value.toLowerCase(), false)}
-                onBlur={() => {
-                  if (akzent && aktuellerAkzent !== akzent.wert) speichern(akzent, aktuellerAkzent);
-                }}
-              />
-            </div>
-
-            {/* Die Probe steht anstelle einer Spalte mit Kontrastzahlen. Wer
-                eine Farbe aussucht, sieht hier, was sie anrichtet; nachrechnen
-                muss er es nicht. */}
-            <div className="wirkprobe">
-              <button className="btn btn-primary" type="button">
-                Primärer Knopf
-              </button>
-              <button className="btn" type="button">
-                Sekundärer Knopf
-              </button>
-              <a className="wirkprobe-verweis" href="#aussehen" onClick={(e) => e.preventDefault()}>
-                Verknüpfung im Fließtext
-              </a>
-              <span className="wirkprobe-zeile">Ausgewählter Eintrag</span>
-            </div>
-            {!flaecheLesbar(aktuellerAkzent) && (
-              <p className="muted small">
-                Auf dieser Fläche ist die Beschriftung schwer zu lesen. Ein dunklerer
-                oder hellerer Wert derselben Farbe hilft.
-              </p>
-            )}
-            {verschoben && (
-              <p className="muted small">
-                Als Text auf dem Grund wird die Farbe nach <code>{verschoben}</code> gerückt, sonst wäre eine Verknüpfung im Fließtext nicht zu lesen. Flächen
-              behalten den eingetragenen Wert.
-              </p>
-            )}
-            {akzent && herkunft(akzent)}
-          </>
-        );
-      }
-
-      case "lizenz":
+      case "lizenz":      case "lizenz":
         return (
           <>
             <h3>Lizenz</h3>

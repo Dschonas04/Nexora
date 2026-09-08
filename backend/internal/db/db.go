@@ -511,6 +511,14 @@ CREATE TABLE IF NOT EXISTS zweitfaktor_codes (
 	benutzt_am timestamptz
 );
 CREATE INDEX IF NOT EXISTS zweitfaktor_codes_konto ON zweitfaktor_codes(user_id);
+
+-- Das Aussehen gehoert dem Konto und nicht der Instanz. Es stand bisher als
+-- design_grundton und design_akzent in der Einstellungstabelle, also einmal
+-- fuer alle: wer dunkel arbeiten wollte, stellte damit auch alle anderen um.
+-- Leer heisst "nichts gewaehlt" und laesst die Vorgabe der Oberflaeche gelten;
+-- ein NULL waere dasselbe mit mehr Fallunterscheidungen im Go-Teil.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS design_grundton text NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS design_akzent   text NOT NULL DEFAULT '';
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

@@ -1,8 +1,8 @@
 // Applies the workspace-wide look.
 //
-// The values live in the settings table, not in the browser: an administrator
-// sets them once and every account sees the same thing. That is the whole point
-// of putting them on the settings page rather than into a personal preference.
+// Grundton und Akzent gehoeren dem Konto: sie stehen in dessen Zeile, nicht in
+// der Einstellungstabelle, und jeder waehlt sie fuer sich unter Mein Konto. Die
+// Seitenbreite kommt aus derselben Antwort, bleibt aber eine Sache der Instanz.
 //
 // They are written onto the root element as an attribute and a CSS variable, so
 // the change reaches every component at once. No component knows about themes.
@@ -10,7 +10,7 @@ import { ReactNode, createContext, useCallback, useContext, useEffect, useState 
 
 import { api } from "./api/client";
 import { useAuth } from "./auth";
-import { lesbarAuf, schriftAuf } from "./farbe";
+import { ausHex, kontrast, lesbarAuf, schriftAuf } from "./farbe";
 
 export interface Design {
   grundton: string;
@@ -32,6 +32,56 @@ export const GRUND: Record<string, string> = {
   grau: "#f7f7f6",
   dunkel: "#1f1f1e",
 };
+
+// Die Auswahl, die einem Konto angeboten wird. Sie stand bisher in
+// EinstellungenView, weil dort gewaehlt wurde; seit das Aussehen dem Konto
+// gehoert und nicht der Instanz, gehoert das Vokabular dorthin, wo auch
+// anwenden steht.
+export const GRUNDTOENE: { wert: string; titel: string }[] = [
+  { wert: "grau", titel: "Gegrautes Weiß" },
+  { wert: "weiss", titel: "Reines Weiß" },
+  { wert: "dunkel", titel: "Dunkel" },
+];
+
+// Die vier tragenden Marken je Grundton, in der Reihenfolge --bg, --flaeche,
+// --border, --text. Sie stehen so auch in styles.css; die Wiederholung ist der
+// Preis dafuer, dass eine Kachel den Ton zeigen kann, ohne das Stylesheet zur
+// Laufzeit auszulesen. Aendert sich dort ein Ton, muss er hier mit.
+export const TON_MARKEN: Record<string, string[]> = {
+  grau: ["#f7f7f6", "#ffffff", "#e2e2df", "#37352f"],
+  weiss: ["#ffffff", "#ffffff", "#ededec", "#37352f"],
+  dunkel: ["#1f1f1e", "#2a2a28", "#3a3a37", "#e6e5e2"],
+};
+
+export const AKZENTE = [
+  { wert: "#2383e2", titel: "Blau" },
+  { wert: "#2ea043", titel: "Grün" },
+  { wert: "#8250df", titel: "Violett" },
+  { wert: "#bf5b04", titel: "Bernstein" },
+  { wert: "#cf222e", titel: "Rot" },
+  { wert: "#57606a", titel: "Graphit" },
+];
+
+/**
+ * Der Akzent als Text auf dem Grund. Die Oberfläche rechnet ihn hell oder
+ * dunkel nach, wenn er als Verknüpfung im Fließtext sonst nicht zu lesen wäre;
+ * hier steht nur, ob das passiert. Die Zahl dahinter interessiert niemanden,
+ * der eine Hausfarbe einträgt.
+ */
+export function verschobenAuf(farbe: string, grund: string): string {
+  if (!/^#[0-9a-f]{6}$/.test(farbe)) return "";
+  const alsText = lesbarAuf(farbe, grund);
+  return alsText.toLowerCase() === farbe.toLowerCase() ? "" : alsText;
+}
+
+/**
+ * Ob Schrift auf dieser Fläche noch zu lesen ist. Drei ist die Schwelle, unter
+ * der auch große Schrift durchfällt; darüber trägt die Farbe eine Beschriftung.
+ */
+export function flaecheLesbar(farbe: string): boolean {
+  if (!/^#[0-9a-f]{6}$/.test(farbe)) return true;
+  return kontrast(ausHex(schriftAuf(farbe)), ausHex(farbe)) >= 3;
+}
 
 // anwenden writes the values where CSS can see them. Exported so the settings
 // page can preview a choice before it is saved, since waiting for a round trip

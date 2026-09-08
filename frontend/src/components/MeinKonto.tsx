@@ -8,13 +8,24 @@
 // Hier steht alles vier hinter dem Zahnrad neben dem Namen, in derselben Form
 // wie die Verwaltung daneben: eine Leiste links, der Inhalt rechts.
 //
-// Die Grenze zur Verwaltung ist die Frage, wem etwas gehört. Der Grundton der
-// Oberfläche gilt für die ganze Instanz und steht deshalb nicht hier, auch wenn
-// er wie eine persönliche Sache aussieht.
+// Die Grenze zur Verwaltung ist die Frage, wem etwas gehört. Das Aussehen
+// gehört dem Konto und steht deshalb hier: ob jemand hell oder dunkel
+// arbeitet, geht niemanden sonst etwas an. Solange es in der Verwaltung stand,
+// stellte der, der nachts dunkel schaltete, alle anderen mit um.
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Sitzung, ZweitfaktorStand, api } from "../api/client";
 import { useAuth } from "../auth";
+import {
+  AKZENTE,
+  GRUND,
+  GRUNDTOENE,
+  TON_MARKEN,
+  anwenden,
+  flaecheLesbar,
+  useDesign,
+  verschobenAuf,
+} from "../design";
 import Fenster from "./Fenster";
 import Listenkopf from "./Listenkopf";
 import Profilbild from "./Profilbild";
@@ -25,10 +36,11 @@ import Zweitfaktor from "./Zweitfaktor";
 // hochauflösenden Bildschirmen und im Profil scharf bleibt.
 const KANTE = 256;
 
-type Teil = "profil" | "passwort" | "zweitfaktor" | "geraete";
+type Teil = "profil" | "aussehen" | "passwort" | "zweitfaktor" | "geraete";
 
 const TEILE: { id: Teil; titel: string; unter: string }[] = [
   { id: "profil", titel: "Profil", unter: "Name und Bild" },
+  { id: "aussehen", titel: "Aussehen", unter: "Grundton und Akzent" },
   { id: "passwort", titel: "Passwort", unter: "Wechseln" },
   { id: "zweitfaktor", titel: "Zweiter Faktor", unter: "App und Ersatzcodes" },
   { id: "geraete", titel: "Geräte", unter: "Wo du angemeldet bist" },
@@ -117,12 +129,169 @@ export default function MeinKonto({ onClose }: { onClose: () => void }) {
         </nav>
         <div className="konto-inhalt">
           {teil === "profil" && <Profil />}
+          {teil === "aussehen" && <Aussehen />}
           {teil === "passwort" && <Passwort />}
           {teil === "zweitfaktor" && <ZweitfaktorTeil />}
           {teil === "geraete" && <Geraete />}
         </div>
       </div>
     </Fenster>
+  );
+}
+
+/**
+ * Grundton und Akzent, für dieses Konto allein.
+ *
+ * Gespeichert wird sofort beim Klick und ohne Knopf: eine Farbe sucht man
+ * aus, indem man sie sieht, und ein Speichern-Knopf dazwischen macht aus dem
+ * Ausprobieren eine Kette von Bestätigungen. Angewandt wird schon vor der
+ * Antwort des Servers, sonst blinkt die Oberfläche der Auswahl hinterher.
+ */
+function Aussehen() {
+  const { design, neuLaden } = useDesign();
+  const [ton, setTon] = useState(design.grundton);
+  const [akzent, setAkzent] = useState(design.akzent.toLowerCase());
+  const [fehler, setFehler] = useState("");
+
+  const grund = GRUND[ton] ?? GRUND.grau;
+  const verschoben = verschobenAuf(akzent, grund);
+
+  const sichern = (g: string, a: string) => {
+    setFehler("");
+    api
+      .aussehenSpeichern(g, a)
+      .then(() => neuLaden())
+      // Bleibt die Wahl ungespeichert, steht sie trotzdem schon auf dem
+      // Bildschirm. Der Satz sagt, dass sie den Neustart nicht überlebt.
+      .catch((e) => setFehler(e instanceof Error ? e.message : "Nicht gespeichert."));
+  };
+
+  const tonSetzen = (wert: string) => {
+    anwenden({ grundton: wert, akzent });
+    setTon(wert);
+    sichern(wert, akzent);
+  };
+
+  const akzentSetzen = (wert: string, speichern: boolean) => {
+    anwenden({ grundton: ton, akzent: wert });
+    setAkzent(wert);
+    if (speichern) sichern(ton, wert);
+  };
+
+  return (
+    <>
+      <h3>Grundton</h3>
+      <p className="muted small">
+        Gilt für dieses Konto, auf jedem Gerät, an dem du angemeldet bist.
+      </p>
+      <div className="tonwahl">
+        {GRUNDTOENE.map((g) => {
+          const marken = TON_MARKEN[g.wert];
+          return (
+            <button
+              key={g.wert}
+              type="button"
+              className={"tonkachel" + (ton === g.wert ? " gewaehlt" : "")}
+              style={{ background: marken[0], borderColor: marken[2], color: marken[3] }}
+              onClick={() => tonSetzen(g.wert)}
+            >
+              <span
+                className="tonkachel-probe"
+                style={{ background: marken[1], borderColor: marken[2] }}
+              />
+              <span className="tonkachel-name">{g.titel}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <h3>Akzentfarbe</h3>
+      <p className="muted small">
+        Färbt Knöpfe, Verknüpfungen und die Markierung in Listen.
+      </p>
+      <div className="akzentwahl">
+        {AKZENTE.map((a) => (
+          <button
+            key={a.wert}
+            type="button"
+            className={"akzentknopf" + (akzent === a.wert ? " gewaehlt" : "")}
+            style={{ background: a.wert }}
+            title={`${a.titel} · ${a.wert}`}
+            aria-label={a.titel}
+            onClick={() => akzentSetzen(a.wert, true)}
+          />
+        ))}
+        {/* Eine Hausfarbe kommt als Hexwert aus einem Handbuch und nicht aus
+            dem Farbrad des Betriebssystems. Deshalb das Feld, der Wähler nur
+            daneben. */}
+        <input
+          className="hex-feld"
+          value={akzent}
+          spellCheck={false}
+          maxLength={7}
+          aria-label="Eigener Wert"
+          placeholder="#2383e2"
+          onChange={(ev) => {
+            const w = ev.target.value.trim().toLowerCase();
+            setAkzent(w);
+            if (/^#[0-9a-f]{6}$/.test(w)) anwenden({ grundton: ton, akzent: w });
+          }}
+          onBlur={() => {
+            // Ein halb getippter Wert darf nicht in die Datenbank.
+            if (!/^#[0-9a-f]{6}$/.test(akzent)) {
+              akzentSetzen(design.akzent.toLowerCase(), false);
+              return;
+            }
+            if (akzent !== design.akzent.toLowerCase()) sichern(ton, akzent);
+          }}
+        />
+        <input
+          type="color"
+          className="farbwaehler"
+          aria-label="Farbwähler"
+          value={/^#[0-9a-f]{6}$/.test(akzent) ? akzent : "#2383e2"}
+          onChange={(ev) => akzentSetzen(ev.target.value.toLowerCase(), false)}
+          onBlur={() => {
+            if (akzent !== design.akzent.toLowerCase()) sichern(ton, akzent);
+          }}
+        />
+      </div>
+
+      {/* Die Probe steht anstelle einer Spalte mit Kontrastzahlen. Wer eine
+          Farbe aussucht, sieht hier, was sie anrichtet; nachrechnen muss er es
+          nicht. */}
+      <div className="wirkprobe">
+        <button className="btn btn-primary" type="button">
+          Primärer Knopf
+        </button>
+        <button className="btn" type="button">
+          Sekundärer Knopf
+        </button>
+        <a
+          className="wirkprobe-verweis"
+          href="#aussehen"
+          onClick={(e) => e.preventDefault()}
+        >
+          Verknüpfung im Fließtext
+        </a>
+        <span className="wirkprobe-zeile">Ausgewählter Eintrag</span>
+      </div>
+
+      {!flaecheLesbar(akzent) && (
+        <p className="muted small">
+          Auf dieser Fläche ist die Beschriftung schwer zu lesen. Ein dunklerer oder
+          hellerer Wert derselben Farbe hilft.
+        </p>
+      )}
+      {verschoben && (
+        <p className="muted small">
+          Als Text auf dem Grund wird die Farbe nach <code>{verschoben}</code> gerückt,
+          sonst wäre eine Verknüpfung im Fließtext nicht zu lesen. Flächen behalten den
+          eingetragenen Wert.
+        </p>
+      )}
+      {fehler && <div className="fehlertext small">{fehler}</div>}
+    </>
   );
 }
 
