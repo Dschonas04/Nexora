@@ -76,7 +76,7 @@ type Teil =
   | "wartung";
 
 const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] = [
-  { id: "uebersicht", titel: "Übersicht", unter: "Zustand, Kennzahlen, Puls", teile: ["uebersicht"] },
+  { id: "uebersicht", titel: "Übersicht", unter: "Zahlen und Zustand", teile: ["uebersicht"] },
   {
     id: "konten",
     titel: "Konten",
@@ -113,7 +113,7 @@ const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] =
   {
     id: "protokoll",
     titel: "Protokoll",
-    unter: "Wer hat wann was getan",
+    unter: "Vorgänge und Änderungen",
     teile: ["protokoll"],
   },
   {
@@ -1216,8 +1216,8 @@ export default function EinstellungenView() {
               )}
             </Listenkopf>
             <p className="muted small">
-              Eine Zeile je Sitzung in der Tabelle sitzungen, jede einzeln widerrufbar. Ab
-              der halben Laufzeit setzt der nächste Aufruf Frist und Keks neu.
+              Eine Zeile je Sitzung, jede einzeln widerrufbar. Ab der halben Laufzeit
+              verlängert der nächste Aufruf die Frist und setzt das Cookie neu.
             </p>
             <div className="tabelle-rollen">
               <table className="tabelle">
@@ -1400,8 +1400,8 @@ export default function EinstellungenView() {
             </div>
             {raeume.length === 0 ? (
               <p className="muted small">
-                Keine aktive Sitzung. Eine entsteht beim Öffnen einer zum Bearbeiten geteilten
-                Seite und endet mit dem letzten Reiter.
+                Keine aktive Sitzung. Eine entsteht, sobald jemand eine zum Bearbeiten
+                geteilte Seite öffnet, und endet mit dem letzten Reiter.
               </p>
             ) : (
               <table className="tabelle">
@@ -1424,9 +1424,9 @@ export default function EinstellungenView() {
               </table>
             )}
             <p className="muted small">
-              Momentaufnahme der offenen Verbindungen, nichts davon wird festgehalten. Wer
-              wann was geschrieben hat, steht im Versionsverlauf der Seite und, mit
-              Lizenz, im Protokoll.
+              Zeigt nur den Moment, gespeichert wird nichts davon. Wer wann was
+              geschrieben hat, steht im Versionsverlauf der Seite und, mit Lizenz, im
+              Protokoll.
             </p>
           </>
         );
@@ -1442,21 +1442,21 @@ export default function EinstellungenView() {
               <Zweitfaktor stand={zweitStand} neuLaden={zweitLaden} />
             )}
             <p className="muted small">
-              Dasselbe steht für jeden -- auch für Konten ohne Verwaltungsrecht -- hinter dem
-              Zahnrad neben dem Namen unten in der Leiste.
+              Dieselbe Einrichtung erreicht jedes Konto über das Zahnrad neben dem Namen
+              unten in der Leiste, auch ohne Verwaltungsrecht.
             </p>
 
             <h3>Für die ganze Instanz</h3>
             <p className="muted small">
-              Gilt für Konten mit Passwort. Wer sich über SSO anmeldet, bringt seinen
-              zweiten Faktor vom Anbieter mit; wer über das Verzeichnis kommt, wird hier
-              trotzdem nach dem Code gefragt, sobald er einen eingerichtet hat.
+              Gilt für Konten mit Passwort. Bei SSO kommt der zweite Faktor vom
+              Anbieter. Konten aus dem Verzeichnis werden hier nach dem Code gefragt,
+              sobald sie einen eingerichtet haben.
             </p>
             {feld("zweitfaktor_pflicht")}
             {feld("zweitfaktor_aussteller")}
             <p className="muted small">
-              Ein verlorenes Telefon nimmt die Verwaltung unter Konten aus dem Weg: dort
-              lässt sich der zweite Faktor eines Kontos entfernen, nicht aber einer setzen.
+              Ist ein Telefon verloren, lässt sich der zweite Faktor eines Kontos unter
+              Konten entfernen. Einrichten kann ihn nur das Konto selbst.
             </p>
           </>
         );
@@ -1568,8 +1568,8 @@ export default function EinstellungenView() {
               }`}
             />
             <p className="muted small">
-              Adressen der letzten sieben Tage, nach Fehlversuchen absteigend. Das gesuchte
-              Muster ist eine Adresse gegen viele verschiedene Konten.
+              Adressen der letzten sieben Tage, nach Fehlversuchen absteigend. Auffällig
+              ist eine Adresse, die viele verschiedene Konten probiert.
             </p>
             <div className="tabelle-rollen">
               <table className="tabelle">
@@ -1724,9 +1724,9 @@ export default function EinstellungenView() {
           <>
             <h3>Einrichtung</h3>
             <p className="muted small">
-              Aus <code>config.conf</code>, hier nur lesbar. Ein Passwort für das Dienstkonto
-              gehört in die Datei und nicht in eine Datenbankzeile, die jeder Dump
-              mitnimmt. Geändert wird unter Wartung, wirksam nach einem Neustart.
+              Aus <code>config.conf</code>, hier nur lesbar. Das Passwort des Dienstkontos gehört in die Datei, nicht in die Datenbank:
+              ein Dump nimmt jede Datenbankzeile mit. Geändert wird es unter Wartung,
+              wirksam nach einem Neustart.
             </p>
             <table className="tabelle uebersicht-tabelle">
               <tbody>
@@ -1780,10 +1780,11 @@ export default function EinstellungenView() {
               </div>
             )}
 
-            <h3>Probe</h3>
+            <h3>Verbindung prüfen</h3>
             <p className="muted small">
-              Ohne Passwort nur Suche: prüft Verbindung, Dienstkonto, Filter und Feldnamen.
-              Mit Passwort zusätzlich Bind. Legt kein Konto an.
+              Ohne Passwort wird nur gesucht: Verbindung, Dienstkonto, Filter und
+              Feldnamen. Mit Passwort kommt der Bind dazu. Ein Konto wird dabei nicht
+              angelegt.
             </p>
             <div className="knopfreihe">
               <button className="btn" disabled={!l.aktiv} onClick={() => setLdapOffen(true)}>
@@ -1891,8 +1892,8 @@ export default function EinstellungenView() {
               {kachel(bytes(z.anhaengeBytes ?? 0), "Anhänge (auf Platte)")}
             </div>
             <p className="muted small">
-              Anhänge liegen als Dateien im Datenverzeichnis, nicht in der Datenbank. Ein
-              reiner Datenbank-Dump ist unvollständig.
+              Anhänge liegen als Dateien im Datenverzeichnis, nicht in der Datenbank.
+              Ein reiner Datenbank-Dump ist deshalb unvollständig.
             </p>
 
             <Listenkopf
@@ -1986,8 +1987,8 @@ export default function EinstellungenView() {
               {kachel(z.zahlen?.ohneSuchtext ?? 0, "ohne Suchtext")}
             </div>
             <p className="muted small">
-              Seiten ohne Suchtext sind meist leer. Bleibt die Zahl nach einem Neuaufbau hoch,
-              stimmt der Editor-Inhalt nicht.
+              Seiten ohne Suchtext sind meist leer. Bleibt die Zahl nach einem Neuaufbau
+              hoch, stimmt der Inhalt im Editor nicht.
             </p>
           </>
         );
@@ -2038,11 +2039,11 @@ export default function EinstellungenView() {
               )}
             </div>
 
-            <h3>Wo die Dateien liegen</h3>
+            <h3>Ablage der Dateien</h3>
             <div className="kachelreihe">{kachel(ablage || "—", "Aktuelle Ablage")}</div>
             <p className="muted small">
-              Vorgabe: lokale Platte. Objektspeicher macht den Datenbank-Dump vollständig und
-              erlaubt zwei Instanzen auf denselben Dateien.
+              Vorgabe ist die lokale Platte. Objektspeicher macht den Datenbank-Dump
+              vollständig und erlaubt zwei Instanzen auf denselben Dateien.
             </p>
 
             <div className="knopfreihe">
@@ -2077,8 +2078,7 @@ export default function EinstellungenView() {
               <p className="muted small">
                 Hier wird nichts gespeichert; die Zugangsdaten bleiben im Formular und gelten
                 nur für diesen Test. Ein geheimer Schlüssel gehört in <code>config.conf</code>
-                {" "}oder in die Umgebung, nicht in eine Datenbankzeile, die jeder Dump
-                mitnimmt.
+                {" "}oder in die Umgebung, nicht in die Datenbank: ein Dump nimmt jede Zeile mit.
               </p>
               <div className="fenster-felder">
                 <label>
@@ -2090,7 +2090,7 @@ export default function EinstellungenView() {
                   />
                 </label>
                 <label>
-                  <span>Eimer</span>
+                  <span>Bucket</span>
                   <input value={s3.bucket} onChange={(e) => setS3({ ...s3, bucket: e.target.value })} />
                 </label>
                 <label>
@@ -2130,8 +2130,8 @@ export default function EinstellungenView() {
                 <div className={s3Ergebnis.ok ? "hinweis-ok" : "fehler"}>{s3Ergebnis.text}</div>
               )}
               <p className="muted small">
-                Geprüft wird verbinden, schreiben, lesen und löschen — nur zu verbinden würde
-                zu wenig verraten. Die häufigsten Fehler zeigen sich erst beim Schreiben.
+                Geprüft wird verbinden, schreiben, lesen und löschen. Nur zu verbinden reicht
+              nicht, die häufigsten Fehler zeigen sich erst beim Schreiben.
                 Übernommen wird das Ergebnis nicht: dafür die Werte in{" "}
                 <code>config.conf</code> eintragen und den Dienst neu starten.
               </p>
@@ -2194,7 +2194,7 @@ export default function EinstellungenView() {
 
             <h3>Akzentfarbe</h3>
             <p className="muted small">
-              Trägt Knöpfe, Verknüpfungen und die Markierung in Listen.
+              Färbt Knöpfe, Verknüpfungen und die Markierung in Listen.
             </p>
             <div className="akzentwahl">
               {AKZENTE.map((a) => (
@@ -2261,15 +2261,14 @@ export default function EinstellungenView() {
             </div>
             {!flaecheLesbar(aktuellerAkzent) && (
               <p className="muted small">
-                Auf dieser Fläche ist die Beschriftung schwer zu lesen. Ein dunklerer oder
-                hellerer Wert derselben Farbe hilft.
+                Auf dieser Fläche ist die Beschriftung schwer zu lesen. Ein dunklerer
+                oder hellerer Wert derselben Farbe hilft.
               </p>
             )}
             {verschoben && (
               <p className="muted small">
-                Als Text auf dem Grund wird die Farbe nach <code>{verschoben}</code> gerückt,
-                sonst wäre eine Verknüpfung im Fließtext nicht zu lesen. Flächen behalten den
-                eingetragenen Wert.
+                Als Text auf dem Grund wird die Farbe nach <code>{verschoben}</code> gerückt, sonst wäre eine Verknüpfung im Fließtext nicht zu lesen. Flächen
+              behalten den eingetragenen Wert.
               </p>
             )}
             {akzent && herkunft(akzent)}
@@ -2344,8 +2343,8 @@ export default function EinstellungenView() {
               platzhalter="Filtern nach Funktion"
             />
             <p className="muted small">
-              Geprüft wird immer die einzelne Funktion und nie die Stufe: ein Schlüssel kann
-              eine Stufe und zusätzlich einzelne Funktionen tragen.
+              Geprüft wird immer die einzelne Funktion, nie die Stufe. Ein Schlüssel
+              kann eine Stufe und zusätzlich einzelne Funktionen enthalten.
             </p>
             <table className="tabelle">
               <thead>
@@ -2381,8 +2380,8 @@ export default function EinstellungenView() {
 
             <h3>Schlüssel einlesen</h3>
             <p className="muted small">
-              Wird geprüft und in der Datenbank abgelegt: sofort wirksam, übersteht den
-              Neustart, Vorrang vor <code>config.conf</code>. Leer nimmt die Lizenz zurück.
+              Wird geprüft und in der Datenbank abgelegt. Sofort wirksam, übersteht den
+              Neustart, hat Vorrang vor <code>config.conf</code>. Leer nimmt die Lizenz zurück.
             </p>
             <textarea
               className="konfig-feld"
@@ -2435,9 +2434,10 @@ export default function EinstellungenView() {
                   </button>
                 </div>
                 <p className="muted small">
-                  Ohne Datum gilt ein Jahr, länger wird nicht ausgestellt. Geprüft wird offline,
-                  ohne Rückfrage beim Herausgeber; ein ausgegebener Schlüssel lässt sich
-                  deshalb nicht zurückrufen, das Ablaufdatum ist der einzige Hebel.
+                  Ohne Datum gilt ein Jahr, länger wird nicht ausgestellt. Geprüft wird
+                  offline, ohne Rückfrage beim Herausgeber. Ein ausgegebener Schlüssel
+                  lässt sich deshalb nicht zurückrufen, nur das Ablaufdatum begrenzt
+                  ihn.
                 </p>
                 {ausgestellt && (
                   <textarea className="konfig-feld" rows={3} readOnly value={ausgestellt} />
@@ -2445,8 +2445,8 @@ export default function EinstellungenView() {
               </>
             ) : (
               <p className="muted small">
-                Ausstellen kann diese Installation nicht: der private Signierschlüssel liegt beim
-                Herausgeber.
+                Diese Installation kann keine Schlüssel ausstellen, der private
+                Signierschlüssel liegt beim Herausgeber.
               </p>
             )}
           </>
@@ -2455,7 +2455,7 @@ export default function EinstellungenView() {
       case "system":
         return (
           <>
-            <h3>Gerade eben</h3>
+            <h3>Letzte Minute</h3>
             {!puls ? (
               <div className="kennzahlreihe">
                 {kennzahl("Anfragen je Sekunde", "—")}
@@ -2504,9 +2504,10 @@ export default function EinstellungenView() {
                 {verlauf(puls)}
 
                 <p className="muted small">
-                  Letzte Minute, Nachladen alle 2 s, solange dieser Bereich offen ist. Der eigene
-                  Abfrageweg zählt nicht mit, die laufende Sekunde fehlt. Striche auf der
-                  Grundlinie: abgewiesen (gelb), gescheitert (rot).
+                  Letzte Minute, wird alle 2 s nachgeladen, solange dieser Bereich offen
+                  ist. Der eigene Abfrageweg zählt nicht mit, die laufende Sekunde
+                  fehlt. Striche unter der Linie sind abgewiesene (gelb) und
+                  gescheiterte (rot) Aufrufe.
                 </p>
 
                 {(puls.anfragen?.fehler ?? 0) > 0 && (
@@ -2618,9 +2619,9 @@ export default function EinstellungenView() {
 
             <h3>Verbund</h3>
             <p className="muted small">
-              Die Dienste, mit denen Nexora spricht, samt Antwortzeit. Die übrigen Container
-              des Verbunds fehlen: sichtbar wären sie nur über den Steuerkanal von Docker,
-              und wer den hat, kann auf dem Wirt alles.
+              Die Dienste, mit denen Nexora spricht, samt Antwortzeit. Die übrigen
+              Container des Verbunds fehlen: sichtbar wären sie nur über den Steuerkanal
+              von Docker, und der öffnet den ganzen Wirt.
             </p>
             <div className="tabelle-rollen">
               <table className="tabelle verbund-tabelle">
@@ -2691,9 +2692,9 @@ export default function EinstellungenView() {
               </button>
             </Listenkopf>
             <p className="muted small">
-              Adressen, an denen diese Instanz selbst einen TCP-Verbindungsversuch macht.
-              Kein Agent auf der Gegenseite, kein Zugang zum fremden Rechner — was hier
-              steht, hat Nexora selbst gesehen.
+              Adressen, an denen diese Instanz selbst eine TCP-Verbindung versucht. Auf
+              der Gegenseite läuft kein Agent, es gibt keinen Zugang zum fremden
+              Rechner. Hier steht nur, was Nexora selbst gesehen hat.
             </p>
             <div className="tabelle-rollen">
               <table className="tabelle verbund-tabelle">
@@ -2838,8 +2839,7 @@ export default function EinstellungenView() {
                 </div>
                 <p className="muted small">
                   Erkannt wird aus dem Banner: SSH nennt seine Fassung, HTTP die Kopfzeile{" "}
-                  <code>Server</code>, TLS das Zertifikat samt Ablauf. Wer schweigt, bleibt
-                  leer — geraten wird nichts.
+                  <code>Server</code>, TLS das Zertifikat samt Ablauf. Antwortet ein Dienst nicht, bleibt das Feld leer. Geraten wird nichts.
                 </p>
               </Fenster>
             )}
@@ -2901,8 +2901,8 @@ export default function EinstellungenView() {
           <>
             <h3>Sicherung</h3>
             <p className="muted small">
-              Datenbank und Anhänge in einem Archiv, als Strom durch den Browser. Ein Dump
-              allein lässt Zeilen zurück, die auf nichts mehr zeigen.
+              Datenbank und Anhänge in einem Archiv, als Strom durch den Browser. Ein
+              Dump allein lässt Zeilen zurück, die auf keine Datei mehr zeigen.
             </p>
             {sicherung && (
               <>
@@ -2952,12 +2952,11 @@ export default function EinstellungenView() {
 
                 <p className="muted small">
                   Im Archiv: <code>LIESMICH.md</code> mit den Befehlen zum Zurückspielen, am Ende
-                  die Datei <code>FERTIG</code>. Fehlt sie, brach die Sicherung ab — ein halbes ZIP
-                  bleibt ein gültiges ZIP.
+                  die Datei <code>FERTIG</code>. Fehlt sie, ist die Sicherung abgebrochen: ein halbes ZIP bleibt ein gültiges ZIP.
                 </p>
                 <p className="muted small">
-                  Der Suchindex ist nicht enthalten und muss es nicht sein: PostgreSQL berechnet
-                  ihn beim Einspielen aus Titel und Text neu.
+                  Der Suchindex fehlt im Archiv und wird nicht gebraucht. PostgreSQL
+                  baut ihn beim Einspielen aus Titel und Text neu auf.
                 </p>
 
                 <h3>Sicherung einspielen</h3>
@@ -3003,9 +3002,9 @@ export default function EinstellungenView() {
 
                 <h3>Regelmäßig sichern</h3>
                 <p className="muted small">
-                  Ein Knopf im Browser ist keine Sicherung, sondern eine Handlung. Für einen
-                  Zeitplan braucht ein Skript einen Weg herein, und einen Keks hat es
-                  nicht. Das Losungswort ist dieser Weg.
+                  Ein Knopf im Browser sichert nur, wenn jemand ihn drückt. Für einen
+                  Zeitplan braucht ein Skript einen eigenen Zugang, und ein Cookie hat
+                  es nicht. Dafür ist das Losungswort da.
                 </p>
                 <div className="warnkasten">
                   <strong>Dieses Wort wiegt schwerer als jedes andere hier</strong>
@@ -3036,8 +3035,7 @@ export default function EinstellungenView() {
                 {sicherung.tokenGesetzt && (
                   <>
                     <p className="muted small">
-                      Fertiges Skript mit Wort und Adresse. Prüft die Marke <code>FERTIG</code> und
-                      räumt Archive nach 14 Tagen weg.
+                      Fertiges Skript mit Wort und Adresse. Prüft die Marke <code>FERTIG</code> und löscht Archive nach 14 Tagen.
                     </p>
                     <textarea className="konfig-feld" rows={14} readOnly value={sicherung.skript} />
                     <div className="knopfreihe">
@@ -3075,8 +3073,8 @@ export default function EinstellungenView() {
                     them for lost and writes them anew, of all things the ones
                     that are correct. */}
                 <p className="muted small">
-                  Zugangsdaten maskiert. Zeilen mit <code>********</code> bleiben beim Speichern
-                  unverändert; neuen Wert an diese Stelle schreiben.
+                  Zugangsdaten sind maskiert. Zeilen mit <code>********</code> bleiben beim Speichern unverändert; einen neuen Wert einfach an diese Stelle
+              schreiben.
                 </p>
                 <textarea
                   className="konfig-feld"
@@ -3122,8 +3120,8 @@ export default function EinstellungenView() {
                     Bekannte Schlüssel ({konfig.schluessel.length})
                   </summary>
                   <p className="muted small">
-                    Alles, was diese Fassung auswertet. Unbekannte Schlüssel werden beim Start
-                    übergangen.
+                    Alles, was diese Fassung auswertet. Unbekannte Schlüssel werden beim
+                    Start übergangen.
                   </p>
                   <div className="schluesselliste">
                     {konfig.schluessel.map((k) => (
@@ -3136,12 +3134,12 @@ export default function EinstellungenView() {
 
             <h3>Dienst neu starten</h3>
             <p className="muted small">
-              Nötig, damit Änderungen an der Konfigurationsdatei greifen — gelesen wird sie nur
+              Nötig, damit Änderungen an der Konfigurationsdatei greifen. Gelesen wird sie nur
               beim Start. Betrifft <strong>allein diesen Dienst</strong>; Oberfläche und
               Datenbank laufen weiter. 1–2 s ohne Antwort.
             </p>
             <p className="muted small">
-              Der Dienst beendet sich selbst; hochgefahren wird er von dem, was ihn betreibt —
+              Der Dienst beendet sich selbst. Gestartet wird er von dem, was ihn betreibt:
               Docker mit <code>restart: unless-stopped</code>, systemd, Kubernetes.{" "}
               <strong>Gibt es nichts davon, bleibt er aus.</strong>
             </p>
@@ -3161,14 +3159,13 @@ export default function EinstellungenView() {
               </button>
             </div>
             <p className="muted small">
-              Zur Bestätigung <code>neustart</code> eintippen. Ein Knopf, der beim
-              Danebenklicken den Dienst abschaltet, wäre hier falsch.
+              Zur Bestätigung <code>neustart</code> eintippen. Ein einzelner Knopf würde den Dienst schon beim Danebenklicken abschalten.
             </p>
 
             <h3>Papierkorb der Instanz</h3>
             <p className="muted small">
-              Löscht alle Seiten im Papierkorb endgültig, auch die anderer Konten. Kein
-              Ablaufdatum, kein Aufschub — der Lauf ist sofort.
+              Löscht alle Seiten im Papierkorb endgültig, auch die anderer Konten. Es
+              gibt keine Frist und keinen Aufschub, der Lauf beginnt sofort.
             </p>
             <button className="btn" disabled={laeuft !== null} onClick={papierkorbLeeren}>
               {laeuft === "papierkorb" ? "Löscht…" : "Papierkorb endgültig leeren"}
@@ -3188,13 +3185,21 @@ export default function EinstellungenView() {
             className={"einstellungen-nav-eintrag" + (bereich === b.id ? " aktiv" : "")}
             onClick={() => setBereich(b.id)}
           >
-            <span className="nav-titel">{b.titel}</span>
-            <span className="nav-unter">{b.unter}</span>
+            {b.titel}
           </button>
         ))}
       </nav>
 
       <div className="einstellungen-inhalt">
+        {/* Die Ueberschrift stand bisher nur in der Leiste links. Ein Bereich mit
+            einem einzigen Teil kam damit ganz ohne Titel aus: man las die erste
+            Tabelle, ohne dass irgendwo stand, worauf man sieht. Der kurze Satz
+            darunter erklaert den Bereich einmal und muss deshalb nicht mehr
+            neben jedem Eintrag der Leiste wiederholt werden. */}
+        <header className="einstellungen-kopf">
+          <h1>{BEREICHE.find((b) => b.id === bereich)?.titel}</h1>
+          <p>{BEREICHE.find((b) => b.id === bereich)?.unter}</p>
+        </header>
         {meldung && (
           <div className={meldung.art === "ok" ? "hinweis-ok" : "fehler"}>{meldung.text}</div>
         )}

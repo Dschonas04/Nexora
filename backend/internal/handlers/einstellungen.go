@@ -55,7 +55,7 @@ var bekannt = map[string]struct {
 		Art:        "text",
 		Titel:      "Losungswort für die Sicherung",
 		Erklaerung: "Leer: Sicherung nur aus dem Panel, mit Anmeldung. Gesetzt: GET /api/system/sicherung nimmt statt der Sitzung dieses Wort an.",
-		Warnung:    "Der Strom enthält den vollständigen Bestand: Passwort-Hashes, Freigabe-Tokens, Anhänge. Gesetzt und verwaltet unter Wartung.",
+		Warnung:    "Das Archiv enthält alles: Passwort-Hashes, Freigabe-Tokens, Anhänge. Gesetzt und verwaltet unter Wartung.",
 	},
 	"registrierung_offen": {
 		Art:        "janein",
@@ -82,13 +82,13 @@ var bekannt = map[string]struct {
 	"max_anhang_mb": {
 		Art:        "zahl",
 		Titel:      "Größte Datei je Anhang (MB)",
-		Erklaerung: "Grenze je einzelner Datei, geprüft beim Hochladen. Darüber liegt der Platz hinter dem Datenverzeichnis oder im Eimer.",
+		Erklaerung: "Grenze je einzelner Datei, geprüft beim Hochladen. Darüber entscheidet der Platz im Datenverzeichnis oder im Objektspeicher.",
 		Warnung:    "In der Kette gilt der kleinste Wert. client_max_body_size im vorgeschalteten nginx bricht die Übertragung ab, bevor Nexora sie sieht. Die Messung unten ermittelt, was wirklich durchkommt.",
 	},
 	"sitzung_stunden": {
 		Art:        "zahl",
 		Titel:      "Gültigkeit einer Anmeldung (Stunden)",
-		Erklaerung: "Laufzeit einer Zeile in der Tabelle sitzungen und des dazugehörigen JWT. Ab der Hälfte der Laufzeit setzt der nächste Aufruf beides neu, samt Keks.",
+		Erklaerung: "Laufzeit einer Zeile in der Tabelle sitzungen und des dazugehörigen JWT. Ab der Hälfte der Laufzeit setzt der nächste Aufruf beides neu, samt Cookie.",
 		Warnung:    "Wirkt auf neu angelegte und auf verlängerte Sitzungen. Bereits offene behalten ihre Frist bis zur nächsten Verlängerung.",
 	},
 	"papierkorb_tage": {

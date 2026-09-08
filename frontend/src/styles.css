@@ -1851,17 +1851,38 @@ textarea::placeholder {
   background: var(--hover);
   font-weight: 500;
 }
-.nav-titel {
-  display: block;
+/* Die Eintraege tragen nur noch ihren Namen. Neun Eintraege mit je einer
+   zweiten Zeile darunter waren eine Wand aus Kleingedrucktem, durch die man
+   sich lesen musste, um die Leiste ueberhaupt als Liste zu erkennen. Der
+   erklaerende Satz steht jetzt einmal ueber dem Bereich, den er erklaert. */
+.einstellungen-nav-eintrag {
   font-size: 14px;
-  font-weight: 500;
 }
-.nav-unter {
-  display: block;
-  font-size: 12px;
+
+/* Kopf des Bereichs. Traegt den Namen, den die Leiste nur markiert. */
+.einstellungen-kopf {
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.einstellungen-kopf h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+.einstellungen-kopf p {
+  margin: 3px 0 0;
+  font-size: 13px;
   color: var(--muted);
-  margin-top: 1px;
-  line-height: 1.35;
+}
+
+/* Erklaerende Absaetze sind zum Lesen da und nicht zum Ueberfliegen: ueber die
+   volle Breite von 860 px wird eine Zeile in 12 px so lang, dass das Auge den
+   Anfang der naechsten nicht mehr findet. */
+.einstellungen-inhalt > p.muted.small,
+.einstellungen-inhalt p.muted.small {
+  max-width: 68ch;
+  line-height: 1.5;
 }
 .einstellungen-inhalt {
   flex: 1 1 auto;

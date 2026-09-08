@@ -478,7 +478,7 @@ function KontoFenster({
         titel: "Zweiten Faktor entfernen",
         text:
           `${konto.name} meldet sich danach wieder mit dem Passwort allein an, bis ein neuer ` +
-          `eingerichtet ist. Nimm diesen Weg für ein verlorenes Telefon -- und vergewissere ` +
+          `eingerichtet ist. Nimm diesen Weg für ein verlorenes Telefon. Vergewissere ` +
           `dich vorher auf einem anderen Kanal, dass die Bitte wirklich von dieser Person kommt.`,
         bestaetigen: "Entfernen",
         gefaehrlich: true,
