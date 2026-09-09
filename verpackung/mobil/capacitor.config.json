@@ -1,0 +1,12 @@
+{
+  "appId": "de.jonasgroll.nexora",
+  "appName": "Nexora",
+  "webDir": "web",
+  "server": {
+    "url": "http://10.0.2.43:3000",
+    "cleartext": true
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

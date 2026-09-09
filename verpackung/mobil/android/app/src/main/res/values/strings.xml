@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Nexora</string>
+    <string name="title_activity_main">Nexora</string>
+    <string name="package_name">de.jonasgroll.nexora</string>
+    <string name="custom_url_scheme">de.jonasgroll.nexora</string>
+</resources>
