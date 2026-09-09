@@ -35,6 +35,25 @@ function adresseSchreiben(adresse) {
   }
 }
 
+/** Nur echte Webadressen darf das Betriebssystem zu sehen bekommen. */
+function nachDraussenErlaubt(adresse) {
+  try {
+    const u = new URL(adresse);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/** Ob eine Adresse noch zur eingestellten Instanz gehoert. */
+function gleicherUrsprung(adresse, instanz) {
+  try {
+    return new URL(adresse).origin === new URL(instanz).origin;
+  } catch {
+    return false;
+  }
+}
+
 let fenster = null;
 
 function fensterBauen() {
@@ -61,9 +80,25 @@ function fensterBauen() {
   // Verweise nach draussen gehoeren in den Browser, nicht in dieses Fenster:
   // sonst landet man in einer Anwendung ohne Zurueck-Knopf auf einer fremden
   // Seite.
+  //
+  // Weitergereicht wird nur http und https. shell.openExternal gibt die
+  // Adresse an das Betriebssystem, und das oeffnet auch file:, smb: oder
+  // ms-msdt: -- eine Seite koennte damit ueber ein window.open Programme auf
+  // dem Rechner anstossen. Die Anwendung zeigt fremde Seiten, also wird hier
+  // gefiltert und nicht gehofft.
   fenster.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    if (nachDraussenErlaubt(url)) shell.openExternal(url);
     return { action: 'deny' };
+  });
+
+  // Zweiter Riegel: das Fenster selbst bleibt bei seiner Instanz. Ohne das
+  // koennte ein Verweis im Inhalt das Fenster auf eine fremde Seite umlenken,
+  // und die saehe dann aus wie Nexora -- samt Eingabefeld fuer das Passwort.
+  fenster.webContents.on('will-navigate', (ereignis, ziel) => {
+    if (!gleicherUrsprung(ziel, adresseLesen())) {
+      ereignis.preventDefault();
+      if (nachDraussenErlaubt(ziel)) shell.openExternal(ziel);
+    }
   });
 
   fenster.webContents.on('did-fail-load', (_e, code, beschreibung) => {
