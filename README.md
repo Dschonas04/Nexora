@@ -26,6 +26,11 @@ people, and under which terms, is listed in
 [THIRD-PARTY.md](THIRD-PARTY.md), which also carries the commands to verify the
 inventory yourself.
 
+Packaging Nexora as a desktop or mobile application — Windows, macOS, Linux,
+Android and iOS — lives on the [`verpackung`](../../tree/verpackung) branch,
+not on `main`: those wrappers are a window onto a running instance, they build
+on a different schedule, and none of it belongs in the server image.
+
 ## Stack
 
 | Layer    | Tech                                                     |
