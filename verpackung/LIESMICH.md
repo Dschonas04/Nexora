@@ -1,5 +1,7 @@
 # Nexora zum Mitnehmen
 
+*This guide is also available [in English](README.md).*
+
 Nexora ist eine Webanwendung. Was hier entsteht, ist kein zweites Nexora,
 sondern ein eigenes Fenster auf das, das schon läuft: dieselbe Oberfläche,
 derselbe Server, derselbe Stand für alle. Ein eigener Datenbestand in der App
@@ -51,6 +53,11 @@ docker run --rm -v <pfad>/mobil:/build -v nexora-gradle-cache:/root/.gradle \
 
 Das Ergebnis liegt unter `android/app/build/outputs/apk/debug/app-debug.apk`.
 
+Zu beachten: das ist ein *Debug*-Build. Nur der bringt `usesCleartextTraffic`
+von selbst mit, und ohne das verweigert Android ab Version 9 unverschlüsseltes
+HTTP wortlos — die App zeigte eine leere Fläche. Ein Release-Build braucht die
+Angabe ausdrücklich, oder die Instanz braucht TLS.
+
 ## iOS
 
 Das Projekt liegt unter `mobil/ios` und ist vollständig, aber ein `.ipa`
@@ -66,6 +73,18 @@ Vorgabe ist `http://10.0.2.43:3000`.
 * Schreibtisch: im Menü unter *Nexora → Adresse ändern…*, gemerkt wird sie in
   den Anwendungsdaten. Alternativ die Umgebungsvariable `NEXORA_ADRESSE`.
 * Android und iOS: in `capacitor.config.json`, danach `npx cap sync`.
+
+## Was das Fenster darf
+
+Die Hülle reicht nur `http` und `https` an das Betriebssystem weiter.
+`shell.openExternal` gibt eine Adresse an das System, und das öffnet `file:`,
+`smb:` oder `ms-msdt:` genauso bereitwillig — eine Seite könnte darüber sonst
+Programme auf dem Rechner anstoßen.
+
+Das Fenster selbst bleibt außerdem beim Ursprung seiner Instanz. Ohne das
+könnte ein Verweis im Inhalt das Fenster auf eine fremde Seite umlenken, und
+die sähe aus wie Nexora, samt Feld für das Passwort. Verweise nach außen gehen
+stattdessen an den Browser.
 
 ## Signaturen
 
