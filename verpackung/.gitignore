@@ -1,0 +1,9 @@
+# Erzeugnisse und geholte Abhaengigkeiten. Beides entsteht aus dem, was hier
+# steht, und waere im Verlauf nur Ballast: die fertigen Fassungen sind
+# zusammen ueber ein Gigabyte gross.
+fertig/
+*/node_modules/
+mobil/android/build/
+mobil/android/app/build/
+mobil/android/.gradle/
+mobil/ios/App/Pods/
