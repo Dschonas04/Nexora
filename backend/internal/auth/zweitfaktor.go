@@ -1,9 +1,9 @@
-// Der zweite Faktor: zeitbasierte Einmalkennwörter nach RFC 6238.
+// The second factor: time-based one-time passwords after RFC 6238.
 //
-// Absichtlich ohne fremde Bibliothek. Das Verfahren ist ein HMAC über einen
-// Zähler und eine Stelle daraus; das steht hier vollständig und ist damit
-// nachlesbar, statt in einer Abhängigkeit zu liegen, die für dreißig Zeilen
-// gepflegt werden müsste.
+// Deliberately without a third-party library. The scheme is an HMAC over a
+// counter plus one offset taken from it; that stands here in full and can
+// therefore be read, instead of sitting in a dependency that would have to be
+// maintained for thirty lines of code.
 package auth
 
 import (
@@ -26,21 +26,21 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// TOTPSchritt ist die Länge eines Zeitfensters. Dreißig Sekunden sind das, was
-// jede Authenticator-App ohne Rückfrage annimmt; ein anderer Wert müsste in der
-// App von Hand eingetragen werden und wäre damit keine Erleichterung.
+// TOTPSchritt is the length of one time window. Thirty seconds is what every
+// authenticator app assumes without asking; a different value would have to be
+// entered in the app by hand and would therefore be no help at all.
 const TOTPSchritt = 30 * time.Second
 
-// TOTPToleranz ist die Zahl der Fenster, die nach vorn und nach hinten gelten.
-// Eins bedeutet: die Uhr des Telefons darf eine halbe Minute falsch gehen. Mehr
-// vergrößert nur das Fenster, in dem ein abgelesener Code noch passt.
+// TOTPToleranz is the number of windows accepted forwards and backwards. One
+// means: the phone's clock may be off by half a minute. More only widens the
+// window in which a code read over somebody's shoulder still fits.
 const TOTPToleranz = 1
 
 var base32Roh = base32.StdEncoding.WithPadding(base32.NoPadding)
 
-// NeuesGeheimnis liefert ein frisches Geheimnis in Base32, so wie eine
-// Authenticator-App es erwartet. Zwanzig Byte sind die Länge, auf die HMAC-SHA1
-// seinen Schlüssel ohnehin zusammenfaltet -- mehr brächte keine Sicherheit.
+// NeuesGeheimnis returns a fresh secret in Base32, the way an authenticator
+// app expects it. Twenty bytes is the length HMAC-SHA1 folds its key down to
+// anyway -- more would buy no security.
 func NeuesGeheimnis() (string, error) {
 	b := make([]byte, 20)
 	if _, err := rand.Read(b); err != nil {
@@ -49,7 +49,7 @@ func NeuesGeheimnis() (string, error) {
 	return base32Roh.EncodeToString(b), nil
 }
 
-// TOTPCode rechnet den Code für einen Zeitpunkt aus.
+// TOTPCode computes the code for a point in time.
 func TOTPCode(geheim string, wann time.Time) (string, error) {
 	schluessel, err := base32Roh.DecodeString(strings.ToUpper(strings.TrimSpace(geheim)))
 	if err != nil {
@@ -63,16 +63,16 @@ func TOTPCode(geheim string, wann time.Time) (string, error) {
 	m.Write(block[:])
 	summe := m.Sum(nil)
 
-	// Dynamic truncation nach RFC 4226: die letzten vier Bit zeigen auf die
-	// Stelle, an der die vier Bytes stehen, aus denen der Code entsteht.
+	// Dynamic truncation after RFC 4226: the last four bits point at the offset
+	// where the four bytes sit that the code is made from.
 	pos := summe[len(summe)-1] & 0x0f
 	wert := binary.BigEndian.Uint32(summe[pos:pos+4]) & 0x7fffffff
 	return fmt.Sprintf("%06d", wert%1000000), nil
 }
 
-// TOTPPruefen sagt, ob der eingegebene Code zum Geheimnis passt. Verglichen wird
-// in gleichbleibender Zeit, und es werden die Nachbarfenster mitgeprüft, damit
-// eine leicht falsch gehende Uhr niemanden aussperrt.
+// TOTPPruefen says whether the entered code matches the secret. The comparison
+// runs in constant time, and the neighbouring windows are checked as well so
+// that a slightly wrong clock locks nobody out.
 func TOTPPruefen(geheim, code string) bool {
 	code = strings.TrimSpace(strings.ReplaceAll(code, " ", ""))
 	if len(code) != 6 {
@@ -85,8 +85,8 @@ func TOTPPruefen(geheim, code string) bool {
 		if err != nil {
 			return false
 		}
-		// Nicht abbrechen, wenn es passt: die Schleife soll für jede Eingabe
-		// gleich lange laufen.
+		// Do not break out on a match: the loop should take the same time for
+		// every input.
 		if subtle.ConstantTimeCompare([]byte(soll), []byte(code)) == 1 {
 			passt = true
 		}
@@ -94,8 +94,9 @@ func TOTPPruefen(geheim, code string) bool {
 	return passt
 }
 
-// OtpauthURI ist das, was im QR-Code steht. Der Aussteller taucht zweimal auf,
-// als Pfad und als Parameter: ältere Apps lesen das eine, neuere das andere.
+// OtpauthURI is what the QR code contains. The issuer appears twice, as part
+// of the path and as a parameter: older apps read the one, newer ones the
+// other.
 func OtpauthURI(aussteller, konto, geheim string) string {
 	pfad := url.PathEscape(aussteller) + ":" + url.PathEscape(konto)
 	q := url.Values{}
@@ -107,9 +108,9 @@ func OtpauthURI(aussteller, konto, geheim string) string {
 	return "otpauth://totp/" + pfad + "?" + q.Encode()
 }
 
-// NeuerErsatzcode liefert einen Code für den Fall, dass das Telefon weg ist.
-// Zehn Zeichen aus Base32 ohne die Ziffern, die für Buchstaben gehalten werden,
-// in zwei Blöcken -- er wird abgeschrieben und nicht kopiert.
+// NeuerErsatzcode returns a code for the case where the phone is gone. Ten
+// characters from Base32 without the digits mistaken for letters, in two
+// blocks -- it gets copied out by hand, not with a mouse.
 func NeuerErsatzcode() (string, error) {
 	const alphabet = "abcdefghjkmnpqrstuvwxyz23456789"
 	b := make([]byte, 10)
@@ -127,21 +128,20 @@ func NeuerErsatzcode() (string, error) {
 }
 
 // ---------------------------------------------------------------------------
-// Das Geheimnis in der Datenbank
+// The secret in the database
 //
-// Ein TOTP-Geheimnis lässt sich nicht wie ein Passwort hashen: der Server muss
-// es zurücklesen können, um zu rechnen. Es liegt deshalb verschlüsselt in der
-// Spalte, mit einem Schlüssel, der aus dem Signaturgeheimnis der Instanz kommt.
-// Ein Abzug der Datenbank allein -- eine Sicherung, ein verlorenes Backup --
-// gibt damit keine Codes her.
+// A TOTP secret cannot be hashed like a password: the server has to read it
+// back in order to compute. It therefore sits in the column encrypted, with a
+// key derived from the instance's signing secret. A dump of the database alone
+// -- a backup, a lost archive -- thus yields no codes.
 
 func totpSchluessel(secret []byte) []byte {
 	h := sha256.Sum256(append([]byte("nexora-zweitfaktor:"), secret...))
 	return h[:]
 }
 
-// GeheimVerschluesseln legt das Geheimnis für die Spalte ab: AES-GCM, der Nonce
-// steht vorn, alles zusammen in Base64.
+// GeheimVerschluesseln prepares the secret for the column: AES-GCM, the nonce
+// in front, all of it in Base64.
 func GeheimVerschluesseln(secret []byte, klar string) (string, error) {
 	gcm, err := totpGCM(secret)
 	if err != nil {
@@ -154,7 +154,7 @@ func GeheimVerschluesseln(secret []byte, klar string) (string, error) {
 	return base64.StdEncoding.EncodeToString(gcm.Seal(nonce, nonce, []byte(klar), nil)), nil
 }
 
-// GeheimEntschluesseln liest zurück, was GeheimVerschluesseln abgelegt hat.
+// GeheimEntschluesseln reads back what GeheimVerschluesseln stored.
 func GeheimEntschluesseln(secret []byte, abgelegt string) (string, error) {
 	roh, err := base64.StdEncoding.DecodeString(abgelegt)
 	if err != nil {
@@ -183,20 +183,19 @@ func totpGCM(secret []byte) (cipher.AEAD, error) {
 }
 
 // ---------------------------------------------------------------------------
-// Das Ticket zwischen den beiden Schritten
+// The ticket between the two steps
 //
-// Zwischen Passwort und Code ist niemand angemeldet, und trotzdem muss der
-// zweite Aufruf wissen, um wen es geht. Er bekommt dafür ein kurzlebiges,
-// signiertes Ticket statt einer Sitzung.
+// Between password and code nobody is signed in, and yet the second call has
+// to know who this is about. It gets a short-lived, signed ticket for that
+// instead of a session.
 //
-// Signiert wird mit einem eigenen, aus dem Signaturgeheimnis abgeleiteten
-// Schlüssel. Damit ist ausgeschlossen, dass ein Ticket je als Sitzungskeks
-// durchgeht: die Prüfung der Sitzung rechnet mit dem anderen Schlüssel und
-// verwirft es.
+// It is signed with a separate key derived from the signing secret. That rules
+// out a ticket ever passing as a session cookie: the session check computes
+// with the other key and throws it away.
 
-// ZweitTicketDauer ist die Frist für den zweiten Schritt. Fünf Minuten reichen,
-// um ein Telefon aus der Tasche zu holen, und sind kurz genug, dass ein
-// abgefangenes Ticket wertlos altert.
+// ZweitTicketDauer is the deadline for the second step. Five minutes are
+// enough to get a phone out of a pocket, and short enough that an intercepted
+// ticket ages into worthlessness.
 const ZweitTicketDauer = 5 * time.Minute
 
 func ticketSchluessel(secret []byte) []byte {
@@ -204,7 +203,7 @@ func ticketSchluessel(secret []byte) []byte {
 	return h[:]
 }
 
-// ZweitTicket signiert das Ticket für ein Konto.
+// ZweitTicket signs the ticket for an account.
 func ZweitTicket(secret []byte, userID string) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		UserID: userID,
@@ -215,7 +214,7 @@ func ZweitTicket(secret []byte, userID string) (string, error) {
 	}).SignedString(ticketSchluessel(secret))
 }
 
-// ZweitTicketLesen gibt das Konto zurück, für das das Ticket ausgestellt wurde.
+// ZweitTicketLesen returns the account the ticket was issued for.
 func ZweitTicketLesen(secret []byte, ticket string) (string, error) {
 	claims := &Claims{}
 	tok, err := jwt.ParseWithClaims(ticket, claims, func(t *jwt.Token) (interface{}, error) {
