@@ -13,6 +13,7 @@ import { Plugin } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 import { useDesign } from "../design";
+import { sprache } from "../sprache";
 
 // Shared pattern for [[Page title]]. It carries the g flag, so lastIndex has to
 // be reset before each use; see onClickCapture below.
@@ -236,7 +237,8 @@ export default function Editor({
 
   const editor = useCreateBlockNote({
     initialContent: content,
-    dictionary: locales.de,
+    // The editor's own menus follow the chosen language from the next page opened on.
+    dictionary: sprache() === "de" ? locales.de : locales.en,
     // The image, video and file blocks get their own upload from this. It is
     // the same path an attachment takes, so a picture in the text lies where
     // every other file of this page lies: on the disk or in the bucket, and

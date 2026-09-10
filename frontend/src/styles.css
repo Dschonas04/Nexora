@@ -4338,3 +4338,22 @@ textarea::placeholder {
   border-bottom: none;
   padding-top: 4px;
 }
+
+/* The language switch: two words side by side, the chosen one in the accent. */
+.sprachwahl {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 4px 0 16px;
+}
+.sprachwahl button {
+  background: transparent;
+  border: none;
+  padding: 5px 14px;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+.sprachwahl button + button { border-left: 1px solid var(--border); }
+.sprachwahl button.gewaehlt { background: var(--accent); color: var(--accent-text, #fff); }

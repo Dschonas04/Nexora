@@ -232,7 +232,7 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
           {frei("echtzeit") && (
             <p className="muted small">
               Whoever may <strong>edit</strong> writes at the same time as everyone else:
-              all of them see the others\u2019 changes at once, cursor and name included.
+              all of them see the others’ changes at once, cursor and name included.
               Whoever may only view, reads.
               {dabei && dabei.moeglich && dabei.anzahl > 0 && (
                 <>
