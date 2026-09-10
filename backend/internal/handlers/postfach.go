@@ -96,8 +96,8 @@ func (s *Server) ListPostfach(w http.ResponseWriter, r *http.Request) {
 		`SELECT p.id, p.art, p.page_id, p.kommentar_id, p.ausloeser_id, p.ausloeser_name,
 		        p.seiten_titel, p.text, p.gelesen_am, p.erstellt_am, u.bild_stand
 		 FROM postfach p
-		 -- LEFT JOIN, denn ausloeser_id wird beim Löschen eines Kontos auf NULL
-		 -- gesetzt: die Nachricht bleibt, das Gesicht dazu nicht.
+		 -- LEFT JOIN, because ausloeser_id is set to NULL when an account is
+		 -- deleted: the message stays, the face belonging to it does not.
 		 LEFT JOIN users u ON u.id = p.ausloeser_id
 		 WHERE p.empfaenger_id = $1`+bedingung+`
 		 ORDER BY p.erstellt_am DESC LIMIT 100`, uid)

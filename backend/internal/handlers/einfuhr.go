@@ -957,9 +957,9 @@ func (s *Server) anhangAnlegen(ctx context.Context, seiteID, uid, dateiname stri
 	if dateiname == "" || dateiname == "." || dateiname == "/" {
 		dateiname = "datei"
 	}
-	// Dieselbe Grenze wie beim Hochladen von Hand, siehe programmdatei.go. Ein
-	// Archiv ist der bequemere Weg, ein Programm hereinzutragen, nicht der
-	// erlaubtere.
+	// The same limit as for uploading by hand, see programmdatei.go. An archive
+	// is the more convenient way to carry an executable in, not the more
+	// permitted one.
 	if istLinuxProgramm(inhalt) {
 		return "", errProgrammdatei
 	}

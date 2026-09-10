@@ -2,8 +2,8 @@ package handlers
 
 import "testing"
 
-// Das Inhaltsverzeichnis der eigenen Ausfuhr muss beim Einlesen einer ganzen
-// Ablage wegfallen, ein selbst geschriebenes INHALT.md aber nicht.
+// The table of contents of our own export has to drop out when a whole space
+// is imported, but a hand-written INHALT.md must not.
 func TestIstAusfuhrVerzeichnis(t *testing.T) {
 	unser := "# Reise\n\n3 Seiten, ausgegeben am 24.08.2026 09:12.\n\n" +
 		"- [Hinfahrt](<hinfahrt.md>)\n- [Unterwegs](<unterwegs.md>)\n"
@@ -23,9 +23,9 @@ func TestIstAusfuhrVerzeichnis(t *testing.T) {
 	}
 }
 
-// Ein von Hand geschriebenes Verzeichnis besteht aus einer Ueberschrift und
-// Verweisen und sonst nichts. Ohne die Zeile mit dem Datum ist es keine
-// Ausfuhr, und es faellt beim Einlesen nicht weg.
+// A hand-written index consists of a heading and links and nothing else.
+// Without the line carrying the date it is no export, and it does not drop out
+// on import.
 func TestVerzeichnisOhneDatumBleibt(t *testing.T) {
 	vonHand := "# Meine Sammlung\n\n- [Eins](<eins.md>)\n- [Zwei](<zwei.md>)\n"
 	if istAusfuhrVerzeichnis([]byte(vonHand)) {

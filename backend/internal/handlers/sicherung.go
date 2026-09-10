@@ -95,8 +95,8 @@ NAME="$ZIEL/nexora-$(date +%%Y-%%m-%%d_%%H%%M).zip"
 
 curl -fsS --max-time 3600      -H "Authorization: Bearer $WORT"      -o "$NAME"      %s/api/system/sicherung
 
-# Die Marke am Ende beweist, dass das Archiv vollstaendig ist. Ein halbes ZIP
-# ist ein gueltiges ZIP, ohne diese Pruefung faellt der Abbruch nicht auf.
+# The marker at the end proves the archive is complete. Half a ZIP is a valid
+# ZIP; without this check a truncated one goes unnoticed.
 if unzip -l "$NAME" | grep -q '/FERTIG$'; then
     echo "vollstaendig: $NAME"
     find "$ZIEL" -name 'nexora-*.zip' -mtime +14 -delete
@@ -298,9 +298,8 @@ func (s *Server) pgDump(ctx context.Context, ziel io.Writer) error {
 		// database that already contains objects.
 		"--clean", "--if-exists",
 		s.DatenbankURL)
-	// Das Losungswort steht in der Adresse und hat in keiner Fehlermeldung
-	// etwas zu suchen; deshalb wird stderr eingesammelt und nicht
-	// weitergereicht.
+	// The password sits in the URL and has no business in any error message;
+	// that is why stderr is collected and not passed on.
 	var meldung strings.Builder
 	befehl.Stdout = ziel
 	befehl.Stderr = &meldung
@@ -397,7 +396,7 @@ Anhaenge: den Inhalt von anhaenge/ in das Datenverzeichnis der neuen Instanz
 legen (Vorgabe /data/attachments) oder in den Eimer des Objektspeichers, jeweils
 unter demselben Namen. Die Datenbank findet sie ueber die Kennung wieder.
 
-## Was NICHT drin ist
+## What is NOT in here
 
     config.conf     Steht auf dem Wirt und enthaelt Geheimnisse
     Der Lizenzschluessel, falls er nur in der Datei steht

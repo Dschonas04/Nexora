@@ -5,10 +5,10 @@ import (
 	"time"
 )
 
-// Die Pruefvektoren aus RFC 6238, Anhang B, fuer HMAC-SHA1. Das Geheimnis dort
-// ist die ASCII-Folge "12345678901234567890"; hier steht sie in Base32, so wie
-// eine Authenticator-App sie bekaeme. Der RFC nennt acht Stellen, verglichen
-// werden die unteren sechs -- das sind die, die Nexora ausgibt.
+// The test vectors from RFC 6238, appendix B, for HMAC-SHA1. The secret there
+// is the ASCII sequence "12345678901234567890"; here it stands in Base32, the
+// way an authenticator app would receive it. The RFC names eight digits, the
+// lower six are compared -- those are the ones Nexora issues.
 func TestTOTPCodeGegenRFC6238(t *testing.T) {
 	const geheim = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"
 	faelle := []struct {
@@ -32,8 +32,8 @@ func TestTOTPCodeGegenRFC6238(t *testing.T) {
 	}
 }
 
-// Der laufende Code muss passen, ein anderer nicht, und Leerzeichen aus einer
-// Zwischenablage duerfen nicht stoeren.
+// The current code must match, another one must not, and spaces out of a
+// clipboard must not get in the way.
 func TestTOTPPruefen(t *testing.T) {
 	geheim, err := NeuesGeheimnis()
 	if err != nil {
@@ -55,16 +55,16 @@ func TestTOTPPruefen(t *testing.T) {
 	if TOTPPruefen(geheim, "12345") {
 		t.Error("ein zu kurzer Code kam durch")
 	}
-	// Eine Stunde daneben liegt weit ausserhalb der Toleranz von einem Fenster.
+	// An hour off lies far outside the tolerance of one window.
 	alt, _ := TOTPCode(geheim, time.Now().Add(-time.Hour))
 	if TOTPPruefen(geheim, alt) {
 		t.Error("ein eine Stunde alter Code kam durch")
 	}
 }
 
-// Das Geheimnis muss aus der Spalte unveraendert zurueckkommen, und mit einem
-// anderen Signaturgeheimnis darf es sich nicht oeffnen lassen -- genau das ist
-// der Zweck der Verschluesselung.
+// The secret must come back out of the column unchanged, and must not open
+// with a different signing secret -- that is precisely the point of the
+// encryption.
 func TestGeheimHinUndZurueck(t *testing.T) {
 	secret := []byte("Signaturgeheimnis der Instanz")
 	klar, err := NeuesGeheimnis()
@@ -87,8 +87,8 @@ func TestGeheimHinUndZurueck(t *testing.T) {
 	}
 }
 
-// Zwei Verschluesselungen desselben Geheimnisses duerfen nicht gleich aussehen,
-// sonst verriete die Spalte, welche Konten dasselbe Geheimnis tragen.
+// Two encryptions of the same secret must not look alike, or the column would
+// reveal which accounts carry the same secret.
 func TestGeheimMitFrischemNonce(t *testing.T) {
 	secret := []byte("Signaturgeheimnis")
 	a, _ := GeheimVerschluesseln(secret, "GEZDGNBVGY3TQOJQ")
@@ -98,9 +98,8 @@ func TestGeheimMitFrischemNonce(t *testing.T) {
 	}
 }
 
-// Das Ticket zwischen den Schritten darf nur mit seinem eigenen Schluessel
-// aufgehen. Ginge es auch als Sitzungskeks durch, waere der zweite Faktor
-// umgangen.
+// The ticket between the two steps must only open with its own key. If it
+// passed as a session cookie as well, the second factor would be bypassed.
 func TestZweitTicket(t *testing.T) {
 	secret := []byte("Signaturgeheimnis")
 	ticket, err := ZweitTicket(secret, "konto-1")
@@ -120,8 +119,8 @@ func TestZweitTicket(t *testing.T) {
 	}
 }
 
-// Ein Ersatzcode wird abgeschrieben: er soll zwei Bloecke haben und keine
-// Zeichen enthalten, die man mit anderen verwechselt.
+// A recovery code gets copied out by hand: it should have two blocks and
+// contain no characters that are mistaken for others.
 func TestErsatzcodeForm(t *testing.T) {
 	gesehen := map[string]bool{}
 	for i := 0; i < 200; i++ {

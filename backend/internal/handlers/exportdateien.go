@@ -95,8 +95,8 @@ func adressenAufDateien(md string, dateien []exportDatei) string {
 	}
 	for _, d := range dateien {
 		alt := "/api/pages/" + d.Seite + "/attachments/" + d.ID
-		// In spitzen Klammern, denn ein Dateiname darf Leerzeichen tragen und
-		// wuerde den Verweis sonst nach dem ersten Wort beenden.
+		// In angle brackets, because a file name may carry spaces and would
+		// otherwise end the link after the first word.
 		md = strings.ReplaceAll(md, "("+alt+")", "(<"+d.Pfad+">)")
 		md = strings.ReplaceAll(md, alt, d.Pfad)
 	}
@@ -160,7 +160,7 @@ func (s *Server) dateienSchreiben(ctx context.Context, zw *zip.Writer, dateien [
 	}
 }
 
-// schonGepackt sagt, ob ein Format bereits verlustbehaftet oder gepackt ist.
+// schonGepackt says whether a format is already lossy or compressed.
 func schonGepackt(name string) bool {
 	switch strings.ToLower(path.Ext(name)) {
 	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".zip", ".mp4", ".mp3", ".pdf", ".docx", ".xlsx", ".pptx":

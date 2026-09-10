@@ -681,7 +681,6 @@ func kuerzen(s string, n int) string {
 	return string(r[:n-1]) + "…"
 }
 
-// schreibeBild setzt den Aufruf eines Bildes in den Seitenstrom.
 // schreibeBild inserts the invocation of an image into the page stream.
 
 // The matrix describes the full size: an image is a unit square in the PDF

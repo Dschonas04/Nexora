@@ -158,8 +158,8 @@ func (s *setzer) bildSetzen(bild *pdfBild, einzug, breite float64) {
 	s.platzPruefen(h + 6)
 	s.y -= h
 
-	// q und Q klammern die Verschiebung ein, sonst gilt sie fuer alles, was
-	// danach auf dieser Seite gesetzt wird.
+	// q and Q bracket the translation, otherwise it applies to everything
+	// typeset on this page after it.
 	s.schreibeBild(nummer, einzug, s.y, b, h)
 	s.y -= 8
 }

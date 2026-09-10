@@ -188,9 +188,9 @@ func lies(knoten []knoten, tiefe int, hol Bildquelle) []Absatz {
 			if name == "" {
 				name = k.Type
 			}
-			// Das Bild selbst, wenn es zu beschaffen ist. Sonst bleibt es bei
-			// Name und Adresse: eine Zeile, die sagt, was fehlt und wo es liegt,
-			// ist ehrlicher als eine leere Flaeche.
+			// The picture itself, if it can be obtained. Otherwise name and
+			// address it is: a line saying what is missing and where it lies is
+			// more honest than an empty area.
 			if k.Type == "image" && hol != nil && adresse != "" {
 				if daten, ok := hol(adresse); ok {
 					a.BildDaten = daten
@@ -273,10 +273,10 @@ func stuecke(roh json.RawMessage) []Stueck {
 				v, ok := t.Styles[n].(bool)
 				return ok && v
 			}
-			// Farbe und Markierung stehen als Name da und nicht als Ja/Nein.
-			// "default" heisst: nichts gesetzt, und das ist etwas anderes als
-			// ein unbekannter Name -- beides ergibt hier aber dasselbe, naemlich
-			// den gewoehnlichen Satz.
+			// Colour and highlight stand there as a name and not as yes/no.
+			// "default" means: nothing set, and that is something other than an
+			// unknown name -- both amount to the same thing here, though, namely
+			// ordinary type.
 			name := func(n string) string {
 				v, ok := t.Styles[n].(string)
 				if !ok || v == "" || v == "default" {
