@@ -243,7 +243,7 @@ export default function Editor({
     // reachable only for whoever may read the page.
     uploadFile: async (datei: File) => {
       const laden = ladenRef.current;
-      if (!laden) throw new Error("Hochladen ist hier nicht eingerichtet");
+      if (!laden) throw new Error("Uploading is not set up here");
       return laden(datei);
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -270,7 +270,7 @@ export default function Editor({
       .filter((t) => (t.title || "").toLowerCase().includes(q))
       .slice(0, 12)
       .map((t) => ({
-        title: t.title || "Ohne Titel",
+        title: t.title || "Untitled",
         onItemClick: () => editor.insertInlineContent(`[[${t.title}]] `),
       }));
   };

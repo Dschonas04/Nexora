@@ -29,7 +29,7 @@ export default function PublicPage() {
   useEffect(() => {
     if (!page) return;
     const vorher = document.title;
-    document.title = page.title || "Ohne Titel";
+    document.title = page.title || "Untitled";
     return () => {
       document.title = vorher;
     };
@@ -38,8 +38,8 @@ export default function PublicPage() {
   // A revoked link and a token that never existed look the same on purpose, so
   // the page reveals nothing about what else is in the workspace.
   if (err)
-    return <div className="empty-state">Diese Seite ist nicht verfügbar.</div>;
-  if (!page) return <div className="empty-state spaet">Lädt…</div>;
+    return <div className="empty-state">This page is not available.</div>;
+  if (!page) return <div className="empty-state spaet">Loading…</div>;
 
   const stand = new Date(page.updatedAt);
 
@@ -67,12 +67,12 @@ export default function PublicPage() {
             {page.icon && (
               <span className="oeffentlich-symbol">{page.icon}</span>
             )}
-            {page.title || "Ohne Titel"}
+            {page.title || "Untitled"}
           </h1>
           {/* Same editor as inside the app, but read-only, so a public page
               renders exactly like the original. */}
-          <Fehlergrenze text="Der Inhalt dieser Seite liess sich nicht anzeigen.">
-            <Suspense fallback={<div className="qv-none">Wird geladen…</div>}>
+          <Fehlergrenze text="The content of this page could not be shown.">
+            <Suspense fallback={<div className="qv-none">Loading…</div>}>
               <Editor
                 initialContent={page.content}
                 editable={false}
