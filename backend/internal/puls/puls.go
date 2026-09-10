@@ -1,22 +1,23 @@
-// Der Puls: was gerade passiert, nicht was gestern war.
+// The pulse: what is happening right now, not what happened yesterday.
 //
-// Die Systemansicht beantwortete bisher Fragen über den Zustand: welcher Dienst
-// antwortet, wie groß ist die Datenbank, was stand beim Start in der
-// Konfiguration. Alles davon ändert sich selten. Was fehlt, ist die andere
-// Sorte Frage, die man stellt, während jemand sagt "es hängt gerade": wie viele
-// Anfragen laufen in dieser Sekunde, wie lange dauern sie, und wartet etwas.
+// Until now the system view answered questions about state: which service
+// responds, how large the database is, what stood in the configuration at
+// start. All of that changes rarely. What was missing is the other kind of
+// question, the one asked while somebody says "it is stalling right now": how
+// many requests are running this second, how long do they take, and is
+// anything waiting.
 //
-// Zwei Entscheidungen prägen dieses Paket.
+// Two decisions shape this package.
 //
-// Gezählt wird in Sekunden-Fächern, nicht als laufender Durchschnitt. Ein
-// Durchschnitt über die ganze Laufzeit verdünnt jede Spitze bis zur
-// Unsichtbarkeit: eine Minute, in der nichts geht, verschwindet in acht Stunden
-// Normalbetrieb. Sechzig Fächer zeigen die letzte Minute so, wie sie war.
+// Counting happens in per-second buckets, not as a running average. An average
+// over the whole uptime dilutes every spike into invisibility: one minute in
+// which nothing works vanishes inside eight hours of normal operation. Sixty
+// buckets show the last minute the way it was.
 //
-// Gemessen wird ohne Sperre auf dem heißen Weg. Jede Anfrage fasst das hier an,
-// und eine Sperre, die alle Anfragen teilen, wäre selbst die Verlangsamung, die
-// zu finden sie helfen soll. Die Fächer sind darum atomare Zähler, und der
-// Wechsel des Fachs geschieht über die Uhr und nicht über einen Zeitgeber.
+// Measuring happens without a lock on the hot path. Every request touches this,
+// and a lock shared by all requests would itself be the slowdown it is meant to
+// help find. The buckets are therefore atomic counters, and the switch to the
+// next bucket happens off the clock rather than off a timer.
 package puls
 
 import (
@@ -24,8 +25,8 @@ import (
 	"time"
 )
 
-// Faecher ist die Länge des Gedächtnisses. Eine Minute, weil das die Spanne
-// ist, über die jemand hinsieht, während er auf die Seite schaut.
+// Faecher is the length of the memory. One minute, because that is the span
+// somebody takes in while looking at the page.
 const Faecher = 60
 
 type fach struct {
@@ -43,10 +44,10 @@ type Messer struct {
 	laufend atomic.Int64 // gerade in Bearbeitung
 	seit    time.Time
 
-	// Wie viele Anfragen der Dienst seit dem Start beantwortet hat. Die Fächer
-	// vergessen nach einer Minute -- richtig für die Anzeige des Verlaufs, aber
-	// die Frage "wie viel hat dieser Dienst insgesamt getan" beantwortet nur
-	// ein Zähler, der nie zurückgeht.
+	// How many requests the service has answered since it started. The buckets
+	// forget after a minute -- right for showing the recent shape, but the
+	// question "how much has this service done in total" is only answered by a
+	// counter that never goes back.
 	gesamt atomic.Int64
 }
 
@@ -54,9 +55,9 @@ func Neu() *Messer {
 	return &Messer{seit: time.Now()}
 }
 
-// Beginn meldet eine angefangene Anfrage und gibt zurück, was am Ende zu rufen
-// ist. Ein Rückgabewert statt zweier Methoden, damit ein vergessenes Ende
-// unmöglich wird: wer beginnt, hält das Ende in der Hand.
+// Beginn reports a request that has started and returns what to call at the
+// end. A return value instead of two methods, so that a forgotten end becomes
+// impossible: whoever begins holds the end in their hand.
 func (m *Messer) Beginn() func(status int) {
 	m.laufend.Add(1)
 	start := time.Now()
@@ -67,9 +68,9 @@ func (m *Messer) Beginn() func(status int) {
 		jetzt := time.Now()
 		sek := jetzt.Unix()
 		f := &m.faecher[sek%Faecher]
-		// Gehört das Fach noch zu einer früheren Minute, wird es geleert statt
-		// weitergezählt. Ohne das stünde eine Minute alte Zahl neben einer
-		// frischen, und niemand sähe den Unterschied an.
+		// If the bucket still belongs to an earlier minute it is cleared rather
+		// than added to. Without that a number a minute old would stand next to
+		// a fresh one, and nothing would show which was which.
 		if alt := f.sekunde.Load(); alt != sek {
 			if f.sekunde.CompareAndSwap(alt, sek) {
 				f.anfragen.Store(0)
@@ -98,7 +99,7 @@ func (m *Messer) Beginn() func(status int) {
 	}
 }
 
-// Sekunde ist ein Fach, wie es nach außen geht.
+// Sekunde is one bucket as it goes out.
 type Sekunde struct {
 	VorSekunden int     `json:"vorSekunden"`
 	Anfragen    int64   `json:"anfragen"`
@@ -121,10 +122,10 @@ type Stand struct {
 	Abgelehnt   int64     `json:"abgelehnt"`
 }
 
-// Lies gibt die letzte Minute zurück, älteste zuerst.
+// Lies returns the last minute, oldest first.
 //
-// Die laufende Sekunde bleibt draußen: sie ist erst zum Teil vergangen, und
-// eine halbe Sekunde sähe wie ein Einbruch aus.
+// The current second stays out: only part of it has passed, and half a second
+// would look like a collapse.
 func (m *Messer) Lies() Stand {
 	jetzt := time.Now().Unix()
 	s := Stand{
@@ -138,9 +139,8 @@ func (m *Messer) Lies() Stand {
 	for zurueck := Faecher - 1; zurueck >= 1; zurueck-- {
 		sek := jetzt - int64(zurueck)
 		f := &m.faecher[sek%Faecher]
-		// Nur Fächer, die wirklich zu dieser Sekunde gehören. Alles andere
-		// stammt aus einer früheren Minute und ist nicht bloß alt, sondern
-		// falsch.
+		// Only buckets that really belong to this second. Anything else comes
+		// from an earlier minute and is not merely old but wrong.
 		if f.sekunde.Load() != sek {
 			s.Minute = append(s.Minute, Sekunde{VorSekunden: zurueck})
 			continue

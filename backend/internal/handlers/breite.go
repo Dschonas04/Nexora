@@ -1,13 +1,12 @@
-// Wie breit der Text einer Seite steht.
+// How wide the text of a page sits.
 //
-// Der Satzspiegel war fest: 720 Pixel, gleich ob auf der Seite ein Merkzettel
-// steht oder eine Tabelle mit zwoelf Spalten. Auf einem breiten Bildschirm
-// blieb links und rechts eine Handbreit Papier leer, und die Tabelle brach
-// trotzdem um.
+// The measure used to be fixed: 720 pixels, whether the page holds a scribbled
+// note or a table with twelve columns. On a wide screen a hand's breadth of
+// paper stayed empty left and right, and the table wrapped all the same.
 //
-// Der Wert haengt an der Seite und nicht am Konto: die Breite gehoert zum Satz
-// des Textes wie eine Ueberschrift, und wer eine Tabellenseite oeffnet, soll
-// sie so sehen, wie ihr Verfasser sie gesetzt hat.
+// The value hangs on the page and not on the account: width belongs to the
+// typesetting of the text like a heading does, and whoever opens a page of
+// tables should see it the way its author set it.
 package handlers
 
 import (
@@ -18,21 +17,21 @@ import (
 	"nexora/internal/middleware"
 )
 
-// breiten sind die erlaubten Werte. Eine feste Liste und keine Zahl: hinter den
-// Namen stehen Werte im Stilblatt, und eine freie Pixelangabe aus dem Browser
-// waere eine Zahl, die niemand mehr prueft.
+// breiten are the permitted values. A fixed list and not a number: behind the
+// names sit values in the stylesheet, and a free pixel count coming from the
+// browser would be a number nobody checks any more.
 //
-// Der leere Wert gehoert dazu: er heisst "wie die Instanz es vorgibt" und ist
-// der Ausgangszustand jeder Seite. Ohne ihn waere jede Seite fuer immer auf das
-// festgelegt, was beim Anlegen gerade Vorgabe war.
+// The empty value belongs to the list: it means "as the instance prescribes"
+// and is the initial state of every page. Without it every page would be nailed
+// forever to whatever happened to be the default when it was created.
 var breiten = map[string]bool{"": true, "normal": true, "breit": true, "voll": true}
 
 type breiteReq struct {
 	Breite string `json:"breite"`
 }
 
-// SetzeBreite aendert den Satzspiegel einer Seite. Wer schreiben darf, darf das
-// auch: es ist eine Eigenschaft des Textes, keine der Freigabe.
+// SetzeBreite changes the measure of a page. Whoever may write may do this as
+// well: it is a property of the text, not of the sharing.
 func (s *Server) SetzeBreite(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -53,10 +52,10 @@ func (s *Server) SetzeBreite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ohne updated_at zu ruehren: die Breite ist keine Aenderung am Inhalt, und
-	// eine neue Fassung im Verlauf waere fuer einen Handgriff am Satzspiegel zu
-	// viel. Der offene Editor wuerde ausserdem seine Basis verlieren und beim
-	// naechsten Speichern einen Konflikt melden, den es nicht gibt.
+	// Without touching updated_at: the width is no change to the content, and a
+	// new revision in the history would be too much for one adjustment of the
+	// measure. An open editor would also lose its base and report a conflict on
+	// the next save that does not exist.
 	if _, err := s.Pool.Exec(r.Context(),
 		`UPDATE pages SET breite=$2 WHERE id=$1 AND deleted_at IS NULL`, id, req.Breite); err != nil {
 		writeErr(w, http.StatusInternalServerError, "konnte nicht gespeichert werden")
