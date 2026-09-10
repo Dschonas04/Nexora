@@ -72,7 +72,7 @@ export default function Fenster({
           {/* Das Kreuz sitzt im Kopf und nicht bei den Knöpfen unten:
               Abbrechen und Schließen sind dasselbe, und zwei Wege dafür in
               einer Reihe lesen sich wie zwei verschiedene Sachen. */}
-          <button className="fenster-zu" onClick={schliessen} aria-label="Schließen">
+          <button className="fenster-zu" onClick={schliessen} aria-label="Close">
             ×
           </button>
         </div>

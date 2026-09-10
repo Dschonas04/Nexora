@@ -82,7 +82,7 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
     // once more counts only once.
     const alle = Array.from(new Set([...ausListe, ...ausFeld]));
     if (alle.length === 0) {
-      setErr("Niemand ausgewählt.");
+      setErr("Nobody selected.");
       return;
     }
 
@@ -104,7 +104,7 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
     setGewaehlt(new Set());
     if (geschafft > 0) {
       setHinweis(
-        geschafft === 1 ? "Eine Person hinzugefügt." : `${geschafft} Personen hinzugefügt.`,
+        geschafft === 1 ? "One person added." : `${geschafft} people added.`,
       );
     }
     if (gescheitert.length > 0) setErr(gescheitert.join(" · "));
@@ -148,27 +148,27 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Teilen</h3>
+          <h3>Share</h3>
           <button className="icon-btn" onClick={onClose}>
             ✕
           </button>
         </div>
 
         <div className="modal-section">
-          <div className="modal-label">Personen einladen</div>
+          <div className="modal-label">Invite people</div>
           <div className="share-add">
             <input
-              placeholder="E-Mail-Adressen, durch Komma getrennt"
+              placeholder="Email addresses, separated by commas"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && add()}
             />
             <select value={perm} onChange={(e) => setPerm(e.target.value)}>
-              <option value="read">Kann ansehen</option>
-              <option value="edit">Kann bearbeiten</option>
+              <option value="read">Can view</option>
+              <option value="edit">Can edit</option>
             </select>
             <button className="btn btn-primary" disabled={laeuft} onClick={add}>
-              {laeuft ? "Fügt hinzu…" : "Hinzufügen"}
+              {laeuft ? "Adding…" : "Add"}
             </button>
           </div>
 
@@ -182,7 +182,7 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
               {konten.length > 8 && (
                 <input
                   className="konten-suche"
-                  placeholder="In der Liste suchen"
+                  placeholder="Search the list"
                   value={suche}
                   onChange={(e) => setSuche(e.target.value)}
                 />
@@ -203,7 +203,7 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
                       <label
                         key={k.id}
                         className={"konten-zeile" + (schonDa ? " schon-da" : "")}
-                        title={schonDa ? "Hat bereits Zugriff" : k.email}
+                        title={schonDa ? "Already has access" : k.email}
                       >
                         <input
                           type="checkbox"
@@ -219,8 +219,8 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
               </div>
               {gewaehlt.size > 0 && (
                 <div className="muted small">
-                  {gewaehlt.size === 1 ? "Eine Person" : `${gewaehlt.size} Personen`} ausgewählt
-                  — <strong>{perm === "edit" ? "kann bearbeiten" : "kann ansehen"}</strong>
+                  {gewaehlt.size === 1 ? "One person" : `${gewaehlt.size} people`} selected
+                  — <strong>{perm === "edit" ? "can edit" : "can view"}</strong>
                 </div>
               )}
             </div>
@@ -231,24 +231,24 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
 
           {frei("echtzeit") && (
             <p className="muted small">
-              Wer <strong>bearbeiten</strong> darf, schreibt gleichzeitig mit: alle sehen die
-              Änderungen der anderen sofort, mit Schreibmarke und Namen. Wer nur ansehen darf,
-              liest.
+              Whoever may <strong>edit</strong> writes at the same time as everyone else:
+              all of them see the others\u2019 changes at once, cursor and name included.
+              Whoever may only view, reads.
               {dabei && dabei.moeglich && dabei.anzahl > 0 && (
                 <>
                   {" "}
-                  Gerade {dabei.anzahl === 1 ? "sitzt eine Person" : `sitzen ${dabei.anzahl} Personen`}{" "}
-                  an dieser Seite.
+                  {dabei.anzahl === 1 ? "One person is" : `${dabei.anzahl} people are`}{" "}
+                  on this page right now.
                 </>
               )}
               {dabei && !dabei.moeglich && (
-                <> Gemeinsames Bearbeiten ist in den Einstellungen abgeschaltet.</>
+                <> Editing together is switched off in the settings.</>
               )}
             </p>
           )}
 
           <div className="share-list">
-            {shares.length === 0 && <div className="muted small">Noch mit niemandem geteilt.</div>}
+            {shares.length === 0 && <div className="muted small">Not shared with anyone yet.</div>}
             {shares.map((s) => (
               <div key={s.userId} className="share-row">
                 <div>
@@ -256,8 +256,8 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
                   <div className="muted small">{s.email}</div>
                 </div>
                 <div className="share-perm">
-                  <span className="pill">{s.permission === "edit" ? "Kann bearbeiten" : "Kann ansehen"}</span>
-                  <button className="icon-btn" title="Entfernen" onClick={() => remove(s.userId)}>
+                  <span className="pill">{s.permission === "edit" ? "Can edit" : "Can view"}</span>
+                  <button className="icon-btn" title="Remove" onClick={() => remove(s.userId)}>
                     ✕
                   </button>
                 </div>
@@ -267,10 +267,10 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
         </div>
 
         <div className="modal-section">
-          <div className="modal-label">Öffentlicher Link</div>
+          <div className="modal-label">Public link</div>
           <label className="toggle-row">
             <input type="checkbox" checked={isPublic} onChange={togglePublic} />
-            <span>Jeder mit dem Link kann ansehen</span>
+            <span>Anyone with the link can view</span>
           </label>
           {isPublic && publicUrl && (
             <div className="share-add">
@@ -278,7 +278,7 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
                   navigator.clipboard is unavailable over plain HTTP. */}
               <input readOnly value={publicUrl} onFocus={(e) => e.currentTarget.select()} />
               <button className="btn" onClick={() => navigator.clipboard?.writeText(publicUrl)}>
-                Kopieren
+                Copy
               </button>
             </div>
           )}

@@ -48,7 +48,7 @@ export default function Zweitfaktor({
     const pw = await eingabeFragen({
       titel,
       text,
-      feld: "Dein Passwort",
+      feld: "Your password",
       art: "passwort",
       bestaetigen,
     });
@@ -69,15 +69,15 @@ export default function Zweitfaktor({
       {stand.aktiv ? (
         <div className="zweit-karte">
           <div className="zweit-lage">
-            <strong>Der zweite Faktor steht.</strong>
+            <strong>The second factor is in place.</strong>
             <span className="muted small">
-              {stand.seit && `Seit ${new Date(stand.seit).toLocaleDateString("de-DE")}. `}
-              Bei jeder Anmeldung wird nach dem Code aus der App gefragt.
+              {stand.seit && `Seit ${new Date(stand.seit).toLocaleDateString()}. `}
+              Every sign-in asks for the code from the app.
             </span>
             <span className={stand.offen === 0 ? "fehlertext small" : "muted small"}>
               {stand.offen === 0
-                ? "Kein Ersatzcode mehr offen. Ohne das Telefon kommst du nicht mehr hinein."
-                : `${stand.offen} von 10 Ersatzcodes noch offen.`}
+                ? "No recovery code left. Without the phone you cannot get in."
+                : `${stand.offen} of 10 recovery codes left.`}
             </span>
           </div>
           <div className="zweit-knoepfe">
@@ -85,50 +85,50 @@ export default function Zweitfaktor({
               className="btn"
               onClick={() =>
                 mitPasswort(
-                  "Neue Ersatzcodes",
-                  "Die bisherigen Ersatzcodes gelten danach nicht mehr, auch die unbenutzten. Die neuen stehen anschließend genau einmal da.",
-                  "Neue erzeugen",
+                  "New recovery codes",
+                  "The existing recovery codes stop working, unused ones included. The new ones are shown exactly once.",
+                  "Create new ones",
                   async (pw) => setCodes((await api.zweitfaktorCodesNeu(pw)).ersatzcodes),
                 )
               }
             >
-              Neue Ersatzcodes
+              New recovery codes
             </button>
             <button
               className="btn"
               disabled={stand.pflicht}
               title={
                 stand.pflicht
-                  ? "Der zweite Faktor ist für diese Instanz vorgeschrieben"
+                  ? "The second factor is mandatory on this instance"
                   : undefined
               }
               onClick={() =>
                 mitPasswort(
-                  "Zweiten Faktor abschalten",
-                  "Danach genügt zum Anmelden wieder das Passwort allein. Die Ersatzcodes verfallen dabei.",
-                  "Abschalten",
+                  "Switch off the second factor",
+                  "After that the password alone is enough again to sign in. The recovery codes expire with it.",
+                  "Switch off",
                   async (pw) => {
                     await api.zweitfaktorAus(pw);
                   },
                 )
               }
             >
-              Abschalten
+              Switch off
             </button>
           </div>
         </div>
       ) : (
         <div className="zweit-karte">
           <div className="zweit-lage">
-            <strong>Kein zweiter Faktor eingerichtet.</strong>
+            <strong>No second factor set up.</strong>
             <span className="muted small">
-              Zum Anmelden genügt das Passwort. Mit zweitem Faktor kommt eine
-              sechsstellige Zahl aus einer Authenticator-App dazu, die alle dreißig
-              Sekunden wechselt. Ein gestohlenes Passwort allein reicht dann nicht mehr.
+              The password alone is enough to sign in. With a second factor a
+              six-digit number from an authenticator app is added, changing every thirty
+              seconds. A stolen password alone is then no longer enough.
             </span>
             {stand.pflicht && (
               <span className="fehlertext small">
-                Diese Instanz verlangt ihn von jedem Konto.
+                This instance requires it of every account.
               </span>
             )}
           </div>
@@ -193,21 +193,21 @@ function EinrichtenFenster({
 
   return (
     <Fenster
-      titel="Zweiten Faktor einrichten"
-      unter="Scannen, Code eintragen, fertig"
+      titel="Set up the second factor"
+      unter="Scan, enter the code, done"
       schliessen={schliessen}
       fuss={
         <>
           <span className="fuss-luecke" />
           <button className="btn" onClick={schliessen}>
-            Abbrechen
+            Cancel
           </button>
           <button
             className="btn btn-primary"
             disabled={busy || !start || code.trim().length < 6}
             onClick={pruefen}
           >
-            {busy ? "Prüft…" : "Einschalten"}
+            {busy ? "Checking…" : "Switch on"}
           </button>
         </>
       }
@@ -220,12 +220,12 @@ function EinrichtenFenster({
               Bibliothek fuer einen einzigen Bildschirm mitbraechte. */}
           <div className="qr-kasten" dangerouslySetInnerHTML={{ __html: start.qr }} />
           <p className="muted small">
-            In der Authenticator-App scannen. Läuft die App auf demselben Gerät, trage
-            diesen Schlüssel von Hand ein:
+            Scan this in your authenticator app. If the app runs on this same device,
+            enter the key by hand:
           </p>
           <code className="zweit-geheim">{start.geheim}</code>
           <div className="fenster-abschnitt">
-            <div className="modal-label">Code aus der App</div>
+            <div className="modal-label">Code from the app</div>
             <input
               className="codefeld"
               inputMode="numeric"
@@ -236,12 +236,12 @@ function EinrichtenFenster({
               onKeyDown={(e) => e.key === "Enter" && code.trim().length >= 6 && pruefen()}
             />
             <p className="muted small">
-              Erst dieser Code schaltet ein. Bis dahin ändert sich an der Anmeldung nichts.
+              Only this code switches it on. Until then nothing about signing in changes.
             </p>
           </div>
         </>
       ) : (
-        !fehler && <p className="muted small">Erzeugt den Schlüssel…</p>
+        !fehler && <p className="muted small">Creating the key…</p>
       )}
     </Fenster>
   );
@@ -262,26 +262,25 @@ function CodeFenster({ codes, schliessen }: { codes: string[]; schliessen: () =>
 
   return (
     <Fenster
-      titel="Ersatzcodes"
-      unter="Jeder gilt einmal"
+      titel="Recovery codes"
+      unter="Each one works once"
       schliessen={schliessen}
       fuss={
         <>
           <button className="btn" onClick={kopieren}>
-            {kopiert ? "Kopiert" : "Kopieren"}
+            {kopiert ? "Copied" : "Copy"}
           </button>
           <span className="fuss-luecke" />
           <button className="btn btn-primary" onClick={schliessen}>
-            Ich habe sie notiert
+            I have written them down
           </button>
         </>
       }
     >
       <p className="muted small">
-        Für den Fall, dass das Telefon weg ist. Leg sie an einen Ort, an den du auch
-        ohne dieses Konto kommst: ein Passwortspeicher oder ein Zettel im Portemonnaie.
-        Nach dem Schließen dieses Fensters lassen sie sich nicht wieder anzeigen, nur
-        neu erzeugen.
+        For the case where the phone is gone. Put them somewhere you can reach without
+        this account: a password manager, or a note in your wallet. After you close this
+        window they cannot be shown again, only created anew.
       </p>
       <div className="codeliste">
         {codes.map((c) => (

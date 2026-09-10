@@ -298,14 +298,14 @@ export default function QuickView({ dateien, start, onClose }: Props) {
               <>
                 <button
                   className="btn"
-                  title="Verkleinern (-)"
+                  title="Zoom out (-)"
                   onClick={() => setZoom((z) => Math.max(z / 1.25, ZOOM_MIN))}
                 >
                   −
                 </button>
                 <button
                   className="btn"
-                  title="Zurücksetzen (0)"
+                  title="Reset (0)"
                   onClick={() => {
                     setZoom(1);
                     setDrehung(0);
@@ -315,14 +315,14 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                 </button>
                 <button
                   className="btn"
-                  title="Vergrößern (+)"
+                  title="Zoom in (+)"
                   onClick={() => setZoom((z) => Math.min(z * 1.25, ZOOM_MAX))}
                 >
                   +
                 </button>
                 <button
                   className="btn"
-                  title="Drehen (R)"
+                  title="Rotate (R)"
                   onClick={() => setDrehung((d) => (d + 90) % 360)}
                 >
                   ⟳
@@ -340,7 +340,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             <a className="btn" href={datei.url} download={datei.filename}>
               Herunterladen
             </a>
-            <button className="btn" onClick={onClose} title="Schließen (Esc)">
+            <button className="btn" onClick={onClose} title="Close (Esc)">
               Schließen
             </button>
           </div>
@@ -350,7 +350,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
           {mehrere && (
             <button
               className="qv-nav qv-nav-links"
-              title="Vorheriges (←)"
+              title="Previous (←)"
               onClick={() => weiter(-1)}
             >
               ‹
@@ -366,7 +366,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             />
           )}
           {istPdf(typ) && markieren && datei.seiteId && (
-            <Suspense fallback={<div className="qv-none">Wird geladen…</div>}>
+            <Suspense fallback={<div className="qv-none">Loading…</div>}>
               <PdfMarker
                 url={datei.url}
                 seiteId={datei.seiteId}
@@ -420,7 +420,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             <pre className="qv-text">
               {textFehler
                 ? "(Vorschau konnte nicht geladen werden)"
-                : (text ?? "Lädt…")}
+                : (text ?? "Loading…")}
             </pre>
           )}
           {istWord(typ) && (
@@ -428,7 +428,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
               {wordFehler ? (
                 <div className="qv-none">{wordFehler}</div>
               ) : !word ? (
-                <div className="qv-none">Wird gelesen…</div>
+                <div className="qv-none">Reading…</div>
               ) : (
                 <div className="qv-word-blatt">
                   <div className="qv-word-kopf">
@@ -463,8 +463,8 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                         }}
                       >
                         {gespeichert === "speichert"
-                          ? "Speichert…"
-                          : "Speichern"}
+                          ? "Saving…"
+                          : "Save"}
                       </button>
                     )}
                   </div>
@@ -486,10 +486,10 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                       datei.id +
                       (bearbeiten ? ":schreiben" : ":lesen")
                     }
-                    text="Diese Datei liess sich nicht darstellen."
+                    text="This file could not be displayed."
                   >
                     <Suspense
-                      fallback={<div className="qv-none">Wird geladen…</div>}
+                      fallback={<div className="qv-none">Loading…</div>}
                     >
                       <Editor
                         key={datei.id + (bearbeiten ? ":schreiben" : ":lesen")}
@@ -502,7 +502,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                     </Suspense>
                   </Fehlergrenze>
                   {gespeichert === "gespeichert" && (
-                    <div className="hinweis-ok">Gespeichert.</div>
+                    <div className="hinweis-ok">Saved.</div>
                   )}
                 </div>
               )}
@@ -518,7 +518,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
           {mehrere && (
             <button
               className="qv-nav qv-nav-rechts"
-              title="Nächstes (→)"
+              title="Next (→)"
               onClick={() => weiter(1)}
             >
               ›
@@ -527,8 +527,8 @@ export default function QuickView({ dateien, start, onClose }: Props) {
         </div>
 
         <div className="qv-fuss muted small">
-          Esc schließt{mehrere && ", ← → blättert"}
-          {istBild(typ) && ", + − zoomt, R dreht, 0 setzt zurück"}
+          Esc closes{mehrere && ", ← → pages through"}
+          {istBild(typ) && ", + − zooms, R rotates, 0 resets"}
         </div>
       </div>
     </div>

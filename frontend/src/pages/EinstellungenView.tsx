@@ -356,7 +356,7 @@ function bytes(n: number): string {
 function zeitpunkt(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
-  return d.toLocaleString("de-DE", {
+  return d.toLocaleString(undefined, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -2301,7 +2301,7 @@ export default function EinstellungenView() {
                   {kennzahl(
                     "Anfragen je Sekunde",
                     (puls.anfragen?.proSekunde ?? 0).toFixed(1),
-                    `${(puls.anfragen?.gesamt ?? 0).toLocaleString("de-DE")} seit dem Start`,
+                    `${(puls.anfragen?.gesamt ?? 0).toLocaleString()} seit dem Start`,
                   )}
                   {kennzahl(
                     "Antwortzeit",
@@ -2381,7 +2381,7 @@ export default function EinstellungenView() {
                         </span>
                         <span className="muted">
                           {" "}
-                          im Mittel über {puls.vorrat.zugriffe.toLocaleString("de-DE")} Zugriffe
+                          im Mittel über {puls.vorrat.zugriffe.toLocaleString()} Zugriffe
                         </span>
                       </td>
                     </tr>

@@ -341,7 +341,7 @@ export default function PageView({
   };
 
   if (loading) return <Geruest />;
-  if (!page) return <div className="empty-state">Seite nicht gefunden.</div>;
+  if (!page) return <div className="empty-state">Page not found.</div>;
 
   const canEdit = page.canEdit;
 
@@ -386,9 +386,9 @@ export default function PageView({
   // exists. Otherwise typing "Projekt" twice would produce two separate tags.
   const addTag = async () => {
     const name = await eingabe({
-      titel: "Schlagwort hinzufügen",
+      titel: "Add tag",
       feld: "Name",
-      bestaetigen: "Hinzufügen",
+      bestaetigen: "Add",
     });
     if (!name) return;
     let tag = allTags.find((t) => t.name.toLowerCase() === name.toLowerCase());
@@ -571,17 +571,17 @@ export default function PageView({
       {ueberSeite > 0 && (
         <div className="seiten-abwurf-schleier">
           {dateiAbwurfMoeglich
-            ? "Loslassen, um an diese Seite anzuhängen"
-            : "Anhänge sind hier nicht möglich"}
+            ? "Drop to attach to this page"
+            : "Attachments are not possible here"}
         </div>
       )}
       <div className="page-main">
         <div className="topbar">
-          <span className="topbar-title">{page.title || "Ohne Titel"}</span>
+          <span className="topbar-title">{page.title || "Untitled"}</span>
           <div className="topbar-actions">
             {/* Say plainly that this is a read-only share, instead of leaving
                 the user to wonder why nothing saves. */}
-            {!canEdit && <span className="pill readonly">Nur Lesen</span>}
+            {!canEdit && <span className="pill readonly">Read only</span>}
             {/* Wer sonst noch an dieser Seite sitzt. Nur die anderen: den
                 eigenen Namen sieht man ohnehin an der eigenen Schreibmarke.
                 Steht die Leitung nicht, wird das gesagt, statt eine leere
@@ -590,7 +590,7 @@ export default function PageView({
             {mitschrift && !mitschrift.verbunden && (
               <span
                 className="pill readonly"
-                title="Die Verbindung für das gemeinsame Bearbeiten steht gerade nicht. Getippt wird weiter, abgeglichen wird, sobald sie wieder steht."
+                title="The connection for editing together is down right now. Typing keeps working; it syncs again as soon as the connection is back."
               >
                 Nicht verbunden
               </span>
@@ -598,7 +598,7 @@ export default function PageView({
             {mitschrift?.verbunden && mitschrift.anwesend.length > 1 && (
               <span
                 className="mitschreibende"
-                title="Sitzen gerade mit an dieser Seite"
+                title="On this page right now"
               >
                 {mitschrift.anwesend
                   .filter((a) => !a.ichSelbst)
@@ -625,14 +625,14 @@ export default function PageView({
                 sagen, wo sie landet. */}
             {canEdit && (
               <button className="btn" onClick={() => onCreateChild(page.id)}>
-                Unterseite
+                Subpage
               </button>
             )}
             <button
               className={"btn" + (page.isFavorite ? " active" : "")}
               onClick={toggleFav}
             >
-              {page.isFavorite ? "Favorisiert" : "Favorit"}
+              {page.isFavorite ? "Favourited" : "Favourite"}
             </button>
             {frei("versionen") && (
               <button
@@ -651,13 +651,13 @@ export default function PageView({
               <div className="exportmenue" ref={breiteBereich}>
                 <button
                   className="btn"
-                  title="Wie breit der Text auf dieser Seite steht"
+                  title="How wide the text sits on this page"
                   onClick={() => {
                     setExportOffen(false);
                     setBreiteOffen((v) => !v);
                   }}
                 >
-                  Breite ▾
+                  Width ▾
                 </button>
                 {breiteOffen && (
                   <div
@@ -668,16 +668,16 @@ export default function PageView({
                       [
                         [
                           "",
-                          "Vorgabe",
-                          `Wie die Instanz es setzt (${vorgabeName})`,
+                          "Default",
+                          `As the instance sets it (${vorgabeName})`,
                         ],
-                        ["normal", "Normal", "Zum Lesen gesetzt"],
+                        ["normal", "Normal", "Set for reading"],
                         [
                           "breit",
-                          "Breit",
-                          "Mehr Platz für Tabellen und Bilder",
+                          "Wide",
+                          "More room for tables and images",
                         ],
-                        ["voll", "Volle Breite", "So breit wie das Fenster"],
+                        ["voll", "Full width", "As wide as the window"],
                       ] as const
                     ).map(([wert, titel, erklaerung]) => (
                       <button
@@ -775,7 +775,7 @@ export default function PageView({
             <input
               className="page-title"
               value={page.title}
-              placeholder="Ohne Titel"
+              placeholder="Untitled"
               disabled={!canEdit}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -807,9 +807,9 @@ export default function PageView({
                 error. Here only the document goes, the page around it stays. */}
             <Fehlergrenze
               key={`grenze:${page.id}:${editorKey}:${mitschrift ? "gemeinsam" : "allein"}`}
-              text="Der Inhalt dieser Seite liess sich nicht anzeigen."
+              text="The content of this page could not be shown."
             >
-              <Suspense fallback={<div className="qv-none">Wird geladen…</div>}>
+              <Suspense fallback={<div className="qv-none">Loading…</div>}>
                 <Editor
                   /* Der Schlüssel trägt mit, ob gemeinsam geschrieben wird: der
                    Editor wird einmal gebaut, und ob sein Text aus der Seite oder
@@ -844,7 +844,7 @@ export default function PageView({
             {frei("kommentare") && <Kommentare pageId={page.id} />}
             {(links.length > 0 || textLinkTitles.length > 0 || canEdit) && (
               <div className="page-links">
-                <div className="page-links-title">Verknüpfungen</div>
+                <div className="page-links-title">Links</div>
                 <div className="page-links-list">
                   {links.map((l) => (
                     <span key={l.id} className="page-link-chip">
@@ -852,12 +852,12 @@ export default function PageView({
                         className="page-link-open"
                         onClick={() => nav(`/page/${l.id}`)}
                       >
-                        {l.title || "Ohne Titel"}
+                        {l.title || "Untitled"}
                       </button>
                       {canEdit && (
                         <span
                           className="x"
-                          title="Verknüpfung entfernen"
+                          title="Remove link"
                           onClick={() => removeLink(l.id)}
                         >
                           ✕
@@ -871,7 +871,7 @@ export default function PageView({
                       <span
                         key={"t:" + t}
                         className="page-link-chip page-link-chip-text"
-                        title="Aus dem Text ([[…]] / @-Erwähnung)"
+                        title="From the text ([[…]] / @ mention)"
                       >
                         {tid ? (
                           <button
@@ -886,7 +886,7 @@ export default function PageView({
                         {canEdit && (
                           <span
                             className="x"
-                            title="Verknüpfung aus dem Text entfernen"
+                            title="Remove the link from the text"
                             onClick={() => removeTextLink(t)}
                           >
                             ✕
@@ -899,7 +899,7 @@ export default function PageView({
                     <div className="page-link-picker">
                       <input
                         className="page-link-search"
-                        placeholder="+ Seite suchen & verknüpfen…"
+                        placeholder="+ Find a page and link it…"
                         value={linkQuery}
                         onChange={(e) => {
                           setLinkQuery(e.target.value);
@@ -922,7 +922,7 @@ export default function PageView({
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => pickLink(n.id)}
                             >
-                              {n.title || "Ohne Titel"}
+                              {n.title || "Untitled"}
                             </button>
                           ))}
                         </div>
@@ -932,8 +932,8 @@ export default function PageView({
                 </div>
                 {links.length === 0 && textLinkTitles.length === 0 && (
                   <div className="page-links-hint">
-                    Noch keine Verknüpfungen. Wähle oben eine Seite, oder tippe
-                    @ bzw. [[…]] im Text.
+                    No links yet. Pick a page above, or type @ or [[…]] in the
+                    text.
                   </div>
                 )}
               </div>
@@ -941,8 +941,8 @@ export default function PageView({
             {backlinks.length > 0 && (
               <div className="backlinks">
                 <div className="backlinks-title">
-                  Verlinkt von {backlinks.length}{" "}
-                  {backlinks.length === 1 ? "Seite" : "Seiten"}
+                  Linked from {backlinks.length}{" "}
+                  {backlinks.length === 1 ? "page" : "pages"}
                 </div>
                 <div className="backlinks-list">
                   {backlinks.map((b) => (
@@ -951,7 +951,7 @@ export default function PageView({
                       className="backlink"
                       onClick={() => nav(`/page/${b.id}`)}
                     >
-                      {b.title || "Ohne Titel"}
+                      {b.title || "Untitled"}
                     </button>
                   ))}
                 </div>

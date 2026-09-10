@@ -86,9 +86,9 @@ export default function Workspace() {
   const deletePage = async (id: string) => {
     if (
       !(await frage({
-        titel: "Seite in den Papierkorb",
-        text: "Diese Seite und ihre Unterseiten wandern in den Papierkorb. Von dort lassen sie sich zurückholen.",
-        bestaetigen: "In den Papierkorb",
+        titel: "Move page to trash",
+        text: "This page and its subpages move to the trash. You can bring them back from there.",
+        bestaetigen: "Move to trash",
       }))
     )
       return;
@@ -100,10 +100,10 @@ export default function Workspace() {
 
   const createSpace = async () => {
     const name = await eingabe({
-      titel: "Neue Ablage",
-      text: "Eine Ablage bündelt Seiten zu einem Thema und trägt die Rechte für alle darin.",
+      titel: "New space",
+      text: "A space groups pages around one subject and carries the permissions for all of them.",
       feld: "Name",
-      bestaetigen: "Anlegen",
+      bestaetigen: "Create",
     });
     if (!name) return;
     await api.createSpace(name);
@@ -112,10 +112,10 @@ export default function Workspace() {
 
   const renameSpace = async (id: string, current: string) => {
     const name = await eingabe({
-      titel: "Ablage umbenennen",
+      titel: "Rename space",
       feld: "Name",
       vorgabe: current,
-      bestaetigen: "Umbenennen",
+      bestaetigen: "Rename",
     });
     if (!name || name === current) return;
     await api.renameSpace(id, name);
@@ -127,9 +127,9 @@ export default function Workspace() {
   const deleteSpace = async (id: string) => {
     if (
       !(await frage({
-        titel: "Ablage löschen",
-        text: "Die Ablage wird gelöscht. Ihre Seiten bleiben erhalten und stehen danach unter „Ohne Ablage“; erteilte Rechte an der Ablage verfallen.",
-        bestaetigen: "Ablage löschen",
+        titel: "Delete space",
+        text: "The space is deleted. Its pages remain and appear under \u201eWithout a space\u201c afterwards; permissions granted on the space expire.",
+        bestaetigen: "Delete space",
         gefaehrlich: true,
       }))
     )
@@ -219,7 +219,7 @@ export default function Workspace() {
         <ZweitfaktorMahnung />
         {/* Until a lazily loaded part is there the waiting text stands here,
             faded in with a delay so that a fast switch shows nothing. */}
-        <Suspense fallback={<div className="empty-state spaet">Lädt…</div>}>
+        <Suspense fallback={<div className="empty-state spaet">Loading…</div>}>
           <Routes>
             <Route index element={<EmptyState onCreate={() => createPage(null)} />} />
             <Route
@@ -300,7 +300,7 @@ function ZweitfaktorMahnung() {
     <div className="mahnstreifen">
       Diese Instanz verlangt einen zweiten Faktor. Solange keiner steht, genügt zum
       Anmelden dein Passwort allein.{" "}
-      <Link to="/einstellungen/zugang">Jetzt einrichten</Link>
+      <Link to="/einstellungen/zugang">Set it up now</Link>
     </div>
   );
 }
@@ -308,7 +308,7 @@ function ZweitfaktorMahnung() {
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="empty-state">
-      <div>Noch nichts geöffnet.</div>
+      <div>Nothing open yet.</div>
       <button className="btn btn-primary" onClick={onCreate}>
         Seite erstellen
       </button>

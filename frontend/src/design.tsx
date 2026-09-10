@@ -38,9 +38,9 @@ export const GRUND: Record<string, string> = {
 // gehoert und nicht der Instanz, gehoert das Vokabular dorthin, wo auch
 // anwenden steht.
 export const GRUNDTOENE: { wert: string; titel: string }[] = [
-  { wert: "grau", titel: "Gegrautes Weiß" },
-  { wert: "weiss", titel: "Reines Weiß" },
-  { wert: "dunkel", titel: "Dunkel" },
+  { wert: "grau", titel: "Off-white" },
+  { wert: "weiss", titel: "Pure white" },
+  { wert: "dunkel", titel: "Dark" },
 ];
 
 // Die vier tragenden Marken je Grundton, in der Reihenfolge --bg, --flaeche,
@@ -54,12 +54,12 @@ export const TON_MARKEN: Record<string, string[]> = {
 };
 
 export const AKZENTE = [
-  { wert: "#2383e2", titel: "Blau" },
-  { wert: "#2ea043", titel: "Grün" },
-  { wert: "#8250df", titel: "Violett" },
-  { wert: "#bf5b04", titel: "Bernstein" },
-  { wert: "#cf222e", titel: "Rot" },
-  { wert: "#57606a", titel: "Graphit" },
+  { wert: "#2383e2", titel: "Blue" },
+  { wert: "#2ea043", titel: "Green" },
+  { wert: "#8250df", titel: "Violet" },
+  { wert: "#bf5b04", titel: "Amber" },
+  { wert: "#cf222e", titel: "Red" },
+  { wert: "#57606a", titel: "Graphite" },
 ];
 
 /**
