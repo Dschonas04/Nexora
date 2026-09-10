@@ -344,6 +344,7 @@ func main() {
 			// this sits among the session routes and not under /einstellungen,
 			// which are reserved for administrators.
 			r.Put("/design", h.AussehenSpeichern)
+			r.Put("/design/sprache", h.SpracheSpeichern)
 
 			r.Get("/einstellungen", h.ListEinstellungen)
 			r.Put("/einstellungen", h.SetzeEinstellung)

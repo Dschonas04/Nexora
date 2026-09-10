@@ -446,6 +446,15 @@ pruefe "und eine Farbe, die keine ist, auch" "400" \
 pruefe "leer setzt auf die Vorgabe zurueck" "grau" \
        "$(hole -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
           -d '{"grundton":"","akzent":""}' | feld "['grundton']")"
+# The interface language sits on the account as well, with a route of its own so
+# that switching it does not send base tone and accent along.
+pruefe "ohne Wahl ist die Sprache leer" "" "$(hole "$BASIS/api/design" | feld "['sprache']")"
+pruefe "Sprache wird angenommen" "200" \
+       "$(code -X PUT "$BASIS/api/design/sprache" -H 'Content-Type: application/json' -d '{"sprache":"en"}')"
+pruefe "und steht beim naechsten Abruf da" "en" "$(hole "$BASIS/api/design" | feld "['sprache']")"
+pruefe "eine unbekannte Sprache wird abgewiesen" "400" \
+       "$(code -X PUT "$BASIS/api/design/sprache" -H 'Content-Type: application/json' -d '{"sprache":"fr"}')"
+pruefe "der Grundton bleibt davon unberuehrt" "grau" "$(hole "$BASIS/api/design" | feld "['grundton']")"
 # The appearance no longer appears among the administration's settings.
 pruefe "keine Design-Einstellung mehr in der Verwaltung" "0" \
        "$(hole "$BASIS/api/einstellungen" | python3 -c 'import json,sys;print(sum(1 for e in json.load(sys.stdin) if e["schluessel"].startswith("design_")))')"

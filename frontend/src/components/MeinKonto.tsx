@@ -183,7 +183,7 @@ function Aussehen() {
   return (
     <>
       <h3>Language</h3>
-      <p className="muted small">Applies to this browser. The editor's menus follow on the next page opened.</p>
+      <p className="muted small">Stored on your account and applies on every device. The editor's menus follow on the next page opened.</p>
       <Sprachwahl />
       <h3>Base tone</h3>
       <p className="muted small">

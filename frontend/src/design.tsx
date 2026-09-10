@@ -8,6 +8,7 @@
 // They are written onto the root element as an attribute and a CSS variable, so
 // the change reaches every component at once. No component knows about themes.
 import { ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
+import { setzeSprache, sprache } from "./sprache";
 
 import { api } from "./api/client";
 import { useAuth } from "./auth";
@@ -126,6 +127,11 @@ export function DesignProvider({ children }: { children: ReactNode }) {
       .then((d) => {
         setDesign(d);
         anwenden(d);
+        // The language lives on the account: on every device it follows the
+        // person. An account without a choice takes over the one this browser
+        // already shows, so it is bound to the account from now on.
+        if (d.sprache === "de" || d.sprache === "en") setzeSprache(d.sprache);
+        else api.spracheSpeichern(sprache()).catch(() => {});
       })
       // If the request fails, the default from the stylesheet stays. An
       // interface without colours would be worse than one with the wrong ones.

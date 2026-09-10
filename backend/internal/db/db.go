@@ -515,6 +515,10 @@ CREATE INDEX IF NOT EXISTS zweitfaktor_codes_konto ON zweitfaktor_codes(user_id)
 -- part.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS design_grundton text NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS design_akzent   text NOT NULL DEFAULT '';
+
+-- The interface language, 'de' or 'en', on the account so it follows the person
+-- to every device. Empty: nothing chosen yet, the browser's language decides.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS sprache text NOT NULL DEFAULT '';
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

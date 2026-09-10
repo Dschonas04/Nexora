@@ -27,7 +27,13 @@ const (
 type aussehenAntwort struct {
 	Grundton string `json:"grundton"`
 	Akzent   string `json:"akzent"`
+	// Sprache is the interface language, "de" or "en". Empty: nothing chosen,
+	// the browser decides.
+	Sprache string `json:"sprache"`
 }
+
+// sprachen are the interface languages there is a word list for.
+var sprachen = map[string]bool{"de": true, "en": true}
 
 // aussehenLesen fetches the account's choice and fills missing values from the
 // default. A read error is not one that may hold up the interface: the account
@@ -38,10 +44,10 @@ func (s *Server) aussehenLesen(r *http.Request) aussehenAntwort {
 	if uid == "" {
 		return a
 	}
-	var grundton, akzent string
+	var grundton, akzent, sprache string
 	if s.Pool.QueryRow(r.Context(),
-		`SELECT design_grundton, design_akzent FROM users WHERE id=$1`, uid).
-		Scan(&grundton, &akzent) != nil {
+		`SELECT design_grundton, design_akzent, sprache FROM users WHERE id=$1`, uid).
+		Scan(&grundton, &akzent, &sprache) != nil {
 		return a
 	}
 	if grundtoene[grundton] {
@@ -49,6 +55,9 @@ func (s *Server) aussehenLesen(r *http.Request) aussehenAntwort {
 	}
 	if istHexFarbe(akzent) {
 		a.Akzent = akzent
+	}
+	if sprachen[sprache] {
+		a.Sprache = sprache
 	}
 	return a
 }
@@ -84,6 +93,31 @@ func (s *Server) AussehenSpeichern(w http.ResponseWriter, r *http.Request) {
 	if _, err := s.Pool.Exec(r.Context(),
 		`UPDATE users SET design_grundton=$2, design_akzent=$3 WHERE id=$1`,
 		uid, req.Grundton, req.Akzent); err != nil {
+		writeErr(w, http.StatusInternalServerError, "nicht gespeichert")
+		return
+	}
+	writeJSON(w, http.StatusOK, s.aussehenLesen(r))
+}
+
+// SpracheSpeichern stores the interface language on the signed-in account. A
+// route of its own and not part of AussehenSpeichern: switching the language
+// must not send base tone and accent along, or a second tab with an older
+// choice would write it back.
+func (s *Server) SpracheSpeichern(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Sprache string `json:"sprache"`
+	}
+	if json.NewDecoder(r.Body).Decode(&req) != nil {
+		writeErr(w, http.StatusBadRequest, "ungültige Anfrage")
+		return
+	}
+	req.Sprache = strings.TrimSpace(req.Sprache)
+	if req.Sprache != "" && !sprachen[req.Sprache] {
+		writeErr(w, http.StatusBadRequest, "erwartet de oder en")
+		return
+	}
+	if _, err := s.Pool.Exec(r.Context(),
+		`UPDATE users SET sprache=$2 WHERE id=$1`, middleware.UserID(r), req.Sprache); err != nil {
 		writeErr(w, http.StatusInternalServerError, "nicht gespeichert")
 		return
 	}
