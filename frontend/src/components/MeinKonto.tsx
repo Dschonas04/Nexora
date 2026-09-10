@@ -32,6 +32,7 @@ import Listenkopf from "./Listenkopf";
 import Profilbild from "./Profilbild";
 import { useRueckfrage } from "./Rueckfrage";
 import Zweitfaktor from "./Zweitfaktor";
+import Sprachwahl from "../sprache/Sprachwahl";
 
 // Edge length of the stored picture. 256 instead of 128, so the picture stays
 // sharp on high-resolution screens and in the profile.
@@ -181,6 +182,9 @@ function Aussehen() {
 
   return (
     <>
+      <h3>Language</h3>
+      <p className="muted small">Applies to this browser. The editor's menus follow on the next page opened.</p>
+      <Sprachwahl />
       <h3>Base tone</h3>
       <p className="muted small">
         Applies to this account, on every device you are signed in on.
@@ -421,7 +425,7 @@ function Profil() {
         </div>
         <p className="muted small">
           This is how you appear on pages, in comments and in share lists. The email
-          address is the account\u2019s identifier and cannot be changed here \u2014 sign-in
+          address is the account’s identifier and cannot be changed here — sign-in
           and every share hang on it.
         </p>
       </div>
@@ -642,7 +646,7 @@ function Geraete() {
       </Listenkopf>
       <p className="muted small">
         If you find a device here that is not yours, end the session and change your
-        password afterwards \u2014 it ends at once, but whoever has the password would
+        password afterwards — it ends at once, but whoever has the password would
         otherwise just sign in again.
       </p>
       <table className="tabelle">

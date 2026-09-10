@@ -14,6 +14,8 @@ import { RueckfrageProvider } from "./components/Rueckfrage";
 import App from "./App";
 import Fehlergrenze from "./components/Fehlergrenze";
 import "./styles.css";
+// Before the first render, so the very first frame already stands in the chosen language.
+import "./sprache";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
