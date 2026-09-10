@@ -74,11 +74,11 @@ type Teil =
   | "wartung";
 
 const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] = [
-  { id: "uebersicht", titel: "Übersicht", unter: "Zahlen und Zustand", teile: ["uebersicht"] },
+  { id: "uebersicht", titel: "Overview", unter: "Figures and state", teile: ["uebersicht"] },
   {
     id: "konten",
-    titel: "Konten",
-    unter: "Nutzer, Rollen, Gruppen",
+    titel: "Accounts",
+    unter: "Users, roles, groups",
     teile: ["nutzer", "gruppen"],
   },
   // Wer hier steht, klaert eine einzige Frage: wer kommt herein und womit.
@@ -86,37 +86,37 @@ const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] =
   // Antworten darauf und standen bisher an vier Stellen.
   {
     id: "zugang",
-    titel: "Zugang",
-    unter: "Zweiter Faktor, Registrierung, Verzeichnis, Sitzungen",
+    titel: "Access",
+    unter: "Second factor, registration, directory, sessions",
     teile: ["zweitfaktor", "sicherheit", "ldap", "anmeldungen", "sitzungen"],
   },
   {
     id: "inhalte",
-    titel: "Inhalte",
-    unter: "Zusammenarbeit, Suche, Anhänge",
+    titel: "Content",
+    unter: "Collaboration, search, attachments",
     teile: ["zusammen", "suche", "anhaenge"],
   },
   {
     id: "datenbank",
-    titel: "Datenbank",
-    unter: "PostgreSQL, Tabellen, Belegung",
+    titel: "Database",
+    unter: "PostgreSQL, tables, usage",
     teile: ["datenbank"],
   },
-  { id: "lizenz", titel: "Lizenz", unter: "Umfang, Laufzeit", teile: ["lizenz"] },
+  { id: "lizenz", titel: "Licence", unter: "Scope, term", teile: ["lizenz"] },
   // Das Protokoll war bisher eine Seite fuer sich, mit einer eigenen Zeile in
   // der Leiste -- die einzige Sache der Verwaltung, die nicht in der Verwaltung
   // stand. Ein eigener Bereich und kein Anhaengsel an System: wer es oeffnet,
   // sucht nicht nach einer Einstellung, sondern nach einem Vorgang.
   {
     id: "protokoll",
-    titel: "Protokoll",
-    unter: "Vorgänge und Änderungen",
+    titel: "Audit log",
+    unter: "Actions and changes",
     teile: ["protokoll"],
   },
   {
     id: "system",
     titel: "System",
-    unter: "config.conf, Neustart, Sicherung",
+    unter: "config.conf, restart, backup",
     teile: ["system", "wartung"],
   },
 ];
@@ -125,22 +125,22 @@ const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] =
 // Auf einer Seite mit nur einem Teil waere sie eine Wiederholung des
 // Leisteneintrags und faellt deshalb weg.
 const TEIL_TITEL: Record<Teil, string> = {
-  uebersicht: "Übersicht",
-  nutzer: "Nutzer und Rollen",
-  gruppen: "Gruppen",
-  zusammen: "Zusammenarbeit",
-  zweitfaktor: "Zweiter Faktor",
-  sicherheit: "Registrierung und Sitzungsdauer",
-  ldap: "Verzeichnis (LDAP / AD)",
-  anmeldungen: "Anmeldeversuche",
-  sitzungen: "Laufende Sitzungen",
-  datenbank: "Datenbank",
-  suche: "Suche",
-  anhaenge: "Anhänge",
-  lizenz: "Lizenz",
-  protokoll: "Protokoll",
-  system: "Konfiguration",
-  wartung: "Wartung",
+  uebersicht: "Overview",
+  nutzer: "Users and roles",
+  gruppen: "Groups",
+  zusammen: "Collaboration",
+  zweitfaktor: "Second factor",
+  sicherheit: "Registration and session length",
+  ldap: "Directory (LDAP / AD)",
+  anmeldungen: "Sign-in attempts",
+  sitzungen: "Running sessions",
+  datenbank: "Database",
+  suche: "Search",
+  anhaenge: "Attachments",
+  lizenz: "Licence",
+  protokoll: "Audit log",
+  system: "Configuration",
+  wartung: "Maintenance",
 };
 
 // Die alten Adressen bleiben gueltig. Ein Lesezeichen auf /einstellungen/ldap
@@ -163,37 +163,37 @@ const ALTE_ADRESSE: Record<string, Bereich> = {
 };
 
 const ZUSATZ: Record<string, string> = {
-  versionen: "Versionsverlauf",
-  anhaenge: "Anhänge",
-  freigeben: "Teilen und öffentliche Links",
-  pruefspur: "Protokoll",
-  gruppen: "Gruppen und Ablage-Rechte",
-  sso: "SSO über OIDC",
+  versionen: "Version history",
+  anhaenge: "Attachments",
+  freigeben: "Sharing and public links",
+  pruefspur: "Audit log",
+  gruppen: "Groups and space permissions",
+  sso: "SSO over OIDC",
   ldap: "LDAP und Active Directory",
-  anhangsuche: "Volltext in Anhängen",
-  export: "Ablage-Export",
-  kommentare: "Kommentare",
-  konflikte: "Konflikterkennung",
-  echtzeit: "Gemeinsames Bearbeiten",
+  anhangsuche: "Full text in attachments",
+  export: "Space export",
+  kommentare: "Comments",
+  konflikte: "Conflict detection",
+  echtzeit: "Editing together",
 };
 
 const ZAHL_TITEL: Record<string, string> = {
-  konten: "Konten",
-  admins: "Administratoren",
-  seiten: "Seiten",
-  papierkorb: "im Papierkorb",
-  versionen: "Versionen",
-  anhaenge: "Anhänge",
-  kommentare: "Kommentare",
-  spureintraege: "Protokoll-Einträge",
-  ohneSuchtext: "ohne Suchtext",
+  konten: "Accounts",
+  admins: "Administrators",
+  seiten: "Pages",
+  papierkorb: "in the trash",
+  versionen: "Versions",
+  anhaenge: "Attachments",
+  kommentare: "Comments",
+  spureintraege: "Audit entries",
+  ohneSuchtext: "without search text",
 };
 
 // Die Wege, über die eine Anmeldung hereinkommt. Das Backend schreibt die
 // kurzen Namen, hier stehen die ausgeschriebenen.
 const WEG_TITEL: Record<string, string> = {
-  passwort: "Passwort",
-  ldap: "Verzeichnis",
+  passwort: "Password",
+  ldap: "Directory",
   sso: "SSO",
 };
 
