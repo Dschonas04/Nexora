@@ -1,14 +1,13 @@
-// Wen man in einem Kommentar mit @ ansprechen kann.
+// Who can be addressed with an @ in a comment.
 //
-// Bisher musste man den Namen eines Kontos auf den Buchstaben genau treffen,
-// sonst ging die Erwaehnung ins Leere -- und zwar still: der Kommentar stand
-// da, die Benachrichtigung kam nie an, und niemand erfuhr davon. Wer die Namen
-// der Kollegen nicht auswendig kann, konnte die Funktion nicht benutzen.
+// Until now one had to hit an account's name letter for letter, or the mention
+// went nowhere -- and silently at that: the comment stood there, the
+// notification never arrived, and nobody found out. Whoever cannot recite
+// their colleagues' names from memory could not use the feature.
 //
-// Darum eine Liste zum Auswaehlen. Sie enthaelt genau die Konten, die diese
-// Seite lesen duerfen: die anderen bekaemen ohnehin keine Nachricht, und sie
-// anzubieten hiesse, in der Auswahlliste zu verraten, wer sonst noch ein Konto
-// hat.
+// Hence a list to pick from. It holds exactly the accounts allowed to read
+// this page: the others would get no notification anyway, and offering them
+// would mean revealing in a dropdown who else has an account here.
 package handlers
 
 import (
@@ -20,21 +19,20 @@ import (
 	"nexora/internal/middleware"
 )
 
-// Person ist ein Konto, so wie es in der Auswahlliste steht: nur der Name. Die
-// Kennung braucht die Oberflaeche nicht, denn eine Erwaehnung ist der Name im
-// Text, und die Adresse ginge niemanden etwas an.
+// Person is an account as it appears in the dropdown: the name and nothing
+// else. The interface needs no id, because a mention is the name in the text,
+// and the address would be nobody's business.
 type Person struct {
 	Name string `json:"name"`
 }
 
-// lesendeKonten sammelt die Konten, die eine Seite lesen duerfen.
+// lesendeKonten collects the accounts allowed to read a page.
 //
-// Gegen die Namensliste der Instanz und nicht mit einer Abfrage ueber die
-// Rechte: die Rechte stehen an vier Stellen (Eigentum, Freigabe, Gruppe,
-// offene Ablage), und pagePerm ist die einzige Stelle, die sie alle vier
-// kennt. Fuer eine Instanz dieser Groesse ist die Schleife billig; fuer
-// zehntausend Konten waere das der falsche Weg -- derselbe Vorbehalt wie bei
-// erwaehnte().
+// Against the instance's list of names rather than with a query over the
+// permissions: the permissions live in four places (ownership, share, group,
+// open space), and pagePerm is the only place that knows all four. For an
+// instance of this size the loop is cheap; for ten thousand accounts it would
+// be the wrong way round -- the same caveat as in erwaehnte().
 func (s *Server) lesendeKonten(ctx context.Context, pageID string) []Person {
 	liste := []Person{}
 	rows, err := s.Pool.Query(ctx, `SELECT id::text, name FROM users WHERE name <> '' ORDER BY name`)
@@ -59,9 +57,9 @@ func (s *Server) lesendeKonten(ctx context.Context, pageID string) []Person {
 	return liste
 }
 
-// ErwaehnbarePersonen beantwortet die Frage der Kommentarspalte: wen kann ich
-// hier ansprechen? Wer die Seite selbst nicht lesen darf, bekommt auch die
-// Liste nicht.
+// ErwaehnbarePersonen answers the question the comment column asks: whom can I
+// address here? Whoever may not read the page itself does not get the list
+// either.
 func (s *Server) ErwaehnbarePersonen(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")

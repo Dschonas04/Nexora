@@ -1,16 +1,16 @@
-// Wem dieser Dienst beim Hinausgehen glaubt.
+// Whom this service trusts on its way out.
 //
-// Nexora spricht im Verbund mit Datenbank, Ablage und Zwischenspeicher, und
-// diese Verbindungen sind verschlüsselt. Verschlüsselt allein ist aber wenig
-// wert: wer nicht prüft, mit wem er spricht, redet unter Umständen
-// verschlüsselt mit dem Falschen. Geprüft wird gegen die kleine eigene Stelle
-// des Verbunds, siehe pki/erzeuge.sh.
+// Nexora talks to database, object store and cache inside the compound, and
+// those connections are encrypted. Encrypted alone is worth little, though:
+// whoever does not check who they are talking to may well be talking
+// encrypted to the wrong party. The check runs against the compound's own
+// small authority, see pki/erzeuge.sh.
 //
-// Die Stelle kommt zu den öffentlichen HINZU und ersetzt sie nicht. Sonst
-// verlöre der Dienst das Vertrauen zu jedem Anmeldedienst im Netz -- ein
-// Keycloak hinter einem Zertifikat von Let's Encrypt wäre plötzlich
-// unerreichbar, und niemand verstünde, warum das Einrichten einer eigenen
-// Zertifizierungsstelle die Anmeldung kaputtmacht.
+// That authority is ADDED to the public ones and does not replace them.
+// Otherwise the service would lose its trust in every identity provider on the
+// net -- a Keycloak behind a Let's Encrypt certificate would suddenly be
+// unreachable, and nobody would understand why setting up a private
+// certificate authority breaks signing in.
 package vertrauen
 
 import (
@@ -21,12 +21,11 @@ import (
 	"strings"
 )
 
-// Wurzeln liest eine zusätzliche Stelle und hängt sie an die des Systems.
+// Wurzeln reads an additional authority and appends it to the system's.
 //
-// Ein leerer Pfad ergibt nil, und nil heißt für jeden Aufrufer: nimm, was das
-// System kennt. Genau so verhält sich die Go-Bibliothek bei einem nicht
-// gesetzten RootCAs, sodass der Fall ohne eigene Stelle keinen Sonderweg
-// braucht.
+// An empty path yields nil, and nil means to every caller: take what the
+// system knows. That is exactly how the Go library behaves with RootCAs unset,
+// so the case without a private authority needs no special path.
 func Wurzeln(pfad string) (*x509.CertPool, error) {
 	pfad = strings.TrimSpace(pfad)
 	if pfad == "" {
@@ -36,9 +35,9 @@ func Wurzeln(pfad string) (*x509.CertPool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Zertifizierungsstelle %s: %w", pfad, err)
 	}
-	// Das System als Grundstock, und wenn es keinen hergibt (ein Abbild ohne
-	// ca-certificates etwa), fangen wir eben leer an: die eigene Stelle ist der
-	// Grund, warum diese Funktion aufgerufen wurde.
+	// The system as the base, and if it yields none (an image without
+	// ca-certificates, say) we simply start empty: the private authority is the
+	// reason this function was called at all.
 	vorrat, err := x509.SystemCertPool()
 	if err != nil || vorrat == nil {
 		vorrat = x509.NewCertPool()
