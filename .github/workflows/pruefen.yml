@@ -96,32 +96,31 @@ jobs:
 
       - name: Gemeinsames Bearbeiten, zwei Browser gegeneinander
         run: |
-          # Die Typprüfung sagt nichts darüber, ob zwei Fassungen desselben
-          # Textes wirklich zusammenfinden. Die Probe stellt zwei Leitungen an
-          # denselben Verteiler und lässt sie gleichzeitig an derselben Stelle
-          # tippen.
+          # The type check says nothing about whether two versions of the same
+          # text really find each other. The probe puts two wires on the same
+          # distributor and lets them type at the same spot at the same time.
           npx esbuild test/eingang.ts --bundle --format=esm \
             --outfile="$RUNNER_TEMP/mitschrift.mjs" --log-level=warning
           node test/mitschrift-probe.mjs "$RUNNER_TEMP/mitschrift.mjs"
 
       - name: Markierungen in einer PDF-Datei
         run: |
-          # Ob eine Markierung an der richtigen Stelle landet, entscheidet eine
-          # Umrechnung: das PDF zählt von unten, der Bildschirm von oben. Die
-          # Probe schreibt eine Datei, liest sie zurück und prüft, dass die
-          # Anmerkungen dort hängen, wo sie sollen -- und dass der vorhandene
-          # Inhalt ERGÄNZT und nicht ersetzt wurde.
+          # Whether a highlight lands in the right place is decided by a
+          # conversion: the PDF counts from the bottom, the screen from the top.
+          # The probe writes a file, reads it back and checks that the
+          # annotations hang where they should -- and that the existing content
+          # was ADDED TO and not replaced.
           npx esbuild src/pdfmarken.ts --bundle --format=esm \
             --outfile="$RUNNER_TEMP/pdfmarken.mjs" --log-level=warning
           node test/pdf-probe.mjs "$RUNNER_TEMP/pdfmarken.mjs"
 
       - name: Der Lizenzhinweis muss im Bündel stehen
         run: |
-          # BlockNote steht unter MPL-2.0, und die verlangt, dass der Hinweis
-          # die VERTEILTE Form begleitet. Verteilt wird das Buendel, und der
-          # Minimierer wirft Kommentare weg. Den Kopf setzt vite.config.ts;
-          # hier wird geprueft, dass er es wirklich bis ins Erzeugnis schafft,
-          # denn diese Auflage bricht lautlos.
+          # BlockNote is under MPL-2.0, and that demands the notice accompany
+          # the DISTRIBUTED form. What is distributed is the bundle, and the
+          # minifier throws comments away. vite.config.ts sets the header; here
+          # it is checked that it really makes it into the artefact, because
+          # this obligation breaks silently.
           fehlend=0
           for f in dist/assets/*.js; do
             grep -q "Mozilla Public License" "$f" || { echo "ohne Hinweis: $f"; fehlend=1; }

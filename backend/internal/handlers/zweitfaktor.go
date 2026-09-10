@@ -39,7 +39,7 @@ type zweitStand struct {
 	Pflicht bool `json:"pflicht"`
 }
 
-// zweitfaktorAktiv sagt, ob ein Konto den zweiten Schritt verlangt.
+// zweitfaktorAktiv says whether an account demands the second step.
 func (s *Server) zweitfaktorAktiv(ctx context.Context, userID string) bool {
 	var geheim string
 	var seit *time.Time

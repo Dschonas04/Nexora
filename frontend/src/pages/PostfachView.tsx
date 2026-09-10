@@ -10,10 +10,10 @@ import { useNavigate } from "react-router-dom";
 import { Nachricht, api } from "../api/client";
 import Profilbild from "../components/Profilbild";
 
-// Der Satz je Art, zweigeteilt: was jemand getan hat, und wie der Seitentitel
-// daran anschließt. Vorher stand beides in einem Stück und ergab "hat
-// kommentiert auf Seitenname" -- verständlich, aber kein Deutsch, das jemand
-// so schreiben würde.
+// The sentence per kind, in two parts: what somebody did, and how the page
+// title joins on to it. Before, both stood in one piece and produced
+// "commented on page name" -- understandable, but not English anybody would
+// write that way.
 const SATZ: Record<Nachricht["art"], { tat: string; vor: string }> = {
   kommentar: { tat: "commented", vor: "on" },
   antwort: { tat: "replied to your comment", vor: "on" },
@@ -40,10 +40,10 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
   const oeffnen = async (n: Nachricht) => {
     if (!n.gelesenAm) {
       await api.postfachGelesen(n.id).catch(() => {});
-      // Örtlich mitziehen statt neu zu laden: die Zeile soll sofort gelesen
-      // aussehen, und die Liste soll dabei nicht unter der Hand umspringen --
-      // besonders nicht, wenn "Nur ungelesene" an ist und die eben angeklickte
-      // Zeile sonst unter dem Zeigefinger verschwände.
+      // Update locally instead of reloading: the row should look read at once,
+      // and the list should not jump around behind one's back while doing so --
+      // especially not when "Unread only" is on and the row just clicked would
+      // otherwise vanish from under one's finger.
       setItems((vorher) =>
         vorher.map((m) => (m.id === n.id ? { ...m, gelesenAm: new Date().toISOString() } : m)),
       );
@@ -90,8 +90,9 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
               Mark all as read
             </button>
           )}
-          {/* Nur zeigen, was auch etwas bewirkt. Ein Knopf, der bei leerem
-              Postfach dasteht und beim Drücken nichts tut, sieht defekt aus. */}
+          {/* Only show what actually does something. A button standing there
+              with an empty inbox and doing nothing when pressed looks
+              broken. */}
           {gelesene > 0 && (
             <button className="btn" onClick={aufraeumen} title="Removes only what you have read">
               Clear the read ones
@@ -144,9 +145,8 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
                 <span className="postfach-inhalt">
                   <span className="postfach-kopf">
                     <strong>{n.ausloeserName || "Someone"}</strong> {SATZ[n.art].tat}
-                    {/* Ohne Titel keine leere unterstrichene Lücke: eine Seite,
-                        die inzwischen fort ist, wird benannt und nicht
-                        verschwiegen. */}
+                    {/* Without a title no empty underlined gap: a page that is gone
+                        by now is named and not passed over in silence. */}
                     {n.seitenTitel ? (
                       <>
                         {SATZ[n.art].vor ? " " + SATZ[n.art].vor : ""}{" "}

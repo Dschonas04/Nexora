@@ -138,13 +138,14 @@ interface Props {
       picker; otherwise the legend is read-only. */
   onFarbe?: (spaceId: string, farbe: string) => void;
   /**
-   * Welche Ablagen dieses Konto färben darf. Ohne die Angabe darf es alle, die
-   * in der Legende stehen.
+   * Which spaces this account may colour. Without the field it may colour all
+   * that appear in the legend.
    *
-   * Nötig, weil der Dienst nur den Eigentümer und eine Verwaltung durchlässt:
-   * ein Wähler an einer fremden Ablage nähme die Farbe an, der Dienst wiese sie
-   * ab, und sie spränge kommentarlos zurück. Ein Regler, der zurückschnappt,
-   * sieht kaputt aus -- also gibt es ihn dort gar nicht erst.
+   * Necessary because the service only lets the owner and an administrator
+   * through: a picker on somebody else's space would accept the colour, the
+   * service would reject it, and it would jump back without comment. A control
+   * that snaps back looks broken -- so it does not exist there in the first
+   * place.
    */
   faerbbar?: Set<string>;
     /** Whether the mouse wheel zooms. In a page view only with Ctrl to avoid
@@ -567,11 +568,10 @@ export default function Grafbild({
   return (
     <div className="graph-wrap" ref={rahmenRef} style={hoehe ? { height: hoehe } : undefined}>
       {hinweis && <div className="graph-hint">{hinweis}</div>}
-      {/* Eine Legende aus einem einzigen Eintrag sagt nichts, was der Graf
-          nicht schon zeigt -- ausser wenn an ihrem Punkt die Farbe gewaehlt
-          wird. Dann ist sie kein Schild mehr, sondern der Bedienplatz, und
-          fehlte sie, koennte eine Ablage in einem Arbeitsbereich mit nur
-          einer Ablage ihre Farbe nirgends bekommen. */}
+      {/* A legend of a single entry says nothing the graph does not show
+          already -- except when the colour is chosen at its dot. Then it is no
+          longer a sign but the control panel, and were it missing, a space in a
+          workspace with only one space could get its colour nowhere. */}
       {legende && abgeleitet.legende.length > (onFarbe ? 0 : 1) && (
         <div className="graph-legend">
           {abgeleitet.legende.map((l) => (

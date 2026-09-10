@@ -99,7 +99,7 @@ func nummerAus(kenn string) int {
 	return n + 1
 }
 
-// bildTypen sind die Eintraege, die [Content_Types].xml je Endung braucht.
+// bildTypen are the entries [Content_Types].xml needs per extension.
 func bildTypen(teile []wordBildTeil) string {
 	gesehen := map[string]bool{}
 	var b strings.Builder
@@ -118,7 +118,7 @@ func bildTypen(teile []wordBildTeil) string {
 	return b.String()
 }
 
-// bildBeziehungen sind die Zeilen fuer word/_rels/document.xml.rels.
+// bildBeziehungen are the rows for word/_rels/document.xml.rels.
 func bildBeziehungen(teile []wordBildTeil) string {
 	var b strings.Builder
 	for _, t := range teile {

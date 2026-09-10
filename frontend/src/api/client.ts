@@ -8,26 +8,26 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  // Der Anmeldename. Kann leer sein: Konten aus SSO und aus älteren Fassungen
-  // haben keinen, und angemeldet wird dann weiter über die Adresse.
+  // The sign-in name. May be empty: accounts from SSO and from older versions
+  // have none, and signing in then goes on through the address.
   benutzername: string;
   role: string;
   createdAt: string;
   /**
-   * Wann das Profilbild zuletzt gesetzt wurde; fehlt, wenn es keines gibt.
-   * Beantwortet beides auf einmal: OB ein Bild da ist, und WELCHES -- der Stand
-   * hängt an der Adresse, damit ein neues sofort erscheint.
+   * When the profile picture was last set; missing when there is none.
+   * Answers both at once: WHETHER a picture is there, and WHICH -- the
+   * timestamp hangs on the address so a new one appears at once.
    */
   bildStand?: string;
-  /** Ob an diesem Konto ein zweiter Faktor steht. */
+  /** Whether a second factor is set up on this account. */
   zweitfaktor?: boolean;
 }
 
 /**
- * Die Antwort auf eine Anmeldung. Entweder das Konto -- dann steht die Sitzung
- * bereits im Keks -- oder die Aufforderung zum zweiten Schritt samt Ticket.
- * Beides in einem Typ, weil der Server es an einer Stelle entscheidet und die
- * Oberfläche die Unterscheidung ohnehin treffen muss.
+ * The answer to a sign-in. Either the account -- then the session already sits
+ * in the cookie -- or the prompt for the second step together with a ticket.
+ * Both in one type, because the server decides it in one place and the
+ * interface has to make the distinction anyway.
  */
 export type Anmeldung = User | { zweiterSchritt: true; ticket: string };
 
@@ -39,7 +39,7 @@ export const brauchtZweitenSchritt = (
 export interface ZweitfaktorStand {
   aktiv: boolean;
   seit?: string;
-  /** Noch nicht verbrauchte Ersatzcodes. */
+  /** Recovery codes not yet used up. */
   offen: number;
   /** Ob die Instanz ihn von jedem Konto verlangt. */
   pflicht: boolean;
@@ -53,7 +53,7 @@ export interface Tag {
   anzahl: number;
 }
 
-/** Die Konfigurationsdatei, wie die Wartungsseite sie sieht. */
+/** The configuration file as the maintenance page sees it. */
 export interface KonfigDatei {
   pfad: string;
   /** Inhalt mit unkenntlich gemachten Zugangsdaten. */
@@ -81,9 +81,9 @@ export interface Space {
    * the instance, not the internet.
    */
   oeffentlich: "nein" | "lesen" | "schreiben";
-  /** Ob dieses Konto die Ablage verwalten darf (Sichtbarkeit, Rechte). */
+  /** Whether this account may administer the space (visibility, permissions). */
   darfVerwalten: boolean;
-  /** Farbe im Grafen als #rrggbb. Leer/fehlt: die Oberfläche vergibt eine. */
+  /** Colour in the graph as #rrggbb. Empty/missing: the interface hands out one. */
   farbe?: string;
 }
 
@@ -117,11 +117,11 @@ export interface Page {
   canEdit: boolean;
   isOwner: boolean;
   /**
-   * An dieser Seite darf mehr als ein Konto schreiben, und der Dienst laesst
-   * gemeinsames Bearbeiten zu. Erst dann öffnet der Browser die Leitung dafür.
+   * More than one account may write on this page, and the service permits
+   * editing together. Only then does the browser open the wire for it.
    */
   gemeinsam: boolean;
-  /** Satzspiegel: "normal", "breit" oder "voll". Gehört zur Seite, nicht zum Leser. */
+  /** Measure: "normal", "breit" or "voll". Belongs to the page, not to the reader. */
   breite: Seitenbreite;
   createdAt: string;
   updatedAt: string;
@@ -137,10 +137,10 @@ export interface PublicPage {
   updatedAt: string;
 }
 
-/** Die drei Satzspiegel. Eine feste Liste: hinter den Namen stehen Werte im
-    Stilblatt, eine freie Pixelangabe wäre eine Zahl, die niemand mehr prüft. */
-// Der leere Wert heißt: keine eigene Wahl, es gilt die Vorgabe der Instanz aus
-// /design. Er ist der Ausgangszustand jeder Seite.
+/** The three measures. A fixed list: behind the names sit values in the
+    stylesheet, a free pixel count would be a number nobody checks any more. */
+// The empty value means: no choice of one's own, the instance default from
+// /design applies. It is the initial state of every page.
 export type Seitenbreite = "" | "normal" | "breit" | "voll";
 
 // PageVersion is one entry in a page's history. content is optional because the
@@ -240,8 +240,8 @@ export interface Lizenz {
   ausstellbar?: boolean;
 }
 
-// Sitzung ist eine gespeicherte Anmeldung. "diese" markiert die, mit der
-// gerade gearbeitet wird, ohne sie beendet man leicht sich selbst.
+// Sitzung is a stored sign-in. "diese" marks the one currently being worked
+// with; without it one easily ends one's own.
 export interface Sitzung {
   id: string;
   angelegtAm: string;
@@ -271,8 +271,8 @@ export interface Spureintrag {
 
 // Kommentar is one entry on a page. A deleted one keeps its place in the thread
 // with an empty text, so replies hanging off it do not lose their context.
-/** Ein Konto, so wie es in der @-Auswahl steht. Nur der Name: eine Erwähnung
-    ist der Name im Text, und die Adresse ginge niemanden etwas an. */
+/** An account as it appears in the @ dropdown. The name and nothing else: a
+    mention is the name in the text, and the address would be nobody's business. */
 export interface Person {
   name: string;
 }
@@ -401,8 +401,8 @@ export interface Anmeldungen {
   };
 }
 
-// LDAPEinrichtung ist, wie das Verzeichnis in config.conf eingerichtet ist.
-// Das Passwort des Dienstkontos steht nicht dabei, nur ob eines gesetzt ist.
+// LDAPEinrichtung is how the directory is set up in config.conf. The service
+// account's password is not part of it, only whether one is set.
 export interface LDAPEinrichtung {
   aktiv: boolean;
   lizenziert: boolean;
@@ -435,14 +435,14 @@ export interface LDAPTestErgebnis {
   befund?: LDAPBefund;
 }
 
-// Puls ist der Live-Stand: die letzte Minute in Sekundenfächern, dazu der
-// Verbindungsvorrat und der Prozess. Die laufende Sekunde fehlt darin, sie ist
-// erst zum Teil vergangen.
-// MitschriftZustand ist der Blick der Verwaltung auf das gemeinsame Schreiben:
-// welche Seiten gerade offen sind und wer daran sitzt. Nur der Augenblick,
-// nichts Gespeichertes — ein Raum endet, sobald der Letzte geht.
-// Ein Rechner der Übersicht: das Eingetragene und das gerade Gemessene in
-// einem Stück. Zustand ist "antwortet", "still" oder "unbekannt".
+// Puls is the live state: the last minute in per-second slots, plus the
+// connection pool and the process. The current second is missing from it, it
+// has only partly passed.
+// MitschriftZustand is the administration's view of writing together: which
+// pages are open right now and who sits at them. Only the moment, nothing
+// stored — a room ends as soon as the last person leaves.
+// One machine of the overview: what was entered and what was just measured in
+// one piece. Zustand is "antwortet", "still" or "unbekannt".
 export interface Rechner {
   id: string;
   name: string;
@@ -451,7 +451,7 @@ export interface Rechner {
   zustand: string;
   antwort?: string;
   hinweis?: string;
-  // Was der Rechner beim Anklopfen selbst gesagt hat.
+  // What the machine itself said when knocked on.
   fassung?: string;
   zertifikat?: string;
   tageBisAblauf?: number;
@@ -521,9 +521,9 @@ export interface Puls {
   };
 }
 
-// SicherungUmfang sagt vorher, was in eine Sicherung ginge. Vorher, weil bei
-// einem Bestand von mehreren Gigabyte niemand den Knopf drücken und dann raten
-// soll, ob es hängt oder nur dauert.
+// SicherungUmfang says in advance what would go into a backup. In advance,
+// because with a body of several gigabytes nobody should press the button and
+// then guess whether it is stuck or merely taking a while.
 export interface SicherungUmfang {
   tokenGesetzt: boolean;
   token: string;
@@ -575,7 +575,7 @@ export interface EinfuhrBericht {
   anhaenge: number;
   wurzeln: string[];
   warnungen: string[];
-  /** Gesetzt, wenn die Einfuhr eine eigene Ablage angelegt hat. */
+  /** Set when the import created a space of its own. */
   ablage?: { id: string; name: string };
 }
 
@@ -609,10 +609,10 @@ export interface Nachricht {
   art: "kommentar" | "antwort" | "erwaehnung" | "freigabe";
   pageId: string | null;
   kommentarId: string | null;
-  /** Wer sie ausgelöst hat. Null, wenn das Konto gelöscht wurde. */
+  /** Who triggered it. Null when the account was deleted. */
   ausloeserId: string | null;
   ausloeserName: string;
-  /** Stand des Profilbildes dieses Kontos; fehlt, wenn es keines hat. */
+  /** Timestamp of this account's profile picture; missing when it has none. */
   ausloeserBild?: string;
   seitenTitel: string;
   text: string;
@@ -699,13 +699,13 @@ export const api = {
   ldapAnmelden: (benutzer: string, passwort: string) =>
     req<Anmeldung>("/auth/ldap", { method: "POST", body: JSON.stringify({ benutzer, passwort }) }),
 
-  // Der zweite Faktor.
+  // The second factor.
   //
-  // Der Ablauf hat drei Aufrufe, weil er drei Zustände hat: start legt ein
-  // Geheimnis an, das noch nicht gilt, an schaltet es mit dem ersten richtigen
-  // Code ein und gibt dabei die Ersatzcodes zurück, aus nimmt es zurück. Ohne
-  // die Trennung von start und an sperrte ein abgebrochenes Einrichten -- der
-  // Blick auf den QR-Code, dann ein geschlossener Reiter -- das Konto aus.
+  // The flow has three calls because it has three states: start creates a
+  // secret that is not yet in force, an switches it on with the first correct
+  // code and returns the recovery codes while doing so, aus takes it back.
+  // Without separating start and an, an aborted setup -- a look at the QR code,
+  // then a closed tab -- locked the account out.
   zweitfaktorStand: () => req<ZweitfaktorStand>("/auth/zweitfaktor"),
   zweitfaktorStart: () =>
     req<{ geheim: string; uri: string; qr: string }>("/auth/zweitfaktor/start", { method: "POST" }),
@@ -724,8 +724,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ passwort }),
     }),
-  // Der zweite Schritt der Anmeldung. Angenommen wird der laufende Code aus der
-  // App oder einer der Ersatzcodes.
+  // The second step of signing in. Accepted is the current code from the app or
+  // one of the recovery codes.
   zweitfaktorPruefen: (ticket: string, code: string) =>
     req<User>("/auth/zweitfaktor/pruefen", {
       method: "POST",
@@ -741,10 +741,9 @@ export const api = {
       body: JSON.stringify({ titel, bloecke }),
     }),
 
-  // Eine im Browser markierte PDF-Datei an die Stelle der alten schreiben. Roh
-  // und nicht als JSON: die Datei ist bereits Bytes, und sie durch Base64 zu
-  // schicken machte sie um ein Drittel groesser, ohne dass jemand etwas davon
-  // haette.
+  // Write a PDF marked up in the browser over the old one. Raw and not as JSON:
+  // the file is already bytes, and sending it through Base64 would make it a
+  // third larger without anybody getting anything out of it.
   pdfErsetzen: async (seiteId: string, anhangId: string, daten: Uint8Array) => {
     const res = await fetch(`/api/pages/${seiteId}/attachments/${anhangId}/pdf`, {
       method: "PUT",
@@ -765,8 +764,8 @@ export const api = {
     return (await res.json()) as { ok: boolean; bytes: number };
   },
 
-  // Das eigene Profil. Der Name als JSON, das Bild roh: es ist bereits Bytes,
-  // und es durch Base64 zu schicken machte es um ein Drittel größer.
+  // One's own profile. The name as JSON, the picture raw: it is already bytes,
+  // and sending it through Base64 would make it a third larger.
   profilAendern: (name: string) =>
     req<{ ok: boolean; name: string }>("/profil", {
       method: "PUT",
@@ -824,7 +823,7 @@ export const api = {
   pruefspurAktionen: () => req<{ aktion: string; anzahl: number }[]>("/pruefspur/aktionen"),
 
   design: () => req<{ grundton: string; akzent: string; seitenbreite: string }>("/design"),
-  /** Grundton und Akzent des eigenen Kontos. Leer setzt auf die Vorgabe zurück. */
+  /** Base tone and accent of one's own account. Empty resets to the default. */
   aussehenSpeichern: (grundton: string, akzent: string) =>
     req<{ grundton: string; akzent: string }>("/design", {
       method: "PUT",
@@ -847,8 +846,8 @@ export const api = {
   mitschreibende: (id: string) =>
     req<{ anzahl: number; moeglich: boolean }>(`/pages/${id}/mitschreibende`),
   sicherungUmfang: () => req<SicherungUmfang>("/system/sicherung/umfang"),
-  // Einspielen. Kein req: der Rumpf ist multipart und kann Gigabyte gross
-  // sein, das gehoert nicht durch JSON.stringify.
+  // Restoring. No req: the body is multipart and can be gigabytes in size,
+  // that does not belong through JSON.stringify.
   wiederherstellen: async (datei: File) => {
     const rumpf = new FormData();
     rumpf.append("datei", datei);
@@ -872,8 +871,8 @@ export const api = {
     req<SicherungUmfang>("/system/sicherung/token", { method: "POST" }),
   sicherungTokenWeg: () =>
     req<SicherungUmfang>("/system/sicherung/token", { method: "DELETE" }),
-  // Kein req: die Antwort ist ein Archiv und kein JSON, und sie kann Gigabyte
-  // groß sein. Der Browser lädt sie selbst herunter, der Keks geht mit.
+  // No req: the answer is an archive and not JSON, and it can be gigabytes in
+  // size. The browser downloads it itself, the cookie goes along.
   sicherungAdresse: "/api/system/sicherung",
   ldapEinrichtung: () => req<LDAPEinrichtung>("/system/ldap"),
   ldapTesten: (benutzer: string, passwort: string) =>
@@ -881,9 +880,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ benutzer, passwort }),
     }),
-  // Schickt so viele Megabyte los und meldet, ob sie ankommen. Nicht über req:
-  // der Rumpf ist kein JSON, und eine abgeschnittene Verbindung ist hier ein
-  // Ergebnis und kein Fehler.
+  // Sends off that many megabytes and reports whether they arrive. Not through
+  // req: the body is not JSON, and a severed connection is a result here and
+  // not an error.
   grenzprobe: async (mb: number): Promise<boolean> => {
     try {
       const r = await fetch("/api/system/grenzprobe", {
@@ -894,8 +893,9 @@ export const api = {
       });
       return r.ok;
     } catch {
-      // nginx antwortet auf einen zu großen Rumpf nicht immer mit 413,
-      // sondern kappt die Verbindung. Für die Messung ist das dasselbe.
+      // nginx does not always answer a body that is too large with a 413, it
+      // cuts the connection instead. For the measurement that is the same
+      // thing.
       return false;
     }
   },
@@ -928,8 +928,8 @@ export const api = {
     ),
 
   kommentare: (pageId: string) => req<Kommentar[]>(`/pages/${pageId}/kommentare`),
-  // Wen man in einem Kommentar zu dieser Seite mit @ ansprechen kann: genau die
-  // Konten, die sie lesen dürfen. Die anderen bekämen ohnehin keine Nachricht.
+  // Whom one can address with an @ in a comment on this page: exactly the
+  // accounts allowed to read it. The others would get no notification anyway.
   erwaehnbare: (pageId: string) => req<Person[]>(`/pages/${pageId}/erwaehnbare`),
   kommentarAnlegen: (pageId: string, text: string, elternId?: string) =>
     req<Kommentar>(`/pages/${pageId}/kommentare`, {
@@ -965,7 +965,7 @@ export const api = {
       body: JSON.stringify({ userId, drin }),
     }),
 
-  // Die Farbe einer Ablage im Grafen. Leer setzt zurück auf die Reihe.
+  // The colour of a space in the graph. Empty resets it to the series.
   spaceFarbe: (id: string, farbe: string) =>
     req<{ farbe: string }>(`/spaces/${id}/farbe`, {
       method: "PUT",
@@ -982,8 +982,8 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ gruppeId: ziel.gruppeId ?? "", userId: ziel.userId ?? "", recht }),
     }),
-  // Der Satzspiegel einer Seite. Wer schreiben darf, darf ihn setzen: es ist
-  // eine Eigenschaft des Textes, keine der Freigabe.
+  // The measure of a page. Whoever may write may set it: it is a property of
+  // the text, not of the sharing.
   seiteBreite: (id: string, breite: Seitenbreite) =>
     req<{ breite: Seitenbreite }>(`/pages/${id}/breite`, {
       method: "PUT",
@@ -1059,7 +1059,7 @@ export const api = {
           const j = JSON.parse(x.responseText);
           if (j && j.error) text = j.error;
         } catch {
-          /* dann eben der Statustext */
+          /* then the status text it is */
         }
         const e = new Error(text) as Error & { status?: number };
         e.status = x.status;
@@ -1075,9 +1075,9 @@ export const api = {
   deleteAttachment: (id: string, attId: string) =>
     req<void>(`/pages/${id}/attachments/${attId}`, { method: "DELETE" }),
 
-  // Einfuhr: eine oder mehrere Markdown-Dateien, oder ein ZIP mit Struktur.
-  // Wie beim Anhang an req vorbei, aus demselben Grund, FormData setzt der
-  // Browser samt Grenzmarke selbst.
+  // Import: one or several Markdown files, or a ZIP with structure. Past req
+  // as with an attachment, for the same reason; FormData is set by the browser
+  // itself, boundary included.
   importieren: async (
     dateien: File[],
     // neueAblage excludes the other two: the archive then brings a space of its
@@ -1090,8 +1090,8 @@ export const api = {
     if (ziel.parentId) body.append("parentId", ziel.parentId);
     if (ziel.spaceId) body.append("spaceId", ziel.spaceId);
     if (ziel.neueAblage) body.append("neueAblage", ziel.neueAblage);
-    // Derselbe Aufruf mit demselben Inhalt, nur ohne Folgen, der Server
-    // rechnet denselben Plan und legt nichts an.
+    // The same call with the same content, only without consequences; the
+    // server computes the same plan and creates nothing.
     if (vorschau) body.append("vorschau", "1");
     const res = await fetch(`/api/import`, { method: "POST", credentials: "include", body });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
@@ -1122,8 +1122,8 @@ export const api = {
       body: JSON.stringify({ email, name, password, role, benutzername }),
     }),
   deleteUser: (id: string) => req<void>(`/users/${id}`, { method: "DELETE" }),
-  // Den zweiten Faktor eines fremden Kontos entfernen, für das verlorene
-  // Telefon. Das Konto meldet sich danach wieder mit dem Passwort allein an.
+  // Remove another account's second factor, for the lost phone. The account
+  // signs in with the password alone again afterwards.
   zweitfaktorZuruecksetzen: (id: string) =>
     req<{ ok: boolean }>(`/users/${id}/zweitfaktor`, { method: "DELETE" }),
   setUserRole: (id: string, role: string) =>
@@ -1134,7 +1134,8 @@ export const api = {
       body: JSON.stringify({ benutzername }),
     }),
 
-  // Eigene Rechner: die Liste samt dem, was gerade von ihnen zu sehen ist.
+  // One's own machines: the list together with what can currently be seen of
+  // them.
   rechner: () => req<RechnerListe>("/system/rechner"),
   rechnerAnlegen: (r: RechnerEingabe) =>
     req<Rechner>("/system/rechner", { method: "POST", body: JSON.stringify(r) }),
@@ -1143,16 +1144,16 @@ export const api = {
   rechnerLoeschen: (id: string) =>
     req<{ ok: boolean }>(`/system/rechner/${id}`, { method: "DELETE" }),
 
-  // Das eigene Passwort. Die Antwort sagt, wie viele andere Sitzungen dabei
-  // beendet wurden -- das ist die Zahl, die jemand sehen will, der wechselt,
-  // weil ein fremdes Gerät im Spiel war.
+  // One's own password. The answer says how many other sessions were ended in
+  // the process -- that is the number somebody wants to see who is changing it
+  // because another device was involved.
   passwortWechseln: (alt: string, neu: string) =>
     req<{ ok: boolean; beendet: number }>("/auth/passwort", {
       method: "POST",
       body: JSON.stringify({ alt, neu }),
     }),
 
-  // Zurücksetzen durch eine Verwaltung, für ein vergessenes Passwort.
+  // Reset by an administrator, for a forgotten password.
   passwortSetzen: (id: string, neu: string) =>
     req<{ ok: boolean; beendet: number }>(`/users/${id}/passwort`, {
       method: "PUT",

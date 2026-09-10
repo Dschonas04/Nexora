@@ -8,9 +8,9 @@
 services:
   db:
     image: postgres:16-alpine
-    # Verschlüsselt, mit dem Zertifikat aus dem PKI-Container. PostgreSQL
-    # spricht sonst im Klartext, und über diese Leitung geht alles: jede Seite,
-    # jeder Passwort-Hash, jede Sitzungskennung.
+    # Encrypted, with the certificate from the PKI container. PostgreSQL
+    # otherwise speaks in the clear, and everything goes over this wire: every
+    # page, every password hash, every session id.
     command:
       - -c
       - ssl=on
@@ -39,12 +39,12 @@ services:
   # into a closed door on the first boot and falls over.
   backend:
     environment:
-      # verify-full und nicht require: "require" verschlüsselt zwar, prüft aber
-      # nicht, mit wem -- damit wäre die Verschlüsselung eine Beruhigung und
-      # keine Aussage. Geprüft wird gegen die eigene Stelle des Verbunds.
+      # verify-full and not require: "require" does encrypt but does not check
+      # with whom -- which would make the encryption a reassurance and not a
+      # statement. The check runs against the compound's own authority.
       #
-      # Wer eine eigene Datenbank mitbringt, setzt DATABASE_URL in der .env und
-      # lässt diese Beidatei weg; dann gilt, was dort steht.
+      # Whoever brings their own database sets DATABASE_URL in the .env and
+      # leaves this side file out; then whatever stands there applies.
       DATABASE_URL: ${DATABASE_URL:-postgres://nexora:${POSTGRES_PASSWORD:-nexora}@db:5432/nexora?sslmode=verify-full&sslrootcert=/pki/ca.crt}
     depends_on:
       db:

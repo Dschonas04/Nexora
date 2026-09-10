@@ -1,16 +1,16 @@
-// Gemeinsames Schreiben an einer Seite, die Browser-Seite davon.
+// Writing together on a page, the browser's side of it.
 //
-// Der Dienst reicht nur Pakete weiter, gerechnet wird hier. Yjs führt zwei
-// Fassungen desselben Textes zusammen, ohne dass eine die andere überschreibt:
-// zwei Leute in verschiedenen Absätzen merken nichts voneinander, zwei im
-// selben Wort bekommen ein Ergebnis, das beide Eingaben enthält. Das ist der
-// Unterschied zum Speichern der ganzen Seite, bei dem der Letzte gewinnt.
+// The service only passes packets on, the computing happens here. Yjs merges
+// two versions of the same text without one overwriting the other: two people
+// in different paragraphs notice nothing of each other, two in the same word
+// get a result containing both inputs. That is the difference from saving the
+// whole page, where the last one wins.
 //
-// Geschrieben wird trotzdem weiter in die Datenbank, und zwar von genau einem
-// der Beteiligten. Wer das ist, wird nicht ausgehandelt, sondern gerechnet: die
-// kleinste Kennung im Raum. Alle haben dieselbe Liste, also kommen alle auf
-// denselben, und geht der, rückt der Nächste nach, ohne dass jemand etwas
-// mitteilen müsste.
+// Writing to the database still goes on all the same, and by exactly one of the
+// participants. Who that is is not negotiated but computed: the smallest id in
+// the room. Everybody has the same list, so everybody arrives at the same
+// person, and when they leave the next one moves up without anybody having to
+// announce anything.
 import { useEffect, useMemo, useState } from "react";
 import * as Y from "yjs";
 import * as anwesenheitProtokoll from "y-protocols/awareness";
@@ -18,35 +18,35 @@ import * as abgleichProtokoll from "y-protocols/sync";
 import * as kodieren from "lib0/encoding";
 import * as dekodieren from "lib0/decoding";
 
-// Die beiden Arten von Paket, die über die Leitung gehen. Dieselben Zahlen wie
-// bei y-websocket: das Format ist dort nicht erfunden, sondern nur benannt, und
-// wer später einen fertigen Dienst davorsetzen will, spricht dieselbe Sprache.
+// The two kinds of packet that go over the wire. The same numbers as with
+// y-websocket: the format is not invented there, only named, and whoever later
+// wants to put a ready-made service in front speaks the same language.
 const PAKET_ABGLEICH = 0;
 const PAKET_ANWESENHEIT = 1;
-// "Wer ist da?" — die Frage, die ein Dazugekommener stellt. Ohne sie wüsste er
-// von den anderen erst, wenn einer von ihnen das nächste Mal etwas tut, und
-// säße bis dahin scheinbar allein an einer Seite, an der drei arbeiten.
+// "Who is there?" — the question somebody who has just joined asks. Without it
+// they would only learn of the others the next time one of them does something,
+// and until then would seemingly sit alone on a page three people work on.
 const PAKET_WER_IST_DA = 3;
 
-// Wartezeiten beim Wiederverbinden, in Millisekunden. Kurz anfangen, weil der
-// häufigste Fall ein Neustart des Dienstes von ein paar Sekunden ist; nach oben
-// gedeckelt, weil ein Reiter, der über Nacht offen steht, nicht im Sekundentakt
-// gegen eine tote Adresse klopfen soll.
+// Waiting times when reconnecting, in milliseconds. Start short, because the
+// most frequent case is a restart of the service lasting a few seconds; capped
+// at the top, because a tab left open overnight should not knock on a dead
+// address every second.
 const WARTE_ANFANG = 1000;
 const WARTE_HOECHSTENS = 30000;
 
 /**
- * Die Leitung zu den anderen Browsern.
+ * The wire to the other browsers.
  *
- * Eigene statt einer fertigen: gebraucht wird genau das hier, ein Anschluss,
- * der Yjs-Pakete hin und her trägt und sich wiederverbindet. Die gängige
- * Bibliothek dafür bringt einen ganzen Server samt Datenbank mit, dreiunddreißig
- * Pakete, von denen eines beim Einrichten nativ übersetzt werden will.
+ * One of our own instead of a ready-made one: what is needed is exactly this, a
+ * connection that carries Yjs packets back and forth and reconnects itself. The
+ * usual library for it brings along a whole server plus database, thirty-three
+ * packages, one of which wants to be compiled natively at install time.
  */
 export class Leitung {
   readonly anwesenheit: anwesenheitProtokoll.Awareness;
   verbunden = false;
-  /** Der erste Abgleich ist durch: erst danach steht fest, ob schon Text da ist. */
+  /** The first sync is through: only after it is it certain whether text is already there. */
   abgeglichen = false;
 
   private ws: WebSocket | null = null;
@@ -62,13 +62,13 @@ export class Leitung {
     this.anwesenheit = new anwesenheitProtokoll.Awareness(doc);
     this.doc.on("update", this.beiAenderung);
     this.anwesenheit.on("update", this.beiAnwesenheit);
-    // Beim Schliessen des Reiters abmelden, damit die anderen den Namen nicht
-    // noch eine halbe Minute stehen sehen, bis er von selbst veraltet.
+    // Sign off when the tab closes, so the others do not go on seeing the name
+    // stand there for another half minute until it goes stale by itself.
     window.addEventListener("pagehide", this.beimVerlassen);
     this.verbinde();
   }
 
-  /** Meldet sich, wenn sich Verbindung, Abgleich oder Anwesenheit ändern. */
+  /** Fires when connection, sync or presence changes. */
   beiWechsel(fn: () => void): () => void {
     this.horcher.add(fn);
     return () => this.horcher.delete(fn);
@@ -78,9 +78,9 @@ export class Leitung {
     this.beendet = true;
     window.clearTimeout(this.wecker);
     window.removeEventListener("pagehide", this.beimVerlassen);
-    // Abmelden, solange die Horcher noch hängen: das Abmelden IST eine
-    // Änderung der Anwesenheit, und nur über den Horcher geht sie hinaus. Erst
-    // danach die Leitung abbauen.
+    // Sign off while the listeners still hang on: signing off IS a change of
+    // presence, and only through the listener does it go out. Tear the wire
+    // down after that.
     this.abmelden();
     this.doc.off("update", this.beiAenderung);
     this.anwesenheit.off("update", this.beiAnwesenheit);
@@ -104,8 +104,8 @@ export class Leitung {
       if (this.ws !== ws) return;
       this.verbunden = true;
       this.warte = WARTE_ANFANG;
-      // Zwei Dinge zum Gruss: was ich habe, und wer ich bin. Das erste
-      // beantworten die anderen mit dem, was ich noch nicht habe.
+      // Two things by way of greeting: what I have, and who I am. The others
+      // answer the first with whatever I do not have yet.
       const gruss = kodieren.createEncoder();
       kodieren.writeVarUint(gruss, PAKET_ABGLEICH);
       abgleichProtokoll.writeSyncStep1(gruss, this.doc);
@@ -128,9 +128,9 @@ export class Leitung {
       const warVerbunden = this.verbunden;
       this.verbunden = false;
       this.abgeglichen = false;
-      // Die anderen aus der Anwesenheit nehmen: ohne Leitung weiss dieser
-      // Browser nicht mehr, wer noch da ist, und eine Liste von Namen, die
-      // vielleicht stimmt, ist schlimmer als keine.
+      // Take the others out of the presence: without a wire this browser no
+      // longer knows who is still there, and a list of names that may be right
+      // is worse than none.
       anwesenheitProtokoll.removeAwarenessStates(
         this.anwesenheit,
         Array.from(this.anwesenheit.getStates().keys()).filter((k) => k !== this.doc.clientID),
@@ -155,13 +155,12 @@ export class Leitung {
     if (art === PAKET_ABGLEICH) {
       const antwort = kodieren.createEncoder();
       kodieren.writeVarUint(antwort, PAKET_ABGLEICH);
-      // Die Herkunft ist diese Leitung: daran erkennt der Absender weiter
-      // unten, dass er eine fremde Änderung nicht als eigene zurückschicken
-      // muss.
+      // The origin is this wire: that is how the sender further down
+      // recognises that it need not send a foreign change back as its own.
       const art2 = abgleichProtokoll.readSyncMessage(leser, antwort, this.doc, this);
       if (kodieren.length(antwort) > 1) this.sende(kodieren.toUint8Array(antwort));
-      // Schritt 2 ist die Antwort auf die eigene Frage "was hast du?": ab hier
-      // ist dieser Browser auf demselben Stand wie der Raum.
+      // Step 2 is the answer to one's own question "what do you have?": from
+      // here on this browser is at the same state as the room.
       if (art2 === abgleichProtokoll.messageYjsSyncStep2 && !this.abgeglichen) {
         this.abgeglichen = true;
         this.melde();
@@ -173,15 +172,15 @@ export class Leitung {
         this,
       );
     } else if (art === PAKET_WER_IST_DA) {
-      // Jemand ist dazugekommen: alles sagen, was dieser Browser über die
-      // Anwesenden weiss. Auch die anderen antworten, das schadet nichts,
-      // dieselbe Auskunft zweimal ändert nichts.
+      // Somebody has joined: say everything this browser knows about those
+      // present. The others answer too, which does no harm; the same
+      // information twice changes nothing.
       this.sendeAnwesenheit(Array.from(this.anwesenheit.getStates().keys()));
     }
   }
 
   private beiAenderung = (aenderung: Uint8Array, herkunft: unknown) => {
-    // Was von der Leitung kam, geht nicht auf ihr zurück.
+    // What came off the wire does not go back onto it.
     if (herkunft === this) return;
     const paket = kodieren.createEncoder();
     kodieren.writeVarUint(paket, PAKET_ABGLEICH);
@@ -223,25 +222,25 @@ export interface Anwesend {
 }
 
 export interface Mitschrift {
-  /** Das geteilte Dokument. Hier hängt neben dem Text auch die Marke, dass die
-      erste Fassung schon eingetragen wurde. */
+  /** The shared document. Besides the text, the marker that the first revision
+      has already been written hangs here too. */
   doc: Y.Doc;
   fragment: Y.XmlFragment;
-  /** Was BlockNote als Anbieter erwartet: es liest daraus nur die Anwesenheit. */
+  /** What BlockNote expects as a provider: it only reads the presence out of it. */
   provider: { awareness: anwesenheitProtokoll.Awareness };
   user: { name: string; color: string };
   bereit: boolean;
-  /** Dieser Browser schreibt in die Datenbank, die anderen nicht. */
+  /** This browser writes to the database, the others do not. */
   fuehrend: boolean;
-  /** Verbindung steht. Steht sie nicht, tippt man vorerst für sich allein. */
+  /** The connection is up. If it is not, one types for oneself for the time being. */
   verbunden: boolean;
   anwesend: Anwesend[];
 }
 
-// Feste Farben statt gewürfelter: sie stehen am Cursor eines fremden Menschen,
-// müssen sich voneinander unterscheiden und auf hellem wie dunklem Grund
-// lesbar bleiben. Sechs reichen, mehr als sechs gleichzeitig an einem Absatz
-// ist ohnehin keine Arbeitsweise.
+// Fixed colours instead of rolled ones: they stand at another person's cursor,
+// have to be distinguishable from each other and stay readable on a light as
+// well as a dark ground. Six are enough; more than six at once on one paragraph
+// is no way of working anyway.
 const FARBEN = ["#2383e2", "#bf5b04", "#0f7b6c", "#9065b0", "#c1442e", "#4d6ad0"];
 
 export function farbeFuer(kennung: string): string {
@@ -250,19 +249,19 @@ export function farbeFuer(kennung: string): string {
   return FARBEN[summe % FARBEN.length];
 }
 
-// Die Adresse der Leitung. Aus der eigenen Herkunft gebaut, damit sie unter
-// jedem Namen funktioniert, unter dem die Anwendung erreichbar ist, und ohne
-// dass irgendwo eine zweite Adresse gepflegt werden müsste.
+// The address of the wire. Built from our own origin, so that it works under
+// every name the application can be reached under, and without a second
+// address having to be maintained anywhere.
 function adresseFuer(seiteId: string): string {
   const schema = window.location.protocol === "https:" ? "wss:" : "ws:";
   return `${schema}//${window.location.host}/api/echtzeit/${encodeURIComponent(seiteId)}`;
 }
 
 /**
- * Öffnet die Sitzung für eine Seite, solange aktiv gilt.
+ * Opens the session for a page as long as aktiv holds.
  *
- * Gibt null zurück, wenn nicht gemeinsam geschrieben wird. Der Aufrufer
- * arbeitet dann wie vorher: eigener Text, eigenes Speichern.
+ * Returns null when there is no writing together. The caller then works as
+ * before: own text, own saving.
  */
 export function useMitschrift(
   seiteId: string | undefined,
@@ -284,8 +283,8 @@ export function useMitschrift(
     }
     const doc = new Y.Doc();
     const leitung = new Leitung(adresseFuer(seiteId), doc);
-    // Der eigene Eintrag in der Anwesenheit. BlockNote liest name und color
-    // daraus und zeichnet damit die fremden Schreibmarken.
+    // One's own entry in the presence. BlockNote reads name and color out of
+    // it and draws the other people's carets with them.
     leitung.anwesenheit.setLocalStateField("user", user);
     const ab = leitung.beiWechsel(() => setStand((n) => n + 1));
     setGespann({ doc, leitung });
@@ -296,7 +295,7 @@ export function useMitschrift(
       doc.destroy();
       setGespann(null);
     };
-    // user hängt an ich und ändert sich nicht während einer Sitzung.
+    // user hangs on ich and does not change during a session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seiteId, aktiv, ich?.id]);
 
@@ -316,9 +315,9 @@ export function useMitschrift(
     });
     anwesend.sort((a, b) => a.kennung - b.kennung);
 
-    // Der Führende ist der mit der kleinsten Kennung. Solange die Anwesenheit
-    // noch leer ist, führt niemand: sonst schriebe jeder Browser in der ersten
-    // halben Sekunde nach dem Verbinden für sich allein los.
+    // The leader is the one with the smallest id. As long as the presence is
+    // still empty, nobody leads: otherwise every browser would start writing
+    // for itself alone in the first half second after connecting.
     const kleinste = anwesend.length > 0 ? anwesend[0].kennung : -1;
 
     return {
@@ -331,7 +330,7 @@ export function useMitschrift(
       verbunden: leitung.verbunden,
       anwesend,
     };
-    // stand zählt hoch, sobald sich an der Leitung etwas ändert.
+    // stand counts up as soon as something changes on the wire.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gespann, stand, user]);
 }

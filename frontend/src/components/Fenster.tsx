@@ -1,14 +1,14 @@
-// Ein Fenster über der Seite.
+// A dialog above the page.
 //
-// Die Verwaltung hatte ihre Formulare bisher untereinander auf der Seite
-// stehen: erst das Formular zum Anlegen, darunter die Liste. Das kostet die
-// obere Hälfte des Bildschirms für etwas, das man einmal am Tag braucht, und
-// drängt die Liste, um die es eigentlich geht, unter den Rand. Was selten
-// gebraucht wird, gehört in ein Fenster, das aufgeht, wenn man es ruft.
+// The administration used to have its forms standing one below the other on the
+// page: first the form for creating, the list below it. That costs the upper
+// half of the screen for something needed once a day, and pushes the list one
+// is actually after past the edge. What is rarely needed belongs in a dialog
+// that opens when one calls it.
 //
-// Rueckfrage.tsx bleibt daneben stehen: dort geht es um genau eine Frage mit
-// zwei Antworten, hier um ein Formular beliebiger Länge. Beide benutzen
-// dieselben Marken aus dem Stilblatt, damit sie nicht auseinanderlaufen.
+// Rueckfrage.tsx stays beside it: there it is about exactly one question with
+// two answers, here about a form of any length. Both use the same marks from
+// the stylesheet, so they do not drift apart.
 import { ReactNode, useEffect, useRef } from "react";
 
 export default function Fenster({
@@ -20,20 +20,21 @@ export default function Fenster({
   children,
 }: {
   titel: string;
-  /** Eine Zeile unter dem Titel, für das, was das Fenster tut. */
+  /** A line under the title, for what the dialog does. */
   unter?: string;
-  /** Für Fenster mit einer Liste darin, die in 480 Pixeln nicht lesbar wäre. */
+  /** For dialogs with a list in them that would not be readable in 480 pixels. */
   breit?: boolean;
   schliessen: () => void;
-  /** Die Knopfreihe unten. Ohne sie steht das Fenster ohne Abschluss da. */
+  /** The row of buttons at the bottom. Without it the dialog stands there
+    unfinished. */
   fuss?: ReactNode;
   children: ReactNode;
 }) {
   const kasten = useRef<HTMLDivElement>(null);
 
-  // Esc schließt. Ohne die Taste bliebe als Ausweg nur die Maus, und ein
-  // Fenster, aus dem man nicht mit der Tastatur herauskommt, ist eine Falle für
-  // jeden, der nicht zeigen kann.
+  // Esc closes. Without the key the only way out would be the mouse, and a
+  // dialog one cannot get out of with the keyboard is a trap for everybody who
+  // cannot point.
   useEffect(() => {
     const auf = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -45,8 +46,8 @@ export default function Fenster({
     return () => window.removeEventListener("keydown", auf);
   }, [schliessen]);
 
-  // Der Zeiger auf das erste Feld. Wer ein Fenster öffnet, um etwas
-  // einzutragen, soll nicht erst hineinklicken müssen.
+  // The pointer on the first field. Whoever opens a dialog in order to enter
+  // something should not have to click into it first.
   useEffect(() => {
     const erstes = kasten.current?.querySelector<HTMLElement>(
       "input:not([type=hidden]):not([disabled]), textarea, select",
@@ -69,9 +70,9 @@ export default function Fenster({
             <h3>{titel}</h3>
             {unter && <div className="muted small">{unter}</div>}
           </div>
-          {/* Das Kreuz sitzt im Kopf und nicht bei den Knöpfen unten:
-              Abbrechen und Schließen sind dasselbe, und zwei Wege dafür in
-              einer Reihe lesen sich wie zwei verschiedene Sachen. */}
+          {/* The cross sits in the head and not among the buttons at the
+              bottom: cancel and close are the same thing, and two ways to do it
+              in one row read like two different matters. */}
           <button className="fenster-zu" onClick={schliessen} aria-label="Close">
             ×
           </button>

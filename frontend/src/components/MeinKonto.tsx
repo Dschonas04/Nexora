@@ -1,17 +1,18 @@
-// Was jemand an seinem eigenen Konto einstellen kann.
+// What somebody can set on their own account.
 //
-// Es gab das bisher, aber verstreut: Profil und Passwort als zwei eigene
-// Dialoge im Kontomenü, der zweite Faktor nur in der Verwaltung -- also für
-// Administratoren --, und die eigenen Sitzungen ebenfalls dort. Wer kein
-// Administrator ist, kam an drei davon gar nicht heran.
+// This existed before, but scattered: profile and password as two dialogs of
+// their own in the account menu, the second factor only in the administration
+// -- that is for administrators -- and one's own sessions there as well.
+// Whoever is not an administrator could not reach three of them at all.
 //
-// Hier steht alles vier hinter dem Zahnrad neben dem Namen, in derselben Form
-// wie die Verwaltung daneben: eine Leiste links, der Inhalt rechts.
+// Here all four stand behind the cog beside the name, in the same form as the
+// administration next to it: a sidebar on the left, the content on the right.
 //
-// Die Grenze zur Verwaltung ist die Frage, wem etwas gehört. Das Aussehen
-// gehört dem Konto und steht deshalb hier: ob jemand hell oder dunkel
-// arbeitet, geht niemanden sonst etwas an. Solange es in der Verwaltung stand,
-// stellte der, der nachts dunkel schaltete, alle anderen mit um.
+// The line to the administration is the question of who something belongs to.
+// The appearance belongs to the account and therefore stands here: whether
+// somebody works light or dark is nobody else's business. As long as it stood
+// in the administration, whoever switched to dark at night switched everybody
+// else over too.
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Sitzung, ZweitfaktorStand, api } from "../api/client";
@@ -32,8 +33,8 @@ import Profilbild from "./Profilbild";
 import { useRueckfrage } from "./Rueckfrage";
 import Zweitfaktor from "./Zweitfaktor";
 
-// Kantenlänge des gespeicherten Bildes. 256 statt 128, damit das Bild auf
-// hochauflösenden Bildschirmen und im Profil scharf bleibt.
+// Edge length of the stored picture. 256 instead of 128, so the picture stays
+// sharp on high-resolution screens and in the profile.
 const KANTE = 256;
 
 type Teil = "profil" | "aussehen" | "passwort" | "zweitfaktor" | "geraete";
@@ -47,10 +48,10 @@ const TEILE: { id: Teil; titel: string; unter: string }[] = [
 ];
 
 /**
- * Mittig auf ein Quadrat beschneiden und verkleinern: das Bild erscheint als
- * Kreis, und ein verzerrtes Gesicht ist schlimmer als ein beschnittenes. Ein
- * Foto aus der Kamera hat mehrere Megabyte und wird als kleiner Kreis gezeigt --
- * im Browser zu verkleinern spart Leitung und Platte.
+ * Crop to a square in the centre and shrink: the picture appears as a circle,
+ * and a distorted face is worse than a cropped one. A photo out of a camera has
+ * several megabytes and is shown as a small circle -- shrinking it in the
+ * browser saves line and disk.
  */
 async function verkleinern(datei: File): Promise<Blob> {
   const bild = await new Promise<HTMLImageElement>((fertig, gescheitert) => {
@@ -80,8 +81,8 @@ async function verkleinern(datei: File): Promise<Blob> {
 
   return new Promise<Blob>((fertig, gescheitert) =>
     leinwand.toBlob(
-      // JPEG und nicht PNG: ein Foto als PNG wäre um ein Vielfaches größer.
-      // Güte 0,9 ist bei dieser Größe nicht von 1,0 zu unterscheiden.
+      // JPEG and not PNG: a photo as PNG would be several times larger.
+      // Quality 0.9 is indistinguishable from 1.0 at this size.
       (b) => (b ? fertig(b) : gescheitert(new Error("The image could not be created."))),
       "image/jpeg",
       0.9,
@@ -110,10 +111,10 @@ export default function MeinKonto({ onClose }: { onClose: () => void }) {
         </>
       }
     >
-      {/* Dieselbe Aufteilung wie in der Verwaltung: eine Leiste links, der
-          Inhalt rechts. Vier Einträge sind wenig für eine Leiste -- aber sie
-          machen sichtbar, was es überhaupt gibt, und das war vorher die Frage:
-          den zweiten Faktor findet niemand, der nicht weiß, dass es ihn gibt. */}
+      {/* The same layout as in the administration: a sidebar on the left,
+          the content on the right. Four entries are few for a sidebar -- but
+          they make visible what there is at all, and that was the question
+          before: nobody finds the second factor who does not know it exists. */}
       <div className="konto-fenster">
         <nav className="konto-leiste">
           {TEILE.map((t) => (
@@ -140,12 +141,12 @@ export default function MeinKonto({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * Grundton und Akzent, für dieses Konto allein.
+ * Base tone and accent, for this account alone.
  *
- * Gespeichert wird sofort beim Klick und ohne Knopf: eine Farbe sucht man
- * aus, indem man sie sieht, und ein Speichern-Knopf dazwischen macht aus dem
- * Ausprobieren eine Kette von Bestätigungen. Angewandt wird schon vor der
- * Antwort des Servers, sonst blinkt die Oberfläche der Auswahl hinterher.
+ * Saved immediately on the click and without a button: one picks a colour by
+ * seeing it, and a Save button in between turns trying things out into a chain
+ * of confirmations. It is applied before the server's answer, otherwise the
+ * interface blinks along behind the choice.
  */
 function Aussehen() {
   const { design, neuLaden } = useDesign();
@@ -161,8 +162,8 @@ function Aussehen() {
     api
       .aussehenSpeichern(g, a)
       .then(() => neuLaden())
-      // Bleibt die Wahl ungespeichert, steht sie trotzdem schon auf dem
-      // Bildschirm. Der Satz sagt, dass sie den Neustart nicht überlebt.
+      // If the choice stays unsaved, it is on the screen all the same. The
+      // sentence says that it does not survive a restart.
       .catch((e) => setFehler(e instanceof Error ? e.message : "Not saved."));
   };
 
@@ -221,9 +222,9 @@ function Aussehen() {
             onClick={() => akzentSetzen(a.wert, true)}
           />
         ))}
-        {/* Eine Hausfarbe kommt als Hexwert aus einem Handbuch und nicht aus
-            dem Farbrad des Betriebssystems. Deshalb das Feld, der Wähler nur
-            daneben. */}
+        {/* A house colour comes as a hex value out of a manual and not out
+            of the operating system's colour wheel. Hence the field, with the
+            picker merely beside it. */}
         <input
           className="hex-feld"
           value={akzent}
@@ -237,7 +238,7 @@ function Aussehen() {
             if (/^#[0-9a-f]{6}$/.test(w)) anwenden({ grundton: ton, akzent: w });
           }}
           onBlur={() => {
-            // Ein halb getippter Wert darf nicht in die Datenbank.
+            // A half-typed value must not go into the database.
             if (!/^#[0-9a-f]{6}$/.test(akzent)) {
               akzentSetzen(design.akzent.toLowerCase(), false);
               return;
@@ -257,9 +258,9 @@ function Aussehen() {
         />
       </div>
 
-      {/* Die Probe steht anstelle einer Spalte mit Kontrastzahlen. Wer eine
-          Farbe aussucht, sieht hier, was sie anrichtet; nachrechnen muss er es
-          nicht. */}
+      {/* The sample stands in place of a column of contrast figures.
+          Whoever picks a colour sees here what it does; they do not have to work
+          it out. */}
       <div className="wirkprobe">
         <button className="btn btn-primary" type="button">
           Primary button
@@ -295,7 +296,7 @@ function Aussehen() {
   );
 }
 
-/** Name und Bild. Die Adresse steht daneben und ist nicht änderbar. */
+/** Name and picture. The address stands beside them and cannot be changed. */
 function Profil() {
   const { user, neuLaden } = useAuth();
   const [name, setName] = useState(user?.name ?? "");
@@ -319,7 +320,7 @@ function Profil() {
       setFehler((e as Error).message);
     } finally {
       setLaeuft(null);
-      // Das Feld zurücksetzen, damit dieselbe Datei erneut gewählt werden kann.
+      // Reset the field, so the same file can be chosen again.
       if (dateiFeld.current) dateiFeld.current.value = "";
     }
   };
@@ -432,11 +433,11 @@ function Profil() {
 }
 
 /**
- * Das eigene Passwort wechseln.
+ * Changing one's own password.
  *
- * Drei Felder statt zwei: das neue zu wiederholen fängt den Tippfehler, der
- * sonst erst bei der nächsten Anmeldung auffiele -- und dann nicht mehr zu
- * beheben wäre, ohne die Verwaltung zu fragen.
+ * Three fields instead of two: repeating the new one catches the typo that
+ * would otherwise only show up at the next sign-in -- and then could no longer
+ * be fixed without asking an administrator.
  */
 function Passwort() {
   const [alt, setAlt] = useState("");
@@ -446,9 +447,9 @@ function Passwort() {
   const [fertig, setFertig] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
 
-  // Dieselben Grenzen wie im Dienst (backend/internal/handlers/passwort.go).
-  // Die Prüfung hier ist nur für die sofortige Rückmeldung da; entschieden wird
-  // es am Server.
+  // The same limits as in the service (backend/internal/handlers/passwort.go).
+  // The check here is only there for immediate feedback; it is decided at the
+  // server.
   const zuKurz = neu.length > 0 && [...neu].length < 6;
   const zuLang = new TextEncoder().encode(neu).length > 72;
   const passtNicht = nochmal.length > 0 && neu !== nochmal;
@@ -568,10 +569,11 @@ function ZweitfaktorTeil() {
 }
 
 /**
- * Die eigenen Sitzungen.
+ * One's own sessions.
  *
- * Sie standen bisher nur in der Verwaltung, also für Administratoren -- dabei
- * ist die Liste ohnehin die eigene: der Dienst gibt jedem nur seine.
+ * They used to stand only in the administration, that is for administrators --
+ * although the list is one's own anyway: the service gives everybody only
+ * theirs.
  */
 function Geraete() {
   const frage = useRueckfrage();

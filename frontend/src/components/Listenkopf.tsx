@@ -1,13 +1,13 @@
-// Der Kopf über einer Liste in der Verwaltung.
+// The head above a list in the administration.
 //
-// Jede Liste dort beantwortet dieselben drei Fragen, und sie standen bisher an
-// jeder Stelle anders: wie viel ist es (die Zahl gehört an die Überschrift, weil
-// eine Verwaltung sie ohnehin zählt, sobald sie die Tabelle sieht), wie finde
-// ich eine Zeile (ein Feld schlägt ab etwa zwanzig Zeilen das Blättern), und
-// was kann ich hier anlegen (ein Knopf, kein Formular über der Liste).
+// Every list there answers the same three questions, and they used to stand
+// differently in every place: how much is it (the number belongs on the
+// heading, because an administrator counts it anyway as soon as they see the
+// table), how do I find a row (a field beats paging from about twenty rows on),
+// and what can I create here (a button, not a form above the list).
 //
-// Als eigene Komponente und nicht als sechsmal abgeschriebenes Markup: sonst
-// ist es kein Muster, sondern sechs Stellen, die auseinanderlaufen.
+// As a component of its own and not as markup copied out six times: otherwise
+// it is not a pattern but six places that drift apart.
 import { ReactNode } from "react";
 
 export default function Listenkopf({
@@ -19,13 +19,13 @@ export default function Listenkopf({
   children,
 }: {
   titel: string;
-  /** Die Zahl neben der Überschrift. Weggelassen, wo es nichts zu zählen gibt. */
+  /** The number beside the heading. Left out where there is nothing to count. */
   zahl?: ReactNode;
-  /** Zusammen mit setFilter: das Filterfeld rechts. Beides oder keines. */
+  /** Together with setFilter: the filter field on the right. Both or neither. */
   filter?: string;
   setFilter?: (v: string) => void;
   platzhalter?: string;
-  /** Was rechts neben dem Filter steht -- in aller Regel ein Knopf. */
+  /** What stands to the right of the filter -- as a rule a button. */
   children?: ReactNode;
 }) {
   return (

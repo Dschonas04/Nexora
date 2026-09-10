@@ -110,13 +110,13 @@ a {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Bezugspunkt fuer den Griff an der Kante. */
+  /* Reference point for the handle on the edge. */
   position: relative;
 }
 
-/* Die ziehbare Kante. Vier Pixel breit und durchsichtig: sie soll zu treffen
-   sein, ohne als Streifen im Bild zu stehen. Erst unter dem Zeiger faerbt sie
-   sich, damit man sieht, dass man sie hat. */
+/* The draggable edge. Four pixels wide and transparent: it should be easy to
+   hit without standing in the picture as a stripe. Only under the pointer does
+   it take on colour, so one sees that one has hold of it. */
 .leiste-kante {
   position: absolute;
   top: 0;
@@ -125,8 +125,8 @@ a {
   width: 4px;
   cursor: col-resize;
   z-index: 5;
-  /* Beruehrgeraete: der Browser soll hier nicht scrollen wollen, waehrend
-     gezogen wird. */
+  /* Touch devices: the browser should not want to scroll here while
+     dragging. */
   touch-action: none;
 }
 .leiste-kante:hover {
@@ -134,8 +134,8 @@ a {
   opacity: 0.5;
 }
 
-/* Weggeraeumte Leiste. Sie bleibt als schmaler Streifen stehen, statt ganz zu
-   verschwinden: ohne ihn gaebe es keinen sichtbaren Weg zurueck. */
+/* The stowed-away sidebar. It stays as a narrow stripe instead of vanishing
+   entirely: without it there would be no visible way back. */
 .sidebar.schmal {
   width: 34px;
   min-width: 34px;
@@ -192,17 +192,17 @@ a {
   padding: 6px 8px;
   font-size: 13px;
   color: var(--muted);
-  /* Name und Zahnrad in einer Zeile. Der Name nimmt, was übrig ist. */
+  /* Name and cog in one row. The name takes whatever is left. */
   display: flex;
   align-items: center;
   gap: 2px;
-  /* Anker für das Menü darüber: das klappt nach OBEN auf, weil unten die
-     Bildschirmkante ist. */
+  /* Anchor for the menu above it: that opens UPWARDS, because below is the
+     edge of the screen. */
   position: relative;
 }
 
-/* Das Gesicht am Konto. Als Kreis, weil ein rechteckiges Foto in einer Zeile
-   wie ein Anhang aussieht und nicht wie eine Person. */
+/* The face on the account. As a circle, because a rectangular photo in a row
+   looks like an attachment and not like a person. */
 .profilbild {
   border-radius: 50%;
   flex: none;
@@ -216,13 +216,13 @@ a {
   color: #fff;
   font-weight: 600;
   letter-spacing: 0.02em;
-  /* Die Farbe kommt aus der Kennung und steht deshalb am Element. */
+  /* The colour comes from the id and therefore sits on the element. */
   user-select: none;
 }
 
 .konto-knopf {
-  /* In der Fusszeile steht das Zahnrad daneben: der Knopf nimmt, was uebrig
-     bleibt, und min-width: 0 laesst den Namen kuerzen statt ueberzulaufen. */
+  /* In the footer the cog sits beside it: the button takes whatever is left,
+     and min-width: 0 lets the name be truncated instead of overflowing. */
   flex: 1;
   min-width: 0;
   display: flex;
@@ -276,7 +276,7 @@ a {
   display: block;
   color: var(--text);
 }
-/* Alle drei Einträge gleich: Profil, Passwort und Abmelden wiegen dasselbe. */
+/* All three entries alike: profile, password and sign out weigh the same. */
 .konto-menue-zeile {
   display: block;
   width: 100%;
@@ -293,7 +293,8 @@ a {
   background: var(--hover, rgba(55, 53, 47, 0.06));
 }
 
-/* Der Kopf im Profilfenster: Bild links, Name und Knöpfe daneben. */
+/* The head of the profile dialog: picture on the left, name and buttons beside
+   it. */
 .profil-kopf {
   display: flex;
   align-items: center;
@@ -313,8 +314,8 @@ a {
 
 .search-box {
   margin: 4px 6px 0;
-  /* Die Knöpfe liegen IM Feld, nicht darunter. Vorher stand das Zahnrad als
-     einzelnes Zeichen unter dem Kasten und sah aus wie hingefallen. */
+  /* The buttons lie INSIDE the field, not below it. Before, the cog stood as a
+     lone glyph beneath the box and looked as if it had fallen off. */
   position: relative;
   display: flex;
   align-items: center;
@@ -357,9 +358,9 @@ a {
   font-weight: 500;
 }
 
-/* Das Dreieck einer Seitenzeile. Es stand auf 10px und war damit eher zu ahnen
-   als zu treffen; die Fläche darum bleibt so breit, dass die Einrückung der
-   Ebenen unverändert bleibt. */
+/* The triangle of a page row. It stood at 10px and was thereby more to be
+   guessed at than to be hit; the area around it stays wide enough that the
+   indentation of the levels remains unchanged. */
 .tree-caret {
   width: 20px;
   height: 20px;
@@ -476,10 +477,10 @@ a {
   overflow-y: auto;
 }
 
-/* Der Satzspiegel einer Seite.
-   Die Breite steht an der Seite und nicht am Konto, denn sie gehört zum Satz
-   des Textes: eine Tabelle mit zwölf Spalten braucht Platz, ein Merkzettel
-   nicht. 'breit' und 'voll' setzen den Wert um, 'normal' lässt ihn stehen. */
+/* The measure of a page.
+   The width sits on the page and not on the account, because it belongs to the
+   typesetting of the text: a table with twelve columns needs room, a scribbled
+   note does not. 'breit' and 'voll' change the value, 'normal' leaves it. */
 .page {
   max-width: 860px;
   margin: 0 auto;
@@ -641,14 +642,14 @@ a {
   color: var(--muted);
 }
 
-/* Eingabefelder folgen dem Grundton.
-   Ohne diese Regel nimmt der Browser seine Vorgabe -- weisses Feld mit
-   schwarzer Schrift. Im dunklen Grundton leuchteten die Felder der Anmeldung
-   deshalb wie Lampen. Wo ein Feld ausdruecklich anders aussehen soll (der
-   Seitentitel etwa), steht das weiter unten und schlaegt diese Regel. */
-/* :where() haelt die Spezifitaet bei null -- sonst schlaegt diese Regel jede
-   Klasse, die ein einzelnes Feld anders haben will, und der Seitentitel stuende
-   wieder in einem weissen Kasten. */
+/* Input fields follow the base tone.
+   Without this rule the browser takes its own default -- white field with black
+   type. In the dark base tone the sign-in fields therefore glowed like lamps.
+   Where a field is meant to look different on purpose (the page title, say),
+   that stands further down and beats this rule. */
+/* :where() keeps the specificity at zero -- otherwise this rule would beat
+   every class that wants a single field to look different, and the page title
+   would stand in a white box again. */
 input:where(:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"])),
 select,
 textarea {
@@ -668,11 +669,11 @@ textarea::placeholder {
   background: transparent !important;
 }
 
-/* BlockNote setzt links und rechts 54 Pixel Rand, für den Anfasser am Block.
-   Zusammen mit dem Rand der Seite blieb vom Fenster über hundert Pixel
-   ungenutzt, und der Titel stand um genau diesen Betrag neben seinem Text.
-   Der Rand der Seite reicht dem Anfasser aus -- er sitzt ohnehin absolut
-   gesetzt links vom Block und wird nicht abgeschnitten. */
+/* BlockNote sets 54 pixels of margin left and right, for the block handle.
+   Together with the page margin, over a hundred pixels of the window stayed
+   unused, and the title stood exactly that far beside its own text. The page
+   margin is enough for the handle -- it sits absolutely positioned to the left
+   of the block anyway and is not cut off. */
 .bn-editor {
   padding-inline: 0 !important;
 }
@@ -968,9 +969,9 @@ textarea::placeholder {
   color: var(--muted);
 }
 
-/* PDF markieren. Die Blaetter stehen untereinander wie in jedem Betrachter,
-   die Leiste bleibt oben stehen: wer auf Seite vier markiert, will die Farbe
-   nicht am Anfang des Dokuments suchen. */
+/* Marking up a PDF. The sheets sit one below the other as in any viewer, the
+   toolbar stays at the top: whoever marks up page four does not want to look
+   for the colour at the beginning of the document. */
 .pdfm {
   align-self: stretch;
   width: 100%;
@@ -1028,7 +1029,7 @@ textarea::placeholder {
   position: relative;
   background: #ffffff;
   box-shadow: 0 1px 6px rgba(15, 15, 15, 0.2);
-  /* Das Fadenkreuz sagt, dass hier gezogen und nicht ausgewaehlt wird. */
+  /* The crosshair says that here one drags rather than selects. */
   cursor: crosshair;
   user-select: none;
   flex: none;
@@ -1038,8 +1039,8 @@ textarea::placeholder {
 }
 .pdfm-marke {
   position: absolute;
-  /* Die Marke faengt keine Maus ab, sonst koennte man ueber einer gesetzten
-     Markierung keine zweite mehr aufziehen. */
+  /* The mark catches no mouse, otherwise one could not draw a second
+     highlight over one already placed. */
   pointer-events: none;
 }
 .pdfm-zug {
@@ -1101,16 +1102,16 @@ textarea::placeholder {
   color: var(--muted);
   margin-bottom: 8px;
 }
-/* Feld, Auswahl und Knopf in einer Zeile -- solange sie hineinpassen.
-   Ohne den Umbruch stand der Knopf "Hinzufügen" halb hinter dem Rand des
-   Dialogs: die drei Mindestbreiten zusammen waren breiter als der Kasten, und
-   der Kasten schneidet ab, was übersteht. */
-/* Die Kontenliste im Teilen-Fenster: ankreuzen statt abtippen. Eigene Hoehe
-   mit Rollbalken, damit ein Arbeitsbereich mit vierzig Konten das Fenster nicht
-   ueber den Bildschirm hinauswachsen laesst. */
-/* Der Punkt in der Legende ist der Farbwaehler. Das Eingabefeld selbst liegt
-   unsichtbar darueber: die eingebaute Farbflaeche der Browser sieht ueberall
-   anders aus, der Punkt ueberall gleich. */
+/* Field, dropdown and button in one row -- as long as they fit.
+   Without the wrap the "Add" button stood half behind the edge of the dialog:
+   the three minimum widths together were wider than the box, and the box cuts
+   off whatever sticks out. */
+/* The account list in the sharing dialog: ticking instead of typing. A height
+   of its own with a scrollbar, so that a workspace with forty accounts does not
+   let the dialog grow past the screen. */
+/* The dot in the legend is the colour picker. The input itself lies invisibly
+   on top of it: the browsers' built-in colour swatch looks different
+   everywhere, the dot looks the same everywhere. */
 .graph-legend-dot-wahl {
   position: relative;
   display: inline-flex;
@@ -1214,11 +1215,11 @@ textarea::placeholder {
   align-items: center;
   gap: 6px;
 }
-/* Die Anwesenden in der Kopfzeile. Ein Kreis je Person, in ihrer Farbe, mit
-   dem ersten Buchstaben ihres Namens: dieselbe Farbe traegt ihre Schreibmarke
-   im Text, und daran erkennt man, wem die dort mitlaufende Marke gehoert. Der
-   Überlappung wegen rücken sie zusammen, so wie sie es überall tun, wo
-   Anwesende gezeigt werden. */
+/* Those present in the header. One circle per person, in their colour, with
+   the first letter of their name: their caret in the text carries the same
+   colour, and that is how one tells whose the mark running along there is.
+   Because of the overlap they move together, the way they do everywhere people
+   present are shown. */
 .mitschreibende {
   display: inline-flex;
   align-items: center;
@@ -1238,12 +1239,12 @@ textarea::placeholder {
   cursor: default;
 }
 
-/* Die Schreibmarke der anderen im Text.
-   BlockNote bringt Form und Lage selbst mit, es fehlt nur die Schrift auf dem
-   Fähnchen: sie ist dort fast schwarz und liegt auf der Farbe der jeweiligen
-   Person, und auf einem kräftigen Blau oder Rot liest sich das nicht. Der
-   Vorrang steht über dem der mitgelieferten Regel, weil die Reihenfolge der
-   Stilblätter im Bündel nichts ist, worauf man sich verlassen sollte. */
+/* The others' carets in the text.
+   BlockNote brings shape and position along itself, only the type on the flag
+   is missing: there it is almost black and lies on the respective person's
+   colour, and on a strong blue or red that cannot be read. The precedence
+   stands above that of the bundled rule, because the order of the stylesheets
+   in the bundle is not something to rely on. */
 .bn-container .collaboration-cursor__label,
 .ProseMirror .collaboration-cursor__label {
   color: #fff;
@@ -1283,8 +1284,9 @@ textarea::placeholder {
 .graph-node text {
   user-select: none;
 }
-/* Der Graf zeichnet mit den Farben des Grundtons statt mit festen: sonst steht
-   im dunklen Fenster ein Bild aus hellen Linien und dunkler Schrift. */
+/* The graph draws with the colours of the base tone instead of fixed ones:
+   otherwise a picture of light lines and dark type would stand in a dark
+   window. */
 .graph-kante {
   stroke: var(--border);
 }
@@ -1295,8 +1297,8 @@ textarea::placeholder {
   stroke: var(--accent);
 }
 .graph-knoten {
-  /* Der Rand ist der Grund der Seite: so hebt sich ein Knoten von den Linien
-     ab, die hinter ihm durchlaufen. */
+  /* The border is the page's ground: that is how a node stands out from the
+     lines running past behind it. */
   stroke: var(--bg);
 }
 .graph-knoten.betont {
@@ -1304,8 +1306,8 @@ textarea::placeholder {
 }
 .graph-name {
   fill: var(--text);
-  /* Der Saum um die Buchstaben ist der Grund selbst, damit ein Name lesbar
-     bleibt, wo er eine Linie kreuzt. */
+  /* The halo around the letters is the ground itself, so that a name stays
+     readable where it crosses a line. */
   stroke: var(--bg);
 }
 
@@ -1507,16 +1509,17 @@ textarea::placeholder {
   color: var(--muted);
   margin-bottom: 8px;
 }
-/* Der kleine Graf ist ein Bild in der Seite, kein Fenster: ein Rahmen darum
-   sagt, wo er anfängt und aufhört, sonst schwebten die Punkte im Text. */
+/* The small graph is a picture in the page, not a window: a frame around it
+   says where it begins and ends, otherwise the dots would float in the
+   text. */
 .local-graph .graph-wrap {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--flaeche);
   max-width: 720px;
 }
-/* Der Hinweis steht hier kleiner und blasser als im großen Bild: dort ist er
-   die Bedienungsanleitung der Ansicht, hier eine Fußnote. */
+/* The hint stands smaller and paler here than in the large picture: there it
+   is the instruction manual of the view, here a footnote. */
 .local-graph .graph-hint {
   top: 8px;
   left: 10px;
@@ -1615,8 +1618,8 @@ textarea::placeholder {
   transform-origin: center center;
 }
 
-/* Suchtreffer mit Ausschnitt. Zwei Zeilen statt einer, deshalb kein
-   Zeilenumbruch-Verbot wie bei den Baumzeilen. */
+/* Search hits with an excerpt. Two lines instead of one, hence no ban on line
+   breaks as with the tree rows. */
 .tree-row.treffer {
   display: block;
   padding-top: 6px;
@@ -1851,15 +1854,15 @@ textarea::placeholder {
   background: var(--hover);
   font-weight: 500;
 }
-/* Die Eintraege tragen nur noch ihren Namen. Neun Eintraege mit je einer
-   zweiten Zeile darunter waren eine Wand aus Kleingedrucktem, durch die man
-   sich lesen musste, um die Leiste ueberhaupt als Liste zu erkennen. Der
-   erklaerende Satz steht jetzt einmal ueber dem Bereich, den er erklaert. */
+/* The entries carry nothing but their name now. Nine entries with a second
+   line each below them were a wall of small print one had to read through
+   before recognising the sidebar as a list at all. The explanatory sentence now
+   stands once above the area it explains. */
 .einstellungen-nav-eintrag {
   font-size: 14px;
 }
 
-/* Kopf des Bereichs. Traegt den Namen, den die Leiste nur markiert. */
+/* Head of the area. Carries the name the sidebar only highlights. */
 .einstellungen-kopf {
   margin-bottom: 22px;
   padding-bottom: 14px;
@@ -1876,9 +1879,9 @@ textarea::placeholder {
   color: var(--muted);
 }
 
-/* Erklaerende Absaetze sind zum Lesen da und nicht zum Ueberfliegen: ueber die
-   volle Breite von 860 px wird eine Zeile in 12 px so lang, dass das Auge den
-   Anfang der naechsten nicht mehr findet. */
+/* Explanatory paragraphs are there to be read and not skimmed: across the
+   full width of 860 px a line at 12 px becomes so long that the eye no longer
+   finds the beginning of the next one. */
 .einstellungen-inhalt > p.muted.small,
 .einstellungen-inhalt p.muted.small {
   max-width: 68ch;
@@ -1903,12 +1906,12 @@ textarea::placeholder {
   padding: 14px 16px;
   margin-top: 10px;
 }
-/* Beschreibung links, Wert rechts -- aber beides muss mitgehen, wenn das
-   Fenster schmaler wird. Ohne min-width behaelt der linke Block seine
-   Wunschbreite (Titel, Schluessel-Chip, Umgebungsvariable, Erklaerung), und
-   das Feld rechts wurde aus der Karte geschoben: bei 1366 px ragte es 5 px
-   heraus, bei 980 px fast 200. Mit Umbruch faellt der Wert stattdessen unter
-   die Beschreibung, sobald es eng wird. */
+/* Description on the left, value on the right -- but both have to give way
+   when the window gets narrower. Without min-width the left block keeps its
+   desired width (title, key chip, environment variable, explanation), and the
+   field on the right was pushed out of the card: at 1366 px it stuck out 5 px,
+   at 980 px almost 200. With wrapping the value falls below the description
+   instead, as soon as it gets tight. */
 .einstellung-kopf {
   display: flex;
   align-items: flex-start;
@@ -1933,10 +1936,10 @@ textarea::placeholder {
 /* The warning stands directly under the explanation on purpose and not as an
    icon beside it: what can go wrong belongs read, not skimmed.
 
-   Ohne Balken an der Kante: der stand vor jeder Warnung, und was ueberall
-   steht, hebt nichts hervor. Abgesetzt ist sie jetzt durch den Abstand darueber
-   und dadurch, dass sie halbfett steht, waehrend die Erklaerung darueber im
-   gewoehnlichen Schnitt bleibt. */
+   Without a bar on the edge: that stood in front of every warning, and what
+   stands everywhere emphasises nothing. It is now set apart by the space above
+   it and by standing semibold, while the explanation above it stays in the
+   ordinary cut. */
 .einstellung-warnung {
   font-size: 12.5px;
   line-height: 1.5;
@@ -1951,7 +1954,7 @@ textarea::placeholder {
   flex: 0 1 auto;
   max-width: 100%;
 }
-/* Die Felder duerfen schrumpfen, statt ueber den Rand zu laufen. */
+/* The fields may shrink instead of running over the edge. */
 .einstellung-feld select,
 .einstellung-feld input {
   max-width: 100%;
@@ -2007,9 +2010,9 @@ textarea::placeholder {
   margin-top: 2px;
 }
 
-/* Freigeschaltete Funktionen bekommen eine deutlich flachere Ecke als die
-   runden Marken sonst. Eine Pille sagt "Etikett", ein fast eckiges Feld sagt
-   "Zustand", und ein Zustand ist es hier: an oder aus. */
+/* Enabled features get a distinctly flatter corner than the round marks
+   otherwise have. A pill says "label", an almost square field says "state",
+   and a state is what this is: on or off. */
 .pill.frei {
   background: rgba(46, 160, 67, 0.14);
   border-color: rgba(46, 160, 67, 0.45);
@@ -2044,15 +2047,15 @@ textarea::placeholder {
 .einstellung,
 .kachel,
 .warnkasten,
-/* Die drei Grundtoene als Kacheln, jede in ihrem eigenen Ton.
+/* The three base tones as tiles, each in its own tone.
 
-   Hier stand eine Tabelle mit den vier Farbmarken je Ton und ihren Hexwerten in
-   vier Spalten, dazu eine zweite mit Kontrastverhaeltnissen und WCAG-Urteilen.
-   Das las sich wie ein Auszug aus dem Stilblatt und beantwortete die einzige
-   Frage nicht, die an dieser Stelle gestellt wird: wie sieht das aus. */
-/* Ein Raster statt einer Reihe: die Wahl steht jetzt im Kontofenster und damit
-   in einer schmaleren Spalte als frueher in der Verwaltung. Als Flexzeile
-   brachen dort zwei Kacheln um und die dritte stand allein daneben. */
+   A table used to stand here with the four colour marks per tone and their hex
+   values in four columns, plus a second one with contrast ratios and WCAG
+   verdicts. That read like an excerpt from the stylesheet and did not answer
+   the only question asked at this spot: what does it look like. */
+/* A grid instead of a row: the choice now stands in the account dialog and
+   thus in a narrower column than it used to in the administration. As a flex
+   row two tiles wrapped there and the third stood beside them alone. */
 .tonwahl {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
@@ -2070,9 +2073,9 @@ textarea::placeholder {
   font-size: 13px;
   text-align: left;
 }
-/* Die gewaehlte Kachel traegt einen Rahmen in der Akzentfarbe. Keine Flaeche:
-   die Kachel zeigt selbst einen Grundton, und eine zweite Farbe darueber
-   verfaelschte genau das, was zu sehen sein soll. */
+/* The chosen tile carries a border in the accent colour. No fill: the tile
+   shows a base tone itself, and a second colour over it falsified precisely
+   what is meant to be seen. */
 .tonkachel.gewaehlt {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
@@ -2087,9 +2090,9 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
-/* Die Akzentfarben als Reihe von Punkten, mit dem Feld fuer eine Hausfarbe am
-   Ende. Ein Punkt zeigt eine Farbe -- mehr will an dieser Stelle niemand
-   wissen, und die Probe darunter zeigt, was sie anrichtet. */
+/* The accent colours as a row of dots, with the field for a house colour at
+   the end. A dot shows a colour -- nobody wants to know more at this spot, and
+   the sample below shows what it does. */
 .akzentwahl {
   display: flex;
   align-items: center;
@@ -2109,9 +2112,10 @@ textarea::placeholder {
 .akzentknopf.gewaehlt {
   box-shadow: 0 0 0 2px var(--flaeche), 0 0 0 4px var(--text);
 }
-/* Der Rahmen steht ausdruecklich hier: das Feld hat kein type-Attribut und
-   fiele sonst durch jede Regel, die auf input[type="text"] zielt -- es saehe
-   dann als einziges Bauteil der Reihe nach Browservorgabe aus. */
+/* The border stands here on purpose: the field has no type attribute and
+   would otherwise fall through every rule aiming at input[type="text"] -- it
+   would then be the only component of the row looking like a browser
+   default. */
 .hex-feld {
   width: 110px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -2229,39 +2233,39 @@ textarea::placeholder {
   cursor: pointer;
 }
 
-/* Die Huelle um einen Knopf, unter dem eine Liste aufgeht: Import und
-   Export in der Werkzeugzeile, die Ausfuhr an einer einzelnen Ablage. */
+/* The shell around a button that a list opens under: import and export in the
+   toolbar, the export on an individual space. */
 .klappmenue {
   position: relative;
 }
 
-/* Menüs in der Leiste hängen an der LEISTE, nicht an ihrem Knopf.
-   Vorher stand die Liste mit right: 0 unter einem Knopf, der 76 Pixel breit
-   ist und 76 Pixel vom Rand entfernt steht: 200 Pixel Liste passten da nicht
-   hin, sie ragte 47 Pixel aus dem Fenster heraus, und "Als neue Ablage" war
-   auf "eue Ablage" beschnitten. So breit wie die Leiste kann sie dagegen
-   immer stehen, und beide Menüs der Werkzeugzeile öffnen an derselben
-   Kante. */
+/* Menus in the sidebar hang on the SIDEBAR, not on their button.
+   Before, the list stood with right: 0 under a button that is 76 pixels wide
+   and sits 76 pixels from the edge: 200 pixels of list did not fit there, it
+   stuck 47 pixels out of the window, and "As a new space" was cut down to "s a
+   new space". As wide as the sidebar, on the other hand, it can always stand,
+   and both menus of the toolbar open on the same edge. */
 .sidebar-werkzeuge {
   position: relative;
 }
-/* Das Einklappen beginnt eine eigene Zeile. Es entsteht nichts damit, es
-   schaltet nur die Ansicht -- und ohne die feste Trennung hinge es je nach
-   Breite der Leiste mal hinter dem Export, mal darunter. */
+/* Collapsing begins a row of its own. Nothing is created by it, it only
+   switches the view -- and without the firm separation it would hang, depending
+   on the width of the sidebar, sometimes behind the export, sometimes below
+   it. */
 .sidebar-werkzeuge .klapp-alles {
   flex-basis: 100%;
-  /* Über die ganze Breite, also muss die Ausrichtung gesagt werden: ein Knopf
-     richtet seine Beschriftung sonst mittig aus, und das Wort stünde als
-     einziges in der Leiste in der Mitte. */
+  /* Across the full width, so the alignment has to be stated: a button
+     otherwise centres its label, and the word would be the only one in the
+     sidebar sitting in the middle. */
   text-align: left;
 }
 .sidebar-werkzeuge .klappmenue,
 .sidebar-werkzeuge .exportmenue {
   position: static;
-  /* Ein Block um den Knopf herum bekommt eine Textzeile mit Unterlänge und
-     ist damit höher als der Knopf selbst; Import und Export standen dadurch
-     zwei Pixel tiefer als die beiden Knöpfe ohne Hülle daneben. Als Flex
-     entsteht keine Textzeile, und alle vier sitzen auf derselben Höhe. */
+  /* A block around the button gets a line of text with a descender and is
+     thereby taller than the button itself; import and export therefore stood
+     two pixels lower than the two buttons without a shell beside them. As flex
+     no line of text arises, and all four sit at the same height. */
   display: flex;
   align-items: center;
 }
@@ -2270,9 +2274,9 @@ textarea::placeholder {
   right: 6px;
   min-width: 0;
 }
-/* Der Knopf, unter dem eine dieser Listen aufgeht. Ohne die eigene Position
-   hängt die Liste am nächsten gesetzten Vorfahren und damit am Fensterrand,
-   statt unter dem Knopf, zu dem sie gehört. */
+/* The button one of these lists opens under. Without a position of its own the
+   list hangs on the nearest positioned ancestor and thus on the window edge,
+   instead of under the button it belongs to. */
 .exportmenue {
   position: relative;
 }
@@ -2312,9 +2316,9 @@ textarea::placeholder {
 .klappeintrag:hover {
   background: var(--hover);
 }
-/* Der gewählte Eintrag einer Liste. Ein Haken davor und kein Farbklecks: die
-   Liste steht nur einen Wimpernschlag offen, in dieser Zeit muss man sehen, wo
-   man gerade steht. */
+/* The chosen entry of a list. A tick in front of it and no blob of colour: the
+   list stands open for the blink of an eye, and in that time one has to see
+   where one currently is. */
 .klappeintrag.gewaehlt {
   font-weight: 600;
 }
@@ -2322,8 +2326,8 @@ textarea::placeholder {
   content: "✓ ";
   color: var(--accent-lesbar);
 }
-/* Die Erklärung unter dem Namen. Klein und grau, damit sie den Namen nicht
-   überstimmt, den man eigentlich liest. */
+/* The explanation under the name. Small and grey, so it does not outshout the
+   name one is actually reading. */
 .klappeintrag-hinweis {
   display: block;
   font-size: 11px;
@@ -2622,9 +2626,9 @@ textarea::placeholder {
    the heading, not a button in front of it. The width is fixed so that the
    labels of all sections begin on the same edge; an arrow shifting the line
    between the two glyphs makes the whole sidebar jitter. */
-/* Das Dreieck vor einer Ablage. Groesser als das der Zeilen darunter, und das
-   mit Absicht: es klappt einen ganzen Abschnitt, nicht einen Ast, und war in
-   der alten Groesse eher zu ahnen als zu treffen. */
+/* The triangle in front of a space. Larger than that of the rows below it, and
+   that on purpose: it collapses a whole section, not a branch, and at the old
+   size was more to be guessed at than to be hit. */
 .klapp-btn {
   border: none;
   background: none;
@@ -2637,8 +2641,8 @@ textarea::placeholder {
   padding: 0;
   text-align: left;
 }
-/* Eine Ueberschrift ohne Klapp-Dreieck muss dessen Breite trotzdem einruecken,
-   sonst steht ihr Zahnrad als einziges aus der Reihe. */
+/* A heading without a collapse triangle still has to be indented by its width,
+   otherwise its cog would be the only one out of line. */
 .sidebar-section-title.ohne-klappe {
   padding-left: 34px;
 }
@@ -2647,9 +2651,9 @@ textarea::placeholder {
   color: var(--text);
 }
 
-/* Wo die Ueberschrift irgendwohin fuehrt, faerbt sich das Wort unter dem Zeiger
-   wie das Zahnrad daneben -- sonst sieht man ihm nicht an, dass es mehr tut als
-   zuklappen. */
+/* Where the heading leads somewhere, the word takes on colour under the
+   pointer like the cog beside it -- otherwise one cannot tell that it does more
+   than collapse. */
 .klapp-name-fuehrt:hover {
   color: var(--text);
   text-decoration: underline;
@@ -2661,22 +2665,22 @@ textarea::placeholder {
   cursor: pointer;
   margin-right: auto;
   user-select: none;
-  /* Damit beim Zeigen die Zeichen ganz dastehen und der NAME weicht: ohne
-     min-width behaelt der Name seine Wunschbreite, und die Zeichen laufen
-     rechts aus der Leiste heraus. */
+  /* So that the glyphs stand there in full when pointed at and the NAME gives
+     way: without min-width the name keeps its desired width, and the glyphs run
+     out of the sidebar on the right. */
   min-width: 0;
 }
 
-/* Beim Zeigen macht die Marke den Zeichen Platz. Sonst muesste bei schmaler
-   Leiste der Name weichen, und ein angeschnittener Name ist schlimmer als eine
-   Marke, die einen Wimpernschlag spaeter wieder dasteht -- der Zustand aendert
-   sich dadurch nicht, nur seine Anzeige pausiert. */
+/* When pointed at, the mark makes room for the glyphs. Otherwise the name
+   would have to give way in a narrow sidebar, and a clipped name is worse than
+   a mark that stands there again a blink of an eye later -- the state does not
+   change by it, only its display pauses. */
 .sidebar-section-title:hover .pill.klein.offen {
   display: none;
 }
 
-/* Eine offene Ablage wird ruhig gekennzeichnet, nicht angestrahlt: sie ist ein
-   Normalzustand, keine Warnung. */
+/* An open space is marked calmly, not floodlit: it is a normal state, not a
+   warning. */
 .pill.klein.offen {
   background: var(--hinweis-bg);
   color: var(--accent-lesbar);
@@ -2767,7 +2771,7 @@ textarea::placeholder {
   color: var(--text);
 }
 
-/* Dateien auf die Seite ziehen */
+/* Dragging files onto the page */
 
 .page-layout {
   position: relative;
@@ -2946,7 +2950,7 @@ textarea::placeholder {
   gap: 8px;
 }
 
-/* Wird die Frist knapp, soll die Zeile das sagen, ohne zu schreien. */
+/* When the deadline gets tight, the row should say so without shouting. */
 .list-row .bald {
   color: var(--fehler-text);
 }
@@ -2978,8 +2982,8 @@ textarea::placeholder {
   color: var(--accent);
 }
 
-/* Platz am rechten Rand des Feldes, sobald die Knöpfe da sind -- sonst
-   schriebe man unter ihnen weiter. */
+/* Room at the right edge of the field as soon as the buttons are there --
+   otherwise one would go on writing underneath them. */
 .search-box input.hat-knoepfe {
   padding-right: 56px;
 }
@@ -3037,8 +3041,8 @@ textarea::placeholder {
   align-items: flex-start;
   gap: 10px;
   cursor: pointer;
-  /* Innen statt aussen: die Hervorhebung beim Ueberfahren soll die Zeile
-     umfassen und nicht am Text kleben, und der Rundung braucht es Platz. */
+  /* Inside rather than outside: the hover highlight should encompass the row
+     and not cling to the text, and the rounding needs room. */
   padding: 10px 10px;
   border-radius: 6px;
   border-bottom: 1px solid var(--border);
@@ -3050,14 +3054,14 @@ textarea::placeholder {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
-/* Das Gesicht sitzt neben dem Punkt und richtet sich an der ersten Zeile aus,
-   nicht an der Mitte: bei einer Nachricht mit Auszug stuende es sonst
-   zwischen den Zeilen. */
+/* The face sits beside the dot and aligns with the first line, not with the
+   middle: with a message carrying an excerpt it would otherwise stand between
+   the lines. */
 .postfach-zeile .profilbild {
   margin-top: 1px;
 }
-/* Eine Nachricht, deren Seite es nicht mehr gibt, fuehrt nirgendwohin. Der
-   Zeiger sagt das, bevor jemand klickt und sich fragt, warum nichts geschieht. */
+/* A message whose page no longer exists leads nowhere. The pointer says so
+   before somebody clicks and wonders why nothing happens. */
 .postfach-zeile.ohne-ziel {
   cursor: default;
 }
@@ -3241,13 +3245,13 @@ textarea::placeholder {
 .sidebar-werkzeuge {
   display: flex;
   align-items: center;
-  /* Umbrechen darf die ZEILE, nicht der Knopf: bei schmaler Leiste rutscht
-     sonst der Pfeil ueber sein Wort und das Werkzeug sieht zerbrochen aus.
-     Deshalb hier wrap und beim Knopf nowrap. */
+  /* The ROW may wrap, not the button: in a narrow sidebar the arrow otherwise
+     slips over its word and the tool looks broken. Hence wrap here and nowrap
+     on the button. */
   flex-wrap: wrap;
-  /* Eng gesetzt, weil vier Wörter in eine 260px breite Leiste müssen: mit
-     dem weiteren Abstand von vorher fiel der Export in die nächste Zeile,
-     sobald aus dem Space eine Ablage wurde. */
+  /* Set tight, because four words have to fit into a 260px wide sidebar: with
+     the wider spacing from before, the export fell into the next line as soon
+     as the space became a "Ablage". */
   gap: 4px 6px;
   padding: 2px 10px 6px;
 }
@@ -3325,8 +3329,8 @@ textarea::placeholder {
   border-color: var(--accent);
 }
 
-/* Wahl des Ziels in der Einfuhr: an der Wurzel darf ein Archiv seine eigene
-   Ablage mitbringen. */
+/* Choosing the target on import: at the root an archive may bring its own
+   space along. */
 .einfuhr-ziel {
   display: flex;
   flex-direction: column;
@@ -3351,9 +3355,9 @@ textarea::placeholder {
   line-height: 1.5;
 }
 
-/* Fortschritt beim Hochladen. Der Balken zeigt, was gesendet ist, bei
-   hundert Prozent liegt die Datei beim Server und wird dort noch abgelegt,
-   deshalb bleibt er stehen, bis die Antwort da ist. */
+/* Progress while uploading. The bar shows what has been sent; at a hundred
+   per cent the file is at the server and still being stored there, which is why
+   it stands still until the answer arrives. */
 .hochlauf {
   margin: 8px 0 4px;
 }
@@ -3384,12 +3388,11 @@ textarea::placeholder {
   height: 100%;
   background: var(--accent);
   border-radius: 999px;
-  /* Kurz genug, dass es der Wirklichkeit folgt, lang genug, dass es nicht
-     zuckt. */
+  /* Short enough to follow reality, long enough not to twitch. */
   transition: width 0.15s linear;
 }
 
-/* Trenner zwischen Passwort-Anmeldung und SSO. */
+/* Separator between password sign-in and SSO. */
 .anmelde-trenner {
   display: flex;
   align-items: center;
@@ -3413,8 +3416,8 @@ textarea::placeholder {
   text-decoration: none;
 }
 
-/* Word-Anhang im Betrachter. Ein Blatt auf dunklem Grund, damit es sich vom
-   Rahmen absetzt wie ein Dokument auf einem Tisch. */
+/* A Word attachment in the viewer. A sheet on a dark ground, so it sets itself
+   off from the frame like a document on a table. */
 .qv-word {
   width: 100%;
   height: 100%;
@@ -3453,25 +3456,25 @@ textarea::placeholder {
   line-height: 1.5;
 }
 
-/* Die Dienste des Verbunds als Karten statt als Tabelle.
-   Eine Tabelle zwingt jede Zeile in dieselben vier Spalten, obwohl die Angaben
-   ungleich lang sind: die Datenbank nennt ihre Verbindungen, der Speicher seine
-   Belegung, und mancher Dienst hat gar keinen Hinweis. Als Karte darf jeder so
-   viel Platz nehmen, wie er braucht. */
-/* Der Verbund steht als Tabelle, nicht als Kachelfeld: es sind immer dieselben
-   Angaben je Dienst, und untereinander in Spalten liest man sie schneller, als
-   wenn jede Angabe in jeder Kachel woanders anfaengt. */
-/* Sechs Spalten passen nicht in jedes Fenster. Statt die ganze Seite quer
-   laufen zu lassen, rollt die Tabelle in ihrem eigenen Rahmen. */
+/* The services of the compound as cards instead of a table.
+   A table forces every row into the same four columns although the figures are
+   of unequal length: the database names its connections, the store its usage,
+   and some services have no hint at all. As a card each may take as much room
+   as it needs. */
+/* The compound stands as a table, not as a field of tiles: it is always the
+   same figures per service, and one below the other in columns they are read
+   faster than when every figure begins somewhere else in every tile. */
+/* Six columns do not fit in every window. Instead of letting the whole page
+   run sideways, the table scrolls in a frame of its own. */
 .tabelle-rollen {
   overflow-x: auto;
   margin-bottom: 28px;
 }
 
-/* Die Adresse ist die lange Spalte -- ohne den Umbruch im Wort schiebt eine
-   Datenbankadresse die Tabelle breiter als das Fenster. Das Mindestmass haelt
-   sie davon ab, in einem schmalen Fenster zu einer Buchstabensaeule zu werden:
-   enger als das rollt lieber der Rahmen. */
+/* The address is the long column -- without the break inside the word a
+   database address pushes the table wider than the window. The minimum keeps it
+   from turning into a column of letters in a narrow window: narrower than that
+   and the frame would rather scroll. */
 .verbund-tabelle td code {
   overflow-wrap: anywhere;
 }
@@ -3480,10 +3483,10 @@ textarea::placeholder {
   min-width: 140px;
 }
 
-/* Der Zustand steht als Wort in der Spalte. Eine Kante bekommt nur der Dienst,
-   der fehlt. Der Normalfall braucht keine Markierung: wenn alle acht Zeilen
-   einen gruenen Strich tragen, markiert der Strich nichts mehr, sondern
-   verrauscht die Tabelle. Auffallen soll die Ausnahme. */
+/* The state stands as a word in the column. Only the service that is missing
+   gets an edge. The normal case needs no marking: when all eight rows carry a
+   green stroke, the stroke marks nothing any more but adds noise to the table.
+   The exception is what should stand out. */
 .verbund-tabelle tbody tr.fehlt td:first-child {
   box-shadow: inset 3px 0 0 var(--fehler-text);
 }
@@ -3496,8 +3499,8 @@ textarea::placeholder {
   color: var(--fehler-text);
 }
 
-/* Der Hinweis gehoert zur Zeile darueber und bekommt deshalb keine eigene
-   Trennlinie, sonst saehe er wie ein eigener Dienst aus. */
+/* The hint belongs to the row above it and therefore gets no separating line
+   of its own, otherwise it would look like a service in its own right. */
 .verbund-tabelle tr.verbund-hinweis td {
   border-bottom: 1px solid var(--border);
   padding-top: 0;
@@ -3537,11 +3540,11 @@ textarea::placeholder {
   word-break: break-word;
 }
 
-/* Die geteilte Seite.
-   Sie stand bisher nackt im Fenster: kein Kopf, kein Hinweis, woher sie kommt,
-   und der Titel begann um die 54 Pixel des Editors neben seinem eigenen Text.
-   Wer den Verweis bekam, sah eine Seite, die aussah wie ein Stück aus einer
-   halb geladenen Anwendung. */
+/* The shared page.
+   It used to stand naked in the window: no head, no hint where it comes from,
+   and the title began 54 pixels of editor beside its own text. Whoever got the
+   link saw a page that looked like a piece out of a half-loaded
+   application. */
 .oeffentlich {
   display: flex;
   flex-direction: column;
@@ -3568,8 +3571,8 @@ textarea::placeholder {
 .oeffentlich-symbol {
   margin-right: 10px;
 }
-/* Wann der Text zuletzt angefasst wurde. Bei einer weitergegebenen Seite ist
-   das die Frage, die als zweite kommt -- gleich nach der, was darauf steht. */
+/* When the text was last touched. On a page passed on, that is the question
+   that comes second -- right after what it says. */
 .oeffentlich-fuss {
   margin-top: 40px;
   padding-top: 12px;
@@ -3578,9 +3581,9 @@ textarea::placeholder {
   color: var(--muted);
 }
 
-/* Das Kommentarfeld mit der @-Auswahl.
-   Die Liste steht über dem Feld und nicht darunter: die Kommentarspalte endet
-   knapp unter dem Feld, und eine Liste darunter wäre halb abgeschnitten. */
+/* The comment field with the @ dropdown.
+   The list stands above the field and not below it: the comment column ends
+   just below the field, and a list below it would be half cut off. */
 .erwaehnfeld {
   position: relative;
 }
@@ -3602,11 +3605,11 @@ textarea::placeholder {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
   padding: 4px;
 }
-/* Ein Name, der wirklich zu einem Konto gehört. Damit sieht man einem
-   abgeschickten Kommentar an, ob die Erwähnung angekommen ist; vorher war ein
-   Tippfehler im Namen von einer richtigen Erwähnung nicht zu unterscheiden. */
-/* Der Eintrag, auf dem der Zeiger steht. Kein Haken wie bei einer Auswahl:
-   hier ist nichts gesetzt, hier wird nur gerade hingezeigt. */
+/* A name that really belongs to an account. That is how one can tell of a
+   submitted comment whether the mention arrived; before, a typo in the name was
+   indistinguishable from a correct mention. */
+/* The entry the pointer is on. No tick as with a selection: nothing is set
+   here, here something is merely being pointed at. */
 .klappeintrag.hervor {
   background: var(--hover);
 }
@@ -3616,11 +3619,11 @@ textarea::placeholder {
   font-weight: 500;
 }
 
-/* Die Übersicht stand einmal als Reihe von Kacheln da. Bei vierzehn Angaben ist
-   das keine Übersicht mehr: man sucht in einer Wand aus Kästchen nach der einen
-   Zahl. Untereinander, Beschriftung links und Wert rechts, liest man sie in
-   einem Durchgang. Der Wert steht rechts und nicht links, weil Zahlen so
-   untereinander stehen und sich von selbst vergleichen. */
+/* The overview once stood there as a row of tiles. With fourteen figures that
+   is no longer an overview: one searches a wall of little boxes for the one
+   number. One below the other, label on the left and value on the right, they
+   are read in a single pass. The value stands on the right and not on the left,
+   because that way numbers sit one below the other and compare themselves. */
 .uebersicht-tabelle td:first-child {
   width: 60%;
 }
@@ -3629,8 +3632,9 @@ textarea::placeholder {
   font-variant-numeric: tabular-nums;
 }
 
-/* Ein Knopf, der wie ein Verweis aussieht. Für "ansehen" mitten im Satz: ein
-   richtiger Knopf würde den Satz zerreißen, ein <a> ginge woanders hin. */
+/* A button that looks like a link. For "view" in the middle of a sentence: a
+   real button would tear the sentence apart, an <a> would go somewhere
+   else. */
 .btn-schlicht {
   background: none;
   border: none;
@@ -3644,11 +3648,10 @@ textarea::placeholder {
   opacity: 0.75;
 }
 
-/* Anmeldeversuche. Eine Kante bekommt nur der fehlgeschlagene Versuch, aus
-   demselben Grund wie beim Verbund: die gelungenen sind die Mehrzahl, und was
-   in jeder Zeile steht, hebt keine hervor. Das Ergebnis steht ohnehin als Wort
-   in der eigenen Spalte, Farbe allein waere fuer einen Teil der Leute
-   ueberhaupt keine Angabe. */
+/* Sign-in attempts. Only the failed attempt gets an edge, for the same reason
+   as with the compound: the successful ones are the majority, and what stands
+   in every row emphasises none. The result stands as a word in its own column
+   anyway; colour alone would be no information at all for some people. */
 .anmelde-tabelle tbody tr.fehl td:first-child {
   box-shadow: inset 3px 0 0 var(--fehler-text);
 }
@@ -3657,10 +3660,10 @@ textarea::placeholder {
 }
 
 
-/* Knoepfe am Ende einer Tabellenzeile. Als Verweise gesetzt und nicht als
-   Kaesten: in einer Tabelle mit zwanzig Zeilen waeren vierzig Knoepfe die
-   auffaelligste Sache auf der Seite, und angesehen wird sie wegen der Namen
-   links, nicht wegen der Schaltflaechen rechts. */
+/* Buttons at the end of a table row. Set as links and not as boxes: in a table
+   with twenty rows forty buttons would be the most conspicuous thing on the
+   page, and it is looked at for the names on the left, not for the controls on
+   the right. */
 .zeilen-aktionen {
   white-space: nowrap;
   text-align: right;
@@ -3671,9 +3674,9 @@ textarea::placeholder {
 .btn-schlicht.gefaehrlich {
   color: var(--fehler-text);
 }
-/* Derselbe Gedanke am ausgewachsenen Knopf, wie in der Rueckfrage: die Flaeche
-   bleibt zurueckhaltend, die Schrift traegt die Warnung. Ein leuchtend roter
-   Block draengte zum Klicken, und das soll er hier gerade nicht. */
+/* The same thought on the full-grown button, as in the confirmation: the
+   surface stays restrained, the type carries the warning. A glowing red block
+   urged one to click, and that is precisely what it should not do here. */
 .btn.gefaehrlich {
   background: var(--fehler-bg);
   border-color: var(--fehler-rand);
@@ -3688,9 +3691,9 @@ textarea::placeholder {
   text-decoration: none;
 }
 
-/* Die Konten stehen in Spalten. Die Adresse ist die lange davon und darf im
-   Wort umbrechen, sonst schiebt eine lange Adresse die Tabelle breiter als das
-   Fenster. */
+/* The accounts stand in columns. The address is the long one of them and may
+   break inside the word, otherwise a long address pushes the table wider than
+   the window. */
 .konten-tabelle td:nth-child(2) {
   overflow-wrap: anywhere;
 }
@@ -3698,27 +3701,26 @@ textarea::placeholder {
   font-size: 13px;
 }
 
-/* Ein DN und eine Liste von Gruppen sind lang und enthalten keine Leerzeichen,
-   an denen ein Umbruch von selbst passieren wuerde. Ohne das hier schoebe ein
-   einziger Eintrag die Tabelle breiter als das Fenster. */
+/* A DN and a list of groups are long and contain no spaces where a break would
+   happen by itself. Without this here, a single entry would push the table
+   wider than the window. */
 .ldap-gruppen,
 .uebersicht-tabelle td code {
   overflow-wrap: anywhere;
 }
-/* Ein Wert, der so nicht bleiben sollte: unverschluesselt, ungeprueft. Als Wort
-   in der Spalte wie jeder andere, nur in der Farbe, die der Rest der Oberflaeche
-   fuer einen Fehler benutzt. */
+/* A value that should not stay that way: unencrypted, unverified. As a word in
+   the column like any other, only in the colour the rest of the interface uses
+   for an error. */
 .fehler-text {
   color: var(--fehler-text);
 }
 
-/* Der Live-Block: vier Kennzahlen gross, darunter eine Kurve.
+/* The live block: four figures set large, a curve below them.
    
-   Vorher standen hier fuenfzehn Tabellenzeilen und ein Streifen aus
-   neunundfuenfzig Rechtecken. Beides zeigte die richtigen Zahlen und war
-   trotzdem falsch: Werte, die sich im Sekundentakt aendern, liest niemand als
-   Liste, und einzelne Rechtecke springen jedes fuer sich, sodass das Auge
-   Flimmern sieht statt Verlauf. */
+   Before, fifteen table rows and a stripe of fifty-nine rectangles stood here.
+   Both showed the right numbers and were wrong all the same: nobody reads
+   values that change every second as a list, and individual rectangles each
+   jump on their own, so that the eye sees flicker instead of a course. */
 .kennzahlreihe {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -3730,8 +3732,8 @@ textarea::placeholder {
   border-radius: 8px;
   padding: 12px 14px;
   background: var(--flaeche);
-  /* Feste Hoehe. Der Inhalt wechselt alle zwei Sekunden, und ein Kasten, der
-     dabei seine Groesse aendert, schiebt die halbe Seite hin und her. */
+  /* Fixed height. The content changes every two seconds, and a box that changes
+     its size while doing so pushes half the page back and forth. */
   min-height: 84px;
 }
 .kennzahl-titel {
@@ -3744,9 +3746,9 @@ textarea::placeholder {
   font-weight: 600;
   line-height: 1.15;
   margin-top: 4px;
-  /* Proportionale Ziffern, ausdruecklich KEINE Tabellenziffern: die geben jeder
-     Ziffer die Breite einer Null, und in dieser Groesse sieht eine 1 daneben
-     wie eine Luecke aus. Gleich breite Ziffern gehoeren in Spalten. */
+  /* Proportional numerals, expressly NOT tabular figures: those give every digit
+     the width of a zero, and at this size a 1 among them looks like a gap.
+     Equal-width numerals belong in columns. */
   font-variant-numeric: proportional-nums;
 }
 .kennzahl-einheit {
@@ -3760,9 +3762,9 @@ textarea::placeholder {
   line-height: 1.3;
 }
 
-/* Der Fuellstand des Verbindungsvorrats. Die Farbe traegt den Ernst, die Bahn
-   dahinter ist eine hellere Stufe derselben Farbe: so ist der Zustand ueber den
-   ganzen Balken zu lesen und nicht nur an seinem Ende. */
+/* The fill level of the connection pool. The colour carries the seriousness,
+   the track behind it is a lighter step of the same colour: that way the state
+   can be read across the whole bar and not only at its end. */
 .fuellstand {
   height: 5px;
   border-radius: 3px;
@@ -3793,7 +3795,7 @@ textarea::placeholder {
   background: var(--fehler-text);
 }
 
-/* Die Kurve der letzten Minute. */
+/* The curve of the last minute. */
 .puls {
   margin: 4px 0 14px;
 }
@@ -3805,9 +3807,9 @@ textarea::placeholder {
   border-radius: var(--radius);
   background: var(--flaeche);
 }
-/* preserveAspectRatio steht auf none, die Flaeche wird also in der Breite
-   gedehnt. Die Linie darf das nicht mitmachen, sonst waere sie an flachen
-   Stellen duenner als an steilen -- dafuer non-scaling-stroke im Markup. */
+/* preserveAspectRatio is set to none, so the area is stretched in width. The
+   line must not go along with that, otherwise it would be thinner in flat spots
+   than in steep ones -- hence non-scaling-stroke in the markup. */
 .puls-linie {
   fill: none;
   stroke: var(--accent, #2383e2);
@@ -3836,23 +3838,24 @@ textarea::placeholder {
   margin-top: 4px;
 }
 
-/* ── Einstellungen: eckig und technisch ──────────────────────────────────────
-   Die Verwaltung ist kein Lesetext, sondern ein Schaltpult. Runde Ecken sagen
-   „Karte", rechte Winkel sagen „Feld", und ein Feld ist hier alles: jeder
-   Kasten steht fuer genau einen Wert, der an oder aus ist oder eine Zahl
-   traegt. Darum sind die Radien in diesem Bereich auf null gesetzt, und zwar
-   nur hier — im uebrigen Wiki bleibt es weich.
+/* ── Settings: square and technical ──────────────────────────────────────────
+   The administration is not reading matter but a switchboard. Round corners say
+   "card", right angles say "field", and a field is what everything here is:
+   every box stands for exactly one value that is on or off or carries a number.
+   That is why the radii in this area are set to zero, and only here — in the
+   rest of the wiki it stays soft.
 
-   Alles ist auf .einstellungen-manager eingeschraenkt, damit dieselben Klassen
-   (.kachel, .kennzahl) ausserhalb unveraendert bleiben.
+   Everything is confined to .einstellungen-manager, so that the same classes
+   (.kachel, .kennzahl) stay unchanged outside it.
 
-   Die Knoepfe (.btn) sind ausgenommen und ueberall gleich rund. Sie sind das
-   eine Stueck, das man auf jeder Seite wiedererkennt; zwei Formen fuer
-   denselben Knopf, je nachdem wo man steht, waere eine Naht ohne Gewinn.
+   The buttons (.btn) are exempt and equally round everywhere. They are the one
+   piece one recognises on every page; two shapes for the same button, depending
+   on where one stands, would be a seam without gain.
 
-   Die Marken (.pill) bleiben aussen vor: dort traegt die Ecke schon eine
-   Bedeutung — rund heisst Etikett, fast eckig heisst Zustand (siehe .pill.frei).
-   Alles auf null zu ziehen haette genau diesen Unterschied eingeebnet. */
+   The marks (.pill) stay out of it: there the corner already carries a
+   meaning — round means label, almost square means state (see .pill.frei).
+   Pulling everything to zero would have levelled precisely that
+   difference. */
 .einstellungen-manager .einstellung,
 .einstellungen-manager .kachel,
 .einstellungen-manager .kennzahl,
@@ -3870,9 +3873,9 @@ textarea::placeholder {
 .einstellungen-manager textarea {
   border-radius: 0;
 }
-/* Der Schluessel steht so in config.conf und in der Tabelle. Wer hier etwas
-   umstellt, sucht spaeter danach — also gehoert er sichtbar an die Zeile und
-   nicht in die Dokumentation. */
+/* The key stands exactly like this in config.conf and in the table. Whoever
+   changes something here will search for it later — so it belongs visibly on
+   the row and not in the documentation. */
 .einstellung-titel {
   display: flex;
   align-items: baseline;
@@ -3888,25 +3891,26 @@ textarea::placeholder {
   border: 1px solid var(--border);
   padding: 1px 5px;
 }
-/* Zahlen in Tabellenziffern: in den Kacheln stehen sie untereinander, und dort
-   soll die Spalte stehen, nicht die einzelne Ziffer wackeln. */
+/* Numbers in tabular figures: in the tiles they sit one below the other, and
+   there the column should stand still rather than the individual digit
+   wobble. */
 .einstellungen-manager .kachel-wert {
   font-variant-numeric: tabular-nums;
 }
-/* Die Umgebungsvariable steht neben dem Schluessel, aber blasser: sie ist der
-   zweite Weg zum selben Wert und gilt nur beim Start. Nicht jede Einstellung
-   hat einen — die Marke fehlt dann einfach. */
+/* The environment variable stands beside the key, but paler: it is the second
+   route to the same value and applies only at startup. Not every setting has
+   one — the mark then simply is not there. */
 .einstellung-schluessel.umgebung {
   background: none;
   border-style: dashed;
 }
 
-/* Lizenz-Kopfband.
+/* Licence banner.
 
-   Vorher standen Inhaber, Laufzeit und Umfang als drei Zeilen einer
-   Zwei-Spalten-Tabelle. Eine Tabelle mit drei Zeilen ist keine Tabelle, sie ist
-   eine Liste mit Linien drum herum. Nebeneinander in einem Band steht dasselbe
-   in einem Blick, und der Zustand steht vorne statt in einer Zelle. */
+   Before, holder, term and scope stood as three rows of a two-column table. A
+   table with three rows is not a table, it is a list with lines around it. Side
+   by side in one band the same thing stands in one glance, and the state stands
+   at the front instead of in a cell. */
 .lizenz-kopf {
   display: flex;
   align-items: center;
@@ -3936,11 +3940,11 @@ textarea::placeholder {
 }
 
 /* Kopf einer Liste: Ueberschrift links, Filter rechts. */
-/* Der Abstand nach oben sitzt am Kopf und nicht an seiner Ueberschrift.
-   Vorher trug ihn die h3 -- als Flexkind wirkte er nur innerhalb des Kastens,
-   der Kasten selbst begann also direkt an dem, was darueber stand, und das
-   Filterfeld daneben hat keinen eigenen Abstand: es lag mit seiner oberen
-   Kante im Kasten der letzten Einstellung. */
+/* The space above sits on the head and not on its heading.
+   Before, the h3 carried it -- as a flex child it only took effect inside the
+   box, so the box itself began right at whatever stood above it, and the filter
+   field beside it has no space of its own: its top edge lay inside the box of
+   the last setting. */
 .listenkopf {
   display: flex;
   align-items: baseline;
@@ -3962,10 +3966,10 @@ textarea::placeholder {
   max-width: 100%;
 }
 
-/* Trennt zwei Sachgruppen auf einer Seite. Die Leiste hat weniger Eintraege,
-   dafuer stehen hier mehrere Gruppen untereinander -- ohne einen Schnitt liefe
-   das eine ins andere. Erste Gruppe ohne Abstand nach oben, sonst klafft ueber
-   der Seite eine Luecke. */
+/* Separates two topic groups on one page. The sidebar has fewer entries, but
+   in exchange several groups sit one below the other here -- without a cut one
+   would run into the other. First group without space above, otherwise a gap
+   would yawn above the page. */
 .teil-titel {
   font-size: 15px;
   font-weight: 600;
@@ -3981,16 +3985,15 @@ textarea::placeholder {
 }
 
 /* ---------------------------------------------------------------------------
-   Fenster über der Seite (components/Fenster.tsx)
+   Dialogs above the page (components/Fenster.tsx)
 
-   Die Verwaltung hatte ihre Formulare untereinander auf der Seite stehen: erst
-   das Formular zum Anlegen mit fünf Feldern, darunter die Liste. Das kostete
-   die obere Hälfte des Bildschirms für etwas, das man einmal in der Woche
-   braucht, und drängte die Liste unter den Rand. Was selten gebraucht wird,
-   gehört in ein Fenster.
+   The administration had its forms standing one below the other on the page:
+   first the form for creating with five fields, the list below it. That cost
+   the upper half of the screen for something needed once a week, and pushed the
+   list past the edge. What is rarely needed belongs in a dialog.
 
-   Es benutzt .modal und .modal-header aus dem Freigabedialog weiter, damit
-   nicht zwei Sorten Fenster nebeneinander stehen. */
+   It goes on using .modal and .modal-header from the sharing dialog, so that
+   two sorts of dialog do not stand side by side. */
 .fenster {
   display: flex;
   flex-direction: column;
@@ -3999,8 +4002,8 @@ textarea::placeholder {
 .fenster-breit {
   width: 720px;
 }
-/* Der Inhalt rollt, Kopf und Fuss bleiben stehen. Ohne das schoebe eine Liste
-   aus vierzig Konten die Knopfreihe aus dem Bild. */
+/* The content scrolls, head and foot stay put. Without that a list of forty
+   accounts would push the row of buttons out of the picture. */
 .fenster-inhalt {
   padding: 16px 18px;
   overflow-y: auto;
@@ -4013,9 +4016,9 @@ textarea::placeholder {
   padding: 12px 18px;
   border-top: 1px solid var(--border);
 }
-/* Der Platzhalter zwischen dem, was links steht (Löschen, eine Umschaltung),
-   und den Knöpfen rechts. Ohne ihn stünde alles in einer Reihe zusammen, und
-   Löschen säße neben Speichern. */
+/* The spacer between what stands on the left (delete, a toggle) and the buttons
+   on the right. Without it everything would stand together in one row, and
+   Delete would sit next to Save. */
 .fuss-luecke {
   flex: 1;
 }
@@ -4046,14 +4049,14 @@ textarea::placeholder {
 .fenster-felder label > span {
   font-weight: 500;
 }
-/* Die Felder muessen sich auf die Spalte zusammenziehen lassen. Ohne
-   min-width: 0 behaelt ein Eingabefeld im Raster seine Eigenbreite von rund
-   zwanzig Zeichen, und die Spalte waechst mit -- im Fenster stand das Feld
-   darauf ueber den rechten Rand hinaus.
+/* The fields have to be able to contract onto the column. Without min-width: 0
+   an input in the grid keeps its intrinsic width of some twenty characters, and
+   the column grows with it -- in the dialog the field then stood out past the
+   right edge.
 
-   Der Rahmen steht hier ausdruecklich, weil ein <input> ohne type-Angabe sonst
-   den Rahmen des Browsers behaelt und neben einem <select> mit eigenem Rahmen
-   wie ein anderes Bauteil aussieht. */
+   The border stands here on purpose, because an <input> without a type
+   attribute otherwise keeps the browser's border and looks like a different
+   component next to a <select> with a border of its own. */
 .fenster-felder input:not([type="checkbox"]):not([type="radio"]),
 .fenster-felder select,
 .fenster-zeile input,
@@ -4064,9 +4067,9 @@ textarea::placeholder {
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
-  /* Ausdruecklich die Textfarbe und nicht inherit: das Feld steht in einem
-     <label>, das gedaempft ist, und erbte sonst dessen Grau -- der eingetragene
-     Wert saehe aus wie ein Platzhalter. */
+  /* Expressly the text colour and not inherit: the field stands inside a
+     <label> that is muted, and would otherwise inherit its grey -- the entered
+     value would look like a placeholder. */
   color: var(--text);
   font: inherit;
   font-size: 13px;
@@ -4085,15 +4088,15 @@ textarea::placeholder {
 .feld-breit {
   grid-column: 1 / -1;
 }
-/* Ein Haken steht neben seiner Beschriftung und nicht darunter. Ohne diese
-   Zeile zoege ihn die Spaltenregel des Rasters hochkant. */
+/* A tick stands beside its label and not below it. Without this line the
+   grid's column rule would pull it upright. */
 .fenster-felder .schalter {
   flex-direction: row;
   color: var(--text);
 }
-/* Ein Abschnitt im Fenster, für das, was neben dem Formular noch geht:
-   Passwort zurücksetzen, zweiter Faktor. Eine Linie darüber, weil es eigene
-   Sachen sind und nicht mit dem Speichern-Knopf zusammenhängen. */
+/* A section in the dialog, for what else can be done besides the form: reset
+   the password, second factor. A line above it, because they are matters of
+   their own and have nothing to do with the Save button. */
 .fenster-abschnitt {
   margin-top: 18px;
   padding-top: 14px;
@@ -4109,9 +4112,8 @@ textarea::placeholder {
   flex: 1 1 180px;
   width: auto;
 }
-/* Das Feld für mehrere Konten auf einmal. Fest auf eine Schrift mit gleicher
-   Laufweite, damit die Spalten einer eingefügten Tabellenzeile untereinander
-   stehen. */
+/* The field for several accounts at once. Fixed to a font of even advance
+   width, so that the columns of a pasted table row sit one below the other. */
 .mengenfeld {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 12px;
@@ -4119,15 +4121,15 @@ textarea::placeholder {
   resize: vertical;
 }
 
-/* Kopf einer Liste, rechte Seite: Filter und der Knopf, der das Fenster
-   aufmacht. */
+/* Head of a list, right-hand side: the filter and the button that opens the
+   dialog. */
 .listenkopf-werkzeug {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-/* Der Knopf bricht nicht um. Ohne diese Zeile zog das Filterfeld daneben so
-   viel Breite, dass aus "Rechner hinzufuegen" zwei Zeilen wurden. */
+/* The button does not wrap. Without this line the filter field beside it drew
+   so much width that "Add machine" became two lines. */
 .listenkopf-werkzeug .btn,
 .listenkopf-werkzeug select {
   white-space: nowrap;
@@ -4161,8 +4163,8 @@ textarea::placeholder {
   gap: 8px;
   flex-wrap: wrap;
 }
-/* Der QR-Code steht auf seiner eigenen weißen Fläche, auch im dunklen
-   Grundton: eine Kamera liest ihn nur dunkel auf hell. */
+/* The QR code stands on a white area of its own, in the dark base tone too: a
+   camera only reads it dark on light. */
 .qr-kasten {
   width: 190px;
   padding: 10px;
@@ -4175,7 +4177,7 @@ textarea::placeholder {
   width: 100%;
   height: auto;
 }
-/* Der Schlüssel zum Abtippen, wenn die Kamera nicht in Frage kommt. */
+/* The key for typing out, when a camera is out of the question. */
 .zweit-geheim {
   display: block;
   padding: 8px 10px;
@@ -4186,8 +4188,8 @@ textarea::placeholder {
   background: var(--bg);
   border: 1px solid var(--border);
 }
-/* Das Feld für den Code: wenige Zeichen, groß, mit Abstand dazwischen. Es
-   wird abgelesen und abgetippt, nicht gelesen. */
+/* The field for the code: few characters, large, with space between them. It
+   is read off and typed in, not read. */
 .codefeld {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 18px;
@@ -4195,8 +4197,8 @@ textarea::placeholder {
   width: 180px;
   text-align: center;
 }
-/* Die Ersatzcodes in zwei Spalten. Sie werden abgeschrieben, deshalb stehen
-   sie untereinander und nicht in einem Fließtext. */
+/* The recovery codes in two columns. They get copied out by hand, which is why
+   they sit one below the other and not in running text. */
 .codeliste {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4210,8 +4212,7 @@ textarea::placeholder {
   font-size: 14px;
   letter-spacing: 0.06em;
 }
-/* Ein Satz, der eine Warnung trägt, ohne einen ganzen Kasten dafür zu
-   brauchen. */
+/* A sentence that carries a warning without needing a whole box for it. */
 .fehlertext {
   color: var(--fehler-text, #cf222e);
 }
@@ -4225,9 +4226,9 @@ textarea::placeholder {
   }
 }
 
-/* Ein Streifen über dem Arbeitsbereich, wenn die Instanz den zweiten Faktor
-   verlangt und das eigene Konto keinen hat. Zurückhaltend und nicht rot: es ist
-   eine offene Aufgabe, kein Fehler, und wer hier steht, arbeitet gerade. */
+/* A stripe above the workspace, when the instance demands the second factor
+   and one's own account has none. Restrained and not red: it is an open task,
+   not an error, and whoever stands here is in the middle of working. */
 .mahnstreifen {
   padding: 9px 18px;
   font-size: 13px;
@@ -4240,10 +4241,11 @@ textarea::placeholder {
   text-decoration: underline;
 }
 
-/* Das Zahnrad neben dem Namen: das eigene Konto.
-   Dasselbe Symbol wie oben an der Verwaltung -- dort die Instanz, hier das
-   Konto. Es steht sichtbar da und nicht im Menü, denn was jemand an seinem
-   Konto einstellen kann, soll man finden, ohne danach zu suchen. */
+/* The cog beside the name: one's own account.
+   The same symbol as above at the administration -- there the instance, here
+   the account. It stands there visibly and not in the menu, because what
+   somebody can set on their own account should be found without searching for
+   it. */
 .konto-zahnrad {
   flex: none;
   color: var(--muted);
@@ -4251,9 +4253,9 @@ textarea::placeholder {
 .konto-zahnrad:hover {
   color: var(--text);
 }
-/* Dieselbe Zeichnung wie am Kopf der Verwaltung: Striche in der Schriftfarbe,
-   keine Fuellung. Ohne diese Regel malt der Browser die beiden Kreise voll aus
-   und aus dem Zahnrad wird ein schwarzer Punkt. */
+/* The same drawing as at the head of the administration: strokes in the type
+   colour, no fill. Without this rule the browser fills in both circles and the
+   cog becomes a black dot. */
 .konto-zahnrad svg {
   width: 14px;
   height: 14px;
@@ -4263,8 +4265,8 @@ textarea::placeholder {
   fill: none;
 }
 
-/* Das Fenster "Mein Konto": Leiste links, Inhalt rechts -- dieselbe Aufteilung
-   wie die Verwaltung daneben. */
+/* The "My account" dialog: sidebar on the left, content on the right -- the
+   same layout as the administration beside it. */
 .konto-fenster {
   display: flex;
   gap: 20px;
@@ -4303,16 +4305,15 @@ textarea::placeholder {
   flex: 1;
   min-width: 0;
 }
-/* Die Ueberschriften im Fenster tragen dasselbe Mass wie die in der
-   Verwaltung. Ohne die Regel greift die Vorgabe des Browsers, und eine
-   Zwischenueberschrift in 19 px wiegt in einem Fenster schwerer als der Titel
-   darueber. */
+/* The headings in the dialog carry the same measure as those in the
+   administration. Without the rule the browser's default applies, and a
+   sub-heading at 19 px weighs more in a dialog than the title above it. */
 .konto-inhalt h3 {
   font-size: 15px;
   margin: 22px 0 6px;
 }
-/* Die erste Überschrift im Inhalt hat keinen Abstand nach oben: sie steht auf
-   derselben Höhe wie der erste Eintrag der Leiste daneben. */
+/* The first heading in the content has no space above it: it stands at the same
+   height as the first entry of the sidebar beside it. */
 .konto-inhalt > h3:first-child {
   margin-top: 0;
 }
@@ -4330,9 +4331,9 @@ textarea::placeholder {
   }
 }
 
-/* Die letzte Zeile einer gekuerzten Liste traegt den Knopf. Sie steht ohne
-   Trennlinie da: sie gehoert nicht zum Bestand, sie sagt nur, dass mehr davon
-   vorhanden ist. */
+/* The last row of a shortened list carries the button. It stands there without
+   a separating line: it does not belong to the stock, it only says that more of
+   it exists. */
 .tabelle tr.kurz-mehr td {
   border-bottom: none;
   padding-top: 4px;

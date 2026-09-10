@@ -1,4 +1,4 @@
-# Go 1.25, weil minio-go das mindestens verlangt, siehe go.mod.
+# Go 1.25, because minio-go demands at least that, see go.mod.
 FROM golang:1.25-alpine AS build
 WORKDIR /app
 RUN apk add --no-cache git
@@ -7,27 +7,27 @@ COPY . .
 RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -trimpath -o /nexora ./
 
 FROM alpine:3.19
-# Zwei Werkzeuge, die der Dienst als eigene Prozesse aufruft.
+# Two tools the service invokes as separate processes.
 #
-# poppler-utils liefert pdftotext für den Volltext aus PDF-Anhängen. Rein in Go
-# ginge es ohne, scheitert aber an vielen echten PDF-Dateien: Schriftkodierungen,
-# Spalten, eingebettete Bilder.
+# poppler-utils supplies pdftotext for the full text out of PDF attachments.
+# Purely in Go it would work without it, but it fails on many real PDF files:
+# font encodings, columns, embedded images.
 #
-# postgresql16-client liefert pg_dump für die Sicherung. Der Dump kommt aus dem
-# Werkzeug und nicht aus eigener SQL-Ausgabe: was gesichert wird, muss
-# zurückspielbar sein, und pg_dump erzeugt genau die Form, die psql wieder
-# einliest. Drei Megabyte im Abbild dafür.
+# postgresql16-client supplies pg_dump for the backup. The dump comes out of the
+# tool and not out of SQL output of our own: what gets backed up has to be
+# restorable, and pg_dump produces exactly the form psql reads back in. Three
+# megabytes in the image for that.
 #
-# ACHTUNG bei der Hauptversion: pg_dump weigert sich, einen NEUEREN Server zu
-# sichern. Steht hier 16 und läuft die Datenbank auf 17, muss diese Zeile mit.
+# MIND the major version: pg_dump refuses to back up a NEWER server. If 16
+# stands here and the database runs on 17, this line has to change with it.
 RUN apk add --no-cache poppler-utils postgresql16-client \
  && adduser -D -u 10001 nexora \
  && mkdir -p /data/attachments \
  && chown -R nexora:nexora /data
-# Was in diesem Abbild steckt, sagt das Abbild selbst. Wer es weitergibt,
-# verteilt GPL-Programme (poppler-utils, busybox) und schuldet dafür den
-# zugehörigen Quelltext; die Kennzeichnung nennt, wo er liegt. Siehe
-# THIRD-PARTY.md im Quelltextbestand.
+# What is in this image, the image says itself. Whoever passes it on
+# distributes GPL programs (poppler-utils, busybox) and owes the corresponding
+# source for them; the label says where it lies. See THIRD-PARTY.md in the
+# source tree.
 LABEL org.opencontainers.image.title="Nexora Backend" \
       org.opencontainers.image.source="https://github.com/Dschonas04/Nexora" \
       org.opencontainers.image.licenses="BUSL-1.1" \

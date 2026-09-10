@@ -113,9 +113,9 @@ export default function Sidebar(props: Props) {
     ungelesen,
   } = props;
   const { user, logout } = useAuth();
-  // Das eigene Konto. Profil, Passwort, zweiter Faktor und die eigenen Geräte
-  // standen an drei verschiedenen Stellen, zwei davon nur für Administratoren.
-  // Jetzt liegen sie zusammen hinter dem Zahnrad neben dem Namen.
+  // One's own account. Profile, password, second factor and one's own devices
+  // stood in three different places, two of them for administrators only. Now
+  // they lie together behind the cog beside the name.
   const [kontoOffen, setKontoOffen] = useState(false);
   // The account menu in the bottom-left. It stays closed until the avatar
   // is clicked: the sidebar is narrow and three side-by-side buttons would
@@ -216,7 +216,7 @@ export default function Sidebar(props: Props) {
     try {
       localStorage.setItem(BREITE_SCHLUESSEL, String(breite));
     } catch {
-      // Nicht merken zu koennen ist kein Grund, nicht zu ziehen.
+      // Not being able to remember is no reason not to drag.
     }
   };
   // Double-clicking the handle resets the width. If someone has accidentally
@@ -410,10 +410,9 @@ export default function Sidebar(props: Props) {
     const eltern = new Map(pages.map((p) => [p.id, p.parentId ?? null]));
     const weg: string[] = [];
     let lauf = eltern.get(activeId) ?? null;
-    // Die Grenze fängt einen Kreis ab. Der sollte nicht entstehen, das Backend
-    // weist das Umhängen unter die eigene Unterseite ab; eine Endlosschleife in
-    // der Seitenleiste wäre aber ein eingefrorener Browser und nicht bloß ein
-    // falscher Baum.
+    // The limit catches a cycle. It should not arise, the backend rejects
+    // re-parenting a page under its own subpage; an endless loop in the sidebar
+    // would be a frozen browser, though, and not merely a wrong tree.
     for (let i = 0; lauf && i < 100; i++) {
       weg.push(lauf);
       lauf = eltern.get(lauf) ?? null;
@@ -1278,10 +1277,10 @@ export default function Sidebar(props: Props) {
                 list is there to read, not to configure. */}
             {user?.role === "admin" && (
               <div className="sidebar-section">
-                {/* Kein Klapptitel mehr: unter der Verwaltung steht nichts,
-                    was sich einklappen liesse. Das Protokoll war die letzte
-                    Zeile hier und ist jetzt ein Bereich in der Verwaltung
-                    selbst, also fuehrt die Ueberschrift nur noch dorthin. */}
+                {/* No collapse title any more: nothing sits under the
+                    administration that could be collapsed. The audit trail was
+                    the last row here and is now an area in the administration
+                    itself, so the heading only leads there. */}
                 <div className="sidebar-section-title ohne-klappe">
                   <button
                     className={
@@ -1326,10 +1325,10 @@ export default function Sidebar(props: Props) {
       )}
 
       <div className="sidebar-footer" ref={kontoEcke}>
-        {/* Das Zahnrad steht neben dem Namen und nicht im Menü darüber: was
-            jemand an seinem Konto einstellen kann, soll man sehen, ohne erst
-            ein Menü aufzuklappen. Dasselbe Symbol trägt oben die Verwaltung --
-            hier ist es das eigene Konto, dort die Instanz. */}
+        {/* The cog stands beside the name and not in the menu above it: what
+            somebody can set on their account should be seen without opening a
+            menu first. The same symbol carries the administration at the top --
+            here it is one's own account, there the instance. */}
         <button
           className="konto-knopf"
           onClick={() => setKontoMenue((auf) => !auf)}
@@ -1375,9 +1374,9 @@ export default function Sidebar(props: Props) {
                 <div className="muted small">{user?.email}</div>
               </div>
             </div>
-            {/* Zwei gleiche Knöpfe untereinander. Aus "Profil bearbeiten" und
-                "Passwort ändern" ist ein Eintrag geworden: sie waren zwei Namen
-                für dieselbe Sache, nämlich das eigene Konto. */}
+            {/* Two identical buttons one below the other. "Edit profile" and
+                "Change password" have become one entry: they were two names for
+                the same thing, namely one's own account. */}
             <button
               className="konto-menue-zeile"
               role="menuitem"

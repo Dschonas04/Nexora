@@ -4,10 +4,10 @@
 // it back under pressure — during an incident or an audit — which is why the
 // filters sit at the top and the newest entry is the first one.
 //
-// Sie steht innerhalb der Einstellungen und bringt deshalb keinen eigenen
-// Rahmen mit; Überschrift und Abstände kommen von dort. Vorher war sie eine
-// Seite für sich, erreichbar über eine eigene Zeile in der Leiste -- also die
-// einzige Sache der Verwaltung, die nicht in der Verwaltung stand.
+// It sits inside the settings and therefore brings no frame of its own along;
+// heading and spacing come from there. Before this it was a page of its own,
+// reachable through a row of its own in the sidebar -- that is the one
+// administrative matter that did not sit in the administration.
 import { useEffect, useState } from "react";
 
 import { Spureintrag, api } from "../api/client";
@@ -53,10 +53,10 @@ const BESCHRIFTUNG: Record<string, string> = {
   "einstellung.zurueckgesetzt": "Setting reset",
   "suchindex.neu": "Search index rebuilt",
   "lizenz.geladen": "Licence loaded",
-  // Die Vorlagen gibt es nicht mehr. Die beiden Namen bleiben trotzdem stehen:
-  // in einer Prüfspur, die Jahre zurückreicht, stehen sie weiterhin, und eine
-  // Zeile, die nur noch ihren rohen Schlüssel zeigt, ist genau dort unlesbar,
-  // wo jemand nachschlägt.
+  // The templates no longer exist. The two names stay all the same: in an
+  // audit trail reaching back years they still appear, and a row showing
+  // nothing but its raw key is unreadable at exactly the point where somebody
+  // is looking something up.
   "vorlage.gesetzt": "Marked as a template (feature removed)",
   "vorlage.aufgehoben": "Template mark lifted (feature removed)",
   "space.exportiert": "Space exported",
@@ -98,9 +98,9 @@ const AUFFAELLIG = new Set([
   "konto.rolle",
   "konto.passwort.gesetzt",
   "konto.passwort.fehlgeschlagen",
-  // Den zweiten Faktor eines fremden Kontos zu entfernen ist der Weg, ueber
-  // den eine Uebernahme laeuft, wenn jemand die Verwaltung ueberredet. Er
-  // gehoert zu dem, wonach eine Pruefung sucht.
+  // Removing another account's second factor is the route a takeover runs
+  // through when somebody talks an administrator into it. It belongs among the
+  // things an audit looks for.
   "zweitfaktor.zurueckgesetzt",
   "oeffentlich.an",
 ]);
@@ -171,10 +171,10 @@ export default function PruefspurView() {
 
   return (
     <div className="pruefspur">
-      {/* Zwei Filter, die verschiedene Dinge tun, und deshalb an
-          verschiedenen Stellen: die Auswahl der Vorgangsart fragt den Server
-          neu, das Textfeld engt nur ein, was schon geladen ist. Stünden beide
-          nebeneinander, sähen sie aus wie zwei Hälften derselben Sache. */}
+      {/* Two filters that do different things, and therefore sit in
+          different places: the choice of event type asks the server again, the
+          text field merely narrows down what is already loaded. If both stood
+          side by side they would look like two halves of the same thing. */}
       <Listenkopf
         titel="Audit log"
         zahl={
