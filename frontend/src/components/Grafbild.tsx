@@ -207,7 +207,7 @@ export default function Grafbild({
       const k = ablageSchluessel(n);
       if (gesehen.has(k)) continue;
       gesehen.add(k);
-      eintraege.push({ key: k, label: k === "__none__" ? "Keine Ablage" : n.space || "Ablage", color: farbe[k] });
+      eintraege.push({ key: k, label: k === "__none__" ? "No space" : n.space || "Space", color: farbe[k] });
     }
     return { grad, nachbarn, legende: eintraege };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -386,7 +386,7 @@ export default function Grafbild({
       const pp = p[n.id];
       if (!pp) continue;
       const r = radius(n.id);
-      const breite = (n.title || "Ohne Titel").length * LABEL_BREITE_JE_ZEICHEN;
+      const breite = (n.title || "Untitled").length * LABEL_BREITE_JE_ZEICHEN;
       let platz = LABEL_PLAETZE[0];
       let kasten = kastenFuer(pp.x, pp.y, breite, platz.dx(r), platz.dy(r), platz.anker);
       for (const k of LABEL_PLAETZE) {
@@ -582,7 +582,7 @@ export default function Grafbild({
                   to change. For "No space" only the dot is shown — there is
                   no space to attach a color to. */}
               {onFarbe && l.key !== "__none__" && (!faerbbar || faerbbar.has(l.key)) ? (
-                <label className="graph-legend-dot-wahl" title="Farbe dieser Ablage">
+                <label className="graph-legend-dot-wahl" title="Colour of this space">
                   <span className="graph-legend-dot" style={{ background: farbe[l.key] }} />
                   <input
                     type="color"
@@ -679,7 +679,7 @@ export default function Grafbild({
                   paintOrder="stroke"
                   strokeLinejoin="round"
                 >
-                  {node.title || "Ohne Titel"}
+                  {node.title || "Untitled"}
                 </text>
               </g>
             );

@@ -253,15 +253,15 @@ export default function Kommentare({ pageId }: { pageId: string }) {
   const zeile = (k: Kommentar, istAntwort: boolean) => (
     <div key={k.id} className={"kommentar" + (istAntwort ? " antwort" : "") + (k.erledigt ? " erledigt" : "")}>
       <div className="kommentar-kopf">
-        <span className="kommentar-autor">{k.autorName || "Unbekannt"}</span>
+        <span className="kommentar-autor">{k.autorName || "Unknown"}</span>
         <span className="muted small">{zeit(k.erstelltAm)}</span>
-        {k.geaendertAm && <span className="muted small">bearbeitet</span>}
-        {k.erledigt && !istAntwort && <span className="pill klein">erledigt</span>}
+        {k.geaendertAm && <span className="muted small">edited</span>}
+        {k.erledigt && !istAntwort && <span className="pill klein">resolved</span>}
       </div>
 
       {k.geloescht ? (
         <div className="kommentar-text muted">
-          <em>Kommentar gelöscht</em>
+          <em>Comment deleted</em>
         </div>
       ) : bearbeitet === k.id ? (
         <div className="kommentar-eingabe">
@@ -301,7 +301,7 @@ export default function Kommentare({ pageId }: { pageId: string }) {
               className="link-btn"
               onClick={() => api.kommentarErledigt(k.id).then(laden).catch(() => {})}
             >
-              {k.erledigt ? "Reopen" : "Erledigt"}
+              {k.erledigt ? "Reopen" : "Resolve"}
             </button>
           )}
         </div>
@@ -312,7 +312,7 @@ export default function Kommentare({ pageId }: { pageId: string }) {
           <Erwaehnfeld
             autoFocus
             zeilen={2}
-            platzhalter={"Antwort an " + (k.autorName || "…")}
+            platzhalter={"Reply to " + (k.autorName || "…")}
             wert={antwortText}
             setzen={setAntwortText}
             personen={personen}
@@ -335,10 +335,10 @@ export default function Kommentare({ pageId }: { pageId: string }) {
   return (
     <div className="kommentare">
       <div className="kommentare-kopf">
-        <h3>Kommentare</h3>
+        <h3>Comments</h3>
         {erledigteAnzahl > 0 && (
           <button className="link-btn" onClick={() => setErledigteZeigen((v) => !v)}>
-            {erledigteZeigen ? "Erledigte ausblenden" : `${erledigteAnzahl} erledigte einblenden`}
+            {erledigteZeigen ? "Hide resolved" : `Show ${erledigteAnzahl} resolved`}
           </button>
         )}
       </div>
@@ -351,9 +351,9 @@ export default function Kommentare({ pageId }: { pageId: string }) {
           platzhalter={
             user
               ? personen.length > 0
-                ? "Kommentar schreiben… (@ benachrichtigt jemanden)"
-                : "Kommentar schreiben…"
-              : "Anmelden, um zu kommentieren"
+                ? "Write a comment… (@ notifies someone)"
+                : "Write a comment…"
+              : "Sign in to comment"
           }
           wert={neu}
           setzen={setNeu}
@@ -367,7 +367,7 @@ export default function Kommentare({ pageId }: { pageId: string }) {
       </div>
 
       {sichtbareFaeden.length === 0 && (
-        <div className="muted small">Noch keine Kommentare.</div>
+        <div className="muted small">No comments yet.</div>
       )}
       {sichtbareFaeden.map((k) => zeile(k, false))}
     </div>
