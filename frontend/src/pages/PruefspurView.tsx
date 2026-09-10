@@ -19,58 +19,58 @@ import { useLizenz } from "../lizenz";
 // falls through to itself rather than to "unbekannt": a trail that hides what
 // it does not recognise is worse than one that shows a raw string.
 const BESCHRIFTUNG: Record<string, string> = {
-  anmeldung: "Anmeldung",
-  "anmeldung.fehlgeschlagen": "Anmeldung fehlgeschlagen",
-  abmeldung: "Abmeldung",
-  "konto.angelegt": "Konto angelegt",
-  "konto.geloescht": "Konto gelöscht",
-  "konto.rolle": "Rolle geändert",
-  "konto.passwort": "Passwort gewechselt",
-  "konto.passwort.gesetzt": "Passwort zurückgesetzt",
-  "konto.passwort.fehlgeschlagen": "Passwortwechsel abgelehnt",
-  "zweitfaktor.eingeschaltet": "Zweiter Faktor eingeschaltet",
-  "zweitfaktor.ausgeschaltet": "Zweiter Faktor abgeschaltet",
-  "zweitfaktor.zurueckgesetzt": "Zweiter Faktor von der Verwaltung entfernt",
-  "zweitfaktor.ersatzcodes": "Ersatzcodes neu erzeugt",
-  "seite.angelegt": "Seite angelegt",
-  "seite.geaendert": "Seite geändert",
-  "seite.geloescht": "In den Papierkorb",
-  "seite.entfernt": "Endgültig gelöscht",
-  "seite.wiederhergestellt": "Wiederhergestellt",
-  "version.zurueckgeholt": "Version zurückgeholt",
-  "freigabe.erteilt": "Freigabe erteilt",
-  "freigabe.entzogen": "Freigabe entzogen",
-  "oeffentlich.an": "Öffentlich geschaltet",
-  "oeffentlich.aus": "Öffentlich zurückgenommen",
-  "anhang.hochgeladen": "Anhang hochgeladen",
-  "anhang.bearbeitet": "Anhang bearbeitet",
-  "anhang.entfernt": "Anhang entfernt",
-  "kommentar.angelegt": "Kommentar geschrieben",
-  "kommentar.geaendert": "Kommentar bearbeitet",
-  "kommentar.geloescht": "Kommentar gelöscht",
-  "kommentar.erledigt": "Faden erledigt oder geöffnet",
-  "einstellung.geaendert": "Einstellung geändert",
-  "einstellung.zurueckgesetzt": "Einstellung zurückgesetzt",
-  "suchindex.neu": "Suchindex neu aufgebaut",
-  "lizenz.geladen": "Lizenz geladen",
+  anmeldung: "Sign-in",
+  "anmeldung.fehlgeschlagen": "Sign-in failed",
+  abmeldung: "Sign-out",
+  "konto.angelegt": "Account created",
+  "konto.geloescht": "Account deleted",
+  "konto.rolle": "Role changed",
+  "konto.passwort": "Password changed",
+  "konto.passwort.gesetzt": "Password reset",
+  "konto.passwort.fehlgeschlagen": "Password change refused",
+  "zweitfaktor.eingeschaltet": "Second factor switched on",
+  "zweitfaktor.ausgeschaltet": "Second factor switched off",
+  "zweitfaktor.zurueckgesetzt": "Second factor removed by an administrator",
+  "zweitfaktor.ersatzcodes": "Recovery codes regenerated",
+  "seite.angelegt": "Page created",
+  "seite.geaendert": "Page changed",
+  "seite.geloescht": "Moved to trash",
+  "seite.entfernt": "Deleted permanently",
+  "seite.wiederhergestellt": "Restored",
+  "version.zurueckgeholt": "Version restored",
+  "freigabe.erteilt": "Share granted",
+  "freigabe.entzogen": "Share revoked",
+  "oeffentlich.an": "Made public",
+  "oeffentlich.aus": "Public link withdrawn",
+  "anhang.hochgeladen": "Attachment uploaded",
+  "anhang.bearbeitet": "Attachment edited",
+  "anhang.entfernt": "Attachment removed",
+  "kommentar.angelegt": "Comment written",
+  "kommentar.geaendert": "Comment edited",
+  "kommentar.geloescht": "Comment deleted",
+  "kommentar.erledigt": "Thread resolved or reopened",
+  "einstellung.geaendert": "Setting changed",
+  "einstellung.zurueckgesetzt": "Setting reset",
+  "suchindex.neu": "Search index rebuilt",
+  "lizenz.geladen": "Licence loaded",
   // Die Vorlagen gibt es nicht mehr. Die beiden Namen bleiben trotzdem stehen:
   // in einer Prüfspur, die Jahre zurückreicht, stehen sie weiterhin, und eine
   // Zeile, die nur noch ihren rohen Schlüssel zeigt, ist genau dort unlesbar,
   // wo jemand nachschlägt.
-  "vorlage.gesetzt": "Als Vorlage gesetzt (Funktion entfernt)",
-  "vorlage.aufgehoben": "Vorlage aufgehoben (Funktion entfernt)",
-  "space.exportiert": "Ablage exportiert",
-  "space.oeffentlich": "Ablage-Sichtbarkeit geändert",
-  "gruppe.angelegt": "Gruppe angelegt",
-  "gruppe.geloescht": "Gruppe gelöscht",
-  "gruppe.beigetreten": "Zur Gruppe hinzugefügt",
-  "gruppe.ausgetreten": "Aus Gruppe entfernt",
-  "spacerecht.erteilt": "Recht an Ablage erteilt",
-  "spacerecht.entzogen": "Recht an Ablage entzogen",
-  "anhangindex.nachgezogen": "Anhangindex nachgezogen",
-  "konfiguration.geaendert": "Konfigurationsdatei geändert",
-  "dienst.neustart": "Dienst neu gestartet",
-  "papierkorb.geleert": "Papierkorb der Instanz geleert",
+  "vorlage.gesetzt": "Marked as a template (feature removed)",
+  "vorlage.aufgehoben": "Template mark lifted (feature removed)",
+  "space.exportiert": "Space exported",
+  "space.oeffentlich": "Space visibility changed",
+  "gruppe.angelegt": "Group created",
+  "gruppe.geloescht": "Group deleted",
+  "gruppe.beigetreten": "Added to the group",
+  "gruppe.ausgetreten": "Removed from the group",
+  "spacerecht.erteilt": "Permission on a space granted",
+  "spacerecht.entzogen": "Permission on a space revoked",
+  "anhangindex.nachgezogen": "Attachment index caught up",
+  "konfiguration.geaendert": "Configuration file changed",
+  "dienst.neustart": "Service restarted",
+  "papierkorb.geleert": "Instance trash emptied",
 };
 
 // beschriften returns the readable name. If one is missing, at least the raw
@@ -132,7 +132,7 @@ export default function PruefspurView() {
         setFehler(null);
       })
       .catch((e: Error & { status?: number }) =>
-        setFehler(e.status === 403 ? "Nur für Administratoren." : e.message),
+        setFehler(e.status === 403 ? "Administrators only." : e.message),
       )
       .finally(() => setLaedt(false));
   }, [filter, frei]);
@@ -147,10 +147,10 @@ export default function PruefspurView() {
   if (!frei("pruefspur")) {
     return (
       <>
-        <h3>Protokoll</h3>
+        <h3>Audit log</h3>
         <p className="muted small">
-          Diese Funktion gehört zum Zusatzumfang und ist in der vorliegenden Lizenz
-          nicht enthalten. Aufgezeichnet wird weiter, nur lesen lässt es sich ohne Lizenz nicht.
+          This feature belongs to the paid scope and is not included in the licence
+          currently installed. Recording continues; without a licence it just cannot be read.
         </p>
       </>
     );
@@ -176,7 +176,7 @@ export default function PruefspurView() {
           neu, das Textfeld engt nur ein, was schon geladen ist. Stünden beide
           nebeneinander, sähen sie aus wie zwei Hälften derselben Sache. */}
       <Listenkopf
-        titel="Protokoll"
+        titel="Audit log"
         zahl={
           eintraege.length === 0
             ? undefined
@@ -186,10 +186,10 @@ export default function PruefspurView() {
         }
         filter={suche}
         setFilter={setSuche}
-        platzhalter="In den Einträgen suchen…"
+        platzhalter="Search the entries…"
       >
         <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-          <option value="">Alle Vorgänge</option>
+          <option value="">All actions</option>
           {aktionen.map((a) => (
             <option key={a.aktion} value={a.aktion}>
               {beschriften(a.aktion) + ` (${a.anzahl})`}
@@ -198,15 +198,15 @@ export default function PruefspurView() {
         </select>
       </Listenkopf>
       <p className="muted small">
-        Wer hat wann was getan. Die Aufzeichnung läuft unabhängig von der Lizenz mit,
-        damit das Protokoll keine Lücken bekommt. Höchstens 500 Einträge je Abfrage.
+        Who did what, and when. Recording runs regardless of the licence so the log does
+        not end up with gaps. At most 500 entries per query.
       </p>
 
       {fehler && <div className="fehler">{fehler}</div>}
-      {laedt && <div className="muted">Lädt…</div>}
+      {laedt && <div className="muted">Loading…</div>}
 
       {!laedt && sichtbar.length === 0 && !fehler && (
-        <div className="muted">Keine Einträge.</div>
+        <div className="muted">No entries.</div>
       )}
 
       {sichtbar.length > 0 && (
@@ -214,11 +214,11 @@ export default function PruefspurView() {
         <table className="tabelle pruefspur-tabelle">
           <thead>
             <tr>
-              <th>Zeitpunkt</th>
-              <th>Wer</th>
-              <th>Vorgang</th>
-              <th>Betrifft</th>
-              <th>Adresse</th>
+              <th>When</th>
+              <th>Who</th>
+              <th>Action</th>
+              <th>Concerns</th>
+              <th>Address</th>
             </tr>
           </thead>
           <tbody>
@@ -229,7 +229,7 @@ export default function PruefspurView() {
               <tr key={e.id} className={AUFFAELLIG.has(e.aktion) ? "auffaellig" : undefined}>
                 <td className="einzeilig">{zeit(e.zeitpunkt)}</td>
                 <td>
-                  {e.akteurName || <span className="muted">unbekannt</span>}
+                  {e.akteurName || <span className="muted">unknown</span>}
                   {e.akteurEmail && <div className="muted small">{e.akteurEmail}</div>}
                 </td>
                 <td>{beschriften(e.aktion)}</td>
