@@ -329,6 +329,7 @@ func (s *Server) Design(w http.ResponseWriter, r *http.Request) {
 	a := s.aussehenLesen(r)
 	writeJSON(w, http.StatusOK, map[string]string{
 		"grundton": a.Grundton,
+		"sprache":  a.Sprache,
 		"akzent":   a.Akzent,
 		// The width sits here and not among the settings: those are reserved
 		// for administrators, and this value is needed by everyone who looks at

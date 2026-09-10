@@ -822,7 +822,10 @@ export const api = {
   },
   pruefspurAktionen: () => req<{ aktion: string; anzahl: number }[]>("/pruefspur/aktionen"),
 
-  design: () => req<{ grundton: string; akzent: string; seitenbreite: string }>("/design"),
+  design: () => req<{ grundton: string; akzent: string; seitenbreite: string; sprache?: string }>("/design"),
+  // The interface language on the account. Empty resets to "the browser decides".
+  spracheSpeichern: (sprache: string) =>
+    req<unknown>("/design/sprache", { method: "PUT", body: JSON.stringify({ sprache }) }),
   /** Base tone and accent of one's own account. Empty resets to the default. */
   aussehenSpeichern: (grundton: string, akzent: string) =>
     req<{ grundton: string; akzent: string }>("/design", {
