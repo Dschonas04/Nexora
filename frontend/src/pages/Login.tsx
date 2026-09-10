@@ -98,8 +98,8 @@ export default function Login() {
             />
           </div>
           <p className="muted small">
-            Sechs Ziffern aus der App. Ist das Telefon nicht zur Hand, tut es auch einer
-            der Ersatzcodes; jeder davon gilt einmal.
+            Six digits from the app. If the phone is out of reach, one of the recovery
+            codes works too; each of them works once.
           </p>
           <button className="btn-primary" type="submit" disabled={busy || !code.trim()}>
             {busy ? "Checking…" : "Sign in"}
