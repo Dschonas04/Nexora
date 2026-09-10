@@ -68,9 +68,9 @@ func (s *Server) LDAPAnmeldung(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusConflict, err.Error())
 		return
 	}
-	// Auch hier gilt der zweite Faktor, wenn das Konto einen hat. Das
-	// Verzeichnis prueft das Passwort, den Code prueft diese Instanz -- der
-	// zweite Faktor haengt am Konto und nicht am Weg, ueber den es sich meldet.
+	// The second factor applies here too when the account has one. The
+	// directory checks the password, this instance checks the code -- the second
+	// factor hangs on the account and not on the route it signs in through.
 	if s.zweitfaktorAktiv(r.Context(), u.ID) {
 		ticket, err := auth.ZweitTicket(s.Secret, u.ID)
 		if err != nil {

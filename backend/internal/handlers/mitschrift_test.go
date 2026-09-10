@@ -68,7 +68,7 @@ func TestStauWirftHinaus(t *testing.T) {
 	if ImRaum("s3") != 1 {
 		t.Fatalf("erwartet: nur noch einer im Raum, ist: %d", ImRaum("s3"))
 	}
-	// Sein Kanal ist zu, sein Schreiber beendet sich von selbst.
+	// Its channel is closed, its writer ends by itself.
 	<-langsam.post
 	if _, offen := <-langsam.post; offen {
 		t.Fatal("Kanal des Hinausgeworfenen ist noch offen")

@@ -279,10 +279,10 @@ func schreibeVerzeichnis(b *strings.Builder, seiten []exportSeite, namen map[str
 			if strings.TrimSpace(titel) == "" {
 				titel = "Ohne Titel"
 			}
-			// Spitze Klammern um das Ziel: ein Dateiname mit Leerzeichen wuerde
-			// den Verweis sonst nach dem ersten Wort beenden. Prozentzeichen
-			// taeten es auch, sind aber unlesbar, und diese Datei will gelesen
-			// werden.
+			// Angle brackets around the target: a file name with spaces would
+			// otherwise end the link after the first word. Percent signs would
+			// do as well, but they are unreadable, and this file wants to be
+			// read.
 			fmt.Fprintf(b, "%s- [%s](<%s>)\n", strings.Repeat("  ", tiefe), titel, namen[p.ID])
 			stufe(p.ID, tiefe+1)
 		}

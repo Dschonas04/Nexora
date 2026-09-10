@@ -254,9 +254,9 @@ var klopfer = &http.Client{
 	},
 	Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // siehe oben
-		// Keine Verbindung wird aufgehoben: es sind wenige Adressen, selten
-		// gefragt, und eine offene Verbindung zu einem Rechner, der gerade
-		// neu startet, meldete ihn als erreichbar.
+		// No connection is kept: there are few addresses, rarely asked about,
+		// and an open connection to a machine that is currently rebooting would
+		// report it as reachable.
 		DisableKeepAlives: true,
 	},
 }

@@ -96,22 +96,21 @@ type Konfig struct {
 	RedisPasswort  string
 	RedisDatenbank int
 	RedisVorsilbe  string
-	// RedisTLS spricht den Zwischenspeicher verschlüsselt an. Er hält
-	// Sitzungskennungen, und die sind so viel wert wie ein Passwort.
+	// RedisTLS talks to the cache encrypted. It holds session ids, and those are
+	// worth as much as a password.
 	RedisTLS bool
 
-	// TLS im Verbund
+	// TLS inside the compound
 	//
-	// TLSZertifikat und TLSSchluessel machen aus dem Dienst einen, der HTTPS
-	// spricht. Beide leer heißt: unverschlüsselt wie bisher, was für einen
-	// Dienst richtig ist, vor dem ohnehin ein Gegenstück steht, das die
-	// Verschlüsselung übernimmt und auf demselben Rechner sitzt.
+	// TLSZertifikat and TLSSchluessel turn the service into one that speaks
+	// HTTPS. Both empty means: unencrypted as before, which is right for a
+	// service that has a counterpart in front of it anyway which takes over the
+	// encryption and sits on the same machine.
 	TLSZertifikat string
 	TLSSchluessel string
-	// TLSWurzel ist eine ZUSÄTZLICHE Zertifizierungsstelle für alles, was
-	// dieser Dienst seinerseits anspricht: Datenbank, Ablage,
-	// Zwischenspeicher. Die öffentlichen Stellen bleiben daneben gültig, siehe
-	// internal/vertrauen.
+	// TLSWurzel is an ADDITIONAL certificate authority for everything this
+	// service talks to in turn: database, object store, cache. The public
+	// authorities stay valid alongside it, see internal/vertrauen.
 	TLSWurzel string
 
 	// LDAP / Active Directory

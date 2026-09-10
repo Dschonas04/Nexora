@@ -10,15 +10,15 @@ package dok
 
 import "fmt"
 
-// rgb ist eine Farbe, wie das PDF sie braucht.
+// rgb is a colour the way the PDF needs it.
 type rgb struct{ r, g, b float64 }
 
-// pdfFarbe schreibt den Operator, der ab hier gilt.
+// pdfFarbe writes the operator that applies from here on.
 func (c rgb) pdfFarbe() string {
 	return fmt.Sprintf("%.3f %.3f %.3f rg", c.r, c.g, c.b)
 }
 
-// hex schreibt dieselbe Farbe für Word.
+// hex writes the same colour for Word.
 func (c rgb) hex() string {
 	n := func(v float64) int {
 		x := int(v*255 + 0.5)
@@ -33,9 +33,9 @@ func (c rgb) hex() string {
 	return fmt.Sprintf("%02X%02X%02X", n(c.r), n(c.g), n(c.b))
 }
 
-// schriftfarben sind die Farben für den Text selbst. Kräftig genug, um auf
-// Weiß gelesen zu werden, und nicht kräftiger: eine Seite, auf der jedes zweite
-// Wort leuchtet, liest niemand.
+// schriftfarben are the colours for the text itself. Strong enough to be read
+// on white, and no stronger: nobody reads a page where every other word
+// glows.
 var schriftfarben = map[string]rgb{
 	"gray":   {0.42, 0.42, 0.40},
 	"brown":  {0.51, 0.36, 0.24},
@@ -48,9 +48,9 @@ var schriftfarben = map[string]rgb{
 	"pink":   {0.79, 0.21, 0.44},
 }
 
-// hintergrundfarben sind die Markierungen. Blass, weil darauf gelesen wird:
-// derselbe Ton wie in der Oberfläche, nur eine Spur heller, damit auch
-// gedruckt noch Text darunter zu erkennen ist.
+// hintergrundfarben are the highlights. Pale, because they are read on top of:
+// the same tone as in the interface, only a shade lighter, so that text under
+// them can still be made out in print.
 var hintergrundfarben = map[string]rgb{
 	"gray":   {0.90, 0.90, 0.89},
 	"brown":  {0.92, 0.86, 0.80},
@@ -63,9 +63,8 @@ var hintergrundfarben = map[string]rgb{
 	"pink":   {0.99, 0.87, 0.92},
 }
 
-// wordMarker sind die Namen, die Word für seine Markierung erlaubt. Eine feste
-// Palette, keine freien Werte -- deshalb hier die Zuordnung und nicht der
-// Hexwert von oben.
+// wordMarker are the names Word permits for its highlight. A fixed palette, no
+// free values -- hence the mapping here rather than the hex value from above.
 var wordMarker = map[string]string{
 	"gray":   "lightGray",
 	"brown":  "darkYellow",
@@ -78,9 +77,9 @@ var wordMarker = map[string]string{
 	"pink":   "magenta",
 }
 
-// schriftfarbe und hintergrundfarbe liefern die Farbe zu einem Namen. Ein
-// unbekannter Name und "default" ergeben nichts -- dann bleibt es beim
-// gewöhnlichen Satz, was richtiger ist, als etwas zu raten.
+// schriftfarbe and hintergrundfarbe return the colour for a name. An unknown
+// name and "default" yield nothing -- then ordinary type it stays, which is
+// more correct than guessing something.
 func schriftfarbe(name string) (rgb, bool) {
 	c, ok := schriftfarben[name]
 	return c, ok

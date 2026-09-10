@@ -129,8 +129,8 @@ func (s *Server) WordSchreiben(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Mit den Bildern: sonst verliert eine Word-Datei bei jedem Zurueckschreiben
-	// die Bilder, die beim Einlesen noch mitgekommen sind.
+	// With the pictures: otherwise a Word file loses on every write-back the
+	// pictures that came along on import.
 	roh, err := dok.Word(dok.AusInhaltMitBildern(req.Bloecke, req.Titel, s.bildquelle(r.Context(), uid)))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "Dokument konnte nicht erzeugt werden")

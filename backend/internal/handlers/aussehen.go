@@ -8,17 +8,17 @@ import (
 	"nexora/internal/middleware"
 )
 
-// Das Aussehen gehoert dem Konto.
+// The appearance belongs to the account.
 //
-// Grundton und Akzent standen als design_grundton und design_akzent in der
-// Einstellungstabelle, also einmal fuer die ganze Instanz und nur fuer
-// Administratoren aenderbar. Das war die falsche Ebene: welche Farbe jemand
-// ertraegt und ob er hell oder dunkel arbeitet, geht niemanden sonst etwas an,
-// und wer nachts dunkel stellte, stellte alle anderen mit um.
+// Base tone and accent used to sit in the settings table as design_grundton and
+// design_akzent, that is once for the whole instance and changeable only by
+// administrators. That was the wrong level: which colour somebody can bear and
+// whether they work light or dark is nobody else's business, and whoever
+// switched to dark at night switched everybody else over too.
 //
-// Jetzt liegen beide Werte in der Zeile des Kontos. Leer heisst "nichts
-// gewaehlt": dann gilt die Vorgabe, und zwar dieselbe, die auch der
-// Abgemeldete auf der Anmeldeseite sieht.
+// Now both values live in the account's row. Empty means "nothing chosen": then
+// the default applies, and it is the same one the signed-out visitor sees on
+// the login page.
 const (
 	grundtonVorgabe = "grau"
 	akzentVorgabe   = "#2383e2"
@@ -29,9 +29,9 @@ type aussehenAntwort struct {
 	Akzent   string `json:"akzent"`
 }
 
-// aussehenLesen holt die Wahl des Kontos und ergaenzt fehlende Werte durch die
-// Vorgabe. Ein Fehler beim Lesen ist keiner, der die Oberflaeche aufhalten
-// darf: dann sieht das Konto eben die Vorgabe.
+// aussehenLesen fetches the account's choice and fills missing values from the
+// default. A read error is not one that may hold up the interface: the account
+// simply sees the default then.
 func (s *Server) aussehenLesen(r *http.Request) aussehenAntwort {
 	a := aussehenAntwort{Grundton: grundtonVorgabe, Akzent: akzentVorgabe}
 	uid := middleware.UserID(r)
@@ -53,11 +53,11 @@ func (s *Server) aussehenLesen(r *http.Request) aussehenAntwort {
 	return a
 }
 
-// AussehenSpeichern nimmt die Wahl des angemeldeten Kontos entgegen.
+// AussehenSpeichern takes in the signed-in account's choice.
 //
-// Geprueft wird beides, obwohl die Oberflaeche nur gueltige Werte schickt: der
-// Akzent landet unveraendert in einer CSS-Variablen, und eine Zeichenkette mit
-// Klammern waere ein Weg hinein.
+// Both are checked although the interface only ever sends valid values: the
+// accent ends up unchanged in a CSS variable, and a string with braces in it
+// would be a way inside.
 func (s *Server) AussehenSpeichern(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Grundton string `json:"grundton"`
@@ -70,7 +70,7 @@ func (s *Server) AussehenSpeichern(w http.ResponseWriter, r *http.Request) {
 	req.Grundton = strings.TrimSpace(req.Grundton)
 	req.Akzent = strings.ToLower(strings.TrimSpace(req.Akzent))
 
-	// Leer ist erlaubt und heisst "zurueck auf die Vorgabe".
+	// Empty is allowed and means "back to the default".
 	if req.Grundton != "" && !grundtoene[req.Grundton] {
 		writeErr(w, http.StatusBadRequest, "erwartet weiss, grau oder dunkel")
 		return

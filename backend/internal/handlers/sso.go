@@ -293,9 +293,9 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 		rolle = "admin"
 	}
 
-	// Auch ein Konto aus dem Verzeichnis bekommt einen Benutzernamen, damit es
-	// spaeter nicht als einziges nur ueber die Adresse ansprechbar ist. Bleibt
-	// nichts Brauchbares uebrig, bleibt das Feld leer.
+	// An account from the directory gets a user name too, so that it is not
+	// later the only one addressable by address alone. If nothing usable
+	// remains, the field stays empty.
 	benutzername := s.freierBenutzername(ctx, benutzernameAusAdresse(email))
 
 	err = s.Pool.QueryRow(ctx,
