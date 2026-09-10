@@ -83,10 +83,10 @@ export default function Login() {
       <div className="auth">
         <form className="auth-card" onSubmit={codeSenden}>
           <h1>Nexora</h1>
-          <p className="sub">Zweiter Schritt</p>
+          <p className="sub">Second step</p>
           {error && <div className="error">{error}</div>}
           <div className="field">
-            <label>Code aus der Authenticator-App</label>
+            <label>Code from your authenticator app</label>
             <input
               className="codefeld"
               inputMode="text"
@@ -102,7 +102,7 @@ export default function Login() {
             der Ersatzcodes; jeder davon gilt einmal.
           </p>
           <button className="btn-primary" type="submit" disabled={busy || !code.trim()}>
-            {busy ? "Prüft…" : "Anmelden"}
+            {busy ? "Checking…" : "Sign in"}
           </button>
           <div className="switch">
             <button
@@ -114,7 +114,7 @@ export default function Login() {
                 setError("");
               }}
             >
-              Zurück zur Anmeldung
+              Back to sign-in
             </button>
           </div>
         </form>
@@ -126,10 +126,10 @@ export default function Login() {
     <div className="auth">
       <form className="auth-card" onSubmit={submit}>
         <h1>Nexora</h1>
-        <p className="sub">Melde dich in deinem Workspace an</p>
+        <p className="sub">Sign in to your workspace</p>
         {error && <div className="error">{error}</div>}
         <div className="field">
-          <label>{ueberVerzeichnis ? "Benutzer" : "E-Mail oder Benutzername"}</label>
+          <label>{ueberVerzeichnis ? "User" : "Email or username"}</label>
           {/* type="text" auch ohne Verzeichnis: bei type="email" hält der
               Browser jede Eingabe ohne @ für einen Tippfehler und lässt das
               Formular gar nicht erst abschicken. */}
@@ -142,11 +142,11 @@ export default function Login() {
           />
         </div>
         <div className="field">
-          <label>Passwort</label>
+          <label>Password</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
         <button className="btn-primary" type="submit" disabled={busy}>
-          {busy ? "Anmelden…" : "Anmelden"}
+          {busy ? "Signing in…" : "Sign in"}
         </button>
         {wege?.ldap && (
           <div className="switch">
@@ -156,8 +156,8 @@ export default function Login() {
               onClick={() => setUeberVerzeichnis((v) => !v)}
             >
               {ueberVerzeichnis
-                ? "Stattdessen mit Konto und Passwort anmelden"
-                : "Stattdessen über das Verzeichnis anmelden"}
+                ? "Sign in with account and password instead"
+                : "Sign in through the directory instead"}
             </button>
           </div>
         )}
@@ -165,19 +165,19 @@ export default function Login() {
         {wege?.oidc && (
           <>
             <div className="anmelde-trenner">
-              <span>oder</span>
+              <span>or</span>
             </div>
             {/* An ordinary link, not a fetch: the provider answers with a
                 redirect to its own page, and the browser has to go there
                 itself. */}
             <a className="btn-primary anmelde-sso" href="/api/auth/oidc/start">
-              {wege.oidcText || `Mit ${wege.anbieter || "SSO"} anmelden`}
+              {wege.oidcText || `Sign in with ${wege.anbieter || "SSO"}`}
             </a>
           </>
         )}
 
         <div className="switch">
-          Kein Konto? <Link to="/register">Registrieren</Link>
+          No account? <Link to="/register">Register</Link>
         </div>
       </form>
     </div>

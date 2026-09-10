@@ -87,7 +87,7 @@ export default function PublicPage() {
           </Fehlergrenze>
           <div className="oeffentlich-fuss">
             Stand:{" "}
-            {stand.toLocaleDateString("de-DE", {
+            {stand.toLocaleDateString(undefined, {
               day: "2-digit",
               month: "long",
               year: "numeric",

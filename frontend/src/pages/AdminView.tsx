@@ -100,22 +100,22 @@ export default function AdminView() {
   return (
     <>
       <Listenkopf
-        titel="Nutzer und Rollen"
+        titel="Users and roles"
         zahl={
           `${users.length} gesamt · ${users.filter((u) => u.role === "admin").length} mit ` +
           `Verwaltungsrecht · ${users.filter((u) => u.zweitfaktor).length} mit zweitem Faktor`
         }
         filter={filter}
         setFilter={setFilter}
-        platzhalter="Filtern nach Name, Adresse, Anmeldename"
+        platzhalter="Filter by name, address, login name"
       >
         <button className="btn btn-primary" onClick={() => setAnlegen(true)}>
-          Konten anlegen
+          Create accounts
         </button>
       </Listenkopf>
       <p className="muted small">
-        Administratoren können jede Seite im Arbeitsbereich lesen und bearbeiten. Rollen
-        gelten sofort; eine laufende Sitzung wird dafür nicht beendet.
+        Administrators may read and edit every page in the workspace. Roles take effect
+        at once; a running session is not ended for it.
       </p>
 
       {hinweis && <div className="hinweis-ok">{hinweis}</div>}
@@ -125,11 +125,11 @@ export default function AdminView() {
           <thead>
             <tr>
               <th>Name</th>
-              <th>E-Mail</th>
-              <th>Anmeldename</th>
-              <th>Rolle</th>
-              <th>Zweiter Faktor</th>
-              <th>Angelegt</th>
+              <th>Email</th>
+              <th>Login name</th>
+              <th>Role</th>
+              <th>Second factor</th>
+              <th>Created</th>
               <th />
             </tr>
           </thead>
@@ -145,21 +145,21 @@ export default function AdminView() {
                 </td>
                 <td className="muted">{u.email}</td>
                 <td className="muted">
-                  {u.benutzername || <span className="muted">nicht vergeben</span>}
+                  {u.benutzername || <span className="muted">not set</span>}
                 </td>
-                <td className="muted">{u.role === "admin" ? "Admin" : "Nutzer"}</td>
+                <td className="muted">{u.role === "admin" ? "Admin" : "User"}</td>
                 <td className={u.zweitfaktor ? undefined : "muted"}>
                   {u.zweitfaktor ? "steht" : "keiner"}
                 </td>
                 <td className="muted einzeilig">
-                  {u.createdAt ? new Date(u.createdAt).toLocaleDateString("de-DE") : ""}
+                  {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ""}
                 </td>
                 <td className="zeilen-aktionen">
                   {/* Ein Knopf statt vier. Was mit einem Konto geht, steht im
                       Fenster beieinander; in der Zeile war es eine Reihe, die
                       mit jeder neuen Möglichkeit länger wurde. */}
                   <button className="btn-schlicht" onClick={() => setBearbeitet(u)}>
-                    Verwalten
+                    Manage
                   </button>
                 </td>
               </tr>
@@ -169,8 +169,8 @@ export default function AdminView() {
               <tr>
                 <td colSpan={7} className="muted">
                   {users.length === 0
-                    ? "Noch kein Konto angelegt."
-                    : "Kein Konto passt auf den Filter."}
+                    ? "No account created yet."
+                    : "No account matches the filter."}
                 </td>
               </tr>
             )}
@@ -270,17 +270,17 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
     const gut = fertig.filter((e) => !e.fehler);
     return (
       <Fenster
-        titel="Angelegt"
+        titel="Created"
         unter={`${gut.length} von ${fertig.length} Konten`}
         breit
         schliessen={schliessen}
         fuss={
           <>
             <button className="btn" onClick={kopieren} disabled={gut.length === 0}>
-              Liste kopieren
+              Copy the list
             </button>
             <button className="btn btn-primary" onClick={schliessen}>
-              Fertig
+              Done
             </button>
           </>
         }
@@ -289,15 +289,15 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
             schließt, ohne sie mitzunehmen, muss sie zurücksetzen -- deshalb der
             Satz und nicht bloß die Tabelle. */}
         <p className="muted small">
-          Die Passwörter stehen nur in diesem Fenster. Gib sie auf einem anderen Weg als
-          per E-Mail weiter und lass danach jeden selbst eines wählen.
+          The passwords are shown in this window only. Hand them over by some route
+          other than email, and let everyone pick their own afterwards.
         </p>
         <table className="tabelle">
           <thead>
             <tr>
-              <th>E-Mail</th>
-              <th>Passwort</th>
-              <th>Zustand</th>
+              <th>Email</th>
+              <th>Password</th>
+              <th>State</th>
             </tr>
           </thead>
           <tbody>
@@ -316,18 +316,18 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
 
   return (
     <Fenster
-      titel="Konten anlegen"
-      unter={mehrere ? "Eine Zeile je Konto" : "Ein Konto"}
+      titel="Create accounts"
+      unter={mehrere ? "One line per account" : "One account"}
       breit={mehrere}
       schliessen={schliessen}
       fuss={
         <>
           <button className="btn" onClick={() => setMehrere((v) => !v)}>
-            {mehrere ? "Nur eines anlegen" : "Mehrere auf einmal"}
+            {mehrere ? "Create just one" : "Several at once"}
           </button>
           <span className="fuss-luecke" />
           <button className="btn" onClick={schliessen}>
-            Abbrechen
+            Cancel
           </button>
           <button
             className="btn btn-primary"
@@ -335,10 +335,10 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
             onClick={anlegen}
           >
             {busy
-              ? "Legt an…"
+              ? "Creating…"
               : mehrere
-                ? `${zeilen.length} ${zeilen.length === 1 ? "Konto" : "Konten"} anlegen`
-                : "Anlegen"}
+                ? `Create ${zeilen.length} ${zeilen.length === 1 ? "account" : "accounts"}`
+                : "Create"}
           </button>
         </>
       }
@@ -346,9 +346,9 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
       {mehrere ? (
         <>
           <p className="muted small">
-            Je Zeile eine E-Mail-Adresse, danach durch Komma, Semikolon oder Tabulator
-            getrennt Name, Anmeldename und Rolle. Alles außer der Adresse darf fehlen. Eine
-            Spaltenauswahl aus einem Kalkulationsblatt lässt sich unverändert einfügen.
+            One email address per line, then name, login name and role, separated by
+            comma, semicolon or tab. Everything except the address may be left out. A
+            column selection from a spreadsheet can be pasted unchanged.
           </p>
           <textarea
             className="mengenfeld"
@@ -364,16 +364,16 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
           />
           <div className="muted small">
             {zeilen.length === 0
-              ? "Noch keine brauchbare Zeile."
-              : `${zeilen.length} ${zeilen.length === 1 ? "Zeile" : "Zeilen"} erkannt · ` +
+              ? "No usable line yet."
+              : `${zeilen.length} ${zeilen.length === 1 ? "line" : "lines"} recognised · ` +
                 `${zeilen.filter((z) => z.rolle === "admin").length} davon als Admin · ` +
-                "die Passwörter werden erzeugt und danach angezeigt"}
+                "the passwords are generated and shown afterwards"}
           </div>
         </>
       ) : (
         <div className="fenster-felder">
           <label>
-            <span>E-Mail</span>
+            <span>Email</span>
             <input value={email} onChange={(e) => setEmail(e.target.value)} />
           </label>
           <label>
@@ -385,7 +385,7 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
             />
           </label>
           <label>
-            <span>Anmeldename</span>
+            <span>Login name</span>
             <input
               placeholder="optional"
               value={benutzername}
@@ -393,14 +393,14 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
             />
           </label>
           <label>
-            <span>Rolle</span>
+            <span>Role</span>
             <select value={rolle} onChange={(e) => setRolle(e.target.value)}>
-              <option value="user">Nutzer</option>
+              <option value="user">User</option>
               <option value="admin">Admin</option>
             </select>
           </label>
           <label className="feld-breit">
-            <span>Passwort</span>
+            <span>Password</span>
             <input
               value={passwort}
               placeholder="leer: wird erzeugt und danach angezeigt"
@@ -466,8 +466,8 @@ function KontoFenster({
       const { beendet } = await api.passwortSetzen(konto.id, neu);
       setNeu("");
       melden(
-        `Passwort für ${konto.name} gesetzt` +
-          (beendet > 0 ? `, ${beendet} ${beendet === 1 ? "Sitzung" : "Sitzungen"} beendet` : ""),
+        `Password set for ${konto.name}` +
+          (beendet > 0 ? `, ${beendet} ${beendet === 1 ? "session" : "sessions"} ended` : ""),
       );
       schliessen();
     } catch (e) {
@@ -480,12 +480,12 @@ function KontoFenster({
   const zweitfaktorWeg = async () => {
     if (
       !(await frage({
-        titel: "Zweiten Faktor entfernen",
+        titel: "Remove the second factor",
         text:
-          `${konto.name} meldet sich danach wieder mit dem Passwort allein an, bis ein neuer ` +
-          `eingerichtet ist. Nimm diesen Weg für ein verlorenes Telefon. Vergewissere ` +
-          `dich vorher auf einem anderen Kanal, dass die Bitte wirklich von dieser Person kommt.`,
-        bestaetigen: "Entfernen",
+          `${konto.name} then signs in with the password alone again until a new one is ` +
+          `set up. Take this route for a lost phone. Make sure beforehand, over some other ` +
+          `channel, that the request really comes from this person.`,
+        bestaetigen: "Remove",
         gefaehrlich: true,
       }))
     )
@@ -505,9 +505,9 @@ function KontoFenster({
   const loeschen = async () => {
     if (
       !(await frage({
-        titel: "Nutzer löschen",
-        text: `Das Konto ${konto.email} wird gelöscht, seine Seiten werden mit entfernt. Das lässt sich nicht rückgängig machen.`,
-        bestaetigen: "Nutzer löschen",
+        titel: "Delete user",
+        text: `The account ${konto.email} is deleted and its pages are removed with it. This cannot be undone.`,
+        bestaetigen: "Delete user",
         gefaehrlich: true,
       }))
     )
@@ -532,14 +532,14 @@ function KontoFenster({
       fuss={
         <>
           <button className="btn gefaehrlich" disabled={selbst || busy} onClick={loeschen}>
-            Löschen
+            Delete
           </button>
           <span className="fuss-luecke" />
           <button className="btn" onClick={schliessen}>
-            Abbrechen
+            Cancel
           </button>
           <button className="btn btn-primary" disabled={!geaendert || busy} onClick={speichern}>
-            Speichern
+            Save
           </button>
         </>
       }
@@ -547,14 +547,14 @@ function KontoFenster({
       {err && <div className="fehler">{err}</div>}
       <div className="fenster-felder">
         <label>
-          <span>Rolle</span>
+          <span>Role</span>
           <select value={rolle} disabled={selbst} onChange={(e) => setRolle(e.target.value)}>
-            <option value="user">Nutzer</option>
+            <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
         </label>
         <label>
-          <span>Anmeldename</span>
+          <span>Login name</span>
           <input
             placeholder="nicht vergeben"
             value={benutzername}
@@ -570,42 +570,42 @@ function KontoFenster({
       )}
 
       <div className="fenster-abschnitt">
-        <div className="modal-label">Passwort zurücksetzen</div>
+        <div className="modal-label">Reset password</div>
         <p className="muted small">
-          Alle Sitzungen dieses Kontos werden dabei beendet. Sag das neue Passwort auf einem
-          anderen Weg als per E-Mail und lass danach selbst eines wählen.
+          Every session of this account is ended in the process. Tell the new password by
+          some route other than email, and let them pick their own afterwards.
         </p>
         <div className="fenster-zeile">
           <input
             value={neu}
             disabled={selbst}
-            placeholder="Neues Passwort, mindestens 6 Zeichen"
+            placeholder="New password, at least 6 characters"
             onChange={(e) => setNeu(e.target.value)}
           />
           <button className="btn" disabled={selbst || busy || neu.length < 6} onClick={passwortSetzen}>
-            Setzen
+            Set
           </button>
           <button className="btn" disabled={selbst} onClick={() => setNeu(neuesPasswort())}>
-            Erzeugen
+            Generate
           </button>
         </div>
       </div>
 
       <div className="fenster-abschnitt">
-        <div className="modal-label">Zweiter Faktor</div>
+        <div className="modal-label">Second factor</div>
         {konto.zweitfaktor ? (
           <div className="fenster-zeile">
             <span className="muted small">
-              Steht. Das Konto wird bei jeder Anmeldung nach einem Code gefragt.
+              In place. The account is asked for a code at every sign-in.
             </span>
             <button className="btn" onClick={zweitfaktorWeg}>
-              Entfernen
+              Remove
             </button>
           </div>
         ) : (
           <p className="muted small">
-            Keiner eingerichtet. Einrichten kann ihn nur das Konto selbst, unter Zugang; die
-            Verwaltung kann ihn nur entfernen.
+            None set up. Only the account itself can set one up, under Access; the
+            administration can only remove it.
           </p>
         )}
       </div>

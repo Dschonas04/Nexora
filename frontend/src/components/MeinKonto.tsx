@@ -39,11 +39,11 @@ const KANTE = 256;
 type Teil = "profil" | "aussehen" | "passwort" | "zweitfaktor" | "geraete";
 
 const TEILE: { id: Teil; titel: string; unter: string }[] = [
-  { id: "profil", titel: "Profil", unter: "Name und Bild" },
-  { id: "aussehen", titel: "Aussehen", unter: "Grundton und Akzent" },
-  { id: "passwort", titel: "Passwort", unter: "Wechseln" },
-  { id: "zweitfaktor", titel: "Zweiter Faktor", unter: "App und Ersatzcodes" },
-  { id: "geraete", titel: "Geräte", unter: "Wo du angemeldet bist" },
+  { id: "profil", titel: "Profile", unter: "Name and picture" },
+  { id: "aussehen", titel: "Appearance", unter: "Base tone and accent" },
+  { id: "passwort", titel: "Password", unter: "Change it" },
+  { id: "zweitfaktor", titel: "Second factor", unter: "App and recovery codes" },
+  { id: "geraete", titel: "Devices", unter: "Where you are signed in" },
 ];
 
 /**
@@ -62,7 +62,7 @@ async function verkleinern(datei: File): Promise<Blob> {
     };
     i.onerror = () => {
       URL.revokeObjectURL(url);
-      gescheitert(new Error("Das ließ sich nicht als Bild lesen."));
+      gescheitert(new Error("That could not be read as an image."));
     };
     i.src = url;
   });
@@ -75,14 +75,14 @@ async function verkleinern(datei: File): Promise<Blob> {
   leinwand.width = KANTE;
   leinwand.height = KANTE;
   const stift = leinwand.getContext("2d");
-  if (!stift) throw new Error("Der Browser kann hier nicht zeichnen.");
+  if (!stift) throw new Error("The browser cannot draw here.");
   stift.drawImage(bild, x, y, kante, kante, 0, 0, KANTE, KANTE);
 
   return new Promise<Blob>((fertig, gescheitert) =>
     leinwand.toBlob(
       // JPEG und nicht PNG: ein Foto als PNG wäre um ein Vielfaches größer.
       // Güte 0,9 ist bei dieser Größe nicht von 1,0 zu unterscheiden.
-      (b) => (b ? fertig(b) : gescheitert(new Error("Das Bild ließ sich nicht erzeugen."))),
+      (b) => (b ? fertig(b) : gescheitert(new Error("The image could not be created."))),
       "image/jpeg",
       0.9,
     ),
@@ -97,7 +97,7 @@ export default function MeinKonto({ onClose }: { onClose: () => void }) {
 
   return (
     <Fenster
-      titel="Mein Konto"
+      titel="My account"
       unter={user.email}
       breit
       schliessen={onClose}
@@ -105,7 +105,7 @@ export default function MeinKonto({ onClose }: { onClose: () => void }) {
         <>
           <span className="fuss-luecke" />
           <button className="btn btn-primary" onClick={onClose}>
-            Schließen
+            Close
           </button>
         </>
       }
@@ -163,7 +163,7 @@ function Aussehen() {
       .then(() => neuLaden())
       // Bleibt die Wahl ungespeichert, steht sie trotzdem schon auf dem
       // Bildschirm. Der Satz sagt, dass sie den Neustart nicht überlebt.
-      .catch((e) => setFehler(e instanceof Error ? e.message : "Nicht gespeichert."));
+      .catch((e) => setFehler(e instanceof Error ? e.message : "Not saved."));
   };
 
   const tonSetzen = (wert: string) => {
@@ -180,9 +180,9 @@ function Aussehen() {
 
   return (
     <>
-      <h3>Grundton</h3>
+      <h3>Base tone</h3>
       <p className="muted small">
-        Gilt für dieses Konto, auf jedem Gerät, an dem du angemeldet bist.
+        Applies to this account, on every device you are signed in on.
       </p>
       <div className="tonwahl">
         {GRUNDTOENE.map((g) => {
@@ -205,9 +205,9 @@ function Aussehen() {
         })}
       </div>
 
-      <h3>Akzentfarbe</h3>
+      <h3>Accent colour</h3>
       <p className="muted small">
-        Färbt Knöpfe, Verknüpfungen und die Markierung in Listen.
+        Colours buttons, links and the highlight in lists.
       </p>
       <div className="akzentwahl">
         {AKZENTE.map((a) => (
@@ -229,7 +229,7 @@ function Aussehen() {
           value={akzent}
           spellCheck={false}
           maxLength={7}
-          aria-label="Eigener Wert"
+          aria-label="Custom value"
           placeholder="#2383e2"
           onChange={(ev) => {
             const w = ev.target.value.trim().toLowerCase();
@@ -248,7 +248,7 @@ function Aussehen() {
         <input
           type="color"
           className="farbwaehler"
-          aria-label="Farbwähler"
+          aria-label="Colour picker"
           value={/^#[0-9a-f]{6}$/.test(akzent) ? akzent : "#2383e2"}
           onChange={(ev) => akzentSetzen(ev.target.value.toLowerCase(), false)}
           onBlur={() => {
@@ -262,32 +262,32 @@ function Aussehen() {
           nicht. */}
       <div className="wirkprobe">
         <button className="btn btn-primary" type="button">
-          Primärer Knopf
+          Primary button
         </button>
         <button className="btn" type="button">
-          Sekundärer Knopf
+          Secondary button
         </button>
         <a
           className="wirkprobe-verweis"
           href="#aussehen"
           onClick={(e) => e.preventDefault()}
         >
-          Verknüpfung im Fließtext
+          A link in running text
         </a>
-        <span className="wirkprobe-zeile">Ausgewählter Eintrag</span>
+        <span className="wirkprobe-zeile">Selected entry</span>
       </div>
 
       {!flaecheLesbar(akzent) && (
         <p className="muted small">
-          Auf dieser Fläche ist die Beschriftung schwer zu lesen. Ein dunklerer oder
-          hellerer Wert derselben Farbe hilft.
+          Labels are hard to read on this surface. A darker or lighter value of the
+          same colour helps.
         </p>
       )}
       {verschoben && (
         <p className="muted small">
-          Als Text auf dem Grund wird die Farbe nach <code>{verschoben}</code> gerückt,
-          sonst wäre eine Verknüpfung im Fließtext nicht zu lesen. Flächen behalten den
-          eingetragenen Wert.
+          As text on the ground the colour is shifted to <code>{verschoben}</code>,
+          otherwise a link in running text would be unreadable. Surfaces keep the value
+          you entered.
         </p>
       )}
       {fehler && <div className="fehlertext small">{fehler}</div>}
@@ -314,7 +314,7 @@ function Profil() {
     try {
       await api.profilbildSetzen(await verkleinern(datei));
       await neuLaden();
-      setMeldung("Bild gespeichert.");
+      setMeldung("Picture saved.");
     } catch (e) {
       setFehler((e as Error).message);
     } finally {
@@ -331,7 +331,7 @@ function Profil() {
     try {
       await api.profilbildWeg();
       await neuLaden();
-      setMeldung("Bild entfernt.");
+      setMeldung("Picture removed.");
     } catch (e) {
       setFehler((e as Error).message);
     } finally {
@@ -350,7 +350,7 @@ function Profil() {
     try {
       await api.profilAendern(name.trim());
       await neuLaden();
-      setMeldung("Name gespeichert.");
+      setMeldung("Name saved.");
     } catch (e) {
       setFehler((e as Error).message);
     } finally {
@@ -360,7 +360,7 @@ function Profil() {
 
   return (
     <>
-      <h3>Profil</h3>
+      <h3>Profile</h3>
       <div className="profil-kopf">
         <Profilbild
           id={user.id}
@@ -378,11 +378,11 @@ function Profil() {
               disabled={laeuft !== null}
               onClick={() => dateiFeld.current?.click()}
             >
-              {user.bildStand ? "Bild ändern" : "Bild wählen"}
+              {user.bildStand ? "Change picture" : "Choose a picture"}
             </button>
             {user.bildStand && (
               <button className="btn" disabled={laeuft !== null} onClick={bildWeg}>
-                Entfernen
+                Remove
               </button>
             )}
           </div>
@@ -402,7 +402,7 @@ function Profil() {
       </p>
 
       <div className="fenster-abschnitt">
-        <div className="modal-label">Angezeigter Name</div>
+        <div className="modal-label">Display name</div>
         <div className="fenster-zeile">
           <input
             value={name}
@@ -415,13 +415,13 @@ function Profil() {
             disabled={!namePasst || !nameGeaendert || laeuft !== null}
             onClick={nameSpeichern}
           >
-            {laeuft === "name" ? "Speichert…" : "Speichern"}
+            {laeuft === "name" ? "Saving…" : "Save"}
           </button>
         </div>
         <p className="muted small">
-          So stehst du an Seiten, Kommentaren und in Freigabelisten. Die E-Mail-Adresse ist
-          die Kennung des Kontos und lässt sich hier nicht ändern — daran hängen die
-          Anmeldung und jede Freigabe.
+          This is how you appear on pages, in comments and in share lists. The email
+          address is the account\u2019s identifier and cannot be changed here \u2014 sign-in
+          and every share hang on it.
         </p>
       </div>
 
@@ -467,9 +467,9 @@ function Passwort() {
       setFertig(
         beendet > 0
           ? `Passwort gewechselt. ${beendet} andere ${
-              beendet === 1 ? "Sitzung wurde" : "Sitzungen wurden"
+              beendet === 1 ? "session was" : "sessions were"
             } beendet, dieses Gerät bleibt angemeldet.`
-          : "Passwort gewechselt. Es war keine weitere Sitzung offen.",
+          : "Password changed. No other session was open.",
       );
     } catch (e) {
       setFehler((e as Error).message);
@@ -480,27 +480,27 @@ function Passwort() {
 
   return (
     <>
-      <h3>Passwort ändern</h3>
+      <h3>Change password</h3>
       {fertig ? (
         <>
           <div className="hinweis-ok">{fertig}</div>
           <div className="knopfreihe">
             <button className="btn" onClick={() => setFertig(null)}>
-              Noch einmal ändern
+              Change it again
             </button>
           </div>
         </>
       ) : (
         <>
           <p className="muted small">
-            Das bisherige Passwort wird verlangt, obwohl du angemeldet bist. Es geht nicht
-            darum, wer du bist, sondern um den Fall, dass jemand anders vor deinem offenen
-            Browser sitzt. Nach dem Wechsel werden alle anderen Sitzungen beendet, dieses
-            Gerät bleibt angemeldet.
+            The current password is asked for even though you are signed in. It is not
+            about who you are, but about the case where somebody else is sitting at your
+            open browser. After the change every other session is ended; this device stays
+            signed in.
           </p>
           <div className="fenster-felder">
             <label className="feld-breit">
-              <span>Bisheriges Passwort</span>
+              <span>Current password</span>
               <input
                 type="password"
                 autoComplete="current-password"
@@ -509,7 +509,7 @@ function Passwort() {
               />
             </label>
             <label>
-              <span>Neues Passwort</span>
+              <span>New password</span>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -518,7 +518,7 @@ function Passwort() {
               />
             </label>
             <label>
-              <span>Noch einmal</span>
+              <span>Once more</span>
               <input
                 type="password"
                 autoComplete="new-password"
@@ -528,18 +528,18 @@ function Passwort() {
               />
             </label>
           </div>
-          {zuKurz && <div className="fehler">Mindestens 6 Zeichen.</div>}
+          {zuKurz && <div className="fehler">At least 6 characters.</div>}
           {zuLang && (
             <div className="fehler">
               Zu lang. Mehr als 72 Zeichen liest die Prüfung nicht, der Rest fiele
               stillschweigend weg.
             </div>
           )}
-          {passtNicht && <div className="fehler">Die beiden Eingaben sind verschieden.</div>}
+          {passtNicht && <div className="fehler">The two entries differ.</div>}
           {fehler && <div className="fehler">{fehler}</div>}
           <div className="knopfreihe">
             <button className="btn" disabled={!bereit} onClick={senden}>
-              {laeuft ? "Wechselt…" : "Passwort ändern"}
+              {laeuft ? "Changing…" : "Change password"}
             </button>
           </div>
         </>
@@ -557,9 +557,9 @@ function ZweitfaktorTeil() {
 
   return (
     <>
-      <h3>Zweiter Faktor</h3>
+      <h3>Second factor</h3>
       {stand === null ? (
-        <p className="muted small">Wird geladen…</p>
+        <p className="muted small">Loading…</p>
       ) : (
         <Zweitfaktor stand={stand} neuLaden={laden} />
       )}
@@ -590,11 +590,11 @@ function Geraete() {
   const beenden = async (s: Sitzung) => {
     if (
       !(await frage({
-        titel: s.diese ? "Hier abmelden" : "Sitzung beenden",
+        titel: s.diese ? "Sign out here" : "End session",
         text: s.diese
-          ? "Das ist die Sitzung, mit der du gerade arbeitest. Nach dem Beenden musst du dich neu anmelden."
-          : `Die Sitzung auf ${s.browser} wird sofort ungültig. Wer sie benutzt, landet auf der Anmeldeseite.`,
-        bestaetigen: "Beenden",
+          ? "This is the session you are working in right now. After ending it you have to sign in again."
+          : `The session on ${s.browser} becomes invalid at once. Whoever uses it lands on the sign-in page.`,
+        bestaetigen: "End it",
         gefaehrlich: !s.diese,
       }))
     )
@@ -607,15 +607,15 @@ function Geraete() {
   return (
     <>
       <Listenkopf
-        titel="Angemeldete Geräte"
+        titel="Signed-in devices"
         zahl={
           sitzungen === null
             ? "wird geladen"
-            : `${sitzungen.length} ${sitzungen.length === 1 ? "Sitzung" : "Sitzungen"}`
+            : `${sitzungen.length} ${sitzungen.length === 1 ? "session" : "sessions"}`
         }
         filter={filter}
         setFilter={setFilter}
-        platzhalter="Filtern nach Gerät oder Adresse"
+        platzhalter="Filter by device or address"
       >
         {(sitzungen?.length ?? 0) > 1 && (
           <button
@@ -623,9 +623,9 @@ function Geraete() {
             onClick={async () => {
               if (
                 !(await frage({
-                  titel: "Überall sonst abmelden",
-                  text: "Alle anderen Sitzungen werden beendet. Diese hier bleibt bestehen.",
-                  bestaetigen: "Alle anderen beenden",
+                  titel: "Sign out everywhere else",
+                  text: "Every other session is ended. This one stays.",
+                  bestaetigen: "End all others",
                   gefaehrlich: true,
                 }))
               )
@@ -634,21 +634,21 @@ function Geraete() {
               laden();
             }}
           >
-            Überall sonst abmelden
+            Sign out everywhere else
           </button>
         )}
       </Listenkopf>
       <p className="muted small">
-        Findest du hier ein Gerät, das dir nicht gehört, beende die Sitzung und ändere
-        anschließend dein Passwort — beendet ist sie sofort, aber wer das Passwort hat, meldet
-        sich sonst neu an.
+        If you find a device here that is not yours, end the session and change your
+        password afterwards \u2014 it ends at once, but whoever has the password would
+        otherwise just sign in again.
       </p>
       <table className="tabelle">
         <thead>
           <tr>
             <th>Gerät</th>
-            <th>Adresse</th>
-            <th>Zuletzt</th>
+            <th>Address</th>
+            <th>Last seen</th>
             <th />
           </tr>
         </thead>
@@ -665,7 +665,7 @@ function Geraete() {
               </td>
               <td className="muted small">{s.ip || "—"}</td>
               <td className="muted small">
-                {new Date(s.zuletztAm).toLocaleString("de-DE", {
+                {new Date(s.zuletztAm).toLocaleString(undefined, {
                   day: "2-digit",
                   month: "2-digit",
                   year: "numeric",
@@ -675,7 +675,7 @@ function Geraete() {
               </td>
               <td className="zeilen-aktionen">
                 <button className="btn-schlicht gefaehrlich" onClick={() => beenden(s)}>
-                  Beenden
+                  End it
                 </button>
               </td>
             </tr>
@@ -684,10 +684,10 @@ function Geraete() {
             <tr>
               <td colSpan={4} className="muted">
                 {sitzungen === null
-                  ? "Wird geladen…"
+                  ? "Loading…"
                   : sitzungen.length === 0
-                    ? "Keine gespeicherte Sitzung."
-                    : "Keine Sitzung passt auf den Filter."}
+                    ? "No stored session."
+                    : "No session matches the filter."}
               </td>
             </tr>
           )}

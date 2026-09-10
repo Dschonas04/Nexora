@@ -8,12 +8,12 @@ export function pruefe(): string[] {
 
   // Known values: white on black is the maximum.
   if (Math.round(kontrast(ausHex("#ffffff"), ausHex("#000000"))) !== 21) {
-    fehler.push("Kontrast Weiß/Schwarz ist nicht 21");
+    fehler.push("contrast white/black is not 21");
   }
 
-  // Auf einem hellen Akzent muss die Schrift dunkel werden.
-  if (schriftAuf("#ffd400") !== "#1a1a1a") fehler.push("Gelb bekam weiße Schrift");
-  if (schriftAuf("#1a3a6b") !== "#ffffff") fehler.push("Dunkelblau bekam dunkle Schrift");
+  // On a light accent the text has to turn dark.
+  if (schriftAuf("#ffd400") !== "#1a1a1a") fehler.push("yellow got white text");
+  if (schriftAuf("#1a3a6b") !== "#ffffff") fehler.push("dark blue got dark text");
 
   // Jeder Akzent muss auf jedem Grundton lesbar werden.
   for (const grund of ["#ffffff", "#f7f7f6", "#1f1f1e"]) {

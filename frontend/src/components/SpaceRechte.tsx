@@ -19,18 +19,18 @@ type Stufe = "lesen" | "schreiben" | "verwalten";
 const STUFEN: { wert: Stufe; titel: string; erklaerung: string }[] = [
   {
     wert: "lesen",
-    titel: "Lesen",
-    erklaerung: "Seiten ansehen, nichts ändern",
+    titel: "Read",
+    erklaerung: "view pages, change nothing",
   },
   {
     wert: "schreiben",
-    titel: "Schreiben",
-    erklaerung: "Seiten ansehen und bearbeiten",
+    titel: "Write",
+    erklaerung: "view and edit pages",
   },
   {
     wert: "verwalten",
-    titel: "Verwalten",
-    erklaerung: "zusätzlich Rechte an diesem Space vergeben",
+    titel: "Manage",
+    erklaerung: "on top of that, grant permissions on this space",
   },
 ];
 
@@ -172,7 +172,7 @@ export default function SpaceRechte({
             {/* Stands there as a row and not as a footnote: otherwise an empty
                 list reads as if nobody could reach the space. */}
             <div className="rechte-zeile rechte-zeile-fest">
-              <Zeichen name="Eigentümer" gruppe />
+              <Zeichen name="Owner" gruppe />
               <div className="rechte-wer">
                 <div className="rechte-name">
                   Eigentümer und Administratoren

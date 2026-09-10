@@ -12,8 +12,8 @@ function zeit(iso: string): string {
   const heute = new Date();
   const gleicherTag = d.toDateString() === heute.toDateString();
   return gleicherTag
-    ? d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
-    : d.toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+    ? d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+    : d.toLocaleString(undefined, { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
 // What follows an @ up to the caret. Account names may contain spaces
@@ -301,7 +301,7 @@ export default function Kommentare({ pageId }: { pageId: string }) {
               className="link-btn"
               onClick={() => api.kommentarErledigt(k.id).then(laden).catch(() => {})}
             >
-              {k.erledigt ? "Wieder öffnen" : "Erledigt"}
+              {k.erledigt ? "Reopen" : "Erledigt"}
             </button>
           )}
         </div>

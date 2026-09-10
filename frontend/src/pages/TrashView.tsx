@@ -23,9 +23,9 @@ export default function TrashView({ onChange }: { onChange: () => void }) {
   const purge = async (id: string) => {
     if (
       !(await frage({
-        titel: "Endgültig löschen",
-        text: "Diese Seite und ihre Unterseiten werden endgültig entfernt, samt ihrer Anhänge. Das lässt sich nicht rückgängig machen.",
-        bestaetigen: "Endgültig löschen",
+        titel: "Delete permanently",
+        text: "This page and its subpages are removed for good, attachments included. This cannot be undone.",
+        bestaetigen: "Delete permanently",
         gefaehrlich: true,
       }))
     )
@@ -38,29 +38,29 @@ export default function TrashView({ onChange }: { onChange: () => void }) {
   return (
     <div className="editor-scroll">
       <div className="page wide">
-        <h1 className="view-title">Papierkorb</h1>
+        <h1 className="view-title">Trash</h1>
         <p className="muted">
-          Gelöschte Seiten bleiben hier, bis du sie wiederherstellst oder endgültig entfernst.
+          Deleted pages stay here until you restore them or remove them for good.
           {items.some((p) => p.verfaelltAm)
-            ? " Danach räumt der Papierkorb sich selbst; wie lange eine Seite noch liegt, steht neben ihr."
+            ? " After that the trash empties itself; how long a page still has is shown next to it."
             : ""}
         </p>
         {items.length === 0 ? (
           <div className="muted" style={{ marginTop: 20 }}>
-            Der Papierkorb ist leer.
+            The trash is empty.
           </div>
         ) : (
           <div className="list">
             {items.map((p) => (
               <div key={p.id} className="list-row">
-                <span className="list-title">{p.title || "Ohne Titel"}</span>
+                <span className="list-title">{p.title || "Untitled"}</span>
                 {/* The remaining time instead of the date: "noch 3 Tage" is the
                     figure one acts on. The day stands in the title, in case
                     somebody wants to know exactly. */}
                 {p.verfaelltAm && (
                   <span
                     className={"muted small" + (restTage(p.verfaelltAm) <= 3 ? " bald" : "")}
-                    title={"Verfällt am " + new Date(p.verfaelltAm).toLocaleDateString("de-DE")}
+                    title={"Expires on " + new Date(p.verfaelltAm).toLocaleDateString()}
                   >
                     {restText(p.verfaelltAm)}
                   </span>
@@ -91,7 +91,7 @@ function restTage(verfaelltAm: string): number {
 
 function restText(verfaelltAm: string): string {
   const t = restTage(verfaelltAm);
-  if (t <= 0) return "wird beim nächsten Durchgang gelöscht";
-  if (t === 1) return "noch 1 Tag";
-  return `noch ${t} Tage`;
+  if (t <= 0) return "will be deleted on the next pass";
+  if (t === 1) return "1 day left";
+  return `${t} days left`;
 }

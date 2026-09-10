@@ -43,7 +43,7 @@ export default function GraphView() {
   if (graph.nodes.length === 0) {
     return (
       <div className="graph-wrap">
-        <div className="empty-state">Noch keine Seiten für den Graf.</div>
+        <div className="empty-state">No pages for the graph yet.</div>
       </div>
     );
   }
@@ -52,7 +52,7 @@ export default function GraphView() {
     <Grafbild
       graph={graph}
       onOeffnen={(id) => nav(`/page/${id}`)}
-      hinweis="Knoten ziehen · Hintergrund ziehen · scrollen zum Zoomen · Punkt in der Legende färbt die Ablage"
+      hinweis="Drag a node · drag the background · scroll to zoom · the dot in the legend colours the space"
       legende
       zentrieren
       eigeneFarben={eigeneFarben}

@@ -85,7 +85,7 @@ export default function Attachments({
             setLauf({ name: f.name, nummer: i + 1, gesamt: alle.length, anteil }),
           );
         } catch (e) {
-          gescheitert.push(`${f.name} (${e instanceof Error ? e.message : "Fehler"})`);
+          gescheitert.push(`${f.name} (${e instanceof Error ? e.message : "error"})`);
         }
       }
       await refresh();
@@ -156,7 +156,7 @@ export default function Attachments({
       onDrop={abgelegt}
     >
       <div className="attachments-head">
-        <span className="section-label">Anhänge</span>
+        <span className="section-label">Attachments</span>
         {canEdit && (
           <>
             {/* The real file input is hidden and triggered by the button, so
@@ -169,7 +169,7 @@ export default function Attachments({
               onChange={(e) => upload(e.target.files)}
             />
             <button className="btn" disabled={busy} onClick={() => fileRef.current?.click()}>
-              {busy ? "Hochladen…" : "Datei hochladen"}
+              {busy ? "Uploading…" : "Upload a file"}
             </button>
           </>
         )}
@@ -194,7 +194,7 @@ export default function Attachments({
       <div className="attachment-list">
         {items.length === 0 && (
           <div className="muted small">
-            {canEdit ? "Keine Dateien angehängt. Dateien lassen sich hierher ziehen." : "Keine Dateien angehängt."}
+            {canEdit ? "No files attached. You can drag files here." : "No files attached."}
           </div>
         )}
         {items.map((a) => {
@@ -228,11 +228,11 @@ export default function Attachments({
                 </a>
               )}
               <span className="muted small">{humanSize(a.size)}</span>
-              <a className="icon-btn" title="Herunterladen" href={url} download={a.filename}>
+              <a className="icon-btn" title="Download" href={url} download={a.filename}>
                 ↓
               </a>
               {canEdit && (
-                <button className="icon-btn" title="Entfernen" onClick={() => remove(a.id)}>
+                <button className="icon-btn" title="Remove" onClick={() => remove(a.id)}>
                   ✕
                 </button>
               )}
@@ -244,7 +244,7 @@ export default function Attachments({
       {fehler && (
         <div className="anhang-fehler" role="alert">
           {fehler}
-          <button className="icon-btn" title="Ausblenden" onClick={() => setFehler(null)}>
+          <button className="icon-btn" title="Dismiss" onClick={() => setFehler(null)}>
             ✕
           </button>
         </div>
@@ -252,7 +252,7 @@ export default function Attachments({
 
       {ueber > 0 && canEdit && (
         <div className="abwurf-schleier">
-          {busy ? "Wird hochgeladen…" : "Loslassen zum Anhängen"}
+          {busy ? "Uploading…" : "Drop to attach"}
         </div>
       )}
 
