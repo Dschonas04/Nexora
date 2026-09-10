@@ -6,12 +6,12 @@
 // the background on the side.
 //
 // Here the same question stands in the application's window: with a title, an
-// explanation and a button that names what it does ("Löschen") instead of "OK".
+// explanation and a button that names what it does ("Delete") instead of "OK".
 //
 // It is used like confirm, only with await:
 //
 //     const frage = useRueckfrage();
-//     if (!(await frage({ text: "Wirklich?", bestaetigen: "Löschen" }))) return;
+//     if (!(await frage({ text: "Really?", bestaetigen: "Delete" }))) return;
 //
 // The promise is only resolved once somebody has answered.
 import { ReactNode, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";

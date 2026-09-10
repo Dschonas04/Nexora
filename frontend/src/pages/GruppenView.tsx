@@ -19,16 +19,16 @@ export default function GruppenView() {
   const { frei, geladen } = useLizenz();
 
   const [gruppen, setGruppen] = useState<Gruppe[]>([]);
-  // Die Gruppe, deren Mitglieder gerade im Fenster stehen. Vorher klappte die
-  // Liste unter der Zeile auf und schob die Tabelle auseinander; bei acht
-  // Gruppen und vierzig Konten war von der Tabelle danach nichts mehr zu sehen.
+  // The group whose members are currently in the dialog. Before, the list
+  // opened under the row and pushed the table apart; with eight groups and
+  // forty accounts nothing of the table was left to be seen afterwards.
   const [offen, setOffen] = useState<Gruppe | null>(null);
   const [mitglieder, setMitglieder] = useState<Mitglied[]>([]);
   const [anlegenOffen, setAnlegenOffen] = useState(false);
   const [name, setName] = useState("");
   const [beschreibung, setBeschreibung] = useState("");
   const [suche, setSuche] = useState("");
-  // Der Filter über der Gruppenliste selbst, nicht über den Mitgliedern.
+  // The filter above the group list itself, not above the members.
   const [filter, setFilter] = useState("");
   const [meldung, setMeldung] = useState<{ text: string; art: "ok" | "fehler" } | null>(null);
 
@@ -143,9 +143,9 @@ export default function GruppenView() {
         <div className={meldung.art === "ok" ? "hinweis-ok" : "fehler"}>{meldung.text}</div>
       )}
 
-      {/* Als Tabelle, wie die Konten daneben. Jede Gruppe traegt dieselben drei
-          Angaben, und untereinander in Spalten sind sie zu vergleichen; als
-          Bloecke fing jede woanders an. */}
+      {/* As a table, like the accounts beside it. Every group carries the same
+          three figures, and one below the other in columns they can be
+          compared; as blocks each began somewhere else. */}
       <div className="tabelle-rollen">
         <table className="tabelle gruppen-tabelle">
           <thead>
@@ -231,10 +231,10 @@ export default function GruppenView() {
       )}
 
       {offen && (
-        // Die Mitglieder im Fenster und nicht aufgeklappt unter der Zeile: die
-        // Liste ist so lang wie die Belegschaft, und aufgeklappt schob sie
-        // alles darunter aus dem Bild. Ein Haken wirkt sofort -- es gibt hier
-        // nichts zu speichern und deshalb auch keinen Knopf dafür.
+        // The members in the dialog and not expanded under the row: the
+        // list is as long as the workforce, and expanded it pushed everything
+        // below it out of the picture. A tick takes effect at once -- there is
+        // nothing to save here and therefore no button for it either.
         <Fenster
           titel={offen.name}
           unter={`${mitglieder.filter((m) => m.drin).length} von ${mitglieder.length} Konten in der Gruppe`}

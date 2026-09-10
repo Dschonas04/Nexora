@@ -117,7 +117,7 @@ func zielPruefen(roh string) (string, error) {
 	return ziel, nil
 }
 
-// messung ist, was ein einzelnes Anklopfen ergeben hat.
+// messung is what a single knock yielded.
 type messung struct {
 	Da         bool
 	Dauer      time.Duration

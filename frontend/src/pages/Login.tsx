@@ -7,15 +7,15 @@ import { useAuth } from "../auth";
 
 export default function Login() {
   const { login, zweiterSchritt } = useAuth();
-  // Eine Zeile für beides. Was drin steht, entscheidet der Server am @: eine
-  // Auswahl davor wäre eine Frage, die niemand beantworten müsste.
+  // One line for both. What is in it is decided by the server at the @: a
+  // dropdown in front of it would be a question nobody would have to answer.
   const [kennung, setKennung] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  // Das Ticket aus dem ersten Schritt. Solange es steht, ist die Anmeldung
-  // halb fertig: das Passwort stimmte, der Code fehlt. Es hält keine Sitzung,
-  // gilt fünf Minuten und öffnet für sich genommen nichts.
+  // The ticket from the first step. As long as it stands, the sign-in is half
+  // done: the password was right, the code is missing. It holds no session, is
+  // valid for five minutes and opens nothing by itself.
   const [ticket, setTicket] = useState("");
   const [code, setCode] = useState("");
 
@@ -51,8 +51,8 @@ export default function Login() {
         setCode("");
         return;
       }
-      // Beim Verzeichnis sitzt die Sitzung im Keks, ohne dass der Zustand hier
-      // davon weiß. Ein Neuladen lässt AuthProvider sie lesen.
+      // With the directory the session sits in the cookie without the state
+      // here knowing about it. A reload lets AuthProvider read it.
       if (ueberVerzeichnis) window.location.href = "/";
     } catch (err) {
       setError((err as Error).message || "Anmeldung fehlgeschlagen");
@@ -75,9 +75,9 @@ export default function Login() {
     }
   };
 
-  // Der zweite Schritt bekommt eine eigene Karte statt eines dritten Feldes im
-  // Formular. Wer hier steht, hat das Passwort hinter sich; ein Bildschirm mit
-  // genau einer Frage darauf lässt keinen Zweifel, welche gerade dran ist.
+  // The second step gets a card of its own instead of a third field in the
+  // form. Whoever stands here has the password behind them; a screen with
+  // exactly one question on it leaves no doubt which one is up now.
   if (ticket) {
     return (
       <div className="auth">
@@ -130,9 +130,9 @@ export default function Login() {
         {error && <div className="error">{error}</div>}
         <div className="field">
           <label>{ueberVerzeichnis ? "User" : "Email or username"}</label>
-          {/* type="text" auch ohne Verzeichnis: bei type="email" hält der
-              Browser jede Eingabe ohne @ für einen Tippfehler und lässt das
-              Formular gar nicht erst abschicken. */}
+          {/* type="text" even without a directory: with type="email" the
+              browser takes every input without an @ for a typo and does not
+              even let the form be submitted. */}
           <input
             type="text"
             autoComplete="username"

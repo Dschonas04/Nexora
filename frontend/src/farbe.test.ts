@@ -15,7 +15,7 @@ export function pruefe(): string[] {
   if (schriftAuf("#ffd400") !== "#1a1a1a") fehler.push("yellow got white text");
   if (schriftAuf("#1a3a6b") !== "#ffffff") fehler.push("dark blue got dark text");
 
-  // Jeder Akzent muss auf jedem Grundton lesbar werden.
+  // Every accent has to become readable on every base tone.
   for (const grund of ["#ffffff", "#f7f7f6", "#1f1f1e"]) {
     for (const akzent of ["#2383e2", "#2ea043", "#8250df", "#bf5b04", "#cf222e", "#57606a"]) {
       const l = lesbarAuf(akzent, grund);

@@ -1,13 +1,14 @@
-// Der zweite Faktor am eigenen Konto: einrichten, Ersatzcodes, abschalten.
+// The second factor on one's own account: setting it up, recovery codes,
+// switching it off.
 //
-// Es steht als eigene Datei und nicht im Einstellungsblatt, weil es drei
-// Zustände mit je eigenem Fenster sind und die Seite darüber sonst noch einmal
-// um dreihundert Zeilen wüchse.
+// It stands as a file of its own and not in the settings sheet, because it is
+// three states with a dialog each and the page above would otherwise grow by
+// another three hundred lines.
 //
-// Der Ablauf hat mit Absicht zwei Schritte. Beim Öffnen entsteht ein
-// Geheimnis, das noch nicht gilt; erst der erste richtige Code schaltet es ein.
-// Wer das Fenster dazwischen schließt, hat nichts verstellt -- ohne diese
-// Trennung sperrte ein abgebrochenes Einrichten das Konto aus.
+// The flow has two steps on purpose. On opening, a secret comes into being that
+// is not yet in force; only the first correct code switches it on. Whoever
+// closes the dialog in between has changed nothing -- without that separation
+// an aborted setup locked the account out.
 import { useEffect, useState } from "react";
 
 import { api } from "../api/client";
@@ -26,7 +27,7 @@ export default function Zweitfaktor({
   neuLaden,
 }: {
   stand: Stand | null;
-  /** Nach jeder Änderung: den Stand neu holen, damit die Karte ihn zeigt. */
+  /** After every change: fetch the state again, so the card shows it. */
   neuLaden: () => void;
 }) {
   const eingabeFragen = useEingabe();
@@ -36,9 +37,9 @@ export default function Zweitfaktor({
 
   if (!stand) return null;
 
-  // Abschalten und neue Ersatzcodes verlangen beide das Passwort. Ohne diese
-  // Rückfrage genügte ein unbeaufsichtigter Bildschirm, um den zweiten Faktor
-  // zu entfernen -- und damit genau das, wogegen er steht.
+  // Switching off and demanding new recovery codes both require the password.
+  // Without this confirmation an unattended screen would be enough to remove
+  // the second factor -- and thereby precisely what it stands against.
   const mitPasswort = async (
     titel: string,
     text: string,
@@ -155,7 +156,7 @@ export default function Zweitfaktor({
   );
 }
 
-/** Das Fenster mit QR-Code und Prüffeld. */
+/** The dialog with the QR code and the check field. */
 function EinrichtenFenster({
   schliessen,
   fertig,
@@ -168,8 +169,9 @@ function EinrichtenFenster({
   const [fehler, setFehler] = useState("");
   const [busy, setBusy] = useState(false);
 
-  // Erst beim Öffnen des Fensters, nicht beim Aufbau der Seite: der Aufruf legt
-  // ein Geheimnis an, und das soll nur passieren, wenn jemand es wirklich will.
+  // Only when the dialog is opened, not when the page is built: the call
+  // creates a secret, and that should only happen when somebody really wants
+  // it.
   useEffect(() => {
     api
       .zweitfaktorStart()
@@ -215,9 +217,10 @@ function EinrichtenFenster({
       {fehler && <div className="fehler">{fehler}</div>}
       {start ? (
         <>
-          {/* Das SVG kommt vom eigenen Dienst und enthaelt nur Rechtecke; es
-              wird eingesetzt statt nachgebaut, weil das Frontend sonst eine
-              Bibliothek fuer einen einzigen Bildschirm mitbraechte. */}
+          {/* The SVG comes from our own service and contains nothing but
+              rectangles; it is inserted rather than rebuilt, because otherwise
+              the frontend would have to bring a library along for a single
+              screen. */}
           <div className="qr-kasten" dangerouslySetInnerHTML={{ __html: start.qr }} />
           <p className="muted small">
             Scan this in your authenticator app. If the app runs on this same device,
@@ -248,8 +251,8 @@ function EinrichtenFenster({
 }
 
 /**
- * Die Ersatzcodes. Sie stehen genau einmal da -- in der Datenbank liegen nur
- * ihre Hashes, und niemand kann sie noch einmal anzeigen.
+ * The recovery codes. They stand there exactly once -- the database holds only
+ * their hashes, and nobody can display them a second time.
  */
 function CodeFenster({ codes, schliessen }: { codes: string[]; schliessen: () => void }) {
   const [kopiert, setKopiert] = useState(false);

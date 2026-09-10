@@ -1,14 +1,14 @@
-// Kontenverwaltung, nur für Administratoren. Jede Aktion wird im Backend noch
-// einmal geprüft; diese Ansicht zu verbergen ist Bequemlichkeit, kein Schutz.
+// Account administration, for administrators only. Every action is checked
+// once more in the backend; hiding this view is convenience, not protection.
 //
-// Sie steht innerhalb der Einstellungen und bringt deshalb keinen eigenen
-// Rahmen mit; Überschrift und Abstände kommen von dort.
+// It sits inside the settings and therefore brings no frame of its own along;
+// heading and spacing come from there.
 //
-// Auf der Seite steht nur noch die Liste. Vorher stand darüber ein Formular zum
-// Anlegen mit fünf Feldern, das die obere Hälfte des Bildschirms für etwas
-// belegte, das man einmal in der Woche braucht -- die Liste, um die es hier
-// geht, fing erst darunter an. Anlegen und Ändern gehen jetzt in einem Fenster
-// auf, und die Liste hat die Seite für sich.
+// Only the list stands on the page now. Before, a form for creating with five
+// fields stood above it, occupying the upper half of the screen for something
+// needed once a week -- the list this is actually about only began below it.
+// Creating and changing now open in a dialog, and the list has the page to
+// itself.
 import { useEffect, useState } from "react";
 import { User, api } from "../api/client";
 import { useAuth } from "../auth";
@@ -17,7 +17,7 @@ import KurzeZeilen from "../components/Kurzliste";
 import Listenkopf from "../components/Listenkopf";
 import { useRueckfrage } from "../components/Rueckfrage";
 
-/** Eine Zeile aus dem Feld für mehrere Konten, schon zerlegt. */
+/** One line out of the field for several accounts, already parsed. */
 interface Anzulegen {
   email: string;
   name: string;
@@ -26,18 +26,18 @@ interface Anzulegen {
   passwort: string;
 }
 
-/** Das Ergebnis eines Anlegeversuchs, für die Liste am Ende. */
+/** The result of one creation attempt, for the list at the end. */
 interface Ergebnis extends Anzulegen {
   fehler?: string;
 }
 
 /**
- * Ein Passwort für ein frisch angelegtes Konto.
+ * A password for a freshly created account.
  *
- * Aus dem Zufallsgenerator des Browsers und nicht aus Math.random: das hier ist
- * ein Zugangsdatum, auch wenn es nur bis zur ersten eigenen Änderung gilt. Die
- * verwechselbaren Zeichen fehlen im Vorrat, denn es wird vorgelesen oder
- * abgeschrieben.
+ * Out of the browser's random generator and not out of Math.random: this is a
+ * credential, even if it only holds until the first change of one's own. The
+ * confusable characters are missing from the pool, because it gets read out
+ * loud or copied by hand.
  */
 function neuesPasswort(): string {
   const vorrat = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -47,12 +47,12 @@ function neuesPasswort(): string {
 }
 
 /**
- * Eine Zeile aus dem Feld für mehrere Konten lesen.
+ * Reading one line out of the field for several accounts.
  *
- * Angenommen wird alles, was mit einer Adresse anfängt, getrennt durch Komma,
- * Semikolon oder Tabulator -- eine Tabellenzeile aus einem Kalkulationsblatt
- * fällt so hinein, ohne dass sie jemand umschreibt. Was fehlt, wird ergänzt:
- * ohne Namen der Teil vor dem @, ohne Rolle "user".
+ * Accepted is everything that starts with an address, separated by comma,
+ * semicolon or tab -- a table row out of a spreadsheet falls in that way
+ * without anybody rewriting it. What is missing is filled in: without a name
+ * the part before the @, without a role "user".
  */
 function zeileLesen(zeile: string): Anzulegen | null {
   const teile = zeile.split(/[;,\t]/).map((t) => t.trim());
@@ -73,10 +73,10 @@ export default function AdminView() {
   const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [hinweis, setHinweis] = useState("");
-  // Ein Filter statt einer Suche im Browser. Ab etwa zwanzig Konten ist das
-  // Blättern durch die Tabelle länger als das Tippen von drei Buchstaben.
+  // A filter instead of searching in the browser. From about twenty accounts on,
+  // paging through the table takes longer than typing three letters.
   const [filter, setFilter] = useState("");
-  // Welches Fenster offen ist: keines, das zum Anlegen, oder das eines Kontos.
+  // Which dialog is open: none, the one for creating, or an account's.
   const [anlegen, setAnlegen] = useState(false);
   const [bearbeitet, setBearbeitet] = useState<User | null>(null);
 
@@ -92,9 +92,9 @@ export default function AdminView() {
       )
     : users;
 
-  // Das Konto im Fenster kommt aus der frisch geladenen Liste, nicht aus der
-  // Kopie von damals: sonst zeigte das Fenster nach einer Änderung noch den
-  // alten Stand, während die Zeile dahinter bereits den neuen hat.
+  // The account in the dialog comes from the freshly loaded list, not from the
+  // copy from back then: otherwise the dialog would still show the old state
+  // after a change while the row behind it already has the new one.
   const offenesKonto = bearbeitet ? (users.find((u) => u.id === bearbeitet.id) ?? null) : null;
 
   return (
@@ -155,9 +155,9 @@ export default function AdminView() {
                   {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ""}
                 </td>
                 <td className="zeilen-aktionen">
-                  {/* Ein Knopf statt vier. Was mit einem Konto geht, steht im
-                      Fenster beieinander; in der Zeile war es eine Reihe, die
-                      mit jeder neuen Möglichkeit länger wurde. */}
+                  {/* One button instead of four. What can be done with an account
+                      stands together in the dialog; in the row it was a series
+                      that grew longer with every new possibility. */}
                   <button className="btn-schlicht" onClick={() => setBearbeitet(u)}>
                     Manage
                   </button>
@@ -201,12 +201,12 @@ export default function AdminView() {
 }
 
 /**
- * Das Fenster zum Anlegen -- für ein Konto und für dreißig.
+ * The dialog for creating -- for one account and for thirty.
  *
- * Beides in einem Fenster mit einer Umschaltung, weil es dieselbe Sache ist:
- * eine neue Mannschaft trägt man nicht einzeln ein, ein Nachzügler nicht als
- * Liste. Die Passwörter entstehen hier und stehen danach genau einmal da; in
- * der Datenbank liegt nur ihr Hash.
+ * Both in one dialog with a toggle, because it is the same matter: a new team is
+ * not entered one by one, a latecomer not as a list. The passwords come into
+ * being here and stand there exactly once afterwards; the database holds only
+ * their hash.
  */
 function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
   const [mehrere, setMehrere] = useState(false);
@@ -240,9 +240,9 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
 
     setBusy(true);
     const ergebnisse: Ergebnis[] = [];
-    // Nacheinander und nicht alle auf einmal: bcrypt mit Kostenfaktor 12
-    // braucht pro Konto ein paar Zehntelsekunden, und dreißig gleichzeitige
-    // Anfragen legen dafür dreißig Verbindungen an.
+    // One after the other and not all at once: bcrypt with a cost factor of 12
+    // needs a few tenths of a second per account, and thirty simultaneous
+    // requests open thirty connections for it.
     for (const z of liste) {
       try {
         await api.createUser(z.email, z.name, z.passwort, z.rolle, z.benutzername);
@@ -255,8 +255,8 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
     setFertig(ergebnisse);
   };
 
-  // Die Liste zum Weitergeben. Als Text mit Tabulatoren, damit sie in einer
-  // Tabelle wieder in Spalten fällt.
+  // The list for passing on. As text with tabs, so it falls into columns again
+  // in a spreadsheet.
   const kopieren = () => {
     if (!fertig) return;
     const text = fertig
@@ -285,9 +285,9 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
           </>
         }
       >
-        {/* Die Passwörter stehen hier zum einzigen Mal. Wer das Fenster
-            schließt, ohne sie mitzunehmen, muss sie zurücksetzen -- deshalb der
-            Satz und nicht bloß die Tabelle. */}
+        {/* The passwords stand here for the only time. Whoever closes the
+            dialog without taking them along has to reset them -- hence the
+            sentence and not merely the table. */}
         <p className="muted small">
           The passwords are shown in this window only. Hand them over by some route
           other than email, and let everyone pick their own afterwards.
@@ -414,11 +414,11 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
 }
 
 /**
- * Alles, was mit einem vorhandenen Konto geht, in einem Fenster.
+ * Everything that can be done with an existing account, in one dialog.
  *
- * Die eigene Zeile ist an mehreren Stellen verriegelt: eine Verwaltung darf
- * sich weder herabstufen noch löschen noch das eigene Passwort auf diesem Weg
- * setzen. Das hält nebenbei den letzten Administrator an seinem Platz.
+ * One's own row is bolted shut in several places: an administrator may neither
+ * demote nor delete themselves nor set their own password this way. That keeps
+ * the last administrator in place as a side effect.
  */
 function KontoFenster({
   konto,
@@ -457,8 +457,8 @@ function KontoFenster({
     }
   };
 
-  // Ein neues Passwort beendet jede Sitzung des Kontos: wer eines zurücksetzen
-  // lässt, hat in aller Regel den Verdacht, dass jemand anders daran sitzt.
+  // A new password ends every session of the account: whoever has one reset as
+  // a rule suspects that somebody else is sitting at it.
   const passwortSetzen = async () => {
     setErr("");
     setBusy(true);
@@ -500,8 +500,8 @@ function KontoFenster({
     }
   };
 
-  // Ein Konto zu löschen nimmt seine Seiten mit, über die Kaskade in der
-  // Datenbank, und dafür gibt es keinen Papierkorb.
+  // Deleting an account takes its pages along, through the cascade in the
+  // database, and there is no wastebasket for that.
   const loeschen = async () => {
     if (
       !(await frage({

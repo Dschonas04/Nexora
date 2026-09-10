@@ -1,39 +1,39 @@
 #!/bin/sh
-# Zertifikate für den Innenverkehr des Verbunds.
+# Certificates for traffic inside the compound.
 #
-# Läuft einmal beim Hochfahren, vor allen anderen Diensten, und legt in einem
-# gemeinsamen Datenträger eine kleine eigene Zertifizierungsstelle ab und für
-# jeden Dienst ein Zertifikat darunter. Danach sprechen Oberfläche, Dienst,
-# Datenbank, Ablage und Zwischenspeicher untereinander verschlüsselt.
+# Runs once at start-up, before all other services, and puts a small private
+# certificate authority into a shared volume plus one certificate per service
+# below it. After that interface, service, database, object store and cache
+# speak to each other encrypted.
 #
-# Warum eigene und keine gekauften: die Namen hier heißen "backend", "db",
-# "minio" -- Namen aus dem Netz des Verbunds, die es außerhalb nicht gibt. Dafür
-# stellt keine Zertifizierungsstelle der Welt etwas aus, und sie soll es auch
-# nicht: diese Verbindungen verlassen den Rechner nie.
+# Why private ones and not bought ones: the names here are "backend", "db",
+# "minio" -- names from the compound's network that do not exist outside it. No
+# certificate authority in the world issues anything for those, and none should:
+# these connections never leave the machine.
 #
-# Warum überhaupt, wenn der Verkehr den Rechner nicht verlässt: weil er es doch
-# tut, sobald jemand die Datenbank auf einen zweiten Rechner legt oder das
-# Docker-Netz über mehrere Wirte spannt. Und weil ein Mitleser im selben Netz
-# sonst Passwort-Hashes, Sitzungsschlüssel und jeden Seiteninhalt im Klartext
-# vorbeiziehen sieht. Das Zertifikat der Oberfläche nach außen ist eine andere
-# Sache, das liegt in frontend/tls-start.sh.
+# Why at all, when the traffic does not leave the machine: because it does, as
+# soon as somebody puts the database on a second machine or spans the Docker
+# network across several hosts. And because a listener on the same network would
+# otherwise see password hashes, session keys and every page's content go by in
+# the clear. The interface's certificate facing outwards is another matter, that
+# lies in frontend/tls-start.sh.
 #
-# Der Lauf ist wiederholbar: was schon da ist, bleibt. Ein Zertifikat, das sich
-# bei jedem Hochfahren ändert, wäre kein Gewinn, sondern eine Fehlersuche.
+# The run is repeatable: whatever is already there stays. A certificate changing
+# on every start-up would be no gain but a debugging session.
 set -eu
 
 VERZ=${PKI_VERZ:-/pki}
 TAGE=${PKI_TAGE:-3650}
-# Die Namen, unter denen die Dienste im Verbund erreichbar sind. Wer seine
-# Dienste anders nennt, setzt PKI_DIENSTE.
+# The names the services are reachable under inside the compound. Whoever names
+# their services differently sets PKI_DIENSTE.
 DIENSTE=${PKI_DIENSTE:-"backend db minio redis"}
 
 mkdir -p "$VERZ"
 cd "$VERZ"
 
-# Jeder Dienst sucht seine Dateien dort, wo er sie sucht. MinIO besteht auf
-# public.crt und private.key, die übrigen nehmen, was man ihnen nennt -- also
-# heißen sie wie der Dienst.
+# Every service looks for its files where it looks for them. MinIO insists on
+# public.crt and private.key, the others take whatever they are told -- so they
+# are named after the service.
 zert_name() {
     if [ "$1" = "minio" ]; then echo "public.crt"; else echo "$1.crt"; fi
 }
@@ -41,9 +41,9 @@ schluessel_name() {
     if [ "$1" = "minio" ]; then echo "private.key"; else echo "$1.key"; fi
 }
 
-# Die Kennung, unter der der Dienst später lesen darf: ein privater Schlüssel,
-# den jeder lesen kann, ist keiner. PostgreSQL verweigert sogar den Start, wenn
-# seiner zu weit offen liegt, und das zu Recht.
+# The uid the service may later read under: a private key everybody can read is
+# none. PostgreSQL even refuses to start when its own lies open too widely, and
+# rightly so.
 kennung_fuer() {
     case "$1" in
         db)      echo "70:70" ;;       # postgres im Alpine-Abbild
@@ -62,8 +62,8 @@ if [ ! -f ca.crt ] || [ ! -f ca.key ]; then
         -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
         -addext "keyUsage=critical,keyCertSign,cRLSign" \
         >/dev/null 2>&1
-    # Der Schlüssel der Stelle geht keinen der Dienste etwas an. Er wird nur
-    # hier gebraucht, beim Ausstellen.
+    # The authority's key is none of the services' business. It is only needed
+    # here, when issuing.
     chmod 600 ca.key
     chmod 644 ca.crt
 else
@@ -80,9 +80,9 @@ for dienst in $DIENSTE; do
         echo "PKI: $dienst hat bereits ein Zertifikat"
     else
         echo "PKI: stelle ein Zertifikat für $dienst aus"
-        # localhost und 127.0.0.1 stehen mit drin, damit ein Dienst sich auch
-        # selbst prüfen kann -- etwa eine Bereitschaftsprobe, die im eigenen
-        # Container gegen die eigene Adresse läuft.
+        # localhost and 127.0.0.1 are in there too, so that a service can also
+        # check itself -- a readiness probe, say, running inside its own
+        # container against its own address.
         openssl req -newkey rsa:2048 -sha256 -nodes \
             -keyout "$schluessel" -out "$dienst/anfrage.csr" \
             -subj "/CN=$dienst" >/dev/null 2>&1
@@ -97,19 +97,19 @@ ERWEITERUNG
         rm -f "$dienst/anfrage.csr"
     fi
 
-    # MinIO sucht die fremden Stellen in einem Unterverzeichnis, sonst traut es
-    # beim Selbstversuch der eigenen Adresse nicht.
+    # MinIO looks for the foreign authorities in a subdirectory, otherwise it
+    # does not trust its own address when testing itself.
     if [ "$dienst" = "minio" ]; then
         mkdir -p minio/CAs
         cp -f ca.crt minio/CAs/nexora.crt
     fi
 
-    # Rechte und Kennung werden bei jedem Lauf gesetzt und nicht nur beim
-    # Ausstellen: ein Datenträger, den jemand von Hand angefasst hat, soll sich
-    # beim nächsten Hochfahren von selbst wieder einrenken.
-    # Schlägt das Setzen der Kennung fehl -- etwa weil dieser Container ohne
-    # root läuft --, ist das ein Hinweis und kein Abbruch: der Verbund soll
-    # hochkommen und sagen, was fehlt, statt stumm stehenzubleiben.
+    # Permissions and ownership are set on every run and not only when issuing:
+    # a volume somebody has touched by hand should right itself again at the
+    # next start-up.
+    # If setting the ownership fails -- because this container runs without root,
+    # say -- that is a notice and not an abort: the compound should come up and
+    # say what is missing instead of standing there mute.
     chown -R "$(kennung_fuer "$dienst")" "$dienst" 2>/dev/null ||
         echo "PKI: Kennung für $dienst nicht setzbar, $dienst liest seinen Schlüssel womöglich nicht"
     chmod 700 "$dienst"

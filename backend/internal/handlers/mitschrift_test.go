@@ -73,7 +73,7 @@ func TestStauWirftHinaus(t *testing.T) {
 	if _, offen := <-langsam.post; offen {
 		t.Fatal("Kanal des Hinausgeworfenen ist noch offen")
 	}
-	// Der Flotte hat beide bekommen.
+	// The fast one got both.
 	if len(flott.post) != 2 {
 		t.Fatalf("der Flotte hat %d von 2 Paketen", len(flott.post))
 	}

@@ -6,8 +6,8 @@ import { useParams } from "react-router-dom";
 import { PublicPage as PublicPageData, api } from "../api/client";
 import Fehlergrenze from "../components/Fehlergrenze";
 
-// Wie in PageView nachgeladen: BlockNote ist das groesste Stueck des
-// Buendels, und eine oeffentliche Seite ist oft der erste Aufruf ueberhaupt.
+// Loaded on demand as in PageView: BlockNote is the largest piece of the
+// bundle, and a public page is often the very first request.
 const Editor = lazy(() => import("../components/Editor"));
 
 export default function PublicPage() {
@@ -23,9 +23,9 @@ export default function PublicPage() {
       .catch(() => setErr(true));
   }, [token]);
 
-  // Der Name der Seite gehört in den Reiter des Browsers. Ohne das hießen zehn
-  // geteilte Seiten in zehn Reitern alle gleich, nämlich "Nexora", und niemand
-  // fand die wieder, die er suchte.
+  // The name of the page belongs in the browser tab. Without it ten shared
+  // pages in ten tabs would all be called the same, namely "Nexora", and
+  // nobody would find the one they were looking for again.
   useEffect(() => {
     if (!page) return;
     const vorher = document.title;
@@ -45,10 +45,10 @@ export default function PublicPage() {
 
   return (
     <div className="oeffentlich">
-      {/* Eine Zeile, die sagt, woran man ist: das hier ist eine einzelne,
-          weitergegebene Seite und keine Web-Seite, und mitschreiben kann man
-          nicht. Ohne sie stand der Text im leeren Fenster, und ein Besucher
-          sah ihm nicht an, ob er alles sieht. */}
+      {/* A line saying where one stands: this is a single page that has
+          been passed on and not a website, and one cannot write along. Without
+          it the text stood in an empty window, and a visitor could not tell
+          whether they were seeing everything. */}
       <div className="oeffentlich-kopf">
         <span className="oeffentlich-marke">Nexora</span>
         <span className="oeffentlich-hinweis">
@@ -76,11 +76,11 @@ export default function PublicPage() {
               <Editor
                 initialContent={page.content}
                 editable={false}
-                // Ein Verweis auf eine andere Seite dieses Wikis führt für einen
-                // Besucher nirgendwohin -- die Seite dahinter ist nicht geteilt.
-                // Er wird darum bloß erkennbar gesetzt, nicht anklickbar: sonst
-                // stünden im Text die eckigen Klammern roh da, als wäre etwas
-                // kaputt.
+                // A link to another page of this wiki leads nowhere for a
+                // visitor -- the page behind it is not shared. It is therefore
+                // merely set recognisably and not made clickable: otherwise the
+                // square brackets would stand raw in the text as if something
+                // were broken.
                 linkResolver={() => null}
               />
             </Suspense>

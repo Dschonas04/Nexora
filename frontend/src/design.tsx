@@ -1,8 +1,9 @@
 // Applies the workspace-wide look.
 //
-// Grundton und Akzent gehoeren dem Konto: sie stehen in dessen Zeile, nicht in
-// der Einstellungstabelle, und jeder waehlt sie fuer sich unter Mein Konto. Die
-// Seitenbreite kommt aus derselben Antwort, bleibt aber eine Sache der Instanz.
+// Base tone and accent belong to the account: they sit in its row, not in the
+// settings table, and everybody chooses them for themselves under My account.
+// The page width comes from the same response but remains a matter for the
+// instance.
 //
 // They are written onto the root element as an attribute and a CSS variable, so
 // the change reaches every component at once. No component knows about themes.
@@ -15,7 +16,7 @@ import { ausHex, kontrast, lesbarAuf, schriftAuf } from "./farbe";
 export interface Design {
   grundton: string;
   akzent: string;
-  /** Die Breite, in der eine Seite steht, die selbst nichts sagt. */
+  /** The width a page stands in that says nothing itself. */
   seitenbreite: string;
 }
 
@@ -33,20 +34,20 @@ export const GRUND: Record<string, string> = {
   dunkel: "#1f1f1e",
 };
 
-// Die Auswahl, die einem Konto angeboten wird. Sie stand bisher in
-// EinstellungenView, weil dort gewaehlt wurde; seit das Aussehen dem Konto
-// gehoert und nicht der Instanz, gehoert das Vokabular dorthin, wo auch
-// anwenden steht.
+// The choice offered to an account. It used to sit in EinstellungenView,
+// because that was where the choosing happened; since the appearance belongs to
+// the account and not to the instance, the vocabulary belongs where anwenden
+// sits too.
 export const GRUNDTOENE: { wert: string; titel: string }[] = [
   { wert: "grau", titel: "Off-white" },
   { wert: "weiss", titel: "Pure white" },
   { wert: "dunkel", titel: "Dark" },
 ];
 
-// Die vier tragenden Marken je Grundton, in der Reihenfolge --bg, --flaeche,
-// --border, --text. Sie stehen so auch in styles.css; die Wiederholung ist der
-// Preis dafuer, dass eine Kachel den Ton zeigen kann, ohne das Stylesheet zur
-// Laufzeit auszulesen. Aendert sich dort ein Ton, muss er hier mit.
+// The four load-bearing marks per base tone, in the order --bg, --flaeche,
+// --border, --text. They stand like this in styles.css as well; the repetition
+// is the price for a tile being able to show the tone without reading the
+// stylesheet at runtime. If a tone changes there, it has to change here too.
 export const TON_MARKEN: Record<string, string[]> = {
   grau: ["#f7f7f6", "#ffffff", "#e2e2df", "#37352f"],
   weiss: ["#ffffff", "#ffffff", "#ededec", "#37352f"],
@@ -63,10 +64,10 @@ export const AKZENTE = [
 ];
 
 /**
- * Der Akzent als Text auf dem Grund. Die Oberfläche rechnet ihn hell oder
- * dunkel nach, wenn er als Verknüpfung im Fließtext sonst nicht zu lesen wäre;
- * hier steht nur, ob das passiert. Die Zahl dahinter interessiert niemanden,
- * der eine Hausfarbe einträgt.
+ * The accent as text on the ground. The interface recomputes it lighter or
+ * darker when it would otherwise be unreadable as a link in running text; all
+ * that stands here is whether that happens. Nobody entering a house colour
+ * cares about the number behind it.
  */
 export function verschobenAuf(farbe: string, grund: string): string {
   if (!/^#[0-9a-f]{6}$/.test(farbe)) return "";
@@ -75,8 +76,8 @@ export function verschobenAuf(farbe: string, grund: string): string {
 }
 
 /**
- * Ob Schrift auf dieser Fläche noch zu lesen ist. Drei ist die Schwelle, unter
- * der auch große Schrift durchfällt; darüber trägt die Farbe eine Beschriftung.
+ * Whether type on this surface can still be read. Three is the threshold below
+ * which even large type fails; above it the colour carries a label.
  */
 export function flaecheLesbar(farbe: string): boolean {
   if (!/^#[0-9a-f]{6}$/.test(farbe)) return true;
@@ -94,10 +95,10 @@ export function flaecheLesbar(farbe: string): boolean {
 //
 // Without that, white text stood on a light accent and a dark accent stood as a
 // link on a dark ground. Both were unreadable.
-// Die Breite ist nicht Teil des Aussehens im engeren Sinn und wird hier auch
-// nicht angewandt -- sie steht nur mit im selben Abruf, weil sie dieselbe
-// Herkunft hat und jeder sie braucht. Deshalb nimmt anwenden nur, was es
-// wirklich setzt.
+// The width is not part of the appearance in the narrower sense and is not
+// applied here either -- it merely comes along in the same request because it
+// has the same origin and everybody needs it. That is why anwenden only takes
+// what it really sets.
 export function anwenden(d: Pick<Design, "grundton" | "akzent">) {
   const wurzel = document.documentElement;
   wurzel.setAttribute("data-grundton", d.grundton);

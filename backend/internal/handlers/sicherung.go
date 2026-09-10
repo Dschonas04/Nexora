@@ -158,7 +158,7 @@ func (s *Server) SicherungTokenWeg(w http.ResponseWriter, r *http.Request) {
 	s.SicherungUmfang(w, r)
 }
 
-// Sicherung schreibt das Archiv in die Antwort.
+// Sicherung writes the archive into the response.
 func (s *Server) Sicherung(w http.ResponseWriter, r *http.Request) {
 	// Two ways in, and only two: a logged-in admin, or a valid passphrase.
 	// A middleware has already determined which was used; this is the check

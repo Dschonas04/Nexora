@@ -40,11 +40,10 @@ import PruefspurView from "./PruefspurView";
 import { useDesign } from "../design";
 import { useRueckfrage } from "../components/Rueckfrage";
 
-// Ein Bereich ist ein Eintrag in der Leiste, ein Teil eine Sachgruppe darin.
-// Fuenfzehn Eintraege waren keine Gliederung mehr, sondern eine Liste, in der
-// man suchen musste, weil ein Teil davon aus einer einzigen Einstellung
-// bestand. Die Teile sind geblieben, sie stehen jetzt zu mehreren auf einer
-// Seite untereinander.
+// An area is an entry in the sidebar, a part is a topic group inside it.
+// Fifteen entries were no longer a structure but a list one had to search,
+// because some of them consisted of a single setting. The parts have stayed,
+// several of them now sit one below the other on one page.
 type Bereich =
   | "uebersicht"
   | "konten"
@@ -81,9 +80,9 @@ const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] =
     unter: "Users, roles, groups",
     teile: ["nutzer", "gruppen"],
   },
-  // Wer hier steht, klaert eine einzige Frage: wer kommt herein und womit.
-  // Registrierung, Verzeichnis, Versuche und laufende Sitzungen sind vier
-  // Antworten darauf und standen bisher an vier Stellen.
+  // Whatever stands here settles a single question: who gets in and with what.
+  // Registration, directory, attempts and running sessions are four answers to
+  // it and used to sit in four places.
   {
     id: "zugang",
     titel: "Access",
@@ -103,10 +102,10 @@ const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] =
     teile: ["datenbank"],
   },
   { id: "lizenz", titel: "Licence", unter: "Scope, term", teile: ["lizenz"] },
-  // Das Protokoll war bisher eine Seite fuer sich, mit einer eigenen Zeile in
-  // der Leiste -- die einzige Sache der Verwaltung, die nicht in der Verwaltung
-  // stand. Ein eigener Bereich und kein Anhaengsel an System: wer es oeffnet,
-  // sucht nicht nach einer Einstellung, sondern nach einem Vorgang.
+  // The audit trail used to be a page of its own, with its own row in the
+  // sidebar -- the one administrative matter that did not sit in the
+  // administration. An area of its own and no appendix to System: whoever opens
+  // it is not looking for a setting but for an event.
   {
     id: "protokoll",
     titel: "Audit log",
@@ -121,9 +120,9 @@ const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] =
   },
 ];
 
-// Die Ueberschrift einer Sachgruppe, sobald mehrere auf einer Seite stehen.
-// Auf einer Seite mit nur einem Teil waere sie eine Wiederholung des
-// Leisteneintrags und faellt deshalb weg.
+// The heading of a topic group, as soon as several of them sit on one page. On
+// a page with only one part it would repeat the sidebar entry and is therefore
+// left out.
 const TEIL_TITEL: Record<Teil, string> = {
   uebersicht: "Overview",
   nutzer: "Users and roles",
@@ -143,12 +142,12 @@ const TEIL_TITEL: Record<Teil, string> = {
   wartung: "Maintenance",
 };
 
-// Die alten Adressen bleiben gueltig. Ein Lesezeichen auf /einstellungen/ldap
-// und die beiden Weiterleitungen aus dem Arbeitsbereich sollen nicht auf der
-// Uebersicht landen, sondern dort, wo die Sache jetzt steht.
+// The old addresses stay valid. A bookmark on /einstellungen/ldap and the two
+// redirects out of the workspace should not land on the overview but where the
+// matter now sits.
 const ALTE_ADRESSE: Record<string, Bereich> = {
-  // Das Aussehen ist keine Sache der Verwaltung mehr, sondern steht unter Mein
-  // Konto. Ein Lesezeichen darauf soll trotzdem irgendwo ankommen.
+  // The appearance is no longer an administrative matter but sits under My
+  // account. A bookmark on it should still arrive somewhere.
   aussehen: "uebersicht",
   nutzer: "konten",
   gruppen: "konten",
@@ -189,18 +188,18 @@ const ZAHL_TITEL: Record<string, string> = {
   ohneSuchtext: "without search text",
 };
 
-// Die Wege, über die eine Anmeldung hereinkommt. Das Backend schreibt die
-// kurzen Namen, hier stehen die ausgeschriebenen.
+// The routes a sign-in comes in through. The backend writes the short names,
+// the spelled-out ones stand here.
 const WEG_TITEL: Record<string, string> = {
   passwort: "Password",
   ldap: "Directory",
   sso: "SSO",
 };
 
-// Aus der Kennung des Browsers das eine Wort machen, das in einer Tabelle Platz
-// hat. Die volle Zeichenkette bleibt im title des Feldes stehen: für die Frage
-// "war ich das selbst" reicht "Firefox auf Linux", für alles darüber hinaus
-// braucht man ohnehin das Original.
+// Turn the browser's user agent into the one word that fits in a table. The
+// full string stays in the field's title: for the question "was that me" a
+// "Firefox on Linux" is enough, and for anything beyond it one needs the
+// original anyway.
 function geraet(ua: string): string {
   if (!ua) return "";
   const browser = /Edg\//.test(ua)
@@ -230,7 +229,7 @@ function geraet(ua: string): string {
   return system ? `${browser} auf ${system}` : browser;
 }
 
-// Eine Laufzeit, wie man sie ausspricht.
+// An uptime the way one says it out loud.
 function laufzeit(sek: number): string {
   if (sek < 60) return `${sek} s`;
   if (sek < 3600) return `${Math.floor(sek / 60)} min`;
@@ -238,32 +237,32 @@ function laufzeit(sek: number): string {
   return `${Math.floor(sek / 86400)} d ${Math.floor((sek % 86400) / 3600)} h`;
 }
 
-// Die letzte Minute als Fläche, nicht als Kamm.
+// The last minute as an area, not as a comb.
 //
-// Vorher standen hier neunundfünfzig einzelne Rechtecke nebeneinander. Das
-// zeigte zwar dieselben Zahlen, las sich aber wie ein Strichcode: bei Werten,
-// die sich im Sekundentakt ändern, springt jedes Rechteck für sich, und das
-// Auge sieht Flimmern statt Verlauf. Eine Fläche hat eine Silhouette, und die
-// bleibt auch dann lesbar, wenn sich die Zahlen darunter ändern.
+// Before, fifty-nine separate rectangles stood here side by side. That showed
+// the same numbers but read like a barcode: with values changing every second,
+// every rectangle jumps on its own, and the eye sees flicker instead of a
+// course. An area has a silhouette, and that stays readable even while the
+// numbers underneath change.
 //
-// Von Hand als SVG und nicht mit einer Bibliothek: es ist ein Polygon aus
-// neunundfünfzig Punkten. Eine Diagrammbibliothek dafür zu laden hieße, das
-// Bündel um ein Vielfaches dessen zu vergrößern, was gezeichnet wird.
+// By hand as SVG and not with a library: it is a polygon of fifty-nine points.
+// Loading a charting library for that would mean growing the bundle to a
+// multiple of what is being drawn.
 const KURVE_B = 300; // Einheiten im viewBox, nicht Bildpunkte
 const KURVE_H = 64;
 
 function verlauf(p: Puls) {
   const minute = p.anfragen?.minute ?? [];
-  // Mindestens zwei Punkte: bei einem teilte die x-Berechnung durch null, und
-  // ein NaN im Pfad zeichnet nicht etwa falsch, sondern gar nichts. Das Backend
-  // liefert immer neunundfünfzig, aber eine Kurve, die bei einem Punkt still
-  // verschwindet, wäre der unangenehmste Fehler von allen.
+  // At least two points: with one the x calculation divided by zero, and a NaN
+  // in the path does not draw wrongly but not at all. The backend always
+  // delivers fifty-nine, but a curve that silently disappears at one point
+  // would be the most unpleasant bug of the lot.
   if (minute.length < 2) return null;
 
   const hoechste = Math.max(1, ...minute.map((s) => s.anfragen));
   const still = minute.every((s) => s.anfragen === 0);
   const x = (i: number) => (i / (minute.length - 1)) * KURVE_B;
-  // Zwei Einheiten Luft oben, damit die Spitze nicht am Rand klebt.
+  // Two units of air at the top, so the peak does not stick to the edge.
   const y = (v: number) => KURVE_H - 2 - (v / hoechste) * (KURVE_H - 6);
 
   const punkte = minute.map((sek, i) => `${x(i).toFixed(1)},${y(sek.anfragen).toFixed(1)}`);
@@ -283,15 +282,16 @@ function verlauf(p: Puls) {
             : `Anfragen je Sekunde in der letzten Minute, Spitze ${hoechste}`
         }
       >
-        {/* Eine einzige Hilfslinie, auf halber Höhe. Ein volles Gitter wäre bei
-            vierundsechzig Einheiten Höhe mehr Linie als Inhalt. */}
+        {/* A single guide line, at half height. A full grid would be more
+            line than content at sixty-four units of height. */}
         <line x1="0" y1={y(hoechste / 2)} x2={KURVE_B} y2={y(hoechste / 2)}
               className="puls-hilfslinie" />
         <path d={flaeche} className="puls-flaeche" />
         <path d={linie} className="puls-linie" vectorEffect="non-scaling-stroke" />
-        {/* Sekunden mit Fehlern als Strich auf der Grundlinie. Sie in die Fläche
-            zu färben ginge nicht, die Fläche ist eine Reihe; auf der Grundlinie
-            stehen sie dort, wo sie hingehören, ohne die Silhouette zu stören. */}
+        {/* Seconds with errors as a stroke on the base line. Colouring them
+            into the area would not work, the area is one series; on the base
+            line they stand where they belong, without disturbing the
+            silhouette. */}
         {minute.map((sek, i) =>
           sek.fehler > 0 || sek.abgelehnt > 0 ? (
             <rect
@@ -318,9 +318,9 @@ function verlauf(p: Puls) {
   );
 }
 
-// Eine Kennzahl, groß gesetzt. Der Wert in proportionalen Ziffern, nicht in
-// gleich breiten: bei dieser Größe sieht "121" mit Tabellenziffern lückenhaft
-// aus. Gleich breite Ziffern gehören in Spalten, die untereinander stehen.
+// One figure, set large. The value in proportional numerals, not in
+// tabular ones: at this size "121" looks gappy with tabular figures. Equal-width
+// numerals belong in columns that sit one below the other.
 function kennzahl(titel: string, wert: React.ReactNode, unten?: React.ReactNode, art?: string) {
   return (
     <div className={"kennzahl" + (art ? " " + art : "")} key={titel}>
@@ -331,9 +331,9 @@ function kennzahl(titel: string, wert: React.ReactNode, unten?: React.ReactNode,
   );
 }
 
-// Ein Füllstand. Die Farbe trägt den Ernst, die Bahn dahinter ist eine hellere
-// Stufe derselben Farbe, damit der Zustand über den ganzen Balken zu lesen ist
-// und nicht nur an seinem Ende.
+// A fill level. The colour carries the seriousness, the track behind it is a
+// lighter step of the same colour, so the state can be read across the whole
+// bar and not only at its end.
 function fuellstand(anteil: number) {
   const stufe = anteil >= 0.95 ? "eng" : anteil >= 0.7 ? "knapp" : "gut";
   return (
@@ -366,10 +366,9 @@ function zeitpunkt(iso: string): string {
 }
 
 /**
- * Verbleibende Tage bis zum Ablaufdatum, oder null, wenn kein brauchbares Datum
- * dasteht -- unbefristet, leer oder unlesbar. Ein negativer Wert kommt nicht
- * vor: eine abgelaufene Lizenz ist nicht mehr gueltig und das Kopfband sagt das
- * dann selbst.
+ * Days remaining until the expiry date, or null when no usable date is there --
+ * perpetual, empty or unreadable. A negative value does not occur: an expired
+ * licence is no longer valid and the banner says so itself then.
  */
 function restlaufzeit(bis: string): number | null {
   if (!bis) return null;
@@ -394,14 +393,14 @@ export default function EinstellungenView() {
     : (ALTE_ADRESSE[ausAdresse ?? ""] ?? "uebersicht");
   const setBereich = (b: Bereich) => nav("/einstellungen/" + b);
   const teile: Teil[] = BEREICHE.find((b) => b.id === bereich)?.teile ?? ["uebersicht"];
-  // Nachgeladen wird weiter je Sachgruppe und nicht je Seite: die Liste der
-  // Anmeldeversuche soll nicht mitkommen, nur weil jemand die Sitzungsdauer
-  // aendert. Sie stehen jetzt lediglich untereinander.
+  // Loading still happens per topic group and not per page: the list of sign-in
+  // attempts should not come along just because somebody changes the session
+  // duration. They merely sit one below the other now.
   const zeigt = (t: Teil) => teile.includes(t);
 
-  // Ein Verweis auf eine Sachgruppe. Frueher war das ein Wechsel der Seite;
-  // liegt die Gruppe jetzt weiter unten auf derselben, muss die Seite dorthin
-  // rollen, sonst passiert auf den Klick sichtbar nichts.
+  // A link to a topic group. That used to be a change of page; if the group now
+  // lies further down on the same one, the page has to scroll there, otherwise
+  // the click visibly does nothing.
   const [sprung, setSprung] = useState<Teil | null>(null);
   const zuTeil = (t: Teil) => {
     const b = BEREICHE.find((x) => x.teile.includes(t));
@@ -463,10 +462,10 @@ export default function EinstellungenView() {
     api.ablageZustand().then((a) => setAblage(a.ablage)).catch(() => setAblage(""));
   }, []);
 
-  // Die wirksame Grenze für eine Übertragung. Sie wird gemessen und nicht
-  // gelesen: was der nginx davor erlaubt, weiß Nexora nicht, siehe
-  // grenzprobe.go. Gemessen wird deshalb von hier aus, vom Browser, denn das
-  // ist die Strecke, auf der es später schiefgeht.
+  // The effective limit for an upload. It is measured and not read: Nexora does
+  // not know what the nginx in front of it permits, see grenzprobe.go. Measuring
+  // therefore happens from here, from the browser, because that is the stretch
+  // things later go wrong on.
   const [grenze, setGrenze] = useState<{
     laeuft: string;
     wirksam: number | null;
@@ -477,15 +476,16 @@ export default function EinstellungenView() {
     const eingestellt = Number(entwurf["max_anhang_mb"]) || 25;
     setGrenze({ laeuft: `${eingestellt} MB`, wirksam: null, eingestellt });
 
-    // Erst der eingestellte Wert. Kommt er durch, ist die Frage beantwortet und
-    // es braucht keine weitere Übertragung.
+    // The configured value first. If it gets through, the question is answered
+    // and no further upload is needed.
     if (await api.grenzprobe(eingestellt)) {
       setGrenze({ laeuft: "", wirksam: eingestellt, eingestellt });
       return;
     }
 
-    // Sonst einschachteln. Halbieren statt hochzählen: sechs Übertragungen
-    // reichen für ein halbes Megabyte genau, aufsteigend wären es fünfzig.
+    // Otherwise bracket it in. Halving instead of counting up: six uploads are
+    // enough to pin down half a megabyte exactly, counting upwards it would be
+    // fifty.
     let unten = 0;
     let oben = eingestellt;
     while (oben - unten > 0.5) {
@@ -497,11 +497,11 @@ export default function EinstellungenView() {
     setGrenze({ laeuft: "", wirksam: unten, eingestellt });
   };
 
-  // Der Live-Stand. Wird nur abgefragt, solange der Bereich offen ist: eine
-  // Abfrage je Sekunde ist nichts, eine Abfrage je Sekunde für immer, weil
-  // jemand den Reiter offen gelassen hat, ist Grundrauschen in jeder Messung.
-  // Wer gerade gemeinsam schreibt. Alle drei Sekunden statt jede Sekunde: eine
-  // Sitzung dauert Minuten, und die Liste soll nicht flackern.
+  // The live figures. Polled only while the area is open: one request per
+  // second is nothing, one request per second forever because somebody left the
+  // tab open is background noise in every measurement.
+  // Who is writing together right now. Every three seconds instead of every
+  // second: a session lasts minutes, and the list should not flicker.
   const [zusammen, setZusammen] = useState<MitschriftZustand | null>(null);
   useEffect(() => {
     if (!zeigt("zusammen")) {
@@ -522,9 +522,9 @@ export default function EinstellungenView() {
     };
   }, [bereich]);
 
-  // Die eigenen Rechner. Alle zehn Sekunden: der Dienst misst ohnehin nur alle
-  // fünfzehn neu und antwortet dazwischen aus dem Gedächtnis, häufiger zu
-  // fragen brächte nichts als Verkehr.
+  // One's own machines. Every ten seconds: the service only re-measures every
+  // fifteen anyway and answers from memory in between, asking more often would
+  // bring nothing but traffic.
   const [rechner, setRechner] = useState<RechnerListe | null>(null);
   const rechnerLaden = useCallback(() => {
     api
@@ -608,7 +608,7 @@ export default function EinstellungenView() {
     };
   }, [bereich]);
 
-  // Der Umfang einer Sicherung, beim Öffnen der Wartung geholt.
+  // The size of a backup, fetched when maintenance is opened.
   const [sicherung, setSicherung] = useState<SicherungUmfang | null>(null);
   useEffect(() => {
     if (!zeigt("wartung")) return;
@@ -623,30 +623,29 @@ export default function EinstellungenView() {
       setKopiert(was);
       window.setTimeout(() => setKopiert(""), 2000);
     } catch {
-      // Ohne Erlaubnis für die Zwischenablage bleibt der Text zum Markieren da.
+      // Without clipboard permission the text stays there to be selected.
       setMeldung({ text: "Kopieren nicht erlaubt. Der Text lässt sich markieren.", art: "fehler" });
     }
   };
 
-  // Die Filter über den Listen der Verwaltung. Je Liste einer, weil sie
-  // nebeneinander auf einer Seite stehen können und ein gemeinsamer Filter dann
-  // zwei Tabellen gleichzeitig leerte.
+  // The filters above the administrative lists. One per list, because they can
+  // sit side by side on one page and a shared filter would then empty two
+  // tables at once.
   const [sitzungFilter, setSitzungFilter] = useState("");
   const [rechnerFilter, setRechnerFilter] = useState("");
   const [tabellenFilter, setTabellenFilter] = useState("");
   const [adminFilter, setAdminFilter] = useState("");
   const [funktionFilter, setFunktionFilter] = useState("");
-  // Die Formulare, die nur selten gebraucht werden, gehen als Fenster auf
-  // statt auf der Seite zu stehen: einen Rechner traegt man einmal ein, einen
-  // Objektspeicher prueft man einmal, das Verzeichnis fragt man, wenn etwas
-  // klemmt.
+  // The forms that are rarely needed open as dialogs instead of sitting on the
+  // page: a machine is entered once, an object store is tested once, the
+  // directory is asked when something jams.
   const [rechnerOffen, setRechnerOffen] = useState(false);
   const [ablageOffen, setAblageOffen] = useState(false);
   const [ldapOffen, setLdapOffen] = useState(false);
 
-  // Der zweite Faktor am eigenen Konto. Er gehoert nicht zu den Einstellungen
-  // der Instanz und wird deshalb einzeln geholt -- und erst dann, wenn die
-  // Sachgruppe wirklich auf dem Bildschirm steht.
+  // The second factor on one's own account. It is not one of the instance's
+  // settings and is therefore fetched separately -- and only once the topic
+  // group is really on the screen.
   const [zweitStand, setZweitStand] = useState<ZweitfaktorStand | null>(null);
   const zweitLaden = useCallback(() => {
     api.zweitfaktorStand().then(setZweitStand).catch(() => setZweitStand(null));
@@ -655,8 +654,8 @@ export default function EinstellungenView() {
     if (zeigt("zweitfaktor") && !zweitStand) zweitLaden();
   }, [bereich, zweitStand, zweitLaden]);
 
-  // Das Verzeichnis. Die Einrichtung steht in config.conf und ist von hier aus
-  // nur zu lesen; was sich von hier aus tun lässt, ist sie auszuprobieren.
+  // The directory. Its setup sits in config.conf and can only be read from
+  // here; what can be done from here is to try it out.
   const [ldap, setLdap] = useState<LDAPEinrichtung | null>(null);
   const [ldapProbe, setLdapProbe] = useState({ benutzer: "", passwort: "" });
   const [ldapErgebnis, setLdapErgebnis] = useState<LDAPTestErgebnis | null>(null);
@@ -666,9 +665,9 @@ export default function EinstellungenView() {
     }
   }, [bereich, ldap]);
 
-  // Einspielen. Die gewählte Datei steht im Zustand, damit der Name vor dem
-  // Bestätigen sichtbar ist: wer zwei Archive nebeneinander hat, unterscheidet
-  // sie nur am Zeitstempel im Namen.
+  // Restoring. The chosen file sits in the state so its name is visible before
+  // confirming: whoever has two archives side by side tells them apart only by
+  // the timestamp in the name.
   const [einspielDatei, setEinspielDatei] = useState<File | null>(null);
   const [einspielErgebnis, setEinspielErgebnis] = useState<string>("");
 
@@ -757,7 +756,7 @@ export default function EinstellungenView() {
   const [konfigHinweise, setKonfigHinweise] = useState<string[]>([]);
   const [neustartWort, setNeustartWort] = useState("");
 
-  // Lizenz: einlesen und, beim Herausgeber, ausstellen.
+  // Licence: reading one in and, at the issuer, issuing one.
   const { lizenz: lizenzJetzt, neuLaden: lizenzNeuLaden } = useLizenz();
   const [schluesselFeld, setSchluesselFeld] = useState("");
   const [ausstellen, setAusstellen] = useState({
@@ -780,10 +779,10 @@ export default function EinstellungenView() {
     if (zeigt("sitzungen")) sitzungenLaden();
   }, [bereich, sitzungenLaden]);
 
-  // Anmeldeversuche. Wie die Sitzungen erst beim Öffnen geholt, und mit einem
-  // Filter daneben: die interessante Frage ist fast immer "nur die
-  // fehlgeschlagenen", und die Liste wird lang genug, dass man sie nicht von
-  // Hand durchsieht.
+  // Sign-in attempts. Fetched on opening like the sessions, and with a filter
+  // beside them: the interesting question is nearly always "only the failed
+  // ones", and the list grows long enough that one does not go through it by
+  // hand.
   const [anmeldungen, setAnmeldungen] = useState<Anmeldungen | null>(null);
   const [anmeldeFilter, setAnmeldeFilter] = useState<{ nur: string; ip: string; tage: number }>({
     nur: "",
@@ -950,8 +949,8 @@ export default function EinstellungenView() {
     try {
       await api.einstellungSetzen(e.schluessel, wert);
       setMeldung({ text: `„${e.titel}“ gespeichert.`, art: "ok" });
-      // Die Seitenbreite kommt aus demselben Abruf wie das Aussehen. Ohne das
-      // Nachladen zeigte der Arbeitsbereich die alte Breite bis zum Neuladen.
+      // The page width comes from the same request as the appearance. Without
+      // reloading it the workspace showed the old width until a page reload.
       if (e.schluessel === "seitenbreite") designNeuLaden();
       laden();
     } catch (err) {
@@ -1121,9 +1120,8 @@ export default function EinstellungenView() {
 
   // ── Bereiche ────────────────────────────────────────────────────────────
 
-  // Eine Sachgruppe fuer sich. Der Schalter ist geblieben, wie er war -- was
-  // sich geaendert hat, ist nur, wie viele seiner Zweige gleichzeitig auf einer
-  // Seite landen.
+  // A topic group in its own right. The switch has stayed as it was -- all that
+  // has changed is how many of its branches land on one page at the same time.
   const teilInhalt = (teil: Teil) => {
     switch (teil) {
       case "sitzungen": {
@@ -1249,11 +1247,10 @@ export default function EinstellungenView() {
       case "protokoll":
         return <PruefspurView />;
       case "uebersicht": {
-        // Eine Tabelle statt einer Reihe von Kacheln. Kacheln sehen auf dem
-        // ersten Blick besser aus, aber vierzehn Stück davon sind keine
-        // Übersicht mehr, sondern eine Wand: man sucht darin nach der Zahl,
-        // die man wissen wollte. Untereinander mit Beschriftung links liest
-        // sich das in einem Durchgang.
+        // A table instead of a row of tiles. Tiles look better at first
+        // glance, but fourteen of them are no longer an overview but a wall:
+        // one searches it for the number one wanted to know. One below the
+        // other with the label on the left reads in a single pass.
         const bestand: [string, React.ReactNode, string][] = [
           ...Object.entries(z.zahlen ?? {}).map(
             ([k, v]) => [ZAHL_TITEL[k] ?? k, v, k] as [string, React.ReactNode, string],
@@ -1575,10 +1572,10 @@ export default function EinstellungenView() {
               </table>
             </div>
 
-            {/* Der Filter dieser Liste ist kein Textfeld, sondern der Zeitraum
-                und das Ergebnis -- die Frage an eine Anmeldeliste lautet nicht
-                "wie hiess er", sondern "was ging in den letzten Tagen schief".
-                Deshalb steht er unter dem Kopf und nicht darin. */}
+            {/* The filter of this list is not a text field but the period and
+                the result -- the question one asks a sign-in list is not "what
+                was their name" but "what went wrong in the last few days".
+                That is why it stands below the head and not inside it. */}
             <Listenkopf
               titel="Einzelne Versuche"
               zahl={`${(a?.versuche ?? []).length} angezeigt${
@@ -2016,9 +2013,9 @@ export default function EinstellungenView() {
                 Objektspeicher prüfen
               </button>
             </div>
-            {/* Sieben Felder fuer eine Probe, die man einmal im Jahr macht --
-                sie standen bisher dauerhaft auf der Seite. Im Fenster sind sie
-                da, wenn man sie ruft. */}
+            {/* Seven fields for a test one does once a year -- they used to
+                stand permanently on the page. In a dialog they are there when
+                one calls them. */}
             {ablageOffen && (
             <Fenster
               titel="Objektspeicher prüfen"
@@ -2109,9 +2106,9 @@ export default function EinstellungenView() {
         return (
           <>
             <h3>Lizenz</h3>
-            {/* Ein Band statt einer Zwei-Spalten-Tabelle: Inhaber, Stufe und
-                Restlaufzeit sind das, wonach hier zuerst gesehen wird, und sie
-                stehen in einer Zeile nebeneinander statt untereinander. */}
+            {/* A band instead of a two-column table: holder, tier and
+                remaining term are what one looks for first here, and they stand
+                side by side in one row instead of one below the other. */}
             <div className="lizenz-kopf">
               <div className="lizenz-felder">
                 <div>
@@ -2158,10 +2155,10 @@ export default function EinstellungenView() {
               </div>
             )}
 
-            {/* Eine Liste, keine Matrix. Hier stand eine Tabelle mit einer
-                Spalte je Lizenzstufe und einem Kaestchen in jeder Zelle -- die
-                beantwortete die Frage, was ein Wechsel braechte, und nicht die,
-                die man an diese Seite stellt: was laeuft gerade und was nicht. */}
+            {/* A list, not a matrix. A table stood here with one column per
+                licence tier and a little box in every cell -- that answered the
+                question of what a change would bring, and not the one asked of
+                this page: what is running right now and what is not. */}
             <Listenkopf
               titel="Funktionsumfang"
               zahl={`${(z.lizenz.freigeschaltet ?? []).length} von ${
@@ -2294,9 +2291,10 @@ export default function EinstellungenView() {
               </div>
             ) : (
               <>
-                {/* Vier Zahlen groß, der Rest klein darunter. Die vier sind
-                    die, nach denen jemand sieht, während es hakt; alles
-                    Weitere liest man erst, wenn eine davon auffällt. */}
+                {/* Four numbers large, the rest small below them. The four are
+                    the ones somebody looks at while things are jamming;
+                    everything further is only read once one of them stands
+                    out. */}
                 <div className="kennzahlreihe">
                   {kennzahl(
                     "Anfragen je Sekunde",
@@ -2563,11 +2561,11 @@ export default function EinstellungenView() {
                         <td>{r.zustand}</td>
                         <td className="muted einzeilig">{r.antwort || "—"}</td>
                         <td className="muted">{r.fassung || "—"}</td>
-                        {/* Unter dreißig Tagen wird die Zelle rot: ein
-                            abgelaufenes Zertifikat ist der häufigste Grund,
-                            warum ein Dienst im eigenen Haus plötzlich nicht
-                            mehr erreichbar ist, und der einzige, den man
-                            Wochen vorher sehen könnte. */}
+                        {/* Below thirty days the cell turns red: an expired
+                            certificate is the most frequent reason a service in
+                            one's own house suddenly stops being reachable, and
+                            the only one that could be seen weeks in
+                            advance. */}
                         <td
                           className={
                             r.tageBisAblauf !== undefined && r.tageBisAblauf < 30
@@ -3020,11 +3018,11 @@ export default function EinstellungenView() {
       </nav>
 
       <div className="einstellungen-inhalt">
-        {/* Die Ueberschrift stand bisher nur in der Leiste links. Ein Bereich mit
-            einem einzigen Teil kam damit ganz ohne Titel aus: man las die erste
-            Tabelle, ohne dass irgendwo stand, worauf man sieht. Der kurze Satz
-            darunter erklaert den Bereich einmal und muss deshalb nicht mehr
-            neben jedem Eintrag der Leiste wiederholt werden. */}
+        {/* The heading used to stand only in the sidebar on the left. An area with a
+            single part thereby got by without a title at all: one read the
+            first table without anything anywhere saying what one was looking
+            at. The short sentence below it explains the area once and therefore
+            no longer has to be repeated beside every entry of the sidebar. */}
         <header className="einstellungen-kopf">
           <h1>{BEREICHE.find((b) => b.id === bereich)?.titel}</h1>
           <p>{BEREICHE.find((b) => b.id === bereich)?.unter}</p>

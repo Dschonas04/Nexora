@@ -3,26 +3,25 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-// Der Kopf, den jedes erzeugte Buendel traegt.
+// The header every generated bundle carries.
 //
-// Er steht hier und nicht in einer Datei daneben, weil MPL-2.0 verlangt, dass
-// der Hinweis die VERTEILTE Form begleitet, und verteilt wird das Buendel. Der
-// Minimierer wirft Kommentare weg, auch die Lizenzkoepfe von BlockNote; ohne
-// diese Zeilen ginge also MPL-Quelltext ohne jeden Hinweis hinaus.
+// It stands here and not in a file beside it, because MPL-2.0 demands that the
+// notice accompany the DISTRIBUTED form, and what is distributed is the bundle.
+// The minifier throws comments away, BlockNote's licence headers included; so
+// without these lines MPL source would go out without any notice at all.
 //
-// Kurz gehalten mit Absicht: die vollstaendige Liste steht in THIRD-PARTY.md,
-// und ein Kopf, der laenger waere als noetig, wuerde bei der naechsten
-// Aenderung vergessen.
+// Kept short on purpose: the complete list stands in THIRD-PARTY.md, and a
+// header longer than necessary would be forgotten at the next change.
 const kopf = [
   "/*!",
-  " * Nexora. Business Source License 1.1, ab 19.08.2030 Apache 2.0.",
+  " * Nexora. Business Source License 1.1, from 19.08.2030 Apache 2.0.",
   " *",
-  " * Dieses Buendel enthaelt fremde Bestandteile, darunter BlockNote",
-  " * (@blocknote/core, /react, /mantine) unter der Mozilla Public License 2.0.",
-  " * Quelltext: https://github.com/TypeCellOS/BlockNote",
+  " * This bundle contains third-party components, among them BlockNote",
+  " * (@blocknote/core, /react, /mantine) under the Mozilla Public License 2.0.",
+  " * Source: https://github.com/TypeCellOS/BlockNote",
   " *",
-  " * Vollstaendige Aufstellung aller Bestandteile und ihrer Lizenzen:",
-  " * THIRD-PARTY.md im Quelltextbestand.",
+  " * Complete list of all components and their licences:",
+  " * THIRD-PARTY.md in the source tree.",
   " */",
 ].join("\n");
 

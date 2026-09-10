@@ -19,10 +19,10 @@ import Fehlergrenze from "./Fehlergrenze";
 // Loaded on demand, not bundled: pdf.js and pdf-lib together are large, and
 // most users only view PDFs.
 const PdfMarker = lazy(() => import("./PdfMarker"));
-// Ebenso nachgeladen: die Word-Vorschau baut denselben Editor auf, und der
-// zieht BlockNote hinter sich her. Stuende er hier fest, laege das groesste
-// Stueck des Buendels wieder im Hauptbuendel -- QuickView haengt an der
-// Seitenansicht.
+// Loaded on demand as well: the Word preview builds the same editor, and that
+// drags BlockNote along behind it. Were it fixed here, the largest piece of the
+// bundle would lie in the main bundle again -- QuickView hangs on the page
+// view.
 const Editor = lazy(() => import("./Editor"));
 
 export interface Datei {
