@@ -14,7 +14,7 @@
   --muted: #86847f;
   --border: #e2e2df;
   --hover: #e7e7e4;
-  --accent: #2383e2;
+  --accent: #1b6ec2;
   /* Computed by design.tsx and overwritten here. The defaults only apply for
      the moment before the first render. */
   --accent-text: #ffffff;

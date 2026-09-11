@@ -2,6 +2,7 @@
 // stand for values filled in at runtime.
 // Add a pair here when a new text appears in the interface.
 export const PAARE: [string, string][] = [
+  ["[[Seitentitel]]", "[[page title]]"],
   ["Deutsch oder Englisch", "German or English"],
   // German needs the dative after "vor"; these come before the general "{0} {1} ago".
   ["vor {0} Tagen", "{0} days ago"],

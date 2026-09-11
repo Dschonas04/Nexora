@@ -1,0 +1,32 @@
+# Texts the interface shows that are not prose and need no German/English pair:
+# brand and product names, technical terms that read the same in both languages.
+# One text per line, exactly as the text probe prints it.
+PDF
+README.md
+INHALT.md
+Obsidian
+Notion
+Confluence
+Nexora
+In:
+Name
+Admin
+System
+Bucket
+Region
+HTTPS
+<Daten>.<Signatur>
+NEXORA_SIGNIERSCHLUESSEL
+MB
+DATABASE_URL
+Server
+Port
+LDAP
+LIESMICH.md
+FERTIG
+restart: unless-stopped
+, systemd, Kubernetes.
+Administrator
+Markdown (.md)
+PDF (.pdf)
+Word (.docx)

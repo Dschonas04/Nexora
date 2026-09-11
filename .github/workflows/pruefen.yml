@@ -131,6 +131,13 @@ jobs:
             --outfile="$RUNNER_TEMP/sprache.mjs" --log-level=warning
           node "$RUNNER_TEMP/sprache.mjs"
 
+      - name: Jeder Text zweisprachig
+        run: |
+          # Every interface text needs a German/English pair, otherwise it
+          # silently stays in one language. Texts that are not prose (names,
+          # technical terms) are listed in test/texte-ausnahmen.txt.
+          node test/texte-probe.cjs
+
       - name: Der Lizenzhinweis muss im Bündel stehen
         run: |
           # BlockNote is under MPL-2.0, and that demands the notice accompany

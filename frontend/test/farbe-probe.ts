@@ -12,13 +12,18 @@ if (Math.round(kontrast(ausHex("#ffffff"), ausHex("#000000"))) !== 21) {
   fehler.push("contrast white/black is not 21");
 }
 
+// The default accent carries white labels on buttons; that has to meet WCAG AA.
+if (kontrast(ausHex(schriftAuf("#1b6ec2")), ausHex("#1b6ec2")) < 4.5) {
+  fehler.push("default accent: button label below 4.5:1");
+}
+
 // On a light accent the text has to turn dark.
 if (schriftAuf("#ffd400") !== "#1a1a1a") fehler.push("yellow got white text");
 if (schriftAuf("#1a3a6b") !== "#ffffff") fehler.push("dark blue got dark text");
 
 // Every accent has to become readable on every base tone.
 for (const grund of ["#ffffff", "#f7f7f6", "#1f1f1e"]) {
-  for (const akzent of ["#2383e2", "#2ea043", "#8250df", "#bf5b04", "#cf222e", "#57606a"]) {
+  for (const akzent of ["#1b6ec2", "#2383e2", "#2ea043", "#8250df", "#bf5b04", "#cf222e", "#57606a"]) {
     const l = lesbarAuf(akzent, grund);
     if (kontrast(ausHex(l), ausHex(grund)) < 4.4) {
       fehler.push(`${akzent} on ${grund} stays unreadable (${l})`);
