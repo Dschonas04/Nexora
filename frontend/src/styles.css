@@ -664,6 +664,24 @@ textarea::placeholder {
 }
 
 /* Tame BlockNote to match the minimal look */
+/* BlockNote 0.54 defines its menu colours only inside the editor container,
+   but renders the slash menu, the toolbar and other popups outside of it. There
+   the variables were missing and the menus came out transparent, with the page
+   text showing through. Defined here from our own tokens, they also follow the
+   dark base tone. Inside the container BlockNote's own values still apply. */
+:root {
+  --bn-colors-menu-background: var(--flaeche);
+  --bn-colors-menu-text: var(--text);
+  --bn-colors-tooltip-background: var(--flaeche);
+  --bn-colors-tooltip-text: var(--text);
+  --bn-colors-hovered-background: var(--border);
+  --bn-colors-hovered-text: var(--text);
+  --bn-colors-selected-background: var(--border);
+  --bn-colors-selected-text: var(--text);
+  --bn-colors-border: var(--border);
+  --bn-colors-shadow: rgba(0, 0, 0, 0.18);
+}
+
 .bn-container,
 .bn-editor {
   background: transparent !important;
