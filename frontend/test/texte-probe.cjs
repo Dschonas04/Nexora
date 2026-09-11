@@ -12,7 +12,19 @@
 //   node test/texte-probe.cjs --liste    print the missing texts only
 const fs = require("fs");
 const path = require("path");
-const ts = require("typescript");
+// TypeScript 7 is the native compiler and no longer ships the JavaScript API
+// this probe walks the sources with. The API comes from TypeScript 5 under its
+// own name (devDependency "typescript-api"); plain "typescript" is the fallback
+// for a tree that still has a 5.x compiler.
+const ts = (() => {
+  for (const name of ["typescript-api", "typescript"]) {
+    try {
+      const t = require(name);
+      if (t && t.createSourceFile) return t;
+    } catch {}
+  }
+  throw new Error("no TypeScript with a JavaScript API found (devDependency typescript-api)");
+})();
 
 const WURZEL = path.join(__dirname, "..");
 const SRC = path.join(WURZEL, "src");
