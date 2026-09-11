@@ -22,7 +22,7 @@ export interface Design {
 }
 
 const Ctx = createContext<{ design: Design; neuLaden: () => void }>({
-  design: { grundton: "grau", akzent: "#2383e2", seitenbreite: "voll" },
+  design: { grundton: "grau", akzent: "#1b6ec2", seitenbreite: "voll" },
   neuLaden: () => {},
 });
 
@@ -56,7 +56,7 @@ export const TON_MARKEN: Record<string, string[]> = {
 };
 
 export const AKZENTE = [
-  { wert: "#2383e2", titel: "Blue" },
+  { wert: "#1b6ec2", titel: "Blue" },
   { wert: "#2ea043", titel: "Green" },
   { wert: "#8250df", titel: "Violet" },
   { wert: "#bf5b04", titel: "Amber" },
@@ -111,7 +111,7 @@ export function anwenden(d: Pick<Design, "grundton" | "akzent">) {
 }
 
 export function DesignProvider({ children }: { children: ReactNode }) {
-  const [design, setDesign] = useState<Design>({ grundton: "grau", akzent: "#2383e2", seitenbreite: "voll" });
+  const [design, setDesign] = useState<Design>({ grundton: "grau", akzent: "#1b6ec2", seitenbreite: "voll" });
   // Whose look is being asked for. /api/design needs a session, so before the
   // sign-in the call answers 401 -- and it has to be repeated afterwards.
   //

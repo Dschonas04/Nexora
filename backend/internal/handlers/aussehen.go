@@ -21,7 +21,7 @@ import (
 // the login page.
 const (
 	grundtonVorgabe = "grau"
-	akzentVorgabe   = "#2383e2"
+	akzentVorgabe   = "#1b6ec2"
 )
 
 type aussehenAntwort struct {

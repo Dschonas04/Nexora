@@ -430,7 +430,7 @@ echo "== Aussehen am eigenen Konto"
 # whether the columns are there, whether the value survives a reload and whether
 # nonsense is rejected instead of landing in a CSS variable.
 pruefe "Vorgabe ist grau" "grau" "$(hole "$BASIS/api/design" | feld "['grundton']")"
-pruefe "Vorgabe ist Blau" "#2383e2" "$(hole "$BASIS/api/design" | feld "['akzent']")"
+pruefe "Vorgabe ist Blau" "#1b6ec2" "$(hole "$BASIS/api/design" | feld "['akzent']")"
 pruefe "eigene Wahl wird angenommen" "200" \
        "$(code -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
           -d '{"grundton":"dunkel","akzent":"#8250df"}')"
