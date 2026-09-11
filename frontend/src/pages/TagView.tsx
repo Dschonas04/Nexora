@@ -5,7 +5,7 @@
 // cannot follow is worse than no label — it promises an order that is not
 // actually reachable.
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router";
 
 import { PageMeta, Tag, api } from "../api/client";
 import { useRueckfrage } from "../components/Rueckfrage";
@@ -45,16 +45,16 @@ export default function TagView({
     if (!tagId || !tag) return;
     const frage =
       seiten.length === 0
-        ? `Schlagwort „${tag.name}“ löschen?`
-        : `Schlagwort „${tag.name}“ löschen? Es wird von ${seiten.length} Seiten entfernt. ` +
-          `Die Seiten selbst bleiben.`;
+        ? `Delete the tag \u201c${tag.name}\u201d?`
+        : `Delete the tag \u201c${tag.name}\u201d? It is removed from ${seiten.length} pages. ` +
+          `The pages themselves remain.`;
     // Here the confirmation is worth it: unlike a deleted comment a tag cannot
     // be restored, and all its assignments are lost with it.
     if (
       !(await frageStellen({
-        titel: "Schlagwort löschen",
+        titel: "Delete tag",
         text: frage,
-        bestaetigen: "Schlagwort löschen",
+        bestaetigen: "Delete tag",
         gefaehrlich: true,
       }))
     )
@@ -71,7 +71,7 @@ export default function TagView({
       <div className="tagkopf">
         <h2>
           {tag && <span className="tag-dot gross" style={{ background: tag.color }} />}
-          {tag ? tag.name : "Schlagwort"}
+          {tag ? tag.name : "Tag"}
         </h2>
         {tag && (
           <button className="link-btn" onClick={loeschen}>
@@ -81,7 +81,7 @@ export default function TagView({
       </div>
 
       {fehler && <div className="fehler">{fehler}</div>}
-      {laedt && <div className="muted">Lädt…</div>}
+      {laedt && <div className="muted">Loading…</div>}
 
       {!laedt && seiten.length === 0 && !fehler && (
         <p className="muted">
@@ -93,17 +93,17 @@ export default function TagView({
       {seiten.length > 0 && (
         <>
           <p className="muted small">
-            {seiten.length === 1 ? "Eine Seite" : `${seiten.length} Seiten`}, zuletzt
+            {seiten.length === 1 ? "One page" : `${seiten.length} pages`}, most recently
             geänderte zuerst.
           </p>
           <div className="tagliste">
             {seiten.map((p) => (
               <div key={p.id} className="tree-row" onClick={() => nav(`/page/${p.id}`)}>
-                <span className="tree-label">{p.title || "Ohne Titel"}</span>
+                <span className="tree-label">{p.title || "Untitled"}</span>
                 {/* A tag can hang on a shared page, and that belongs said,
                     otherwise one wonders why it does not stand in one's own
                     tree. */}
-                {p.shared && <span className="pill klein">geteilt</span>}
+                {p.shared && <span className="pill klein">shared</span>}
               </div>
             ))}
           </div>

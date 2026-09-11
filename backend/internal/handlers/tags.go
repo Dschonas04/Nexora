@@ -390,8 +390,8 @@ func (s *Server) GetPublicPage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "not found")
 		return
 	}
-	// Bilder und Anhaenge auf den oeffentlichen Weg umschreiben, sonst zeigt die
-	// Seite dem Besucher lauter zerbrochene Bilder.
+	// Rewrite pictures and attachments onto the public route, otherwise the page
+	// shows the visitor nothing but broken images.
 	p.Content = adressenOeffnen(json.RawMessage(content), seitenID, token)
 	writeJSON(w, http.StatusOK, p)
 }

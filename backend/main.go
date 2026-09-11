@@ -75,22 +75,21 @@ func main() {
 		log.Printf("keine gültige Lizenz (%s). Zusatzfunktionen bleiben gesperrt.", z.Grund)
 	}
 
-	// Wem dieser Dienst beim Hinausgehen glaubt. Die eigene Stelle des Verbunds
-	// kommt zu den öffentlichen hinzu; ohne eingetragene Stelle bleibt es bei
-	// denen des Systems, siehe internal/vertrauen.
+	// Whom this service trusts on its way out. The compound's own authority is
+	// added to the public ones; with no authority configured it stays with the
+	// system's own, see internal/vertrauen.
 	//
-	// Ein Fehler hier ist kein Grund aufzugeben: gemeint war eine Datei, und
-	// wenn sie fehlt, sollen die Verbindungen scheitern, die sie brauchen, und
-	// nicht der ganze Dienst.
+	// A failure here is no reason to give up: a file was meant, and if it is
+	// missing then the connections that need it should fail, not the whole
+	// service.
 	wurzeln, err := vertrauen.Wurzeln(k.TLSWurzel)
 	if err != nil {
 		log.Printf("ACHTUNG: %v. Es gelten nur die öffentlichen Stellen.", err)
 	} else if wurzeln != nil {
-		// Einmal an zentraler Stelle, damit es für ALLES gilt, was dieser
-		// Dienst anspricht: den Anmeldedienst, das Anklopfen der
-		// Rechnerliste, jeden Abruf, den irgendein Handler macht. Die
-		// Alternative wäre, den Vorrat durch jeden Aufruf durchzureichen und
-		// beim nächsten neuen Weg zu vergessen.
+		// Once, in one place, so that it holds for EVERYTHING this service
+		// talks to: the identity provider, the probing of the host list, every
+		// call any handler makes. The alternative would be to thread the pool
+		// through every call and forget it at the next new route.
 		if transport, ok := http.DefaultTransport.(*http.Transport); ok {
 			if transport.TLSClientConfig == nil {
 				transport.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
@@ -145,8 +144,8 @@ func main() {
 
 	h := &handlers.Server{
 		Pool: pool,
-		// Nur für pg_dump bei der Sicherung; jede andere Abfrage geht über den
-		// Vorrat oben.
+		// Only for pg_dump during a backup; every other query goes through the
+		// pool above.
 		DatenbankURL: dbURL,
 		Secret:       []byte(secret),
 		Ablage:       speicher,
@@ -167,29 +166,29 @@ func main() {
 	// config.conf says, because they were set later and on purpose.
 	h.EinstellungenLaden(ctx, k)
 
-	// Der Puls zählt die Anfragen der letzten Minute für die Systemansicht.
-	// Er wird vor dem Router angelegt, weil der Filter ihn braucht und die
-	// Handler ihn lesen.
+	// The pulse counts the requests of the last minute for the system view. It
+	// is created before the router because the middleware feeds it and the
+	// handlers read it.
 	h.Puls = puls.Neu()
 
 	r := chi.NewRouter()
 	r.Use(chimw.RealIP) // trust X-Forwarded-For, the SPA is served through nginx
-	// Vor allem anderen, damit auch eine Antwort die Kopfzeilen traegt, die
-	// ein Filter weiter hinten abweist.
+	// Before everything else, so that a response rejected by some middleware
+	// further down still carries the headers.
 	r.Use(middleware.Sicherheitskopfzeilen)
-	// Ganz vorn, damit auch gezählt wird, was an der Anmeldung oder an der
-	// Lizenz scheitert: wer sucht, warum es hängt, will gerade die sehen.
+	// Right at the front, so that what fails at sign-in or at the licence is
+	// counted too: whoever is looking for why it stalls wants exactly those.
 	r.Use(middleware.Messen(h.Puls))
 	r.Use(chimw.Logger)
 	r.Use(chimw.Recoverer) // a panicking handler must not take the process down
 	r.Use(chimw.Timeout(30 * time.Second))
 
-	// Die vollständige Sicherung, außerhalb der Sitzungsgruppe.
+	// The full backup, outside the session group.
 	//
-	// Sie muss auch ohne Keks erreichbar sein, denn ein Skript hat keinen; der
-	// eigene Filter lässt entweder ein Losungswort oder eine Sitzung durch,
-	// siehe sicherungszugang.go. Innerhalb der Gruppe käme ein Aufruf mit
-	// Losungswort nie beim Handler an, die Anmeldung wiese ihn vorher ab.
+	// It has to be reachable without a cookie, because a script has none; its
+	// own middleware lets either a passphrase or a session through, see
+	// sicherungszugang.go. Inside the group a call carrying a passphrase would
+	// never reach the handler -- the sign-in check would turn it away first.
 	r.With(handlers.SicherungZugang([]byte(secret), h.SitzungGilt)).
 		Get("/api/system/sicherung", h.Sicherung)
 
@@ -205,17 +204,17 @@ func main() {
 		r.Get("/auth/oidc/start", h.OIDCStart)
 		r.Get("/auth/oidc/zurueck", h.OIDCZurueck)
 		r.Post("/auth/ldap", h.LDAPAnmeldung)
-		// Der zweite Schritt der Anmeldung. Oeffentlich, weil an dieser Stelle
-		// noch keine Sitzung besteht -- ausgewiesen wird sich mit dem Ticket
-		// aus dem ersten Schritt, das fuenf Minuten gilt.
+		// The second step of signing in. Public, because at this point no
+		// session exists yet -- the caller identifies itself with the ticket
+		// from the first step, which is good for five minutes.
 		r.Post("/auth/zweitfaktor/pruefen", h.ZweitfaktorPruefen)
 		// Public links are a paid extra. The route stays in place but answers
 		// 402 without a license instead of serving the page.
 		r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
 			Get("/public/{token}", h.GetPublicPage)
-		// Die Bilder und Anhaenge einer geteilten Seite. Ohne diesen Weg zeigt
-		// eine bebilderte Seite dem Besucher nur zerbrochene Bilder, denn der
-		// gewoehnliche Anhangweg verlangt eine Sitzung.
+		// The images and attachments of a shared page. Without this route a
+		// page full of pictures shows a visitor nothing but broken images,
+		// because the ordinary attachment route demands a session.
 		r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
 			Get("/public/{token}/dateien/{attId}", h.OeffentlicheDatei)
 
@@ -225,12 +224,12 @@ func main() {
 			r.Use(middleware.Auth([]byte(secret), h.SitzungGilt))
 
 			r.Get("/auth/me", h.Me)
-			// Das eigene Passwort wechseln. Steht bei /auth und nicht bei
-			// /users, weil es keinen Kontonamen braucht: gemeint ist immer das
-			// Konto, das die Anfrage stellt.
+			// Changing one's own password. It sits under /auth and not under
+			// /users because it needs no account name: what is meant is always
+			// the account making the request.
 			r.Post("/auth/passwort", h.PasswortWechseln)
-			// Der zweite Faktor des eigenen Kontos. Wie das Passwort bei
-			// /auth und nicht bei /users: gemeint ist immer, wer fragt.
+			// The second factor of one's own account. Like the password, under
+			// /auth and not /users: what is meant is always whoever is asking.
 			r.Get("/auth/zweitfaktor", h.ZweitfaktorStand)
 			r.Post("/auth/zweitfaktor/start", h.ZweitfaktorStart)
 			r.Post("/auth/zweitfaktor/an", h.ZweitfaktorAn)
@@ -247,10 +246,9 @@ func main() {
 			// attachments license.
 			r.Get("/pages/{id}/attachments/{attId}/word", h.WordLesen)
 			r.Put("/pages/{id}/attachments/{attId}/word", h.WordSchreiben)
-			// Die markierte Fassung einer PDF-Datei, an die Stelle der alten.
-			// Roh und nicht als Formular: der Browser hat die fertigen Bytes
-			// schon in der Hand, und ein Formular drumherum waere eine
-			// Verpackung ohne Inhalt.
+			// The annotated version of a PDF, replacing the old one. Raw and
+			// not as a form: the browser already holds the finished bytes, and
+			// a form around them would be packaging without content.
 			r.Put("/pages/{id}/attachments/{attId}/pdf", h.PDFErsetzen)
 			r.Get("/sitzungen", h.ListSitzungen)
 			r.Delete("/sitzungen", h.SitzungenBeenden)
@@ -275,8 +273,8 @@ func main() {
 			// gesture. Registered before the wildcard routes below for the same
 			// reason as the static /pages/... ones above.
 			r.Put("/pages/{id}/reihenfolge", h.SeiteVerschieben)
-			// Der Satzspiegel einer Seite. Frei wie die Seite selbst: an den
-			// eigenen Text heranzukommen darf an keiner Lizenz haengen.
+			// The text width of a page. Free like the page itself: getting at
+			// one's own text must not hang on any licence.
 			r.Put("/pages/{id}/breite", h.SetzeBreite)
 			r.Post("/pages/{id}/restore", h.RestorePage)
 			r.Delete("/pages/{id}/purge", h.PurgePage) // deletes for good, cascades to subpages
@@ -316,12 +314,12 @@ func main() {
 				r.Delete("/pages/{id}/shares/{userId}", h.RemoveShare)
 			})
 
-			// Gemeinsames Schreiben an einer Seite, ein bezahlter Zusatz.
+			// Writing on a page together, a paid extra.
 			//
-			// Der Zeitbegrenzer des Routers gilt auch hier, er kappt aber nur
-			// den Kontext der Anfrage, und den liest die Leitung nicht: sie soll
-			// stundenlang offen bleiben dürfen. Wer sie öffnen darf, prüft der
-			// Handler selbst, mit derselben Frage wie beim Speichern.
+			// The router's timeout applies here as well, but it only cuts the
+			// request context, and the connection does not read that one: it is
+			// meant to stay open for hours. Who may open it is checked by the
+			// handler itself, with the same question as when saving.
 			r.With(handlers.VerlangeFunktion(lizenz.Echtzeit)).
 				Get("/echtzeit/{id}", h.Mitschrift)
 			r.With(handlers.VerlangeFunktion(lizenz.Echtzeit)).
@@ -342,10 +340,11 @@ func main() {
 			r.Delete("/postfach", h.PostfachLeeren)
 
 			r.Get("/design", h.Design)
-			// Das Aussehen aendert jedes Konto fuer sich; es steht deshalb
-			// hier bei den Sitzungsrouten und nicht unter /einstellungen,
-			// die der Verwaltung vorbehalten sind.
+			// Every account changes its appearance for itself, which is why
+			// this sits among the session routes and not under /einstellungen,
+			// which are reserved for administrators.
 			r.Put("/design", h.AussehenSpeichern)
+			r.Put("/design/sprache", h.SpracheSpeichern)
 
 			r.Get("/einstellungen", h.ListEinstellungen)
 			r.Put("/einstellungen", h.SetzeEinstellung)
@@ -355,39 +354,40 @@ func main() {
 			// extra, this is not: who is knocking at the door belongs to
 			// running the instance, not to reporting on it.
 			r.Get("/system/anmeldungen", h.ListAnmeldungen)
-			// Der Live-Stand, im Sekundentakt abgefragt. Zählt sich selbst
-			// nicht mit, siehe middleware/messen.go.
+			// The live figures, polled once a second. It does not count itself,
+			// see middleware/messen.go.
 			r.Get("/system/puls", h.PulsAnsicht)
 			r.Get("/system/mitschrift", h.MitschriftZustand)
 
-			// Eigene Rechner: die Liste und was gerade von ihnen zu sehen ist.
-			// Nur fuer Administratoren, was die Handler selbst pruefen -- ein
-			// Weg, der beliebige Adressen anklopft, gehoert niemand anderem.
+			// One's own hosts: the list and what can be seen of them right
+			// now. Administrators only, which the handlers check themselves --
+			// a route that knocks on arbitrary addresses belongs to nobody
+			// else.
 			r.Get("/system/rechner", h.ListRechner)
 			r.Post("/system/rechner", h.RechnerAnlegen)
 			r.Put("/system/rechner/{id}", h.RechnerAendern)
 			r.Delete("/system/rechner/{id}", h.RechnerLoeschen)
-			// Was in eine Sicherung ginge. Nur fürs Panel, deshalb hier
-			// drinnen; der Abruf selbst steht weiter unten, außerhalb.
+			// What a backup would contain. For the panel only, hence in here;
+			// the download itself sits further down, outside.
 			r.Get("/system/sicherung/umfang", h.SicherungUmfang)
 			r.Post("/system/sicherung/token", h.SicherungTokenNeu)
 			r.Delete("/system/sicherung/token", h.SicherungTokenWeg)
-			// Das Gegenstück: eine Sicherung wieder einspielen. Nur mit
-			// Anmeldung, bewusst kein Losungswort — was den Bestand ersetzt,
-			// soll niemand aus einem Skript heraus anstoßen können.
+			// The counterpart: restoring a backup. Only with a sign-in, and
+			// deliberately no passphrase -- nobody should be able to trigger
+			// something that replaces the whole store from a script.
 			r.Post("/system/wiederherstellung", h.Wiederherstellen)
 
 			r.Post("/system/suchindex", h.IndexNeuAufbauen)
 			r.Post("/system/anhangindex", h.AnhangIndexNachziehen)
-			// Nimmt einen Rumpf an und wirft ihn weg. Damit misst die
-			// Oberfläche, wie groß eine Übertragung durch alles hindurch
-			// wirklich sein darf, siehe grenzprobe.go.
+			// Takes a body and throws it away. With it the interface measures
+			// how large a transfer may really be all the way through, see
+			// grenzprobe.go.
 			r.Post("/system/grenzprobe", h.Grenzprobe)
 
-			// Die LDAP-Verwaltung. Nachsehen darf jeder Administrator, auch
-			// ohne Lizenz: sonst sieht eine Instanz nicht einmal, dass dort
-			// etwas eingerichtet ist, das nicht laeuft. Das Ausprobieren
-			// spricht mit dem Verzeichnis und haengt deshalb am Zusatz.
+			// The LDAP administration. Any administrator may look, licence or
+			// not: otherwise an instance cannot even see that something is set
+			// up there which is not running. The probe talks to the directory
+			// and therefore hangs on the paid extra.
 			r.Get("/system/ldap", h.LDAPEinrichtung)
 			r.Post("/system/ldap/test", h.LDAPTesten)
 			r.Get("/system/ablage", h.AblageZustand)
@@ -406,8 +406,8 @@ func main() {
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Kommentare))
 				r.Get("/pages/{id}/kommentare", h.ListKommentare)
-				// Wen man hier mit @ ansprechen kann. Gehoert zu den
-				// Kommentaren und teilt darum deren Zusatz.
+				// Who can be addressed here with an @. It belongs to the
+				// comments and therefore shares their paid extra.
 				r.Get("/pages/{id}/erwaehnbare", h.ErwaehnbarePersonen)
 				r.Post("/pages/{id}/kommentare", h.CreateKommentar)
 				r.Put("/kommentare/{kommentarId}", h.UpdateKommentar)
@@ -453,24 +453,24 @@ func main() {
 			r.Post("/users", h.CreateUser)
 			r.Delete("/users/{id}", h.DeleteUser)
 			r.Put("/users/{id}/role", h.SetUserRole)
-			// Den Anmeldenamen darf auch das Konto selbst setzen, deshalb
-			// steht die Pruefung im Handler und nicht in dieser Reihe.
+			// An account may set its own login name, which is why the check
+			// sits in the handler and not in this chain.
 			r.Put("/users/{id}/benutzername", h.BenutzernameSetzen)
-			// Zuruecksetzen durch eine Verwaltung, fuer ein vergessenes
-			// Passwort. Das eigene Konto weist der Handler ab, siehe passwort.go.
+			// A reset by an administrator, for a forgotten password. The
+			// handler refuses one's own account, see passwort.go.
 			r.Put("/users/{id}/passwort", h.PasswortSetzen)
-			// Der Weg der Verwaltung fuer das verlorene Telefon: den zweiten
-			// Faktor eines Kontos entfernen. Es meldet sich danach wieder mit
-			// dem Passwort allein an und richtet ihn neu ein.
+			// The administrator's route for a lost phone: remove an account's
+			// second factor. It then signs in with the password alone again
+			// and sets a new one up.
 			r.Delete("/users/{id}/zweitfaktor", h.ZweitfaktorZuruecksetzen)
-			// Das eigene Profil: angezeigter Name und Bild. Kein Zusatz und
-			// keine Verwaltungssache -- wie jemand heisst und aussieht, geht
-			// ihn selbst an, siehe profilbild.go.
+			// One's own profile: display name and picture. Neither a paid
+			// extra nor an administrator's business -- what somebody is called
+			// and looks like concerns them alone, see profilbild.go.
 			r.Put("/profil", h.ProfilAendern)
 			r.Put("/profil/bild", h.ProfilbildSetzen)
 			r.Delete("/profil/bild", h.ProfilbildWeg)
-			// Das Bild eines beliebigen Kontos: jedes angemeldete darf jedes
-			// sehen, sonst blieben Gesichter an Kommentaren leer.
+			// The picture of any account: every signed-in one may see every
+			// other, otherwise the faces next to comments would stay empty.
 			r.Get("/users/{id}/bild", h.Profilbild)
 
 			// Spaces
@@ -483,8 +483,8 @@ func main() {
 			r.Delete("/spaces/{id}", h.DeleteSpace)
 			// Open a space to every signed-in account (not to the internet).
 			r.Put("/spaces/{id}/oeffentlich", h.SetSpaceOeffentlich)
-			// Die Farbe der Ablage im Grafen. Steht an der Ablage und nicht am
-			// Browser, damit alle dasselbe Bild sehen.
+			// The colour of a space in the graph. It lives on the space and
+			// not in the browser so that everyone sees the same picture.
 			r.Put("/spaces/{id}/farbe", h.SetSpaceFarbe)
 
 			// Backlinks (pages linking here via [[wiki-link]] or manual links)
@@ -548,19 +548,18 @@ func main() {
 		ReadHeaderTimeout: 10 * time.Second, // guards against slow-header clients
 	}
 
-	// Verschlüsselt, sobald ein Zertifikat dasteht.
+	// Encrypted as soon as a certificate is there.
 	//
-	// Beides leer heißt offen, und das ist kein Versehen: wer den Dienst hinter
-	// ein Gegenstück auf demselben Rechner stellt, hat nichts davon, dass die
-	// paar Zentimeter dazwischen auch noch verschlüsselt sind. Sobald aber ein
-	// Netz dazwischenliegt -- ein zweiter Wirt, ein Docker-Netz über mehrere
-	// Rechner --, laufen hier Sitzungskennungen und Seiteninhalte im Klartext
-	// vorbei, und dann gehört ein Zertifikat her.
+	// Both empty means plain, and that is no oversight: whoever puts the
+	// service behind a reverse proxy on the same machine gains nothing from
+	// encrypting the few centimetres in between. But as soon as a network lies
+	// between them -- a second host, a Docker network spanning machines --
+	// session ids and page contents travel past here in the clear, and then a
+	// certificate belongs here.
 	if k.TLSZertifikat != "" && k.TLSSchluessel != "" {
 		srv.TLSConfig = &tls.Config{
-			// Nur die beiden Fassungen, die heute als in Ordnung gelten.
-			// Ältere anzubieten hieße, sie zu benutzen, sobald jemand danach
-			// fragt.
+			// Only the two versions considered sound today. Offering older
+			// ones would mean using them as soon as somebody asks for them.
 			MinVersion: tls.VersionTLS12,
 		}
 		log.Printf("nexora backend listening on :%s (TLS, Zertifikat %s)", port, k.TLSZertifikat)

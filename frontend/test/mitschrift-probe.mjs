@@ -1,14 +1,14 @@
-// Zwei Browser an derselben Seite.
+// Two browsers on the same page.
 //
-// Geprüft wird die Leitung aus src/mitschrift.ts gegen einen Verteiler, der
-// sich verhält wie der echte: jedes Paket geht an alle, den Absender
-// eingeschlossen. Ein Netz braucht es dafür nicht, wohl aber die richtige
-// Reihenfolge der Pakete, und genau dort sassen beide Fehler, die diese Probe
-// beim ersten Lauf gefunden hat: ein Dazugekommener erfuhr nichts von den
-// bereits Anwesenden, und wer ging, blieb bei den anderen stehen.
+// What is checked is the wire from src/mitschrift.ts against a distributor that
+// behaves like the real one: every packet goes to everybody, the sender
+// included. No network is needed for that, but the right order of the packets
+// is, and that is exactly where both bugs sat that this probe found on its
+// first run: somebody who joined learned nothing of those already present, and
+// whoever left stayed standing with the others.
 //
-// Ausgeführt wird sie nicht von einem Testläufer, den es hier nicht gibt,
-// sondern von der Werkbank:
+// It is not run by a test runner, which does not exist here, but from the
+// workbench:
 //
 //   npx esbuild test/eingang.ts --bundle --format=esm --outfile=/tmp/m.mjs
 //   node test/mitschrift-probe.mjs /tmp/m.mjs
@@ -22,7 +22,7 @@ class FakeWS {
     queueMicrotask(() => this.onopen && this.onopen());
   }
   send(paket) {
-    // Der Verteiler des Dienstes: an alle, auch zurück an den Absender.
+    // The service's distributor: to everybody, back to the sender as well.
     for (const a of anschluesse) {
       queueMicrotask(() => a.onmessage && a.onmessage({ data: paket.buffer.slice(paket.byteOffset, paket.byteOffset + paket.byteLength) }));
     }
@@ -77,7 +77,7 @@ pruefe("beide Fassungen sind gleich", docA.getText("t").toString(), docB.getText
 pruefe("keine Eingabe ist verloren", true,
   docA.getText("t").toString().includes("Anna") && docA.getText("t").toString().includes("Bert"));
 
-// --- Die Marke, an der die Saat hängt
+// --- The marker the seed hangs on
 docA.getMap("nexora").set("gesaet", true);
 await ruhe();
 pruefe("die Marke fährt mit", true, docB.getMap("nexora").get("gesaet"));
@@ -87,7 +87,7 @@ b.destroy();
 await ruhe();
 pruefe("der Abgang verschwindet aus der Anwesenheit", 1, a.anwesenheit.getStates().size);
 
-// --- Verbindung weg: es wird weiter getippt, nur nicht verteilt
+// --- Connection gone: typing goes on, only it is not distributed
 const docC = new Y.Doc();
 const c = new Leitung("ws://probe/api/echtzeit/x", docC);
 await ruhe();

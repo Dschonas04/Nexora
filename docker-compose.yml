@@ -15,11 +15,11 @@
 # COMPOSE_FILE in the .env, see .env.example.
 #
 services:
-  # Die Zertifikate für den Innenverkehr. Läuft einmal, legt eine kleine eigene
-  # Zertifizierungsstelle und je ein Zertifikat für backend, db, minio und redis
-  # an, und ist dann fertig. Alle anderen warten auf sein Ende.
+  # The certificates for traffic inside the compound. Runs once, creates a small
+  # private certificate authority and one certificate each for backend, db,
+  # minio and redis, and is then done. All the others wait for it to end.
   #
-  # Wiederholbar: was schon im Datenträger liegt, bleibt liegen. Siehe
+  # Repeatable: whatever already lies in the volume stays there. See
   # pki/erzeuge.sh.
   pki:
     build: ./pki
@@ -39,17 +39,17 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgres://nexora:${POSTGRES_PASSWORD:-nexora}@db:5432/nexora?sslmode=disable}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       PORT: "8443"
-      # Verschlüsselt auch nach innen: die Oberfläche spricht den Dienst über
-      # HTTPS an und prüft dabei das Zertifikat gegen die eigene Stelle. Ohne
-      # das liefen Sitzungskeks, Passwort und jeder Seiteninhalt zwischen den
-      # beiden Containern im Klartext -- was auf einem Rechner niemanden stört
-      # und in dem Augenblick zum Problem wird, in dem das Docker-Netz über
-      # zwei Wirte gespannt ist.
+      # Encrypted inwards as well: the interface addresses the service over
+      # HTTPS and checks the certificate against the private authority while
+      # doing so. Without that, session cookie, password and every page's
+      # content ran between the two containers in the clear -- which bothers
+      # nobody on one machine and becomes a problem the moment the Docker
+      # network is spanned across two hosts.
       NEXORA_TLS_ZERTIFIKAT: ${NEXORA_TLS_ZERTIFIKAT:-/pki/backend/backend.crt}
       NEXORA_TLS_SCHLUESSEL: ${NEXORA_TLS_SCHLUESSEL:-/pki/backend/backend.key}
-      # Wem der Dienst seinerseits glaubt, wenn er hinausgeht: zusätzlich zu den
-      # öffentlichen Stellen die eigene, für Datenbank, Ablage und
-      # Zwischenspeicher.
+      # Whom the service trusts in turn when it goes out: in addition to the
+      # public authorities the private one, for database, object store and
+      # cache.
       NEXORA_TLS_WURZEL: ${NEXORA_TLS_WURZEL:-/pki/ca.crt}
       NEXORA_DATA_DIR: /data/attachments
       # Where the attachment bytes lie. Two halves belong together: this path is
@@ -101,8 +101,8 @@ services:
       # Without this step the maintenance page shows the file and says that it
       # is read only. Whoever wants it that way appends a :ro as well.
       - ./config.conf:/etc/nexora/config.conf
-      # Nur lesend: hier liegen Schlüssel, und dieser Dienst braucht sie nicht
-      # zu ändern.
+      # Read-only: keys lie here, and this service has no need to change
+      # them.
       - nexora_pki:/pki:ro
     restart: unless-stopped
 
@@ -120,10 +120,10 @@ services:
       # name is used, which leads to a second warning in the browser.
       NEXORA_TLS_NAME: ${NEXORA_TLS_NAME:-nexora}
       NEXORA_TLS_IP: ${NEXORA_TLS_IP:-}
-      # Wie die Oberfläche den Dienst dahinter anspricht. Vorgabe: verschlüsselt
-      # und mit Prüfung des Zertifikats. Wer den Dienst ohne Zertifikat betreibt
-      # -- etwa ein eigenes Abbild ohne den PKI-Container --, setzt hier http
-      # und 8080.
+      # How the interface addresses the service behind it. Default: encrypted
+      # and with a check of the certificate. Whoever runs the service without a
+      # certificate -- an image of their own without the PKI container, say --
+      # sets http and 8080 here.
       NEXORA_DIENST_SCHEMA: ${NEXORA_DIENST_SCHEMA:-https}
       NEXORA_DIENST_PORT: ${NEXORA_DIENST_PORT:-8443}
     volumes:
@@ -138,9 +138,9 @@ services:
 
 volumes:
   nexora_tls:
-  # Die Zertifikate des Innenverkehrs. Ein eigener Datenträger, damit sie einen
-  # Neubau der Abbilder überleben: eine Stelle, die sich bei jedem Hochfahren
-  # ändert, wäre keine.
+  # The certificates of the internal traffic. A volume of its own, so they
+  # survive a rebuild of the images: an authority changing on every start-up
+  # would be none.
   nexora_pki:
   # Only the attachments on disk, and only as long as NEXORA_ANHANG_ORT is not
   # set: with a path in there the bytes go to that directory and this volume

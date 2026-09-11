@@ -1,12 +1,12 @@
-// Menüs, die aufgehen und wieder zugehen sollen.
+// Menus that are meant to open and close again.
 //
-// Die Klapplisten hingen bisher allein an onMouseLeave: sie schlossen erst,
-// wenn der Zeiger einmal in ihnen war und wieder heraus. Wer das Menü öffnete
-// und dann woanders hinklickte, ohne es zu berühren, hatte es weiter offen --
-// über dem Seitenbaum, wo es die Klicks darunter abfing.
+// The dropdowns used to hang on onMouseLeave alone: they only closed once the
+// pointer had been inside them and out again. Whoever opened the menu and then
+// clicked somewhere else without touching it still had it open -- above the
+// page tree, where it caught the clicks underneath.
 //
-// Ein Klick daneben und die Escape-Taste sind die beiden Wege, die jeder
-// erwartet, und sie kosten zusammen ein Dutzend Zeilen.
+// A click beside it and the Escape key are the two ways everybody expects, and
+// together they cost a dozen lines.
 import { MutableRefObject, useEffect, useRef } from "react";
 
 export function useAussenklick<T extends HTMLElement>(
@@ -18,8 +18,8 @@ export function useAussenklick<T extends HTMLElement>(
   useEffect(() => {
     if (!offen) return;
 
-    // pointerdown und nicht click: der Klick käme erst beim Loslassen, und bis
-    // dahin hat das, worauf man gezielt hat, den Zeiger schon bekommen.
+    // pointerdown and not click: the click would only come on release, and by
+    // then whatever one aimed at has already got the pointer.
     const daneben = (e: PointerEvent) => {
       const ziel = e.target as Node | null;
       if (ziel && bereich.current?.contains(ziel)) return;

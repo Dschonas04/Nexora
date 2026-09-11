@@ -100,9 +100,9 @@ CREATE TABLE IF NOT EXISTS spaces (
 	created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS spaces_owner_idx ON spaces(owner_id);
--- Die Farbe, in der die Ablage im Grafen erscheint. Leer heisst: die
--- Oberflaeche vergibt eine aus ihrer Reihe, wie bisher. Eine Farbe steht an
--- der Ablage und nicht am Browser, damit alle dasselbe Bild sehen.
+-- The colour a space appears in inside the graph. Empty means: the interface
+-- picks one from its own row, as before. A colour lives on the space and not in
+-- the browser so that everyone sees the same picture.
 ALTER TABLE spaces ADD COLUMN IF NOT EXISTS farbe text NOT NULL DEFAULT '';
 
 -- A public space is visible to every logged in account of the instance without
@@ -321,10 +321,9 @@ ALTER TABLE attachments ADD COLUMN IF NOT EXISTS such_tsv tsvector
 	) STORED;
 CREATE INDEX IF NOT EXISTS attachments_such_idx ON attachments USING GIN (such_tsv);
 
--- Vorlagen gab es einmal: ein Haken an einer gewoehnlichen Seite, die damit im
--- Baum zwischen dem echten Inhalt lag. Die Funktion ist entfernt, und mit ihr
--- die Spalte -- die Seiten selbst bleiben unangetastet, sie sind wieder
--- gewoehnliche Seiten.
+-- Templates existed once: a tick on an ordinary page, which then sat in the
+-- tree among the real content. The feature is gone, and the column with it --
+-- the pages themselves stay untouched, they are ordinary pages again.
 DROP INDEX IF EXISTS pages_vorlage_idx;
 ALTER TABLE pages DROP COLUMN IF EXISTS ist_vorlage;
 
@@ -389,37 +388,34 @@ CREATE INDEX IF NOT EXISTS sitzungen_user_idx ON sitzungen(user_id);
 -- everything, including the many valid ones.
 CREATE INDEX IF NOT EXISTS sitzungen_ablauf_idx ON sitzungen(laeuft_ab);
 
--- Wie breit der Text einer Seite steht: 'normal', 'breit' oder 'voll'.
+-- How wide the text of a page sits: 'normal', 'breit' or 'voll'.
 --
--- An der Seite und nicht am Konto: eine Tabelle mit zwoelf Spalten braucht die
--- Breite, ein Merkzettel nicht, und beide liegen im selben Wiki. Wer sie
--- umstellt, stellt sie fuer alle um, die diese Seite lesen -- das ist gewollt,
--- denn die Breite gehoert zum Satz des Textes wie eine Ueberschrift.
+-- On the page and not on the account: a table with twelve columns needs the
+-- width, a scribbled note does not, and both live in the same wiki. Whoever
+-- changes it changes it for everyone who reads that page -- which is intended,
+-- because width belongs to the typesetting of the text like a heading does.
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS breite text NOT NULL DEFAULT 'normal';
 
--- Der Benutzername ist der zweite Weg an der Anmeldung: wer sich seine Adresse
--- nicht merken mag, tippt ihn statt ihrer. Er darf leer bleiben, deshalb keine
--- NOT-NULL-Spalte -- ein Konto aus SSO oder aus einer alten Fassung hat unter
--- Umstaenden keinen, und ohne ihn muss die Anmeldung ueber die Adresse weiter
--- gehen.
+-- The user name is the second way in at sign-in: whoever cannot be bothered to
+-- remember their address types this instead. It may stay empty, hence no
+-- NOT NULL column -- an account from SSO or from an older version may not have
+-- one, and without it signing in through the address has to keep working.
 --
--- Eindeutig ohne Ruecksicht auf Gross- und Kleinschreibung: sonst waeren Anna
--- und anna zwei Konten, und an der Anmeldung koennte niemand sagen, welches
--- gemeint ist. NULL faellt aus dem Index heraus, beliebig viele Konten duerfen
--- also ohne Namen bleiben.
+-- Unique regardless of case: otherwise Anna and anna would be two accounts, and
+-- at sign-in nobody could say which one was meant. NULL drops out of the index,
+-- so any number of accounts may stay without a name.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS benutzername text;
 CREATE UNIQUE INDEX IF NOT EXISTS benutzer_name_einmalig
 	ON users (lower(benutzername)) WHERE benutzername IS NOT NULL;
 
--- Bestandskonten bekommen einen Namen aus dem vorderen Teil ihrer Adresse:
--- sonst haette nach der Umstellung nur wer sich neu anmeldet einen, und der
--- neue Weg waere fuer alle anderen zu.
+-- Existing accounts get a name from the local part of their address:
+-- otherwise, after the change, only whoever registers anew would have one, and
+-- the new route would be shut for everybody else.
 --
--- Was sich dabei doppeln wuerde, bleibt leer statt zu raten. Zwei Adressen bei
--- verschiedenen Anbietern koennen denselben vorderen Teil haben, und dann ist
--- anna@a.de nicht mehr "anna" als anna@b.de; wer von beiden ihn bekommt, waere
--- Zufall. Diese Konten melden sich weiter mit ihrer Adresse an und koennen
--- ihren Namen selbst setzen.
+-- Whatever would collide stays empty instead of being guessed. Two addresses at
+-- different providers can share the same local part, and then anna@a.de is no
+-- more "anna" than anna@b.de; which of them got it would be chance. Those
+-- accounts keep signing in with their address and can set their own name.
 UPDATE users u SET benutzername = k.name
 FROM (
 	SELECT id,
@@ -442,9 +438,9 @@ CREATE TABLE IF NOT EXISTS einstellungen (
 	geaendert_von text NOT NULL DEFAULT ''
 );
 
--- Rechner, die diese Instanz im Blick behalten soll. Reine Nachschlageliste:
--- geprueft wird bei jedem Aufruf neu, gespeichert wird nur, WAS zu pruefen ist.
--- Kein Zustand in der Tabelle, damit ein Neustart nichts Falsches behauptet.
+-- Hosts this instance should keep an eye on. A pure lookup list: the check
+-- happens afresh on every call, and only WHAT is to be checked is stored. No
+-- state in the table, so that a restart cannot claim anything untrue.
 CREATE TABLE IF NOT EXISTS rechner (
 	id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	name         text NOT NULL,
@@ -454,12 +450,12 @@ CREATE TABLE IF NOT EXISTS rechner (
 	angelegt_am  timestamptz NOT NULL DEFAULT now()
 );
 
--- Die Seitenbreite: '' heisst "wie die Instanz es vorgibt", die drei uebrigen
--- Werte sind die eigene Wahl dieser Seite. Frueher stand hier ueberall
--- 'normal', und das war nicht als Wahl gemeint, sondern war der Ausgangswert.
--- Deshalb einmalig umgestellt, mit einer Marke dagegen, dass es beim naechsten
--- Start noch einmal geschieht -- sonst wuerde eine spaeter getroffene Wahl
--- "normal" jedes Mal wieder eingesammelt.
+-- The page width: '' means "as the instance prescribes", the three other
+-- values are this page's own choice. Previously 'normal' stood everywhere, and
+-- that was not meant as a choice but was the starting value. Hence a one-off
+-- migration, with a marker against it happening again on the next start --
+-- otherwise a later, deliberate choice of "normal" would be swept up every
+-- time.
 ALTER TABLE pages ALTER COLUMN breite SET DEFAULT '';
 DO $$
 BEGIN
@@ -470,39 +466,38 @@ BEGIN
 	END IF;
 END $$;
 
--- Das Profilbild. In der Datenbank und nicht in der Ablage, obwohl dort die
--- Anhaenge liegen: Anhaenge sind ein kostenpflichtiger Zusatz, ein Gesicht am
--- eigenen Konto darf das nicht sein. Klein genug ist es auch -- die Oberflaeche
--- rechnet vor dem Hochladen auf 256 Pixel herunter, was ein paar Dutzend
--- Kilobyte ergibt, und der Dienst laesst nichts Groesseres als 512 KB zu.
+-- The profile picture. In the database and not in the object store, even
+-- though the attachments live there: attachments are a paid extra, and a face
+-- on one's own account must not be. It is small enough as well -- the interface
+-- scales it down to 256 pixels before uploading, which comes to a few dozen
+-- kilobytes, and the service accepts nothing larger than 512 KB.
 --
--- bild_stand wandert bei jeder Aenderung weiter. Das Bild wird mit langer
--- Frist zwischengespeichert, sonst holte es jede Seite neu; ohne eine Zahl, die
--- sich mitbewegt, saehe man sein neues Bild erst am naechsten Tag.
+-- bild_stand moves on with every change. The picture is cached with a long
+-- expiry, otherwise every page would fetch it again; without a number that
+-- moves along, you would see your new picture the next day at the earliest.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bild       bytea;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bild_mime  text NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS bild_stand timestamptz;
 
 -- Der zweite Faktor.
 --
--- totp_geheim steht verschluesselt in der Spalte und nicht gehasht: der Dienst
--- muss damit rechnen koennen. Der Schluessel dafuer kommt aus dem
--- Signaturgeheimnis der Instanz, siehe auth/zweitfaktor.go -- ein Abzug der
--- Datenbank allein gibt also keine Codes her.
+-- totp_geheim sits in the column encrypted and not hashed: the service has to
+-- compute with it. The key for that is derived from the instance's signing
+-- secret, see auth/zweitfaktor.go -- a dump of the database alone therefore
+-- yields no codes.
 --
--- totp_seit trennt das Einrichten vom Betrieb: waehrend jemand den QR-Code
--- abfotografiert, steht das Geheimnis schon da, gilt aber noch nicht. Erst der
--- erste richtige Code setzt den Zeitpunkt, und erst dann verlangt die Anmeldung
--- den zweiten Schritt. Ohne diese Trennung sperrte ein abgebrochenes Einrichten
--- das Konto aus.
+-- totp_seit separates setting up from running: while somebody photographs the
+-- QR code the secret is already there but not yet in force. Only the first
+-- correct code sets the timestamp, and only then does sign-in demand the second
+-- step. Without that separation an abandoned setup locked the account out.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_geheim text NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_seit   timestamptz;
 
--- Die Ersatzcodes fuer den Fall, dass das Telefon weg ist. Sie liegen als
--- bcrypt-Hash da, denn sie sind Zugangsdaten: wer die Liste im Klartext liest,
--- kommt an jedem zweiten Faktor vorbei. Benutzte Codes bleiben mit Zeitstempel
--- stehen, statt geloescht zu werden -- die Pruefspur soll sagen koennen, dass
--- einer verbraucht wurde.
+-- The recovery codes, for the case where the phone is gone. They sit there as
+-- bcrypt hashes, because they are credentials: whoever reads the list in the
+-- clear walks past every second factor. Used codes stay with a timestamp
+-- instead of being deleted -- the audit trail should be able to say that one
+-- was spent.
 CREATE TABLE IF NOT EXISTS zweitfaktor_codes (
 	id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	user_id    uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -512,13 +507,18 @@ CREATE TABLE IF NOT EXISTS zweitfaktor_codes (
 );
 CREATE INDEX IF NOT EXISTS zweitfaktor_codes_konto ON zweitfaktor_codes(user_id);
 
--- Das Aussehen gehoert dem Konto und nicht der Instanz. Es stand bisher als
--- design_grundton und design_akzent in der Einstellungstabelle, also einmal
--- fuer alle: wer dunkel arbeiten wollte, stellte damit auch alle anderen um.
--- Leer heisst "nichts gewaehlt" und laesst die Vorgabe der Oberflaeche gelten;
--- ein NULL waere dasselbe mit mehr Fallunterscheidungen im Go-Teil.
+-- The appearance belongs to the account, not to the instance. It used to sit
+-- in the settings table as design_grundton and design_akzent, that is, once for
+-- everybody: whoever wanted to work in the dark switched everyone else over
+-- with them. Empty means "nothing chosen" and lets the interface's default
+-- stand; a NULL would be the same thing with more case distinctions in the Go
+-- part.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS design_grundton text NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS design_akzent   text NOT NULL DEFAULT '';
+
+-- The interface language, 'de' or 'en', on the account so it follows the person
+-- to every device. Empty: nothing chosen yet, the browser's language decides.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS sprache text NOT NULL DEFAULT '';
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

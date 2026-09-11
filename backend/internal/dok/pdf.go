@@ -598,7 +598,7 @@ func (s *setzer) fertig() []byte {
 
 	anzahl := len(s.seiten)
 	// 1: catalog, 2: page tree, 3..: fonts, then page plus content per page,
-	// und ganz hinten die Bilder.
+	// and the images right at the back.
 	ersteSchrift := 3
 	ersteSeite := ersteSchrift + 6
 	erstesBild := ersteSeite + anzahl*2
@@ -681,7 +681,6 @@ func kuerzen(s string, n int) string {
 	return string(r[:n-1]) + "…"
 }
 
-// schreibeBild setzt den Aufruf eines Bildes in den Seitenstrom.
 // schreibeBild inserts the invocation of an image into the page stream.
 
 // The matrix describes the full size: an image is a unit square in the PDF

@@ -5,7 +5,7 @@
 // sidebar has to follow. The refresh callbacks passed down are how a view says
 // "something you display has changed".
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
-import { Routes, Route, Link, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, Link, Navigate, useNavigate, useLocation } from "react-router";
 import { PageMeta, Space, Tag, api } from "../api/client";
 import Sidebar from "../components/Sidebar";
 import { TreeGap } from "../components/PageTree";
@@ -86,9 +86,9 @@ export default function Workspace() {
   const deletePage = async (id: string) => {
     if (
       !(await frage({
-        titel: "Seite in den Papierkorb",
-        text: "Diese Seite und ihre Unterseiten wandern in den Papierkorb. Von dort lassen sie sich zurückholen.",
-        bestaetigen: "In den Papierkorb",
+        titel: "Move page to trash",
+        text: "This page and its subpages move to the trash. You can bring them back from there.",
+        bestaetigen: "Move to trash",
       }))
     )
       return;
@@ -100,10 +100,10 @@ export default function Workspace() {
 
   const createSpace = async () => {
     const name = await eingabe({
-      titel: "Neue Ablage",
-      text: "Eine Ablage bündelt Seiten zu einem Thema und trägt die Rechte für alle darin.",
+      titel: "New space",
+      text: "A space groups pages around one subject and carries the permissions for all of them.",
       feld: "Name",
-      bestaetigen: "Anlegen",
+      bestaetigen: "Create",
     });
     if (!name) return;
     await api.createSpace(name);
@@ -112,10 +112,10 @@ export default function Workspace() {
 
   const renameSpace = async (id: string, current: string) => {
     const name = await eingabe({
-      titel: "Ablage umbenennen",
+      titel: "Rename space",
       feld: "Name",
       vorgabe: current,
-      bestaetigen: "Umbenennen",
+      bestaetigen: "Rename",
     });
     if (!name || name === current) return;
     await api.renameSpace(id, name);
@@ -127,9 +127,9 @@ export default function Workspace() {
   const deleteSpace = async (id: string) => {
     if (
       !(await frage({
-        titel: "Ablage löschen",
-        text: "Die Ablage wird gelöscht. Ihre Seiten bleiben erhalten und stehen danach unter „Ohne Ablage“; erteilte Rechte an der Ablage verfallen.",
-        bestaetigen: "Ablage löschen",
+        titel: "Delete space",
+        text: "The space is deleted. Its pages remain and appear under \u201eWithout a space\u201c afterwards; permissions granted on the space expire.",
+        bestaetigen: "Delete space",
         gefaehrlich: true,
       }))
     )
@@ -149,9 +149,9 @@ export default function Workspace() {
     await refreshPages();
   };
 
-  // Die Farbe einer Ablage. Nur die Ablagen neu holen und nicht die Seiten: an
-  // den Seiten ändert sich nichts, und ein zweiter Abruf ließe den Baum ohne
-  // Not flackern.
+  // The colour of a space. Fetch only the spaces again and not the pages:
+  // nothing changes on the pages, and a second request would make the tree
+  // flicker for no reason.
   // Reparent or move a page after a sidebar drag. Both are one update, since a
   // page dropped into a different space usually changes its parent as well.
   // parentId null means top level, spaceId null means no space.
@@ -219,7 +219,7 @@ export default function Workspace() {
         <ZweitfaktorMahnung />
         {/* Until a lazily loaded part is there the waiting text stands here,
             faded in with a delay so that a fast switch shows nothing. */}
-        <Suspense fallback={<div className="empty-state spaet">Lädt…</div>}>
+        <Suspense fallback={<div className="empty-state spaet">Loading…</div>}>
           <Routes>
             <Route index element={<EmptyState onCreate={() => createPage(null)} />} />
             <Route
@@ -255,9 +255,9 @@ export default function Workspace() {
                 stay valid and lead there; a bookmark shall not run into the
                 void. */}
             <Route path="admin" element={<Navigate to="/einstellungen/nutzer" replace />} />
-            {/* Das Protokoll steht jetzt in der Verwaltung. Die alte Adresse
-                bleibt gueltig: sie stand in der Leiste, und wer sie als
-                Lesezeichen hat, soll nicht auf einer leeren Seite landen. */}
+            {/* The audit trail now sits in the administration. The old address
+                stays valid: it stood in the sidebar, and whoever has it as a
+                bookmark should not land on an empty page. */}
             <Route path="pruefspur" element={<Navigate to="/einstellungen/protokoll" replace />} />
             <Route path="einstellungen" element={<EinstellungenView />} />
             <Route path="einstellungen/:bereich" element={<EinstellungenView />} />
@@ -274,13 +274,13 @@ export default function Workspace() {
 }
 
 /**
- * Der Hinweis, wenn die Instanz den zweiten Faktor verlangt und das eigene
- * Konto keinen hat.
+ * The hint shown when the instance demands the second factor and one's own
+ * account has none.
  *
- * Ein Streifen und keine Sperre: wer hier arbeitet, ist bereits angemeldet, und
- * ihn vor der Arbeit auszusperren hilft niemandem. Er verschwindet von selbst,
- * sobald der Faktor steht -- ohne Knopf zum Wegklicken, denn dann stünde er
- * genau einmal da und nie wieder.
+ * A stripe and not a bar: whoever works here is already signed in, and locking
+ * them out before their work helps nobody. It disappears by itself as soon as
+ * the factor is set up -- without a button to dismiss it, because then it would
+ * stand there exactly once and never again.
  */
 function ZweitfaktorMahnung() {
   const [noetig, setNoetig] = useState(false);
@@ -290,9 +290,8 @@ function ZweitfaktorMahnung() {
       .zweitfaktorStand()
       .then((z) => setNoetig(z.pflicht && !z.aktiv))
       .catch(() => setNoetig(false));
-    // Nach einem Wechsel der Adresse noch einmal fragen: wer ihn gerade in den
-    // Einstellungen eingerichtet hat, soll den Streifen beim Verlassen der
-    // Seite los sein.
+    // Ask again after a change of address: whoever has just set it up in the
+    // settings should be rid of the stripe when they leave the page.
   }, [loc.pathname]);
 
   if (!noetig) return null;
@@ -300,7 +299,7 @@ function ZweitfaktorMahnung() {
     <div className="mahnstreifen">
       Diese Instanz verlangt einen zweiten Faktor. Solange keiner steht, genügt zum
       Anmelden dein Passwort allein.{" "}
-      <Link to="/einstellungen/zugang">Jetzt einrichten</Link>
+      <Link to="/einstellungen/zugang">Set it up now</Link>
     </div>
   );
 }
@@ -308,7 +307,7 @@ function ZweitfaktorMahnung() {
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="empty-state">
-      <div>Noch nichts geöffnet.</div>
+      <div>Nothing open yet.</div>
       <button className="btn btn-primary" onClick={onCreate}>
         Seite erstellen
       </button>

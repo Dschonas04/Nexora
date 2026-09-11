@@ -1,8 +1,7 @@
-// Prüft, dass Markierungen wirklich in der Datei landen -- und an der richtigen
-// Stelle.
+// Checks that highlights really land in the file -- and in the right place.
 //
-// Ohne Browser: die Rechnerei und das Schreiben stehen in src/pdfmarken.ts und
-// hängen an nichts, was ein Fenster braucht. Aufruf:
+// Without a browser: the arithmetic and the writing sit in src/pdfmarken.ts and
+// hang on nothing that needs a window. Invocation:
 //
 //     npx esbuild src/pdfmarken.ts --bundle --format=esm --outfile=/tmp/pm.mjs
 //     node test/pdf-probe.mjs /tmp/pm.mjs
@@ -24,7 +23,7 @@ function pruefe(was, bedingung, hinweis = "") {
   }
 }
 
-// Eine Vorlage, wie sie ein Anhang wäre: zwei Seiten mit Text.
+// A template as an attachment would be: two pages with text.
 async function vorlage() {
   const doc = await PDFDocument.create();
   for (const t of ["Erste Seite", "Zweite Seite"]) {
@@ -36,9 +35,9 @@ async function vorlage() {
 
 console.log("== Umrechnung Bildschirm -> PDF");
 {
-  // Anzeige mit Maßstab 2 (Netzhautauflösung), Seite 842 Punkte hoch.
-  // Ein Kasten ganz oben links auf der Anzeige gehört im PDF nach oben links,
-  // und oben ist dort die GROSSE y-Zahl.
+  // Display at scale 2 (retina resolution), page 842 points high.
+  // A box at the very top left of the display belongs at the top left in the
+  // PDF, and up there is the LARGE y number.
   const k = ausBildschirm({ x: 0, y: 0, breite: 200, hoehe: 40 }, 2, 842);
   pruefe("oben links bleibt links", k.x === 0);
   pruefe("oben wird zur großen y-Zahl", k.y === 842 - 20, "y=" + k.y);
@@ -69,7 +68,7 @@ console.log("== Markierungen schreiben");
   const wieder = await PDFDocument.load(neu);
   pruefe("beide Seiten sind noch da", wieder.getPageCount() === 2);
 
-  // Der Zettel steht als Anmerkung an der zweiten Seite.
+  // The slip stands as an annotation on the second page.
   const zaehleAnmerkungen = (seite) => {
     const a = seite.node.Annots();
     return a && typeof a.size === "function" ? a.size() : 0;
@@ -83,17 +82,17 @@ console.log("== Markierungen schreiben");
   pruefe("der Zettelinhalt steht drin", text.includes("Das hier prüfen") || text.includes("Das hier pr"));
   pruefe("der Verfasser steht drin", text.includes("Jonas"));
 
-  // Der Inhalt der Vorlage darf nicht verlorengehen: markiert wird darüber,
-  // nicht darüber hinweg. Der Seiteninhalt liegt zusammengedrückt in der Datei,
-  // deshalb kein Suchen nach Text -- gemessen wird, dass der Strom LAENGER
-  // geworden ist. Ein ersetzter Inhalt wäre kürzer oder gleich lang.
+  // The content of the template must not be lost: marking happens over it, not
+  // over the top of it. The page content lies compressed in the file, hence no
+  // searching for text -- what is measured is that the stream has become
+  // LONGER. Replaced content would be shorter or the same length.
   const stromLaenge = (doc, nr) => {
     const seite = doc.getPage(nr);
     const inhalt = seite.node.Contents();
     if (!inhalt) return 0;
     const gefunden = doc.context.lookup(inhalt);
     if (gefunden && gefunden.contents) return gefunden.contents.length;
-    // Mehrere Ströme je Seite: dann ist es ein Feld von Verweisen.
+    // Several streams per page: then it is an array of references.
     if (gefunden && typeof gefunden.size === "function") {
       let summe = 0;
       for (let i = 0; i < gefunden.size(); i++) {
@@ -113,8 +112,8 @@ console.log("== Markierungen schreiben");
 console.log("== Was schiefgehen kann");
 {
   const roh = await vorlage();
-  // Eine Marke auf Seite 7 einer zweiseitigen Datei: überspringen, nicht
-  // scheitern -- die übrigen Markierungen sind mehr wert als eine Fehlermeldung.
+  // A mark on page 7 of a two-page file: skip, do not fail -- the remaining
+  // highlights are worth more than an error message.
   const neu = await markenAnwenden(roh, [
     { seite: 7, x: 10, y: 10, breite: 10, hoehe: 10, farbe: "yellow" },
     { seite: 0, x: 72, y: 700, breite: 100, hoehe: 20, farbe: "blue" },

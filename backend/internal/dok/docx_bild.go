@@ -66,9 +66,9 @@ func bildTeilAnlegen(daten []byte, nummer int) (wordBildTeil, bool) {
 	}, true
 }
 
-// bildXML setzt die Zeichnung in den Text. Der Aufbau ist die kleinste Form,
-// die Word annimmt: ein Absatz, darin ein Lauf, darin eine eingebettete
-// Zeichnung mit Ausdehnung und Verweis auf die Beziehung.
+// bildXML places the drawing into the text. The structure is the smallest form
+// Word accepts: a paragraph, a run inside it, and inside that an inline drawing
+// with an extent and a reference to the relationship.
 func bildXML(t wordBildTeil, einzug int) string {
 	return fmt.Sprintf(`<w:p><w:pPr><w:ind w:left="%d"/><w:spacing w:after="120"/></w:pPr>`+
 		`<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"`+
@@ -87,8 +87,8 @@ func bildXML(t wordBildTeil, einzug int) string {
 		nummerAus(t.kenn), wxml(t.name), t.kenn, t.breiteEMU, t.hoeheEMU)
 }
 
-// nummerAus zieht die laufende Nummer aus der Beziehungskennung. Word verlangt
-// fuer jede Zeichnung eine eigene Zahl; sie muss nur eindeutig sein.
+// nummerAus pulls the running number out of the relationship id. Word demands
+// a number of its own for every drawing; it only has to be unique.
 func nummerAus(kenn string) int {
 	n := 0
 	for _, c := range kenn {
@@ -99,7 +99,7 @@ func nummerAus(kenn string) int {
 	return n + 1
 }
 
-// bildTypen sind die Eintraege, die [Content_Types].xml je Endung braucht.
+// bildTypen are the entries [Content_Types].xml needs per extension.
 func bildTypen(teile []wordBildTeil) string {
 	gesehen := map[string]bool{}
 	var b strings.Builder
@@ -118,7 +118,7 @@ func bildTypen(teile []wordBildTeil) string {
 	return b.String()
 }
 
-// bildBeziehungen sind die Zeilen fuer word/_rels/document.xml.rels.
+// bildBeziehungen are the rows for word/_rels/document.xml.rels.
 func bildBeziehungen(teile []wordBildTeil) string {
 	var b strings.Builder
 	for _, t := range teile {

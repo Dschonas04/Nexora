@@ -5,20 +5,20 @@
 // were not looking, and the only two questions are "what" and "where", both
 // answered by a line and a click.
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { Nachricht, api } from "../api/client";
 import Profilbild from "../components/Profilbild";
 
-// Der Satz je Art, zweigeteilt: was jemand getan hat, und wie der Seitentitel
-// daran anschließt. Vorher stand beides in einem Stück und ergab "hat
-// kommentiert auf Seitenname" -- verständlich, aber kein Deutsch, das jemand
-// so schreiben würde.
+// The sentence per kind, in two parts: what somebody did, and how the page
+// title joins on to it. Before, both stood in one piece and produced
+// "commented on page name" -- understandable, but not English anybody would
+// write that way.
 const SATZ: Record<Nachricht["art"], { tat: string; vor: string }> = {
-  kommentar: { tat: "hat kommentiert", vor: "in" },
-  antwort: { tat: "hat auf deinen Kommentar geantwortet", vor: "in" },
-  erwaehnung: { tat: "hat dich erwähnt", vor: "in" },
-  freigabe: { tat: "hat eine Seite mit dir geteilt", vor: "" },
+  kommentar: { tat: "commented", vor: "on" },
+  antwort: { tat: "replied to your comment", vor: "on" },
+  erwaehnung: { tat: "mentioned you", vor: "on" },
+  freigabe: { tat: "shared a page with you", vor: "" },
 };
 
 export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
@@ -40,10 +40,10 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
   const oeffnen = async (n: Nachricht) => {
     if (!n.gelesenAm) {
       await api.postfachGelesen(n.id).catch(() => {});
-      // Örtlich mitziehen statt neu zu laden: die Zeile soll sofort gelesen
-      // aussehen, und die Liste soll dabei nicht unter der Hand umspringen --
-      // besonders nicht, wenn "Nur ungelesene" an ist und die eben angeklickte
-      // Zeile sonst unter dem Zeigefinger verschwände.
+      // Update locally instead of reloading: the row should look read at once,
+      // and the list should not jump around behind one's back while doing so --
+      // especially not when "Unread only" is on and the row just clicked would
+      // otherwise vanish from under one's finger.
       setItems((vorher) =>
         vorher.map((m) => (m.id === n.id ? { ...m, gelesenAm: new Date().toISOString() } : m)),
       );
@@ -69,10 +69,10 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
   return (
     <div className="editor-scroll">
       <div className="page wide">
-        <h1 className="view-title">Postfach</h1>
+        <h1 className="view-title">Inbox</h1>
         <p className="muted">
-          Kommentare auf deinen Seiten, Antworten auf deine Kommentare, Erwähnungen deines
-          Namens und Seiten, die jemand mit dir geteilt hat.
+          Comments on your pages, replies to your comments, mentions of your name
+          and pages someone shared with you.
         </p>
 
         <div className="postfach-leiste">
@@ -82,19 +82,20 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
               checked={nurUngelesen}
               onChange={(e) => setNurUngelesen(e.target.checked)}
             />
-            Nur ungelesene
+            Unread only
           </label>
           <span className="wachsen" />
           {ungelesen > 0 && (
             <button className="btn" onClick={alleGelesen}>
-              Alle als gelesen
+              Mark all as read
             </button>
           )}
-          {/* Nur zeigen, was auch etwas bewirkt. Ein Knopf, der bei leerem
-              Postfach dasteht und beim Drücken nichts tut, sieht defekt aus. */}
+          {/* Only show what actually does something. A button standing there
+              with an empty inbox and doing nothing when pressed looks
+              broken. */}
           {gelesene > 0 && (
-            <button className="btn" onClick={aufraeumen} title="Entfernt nur die gelesenen">
-              Gelesene wegräumen
+            <button className="btn" onClick={aufraeumen} title="Removes only what you have read">
+              Clear the read ones
             </button>
           )}
         </div>
@@ -106,14 +107,14 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
             </div>
             {nurUngelesen ? (
               <>
-                <strong>Nichts Ungelesenes.</strong>
+                <strong>Nothing unread.</strong>
                 <p className="muted small">
                   Alles gelesen. Der Schalter oben zeigt wieder die ganze Liste.
                 </p>
               </>
             ) : (
               <>
-                <strong>Das Postfach ist leer.</strong>
+                <strong>The inbox is empty.</strong>
                 <p className="muted small">
                   Hier landet, was geschieht, während du nicht hinsiehst.
                 </p>
@@ -138,22 +139,21 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
                 <span className="postfach-punkt" aria-hidden="true" />
                 <Profilbild
                   id={n.ausloeserId ?? n.id}
-                  name={n.ausloeserName || "Jemand"}
+                  name={n.ausloeserName || "Someone"}
                   stand={n.ausloeserBild}
                 />
                 <span className="postfach-inhalt">
                   <span className="postfach-kopf">
-                    <strong>{n.ausloeserName || "Jemand"}</strong> {SATZ[n.art].tat}
-                    {/* Ohne Titel keine leere unterstrichene Lücke: eine Seite,
-                        die inzwischen fort ist, wird benannt und nicht
-                        verschwiegen. */}
+                    <strong>{n.ausloeserName || "Someone"}</strong> {SATZ[n.art].tat}
+                    {/* Without a title no empty underlined gap: a page that is gone
+                        by now is named and not passed over in silence. */}
                     {n.seitenTitel ? (
                       <>
                         {SATZ[n.art].vor ? " " + SATZ[n.art].vor : ""}{" "}
                         <span className="postfach-seite">{n.seitenTitel}</span>
                       </>
                     ) : (
-                      <span className="muted"> &mdash; die Seite gibt es nicht mehr</span>
+                      <span className="muted"> &mdash; that page no longer exists</span>
                     )}
                   </span>
                   {n.text && <span className="muted small postfach-auszug">{n.text}</span>}
@@ -173,11 +173,11 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
 // first.
 function wannText(zeitpunkt: string): string {
   const min = Math.floor((Date.now() - new Date(zeitpunkt).getTime()) / 60000);
-  if (min < 1) return "gerade eben";
-  if (min < 60) return `vor ${min} min`;
+  if (min < 1) return "just now";
+  if (min < 60) return `${min} min ago`;
   const std = Math.floor(min / 60);
-  if (std < 24) return `vor ${std} ${std === 1 ? "Stunde" : "Stunden"}`;
+  if (std < 24) return `${std} ${std === 1 ? "hour" : "hours"} ago`;
   const tage = Math.floor(std / 24);
-  if (tage < 30) return `vor ${tage} ${tage === 1 ? "Tag" : "Tagen"}`;
-  return new Date(zeitpunkt).toLocaleDateString("de-DE");
+  if (tage < 30) return `${tage} ${tage === 1 ? "day" : "days"} ago`;
+  return new Date(zeitpunkt).toLocaleDateString();
 }

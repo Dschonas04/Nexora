@@ -1,21 +1,21 @@
 // Sign-in form. On success AuthProvider sets the user, and App swaps this
 // screen for the workspace; there is no explicit redirect here.
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 import { api, brauchtZweitenSchritt } from "../api/client";
 import { useAuth } from "../auth";
 
 export default function Login() {
   const { login, zweiterSchritt } = useAuth();
-  // Eine Zeile für beides. Was drin steht, entscheidet der Server am @: eine
-  // Auswahl davor wäre eine Frage, die niemand beantworten müsste.
+  // One line for both. What is in it is decided by the server at the @: a
+  // dropdown in front of it would be a question nobody would have to answer.
   const [kennung, setKennung] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  // Das Ticket aus dem ersten Schritt. Solange es steht, ist die Anmeldung
-  // halb fertig: das Passwort stimmte, der Code fehlt. Es hält keine Sitzung,
-  // gilt fünf Minuten und öffnet für sich genommen nichts.
+  // The ticket from the first step. As long as it stands, the sign-in is half
+  // done: the password was right, the code is missing. It holds no session, is
+  // valid for five minutes and opens nothing by itself.
   const [ticket, setTicket] = useState("");
   const [code, setCode] = useState("");
 
@@ -51,8 +51,8 @@ export default function Login() {
         setCode("");
         return;
       }
-      // Beim Verzeichnis sitzt die Sitzung im Keks, ohne dass der Zustand hier
-      // davon weiß. Ein Neuladen lässt AuthProvider sie lesen.
+      // With the directory the session sits in the cookie without the state
+      // here knowing about it. A reload lets AuthProvider read it.
       if (ueberVerzeichnis) window.location.href = "/";
     } catch (err) {
       setError((err as Error).message || "Anmeldung fehlgeschlagen");
@@ -75,18 +75,18 @@ export default function Login() {
     }
   };
 
-  // Der zweite Schritt bekommt eine eigene Karte statt eines dritten Feldes im
-  // Formular. Wer hier steht, hat das Passwort hinter sich; ein Bildschirm mit
-  // genau einer Frage darauf lässt keinen Zweifel, welche gerade dran ist.
+  // The second step gets a card of its own instead of a third field in the
+  // form. Whoever stands here has the password behind them; a screen with
+  // exactly one question on it leaves no doubt which one is up now.
   if (ticket) {
     return (
       <div className="auth">
         <form className="auth-card" onSubmit={codeSenden}>
           <h1>Nexora</h1>
-          <p className="sub">Zweiter Schritt</p>
+          <p className="sub">Second step</p>
           {error && <div className="error">{error}</div>}
           <div className="field">
-            <label>Code aus der Authenticator-App</label>
+            <label>Code from your authenticator app</label>
             <input
               className="codefeld"
               inputMode="text"
@@ -98,11 +98,11 @@ export default function Login() {
             />
           </div>
           <p className="muted small">
-            Sechs Ziffern aus der App. Ist das Telefon nicht zur Hand, tut es auch einer
-            der Ersatzcodes; jeder davon gilt einmal.
+            Six digits from the app. If the phone is out of reach, one of the recovery
+            codes works too; each of them works once.
           </p>
           <button className="btn-primary" type="submit" disabled={busy || !code.trim()}>
-            {busy ? "Prüft…" : "Anmelden"}
+            {busy ? "Checking…" : "Sign in"}
           </button>
           <div className="switch">
             <button
@@ -114,7 +114,7 @@ export default function Login() {
                 setError("");
               }}
             >
-              Zurück zur Anmeldung
+              Back to sign-in
             </button>
           </div>
         </form>
@@ -126,13 +126,13 @@ export default function Login() {
     <div className="auth">
       <form className="auth-card" onSubmit={submit}>
         <h1>Nexora</h1>
-        <p className="sub">Melde dich in deinem Workspace an</p>
+        <p className="sub">Sign in to your workspace</p>
         {error && <div className="error">{error}</div>}
         <div className="field">
-          <label>{ueberVerzeichnis ? "Benutzer" : "E-Mail oder Benutzername"}</label>
-          {/* type="text" auch ohne Verzeichnis: bei type="email" hält der
-              Browser jede Eingabe ohne @ für einen Tippfehler und lässt das
-              Formular gar nicht erst abschicken. */}
+          <label>{ueberVerzeichnis ? "User" : "Email or username"}</label>
+          {/* type="text" even without a directory: with type="email" the
+              browser takes every input without an @ for a typo and does not
+              even let the form be submitted. */}
           <input
             type="text"
             autoComplete="username"
@@ -142,11 +142,11 @@ export default function Login() {
           />
         </div>
         <div className="field">
-          <label>Passwort</label>
+          <label>Password</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
         <button className="btn-primary" type="submit" disabled={busy}>
-          {busy ? "Anmelden…" : "Anmelden"}
+          {busy ? "Signing in…" : "Sign in"}
         </button>
         {wege?.ldap && (
           <div className="switch">
@@ -156,8 +156,8 @@ export default function Login() {
               onClick={() => setUeberVerzeichnis((v) => !v)}
             >
               {ueberVerzeichnis
-                ? "Stattdessen mit Konto und Passwort anmelden"
-                : "Stattdessen über das Verzeichnis anmelden"}
+                ? "Sign in with account and password instead"
+                : "Sign in through the directory instead"}
             </button>
           </div>
         )}
@@ -165,19 +165,19 @@ export default function Login() {
         {wege?.oidc && (
           <>
             <div className="anmelde-trenner">
-              <span>oder</span>
+              <span>or</span>
             </div>
             {/* An ordinary link, not a fetch: the provider answers with a
                 redirect to its own page, and the browser has to go there
                 itself. */}
             <a className="btn-primary anmelde-sso" href="/api/auth/oidc/start">
-              {wege.oidcText || `Mit ${wege.anbieter || "SSO"} anmelden`}
+              {wege.oidcText || `Sign in with ${wege.anbieter || "SSO"}`}
             </a>
           </>
         )}
 
         <div className="switch">
-          Kein Konto? <Link to="/register">Registrieren</Link>
+          No account? <Link to="/register">Register</Link>
         </div>
       </form>
     </div>

@@ -113,9 +113,9 @@ export default function Sidebar(props: Props) {
     ungelesen,
   } = props;
   const { user, logout } = useAuth();
-  // Das eigene Konto. Profil, Passwort, zweiter Faktor und die eigenen Geräte
-  // standen an drei verschiedenen Stellen, zwei davon nur für Administratoren.
-  // Jetzt liegen sie zusammen hinter dem Zahnrad neben dem Namen.
+  // One's own account. Profile, password, second factor and one's own devices
+  // stood in three different places, two of them for administrators only. Now
+  // they lie together behind the cog beside the name.
   const [kontoOffen, setKontoOffen] = useState(false);
   // The account menu in the bottom-left. It stays closed until the avatar
   // is clicked: the sidebar is narrow and three side-by-side buttons would
@@ -216,7 +216,7 @@ export default function Sidebar(props: Props) {
     try {
       localStorage.setItem(BREITE_SCHLUESSEL, String(breite));
     } catch {
-      // Nicht merken zu koennen ist kein Grund, nicht zu ziehen.
+      // Not being able to remember is no reason not to drag.
     }
   };
   // Double-clicking the handle resets the width. If someone has accidentally
@@ -410,10 +410,9 @@ export default function Sidebar(props: Props) {
     const eltern = new Map(pages.map((p) => [p.id, p.parentId ?? null]));
     const weg: string[] = [];
     let lauf = eltern.get(activeId) ?? null;
-    // Die Grenze fängt einen Kreis ab. Der sollte nicht entstehen, das Backend
-    // weist das Umhängen unter die eigene Unterseite ab; eine Endlosschleife in
-    // der Seitenleiste wäre aber ein eingefrorener Browser und nicht bloß ein
-    // falscher Baum.
+    // The limit catches a cycle. It should not arise, the backend rejects
+    // re-parenting a page under its own subpage; an endless loop in the sidebar
+    // would be a frozen browser, though, and not merely a wrong tree.
     for (let i = 0; lauf && i < 100; i++) {
       weg.push(lauf);
       lauf = eltern.get(lauf) ?? null;
@@ -450,7 +449,7 @@ export default function Sidebar(props: Props) {
       className={"tree-row" + (activeId === p.id ? " active" : "")}
       onClick={() => onSelect(p.id)}
     >
-      <span className="tree-label">{p.title || "Ohne Titel"}</span>
+      <span className="tree-label">{p.title || "Untitled"}</span>
     </div>
   );
 
@@ -468,10 +467,10 @@ export default function Sidebar(props: Props) {
       onClick={() => onSelect(h.id)}
     >
       <div className="treffer-titel">
-        <span className="tree-label">{h.title || "Ohne Titel"}</span>
+        <span className="tree-label">{h.title || "Untitled"}</span>
         {/* Says plainly that this page is not the user's own, instead of
             leaving them to wonder why it is not in their tree. */}
-        {!h.eigen && <span className="pill klein">geteilt</span>}
+        {!h.eigen && <span className="pill klein">shared</span>}
       </div>
       {h.quelle && (
         // Where the hit comes from. Without this line an excerpt from a PDF
@@ -532,8 +531,8 @@ export default function Sidebar(props: Props) {
       <div className="sidebar schmal">
         <button
           className="icon-btn leiste-griff"
-          title="Leiste einblenden (Strg + \)"
-          aria-label="Leiste einblenden"
+          title="Show sidebar (Ctrl + \)"
+          aria-label="Show sidebar"
           onClick={leisteUmschalten}
         >
           »
@@ -548,7 +547,7 @@ export default function Sidebar(props: Props) {
           spot the user reaches for. */}
       <div
         className="leiste-kante"
-        title="Breite ziehen, Doppelklick setzt zurück"
+        title="Drag to resize, double-click to reset"
         onPointerDown={zugBeginnen}
         onPointerMove={zugBewegen}
         onPointerUp={zugBeenden}
@@ -561,8 +560,8 @@ export default function Sidebar(props: Props) {
           not its contents. */}
         <button
           className="icon-btn leiste-griff"
-          title="Leiste ausblenden (Strg + \)"
-          aria-label="Leiste ausblenden"
+          title="Hide sidebar (Ctrl + \)"
+          aria-label="Hide sidebar"
           onClick={leisteUmschalten}
         >
           «
@@ -573,7 +572,7 @@ export default function Sidebar(props: Props) {
         <input
           ref={suchfeld}
           className={q !== "" ? "hat-knoepfe" : ""}
-          placeholder="Suchen…"
+          placeholder="Search…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           // Pressing Escape clears the search without needing to click the
@@ -589,14 +588,14 @@ export default function Sidebar(props: Props) {
           query there is nothing to clear and nothing to filter by. */}
         {q !== "" && (
           <div className="such-knoepfe">
-            <button className="icon-btn" title="Suche leeren (Esc)" aria-label="Suche leeren" onClick={suchtLoeschen}>
+            <button className="icon-btn" title="Clear search (Esc)" aria-label="Clear search" onClick={suchtLoeschen}>
               ✕
             </button>
             {/* The dot beside it indicates that a filter is active — otherwise
               one could be puzzled by unexpectedly few results. */}
             <button
               className={"icon-btn" + (filterAktiv ? " aktiv" : "")}
-              title={filterAktiv ? "Filter (aktiv)" : "Treffer eingrenzen"}
+              title={filterAktiv ? "Filter (active)" : "Narrow the results"}
               onClick={() => setFilterOffen((v) => !v)}
             >
               ⚙
@@ -611,8 +610,8 @@ export default function Sidebar(props: Props) {
             value={filter.space ?? ""}
             onChange={(e) => setFilter((f) => ({ ...f, space: e.target.value || undefined }))}
           >
-            <option value="">Alle Ablagen</option>
-            <option value="ohne">Ohne Ablage</option>
+            <option value="">All spaces</option>
+            <option value="ohne">Without a space</option>
             {spaces.map((sp) => (
               <option key={sp.id} value={sp.id}>
                 {sp.name}
@@ -623,7 +622,7 @@ export default function Sidebar(props: Props) {
             value={filter.tag ?? ""}
             onChange={(e) => setFilter((f) => ({ ...f, tag: e.target.value || undefined }))}
           >
-            <option value="">Alle Schlagworte</option>
+            <option value="">All tags</option>
             {tags.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -636,17 +635,17 @@ export default function Sidebar(props: Props) {
               setFilter((f) => ({ ...f, tage: e.target.value ? Number(e.target.value) : undefined }))
             }
           >
-            <option value="">Beliebig alt</option>
-            <option value="7">Letzte 7 Tage</option>
-            <option value="30">Letzte 30 Tage</option>
-            <option value="365">Letztes Jahr</option>
+            <option value="">Any age</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="365">Last year</option>
           </select>
           <select
             value={filter.wer ?? ""}
             onChange={(e) => setFilter((f) => ({ ...f, wer: e.target.value || undefined }))}
           >
-            <option value="">Von allen</option>
-            <option value="ich">Nur meine</option>
+            <option value="">By anyone</option>
+            <option value="ich">Only mine</option>
           </select>
           {filterAktiv && (
             <button className="link-btn" onClick={() => setFilter({})}>
@@ -667,10 +666,10 @@ export default function Sidebar(props: Props) {
               new-page action lived as an unlabeled plus in the header — an
               icon without a word, far from the three other actions that do
               the same. */}
-          <button className="text-btn" title="Neue Seite ganz oben anlegen" onClick={() => onCreateRoot()}>
+          <button className="text-btn" title="Create a page at the top level" onClick={() => onCreateRoot()}>
             + Seite
           </button>
-          <button className="text-btn" title="Neue Ablage anlegen" onClick={onCreateSpace}>
+          <button className="text-btn" title="Create a space" onClick={onCreateSpace}>
             + Ablage
           </button>
           {/* Labelled instead of an arrow: an icon alone does not say that a
@@ -682,7 +681,7 @@ export default function Sidebar(props: Props) {
           <div className="klappmenue" ref={einfuhrBereich}>
             <button
               className="text-btn"
-              title="Markdown, HTML oder ein ZIP importieren, wahlweise als eigene Ablage"
+              title="Import Markdown, HTML or a ZIP, optionally as its own space"
               onClick={() => {
                 setAusfuhrOffen(false);
                 setEinfuhrOffen((v) => !v);
@@ -692,12 +691,12 @@ export default function Sidebar(props: Props) {
             </button>
             {einfuhrOffen && (
               <div className="klappliste" onMouseLeave={() => setEinfuhrOffen(false)}>
-                <div className="klappliste-titel">Wohin importieren</div>
+                <div className="klappliste-titel">Where to import</div>
                 <button
                   className="klappeintrag"
                   onClick={() => {
                     setEinfuhrOffen(false);
-                    setEinfuhrZiel({ ziel: {}, name: "Seiten" });
+                    setEinfuhrZiel({ ziel: {}, name: "Pages" });
                   }}
                 >
                   Als neue Ablage oder ohne
@@ -724,7 +723,7 @@ export default function Sidebar(props: Props) {
             <div className="klappmenue" ref={ausfuhrBereich}>
               <button
                 className="text-btn"
-                title="Eine ganze Ablage exportieren, als ZIP, PDF oder Word"
+                title="Export a whole space as ZIP, PDF or Word"
                 onClick={() => {
                   setEinfuhrOffen(false);
                   setExportFuer(null);
@@ -743,7 +742,7 @@ export default function Sidebar(props: Props) {
                 >
                   {exportFuer === null ? (
                     <>
-                      <div className="klappliste-titel">Welche Ablage</div>
+                      <div className="klappliste-titel">Which space</div>
                       {ausgebbar.map((sp) => (
                         <button
                           key={sp.id}
@@ -755,7 +754,7 @@ export default function Sidebar(props: Props) {
                       ))}
                       {ohneAblage && (
                         <button className="klappeintrag" onClick={() => setExportFuer("ohne")}>
-                          Seiten ohne Ablage
+                          Pages without a space
                         </button>
                       )}
                     </>
@@ -763,15 +762,15 @@ export default function Sidebar(props: Props) {
                     <>
                       <div className="klappliste-titel">
                         {exportFuer === "ohne"
-                          ? "Seiten ohne Ablage"
-                          : (spaces.find((sp) => sp.id === exportFuer)?.name ?? "Ablage")}{" "}
+                          ? "Pages without a space"
+                          : (spaces.find((sp) => sp.id === exportFuer)?.name ?? "Space")}{" "}
                         exportieren
                       </div>
                       {(
                         [
-                          ["", "Markdown-Dateien (.zip)"],
-                          ["pdf", "Ein PDF mit allen Seiten"],
-                          ["word", "Ein Word-Dokument"],
+                          ["", "Markdown files (.zip)"],
+                          ["pdf", "A PDF with every page"],
+                          ["word", "A Word document"],
                         ] as const
                       ).map(([form, titel]) => (
                         <button
@@ -801,7 +800,7 @@ export default function Sidebar(props: Props) {
               dozen spaces. This button does it in one. */}
           <button
             className="text-btn klapp-alles"
-            title={alleZu ? "Alle Abschnitte wieder aufklappen" : "Alle Abschnitte zuklappen"}
+            title={alleZu ? "Expand every section again" : "Collapse every section"}
             onClick={alleKlappen}
           >
             {alleZu ? "▾ Ausklappen" : "▸ Einklappen"}
@@ -815,7 +814,7 @@ export default function Sidebar(props: Props) {
             <div className="sidebar-section-title">
               Ergebnisse{filterAktiv ? " (gefiltert)" : ""}
             </div>
-            {results.length === 0 && <div className="tree-row muted">Keine Treffer</div>}
+            {results.length === 0 && <div className="tree-row muted">No matches</div>}
             {results.map(trefferRow)}
           </div>
         ) : (
@@ -897,7 +896,7 @@ export default function Sidebar(props: Props) {
                     <button
                       className="klapp-btn"
                       aria-expanded={!eingeklappt}
-                      title={eingeklappt ? "Aufklappen" : "Einklappen"}
+                      title={eingeklappt ? "Expand" : "Collapse"}
                       onClick={() => klappen(marke)}
                     >
                       {eingeklappt ? "▸" : "▾"}
@@ -913,11 +912,11 @@ export default function Sidebar(props: Props) {
                         className="pill klein offen"
                         title={
                           sp.oeffentlich === "schreiben"
-                            ? "Öffentliche Ablage: alle angemeldeten Konten dürfen lesen und bearbeiten"
-                            : "Öffentliche Ablage: alle angemeldeten Konten dürfen lesen"
+                            ? "Public space: every signed-in account may read and edit"
+                            : "Public space: every signed-in account may read"
                         }
                       >
-                        {sp.oeffentlich === "schreiben" ? "offen" : "öffentlich"}
+                        {sp.oeffentlich === "schreiben" ? "offen" : "public"}
                       </span>
                     )}
                     {/* The count is shown only while collapsed: when expanded you
@@ -930,7 +929,7 @@ export default function Sidebar(props: Props) {
                       Otherwise every space would show a row of controls one
                       rarely needs. */}
                     <span className="tree-actions">
-                      <button className="icon-btn" title="Neue Seite" onClick={() => onCreateInSpace(sp.id)}>
+                      <button className="icon-btn" title="New page" onClick={() => onCreateInSpace(sp.id)}>
                         +
                       </button>
                       {/*Manage buttons only for those allowed to. The backend
@@ -940,7 +939,7 @@ export default function Sidebar(props: Props) {
                       {sp.darfVerwalten && (
                         <button
                           className="icon-btn"
-                          title="Ablage umbenennen"
+                          title="Rename space"
                           onClick={() => onRenameSpace(sp.id, sp.name)}
                         >
                           ✎
@@ -949,7 +948,7 @@ export default function Sidebar(props: Props) {
                       {sp.darfVerwalten && (
                         <button
                           className="icon-btn"
-                          title="Sichtbarkeit dieser Ablage"
+                          title="Visibility of this space"
                           onClick={() => setSichtbarkeitFuer((v) => (v === sp.id ? null : sp.id))}
                         >
                           ◎
@@ -958,7 +957,7 @@ export default function Sidebar(props: Props) {
                       {frei("gruppen") && sp.darfVerwalten && (
                         <button
                           className="icon-btn"
-                          title="Rechte an dieser Ablage"
+                          title="Permissions for this space"
                           onClick={() => setRechteFuer({ id: sp.id, name: sp.name })}
                         >
                           ⚿
@@ -968,7 +967,7 @@ export default function Sidebar(props: Props) {
                           heading. They now sit in the top-left tool row and
                           ask for the target space there — see the tool section. */}
                       {sp.darfVerwalten && (
-                        <button className="icon-btn" title="Space löschen" onClick={() => onDeleteSpace(sp.id)}>
+                        <button className="icon-btn" title="Delete space" onClick={() => onDeleteSpace(sp.id)}>
                           ✕
                         </button>
                       )}
@@ -980,12 +979,12 @@ export default function Sidebar(props: Props) {
                       has to find out by clicking on. */}
                   {sichtbarkeitFuer === sp.id && (
                     <div className="sichtbarkeit-menue">
-                      <div className="sichtbarkeit-kopf">Wer sieht diese Ablage?</div>
+                      <div className="sichtbarkeit-kopf">Who can see this space?</div>
                       {(
                         [
-                          ["nein", "Nur Berechtigte", "Eigentümer und wer ausdrücklich ein Recht hat"],
-                          ["lesen", "Alle dürfen lesen", "Jedes angemeldete Konto dieser Instanz"],
-                          ["schreiben", "Alle dürfen bearbeiten", "Jedes angemeldete Konto darf auch ändern"],
+                          ["nein", "Only permitted", "The owner and whoever holds an explicit permission"],
+                          ["lesen", "Everyone may read", "Every signed-in account of this instance"],
+                          ["schreiben", "Everyone may edit", "Every signed-in account may change it as well"],
                         ] as const
                       ).map(([wert, titel, erklaerung]) => (
                         <button
@@ -1059,13 +1058,13 @@ export default function Sidebar(props: Props) {
             {spaces.length > sichtbareSpaces.length && (
               <div className="tree-row mehr-zeile" onClick={() => setAlleSpaces(true)}>
                 <span className="tree-label">
-                  {spaces.length - sichtbareSpaces.length} weitere Ablagen
+                  {spaces.length - sichtbareSpaces.length} more spaces
                 </span>
               </div>
             )}
             {alleSpaces && spaces.length > KURZ && (
               <div className="tree-row mehr-zeile" onClick={() => setAlleSpaces(false)}>
-                <span className="tree-label">Weniger anzeigen</span>
+                <span className="tree-label">Show less</span>
               </div>
             )}
 
@@ -1113,7 +1112,7 @@ export default function Sidebar(props: Props) {
                 <button
                   className="klapp-btn"
                   aria-expanded={!zu.has("root")}
-                  title={zu.has("root") ? "Aufklappen" : "Einklappen"}
+                  title={zu.has("root") ? "Expand" : "Collapse"}
                   onClick={() => klappen("root")}
                 >
                   {zu.has("root") ? "▸" : "▾"}
@@ -1125,7 +1124,7 @@ export default function Sidebar(props: Props) {
                   <span className="tag-anzahl muted small">{ungrouped.length}</span>
                 )}
                 <span className="tree-actions">
-                  <button className="icon-btn" title="Neue Seite" onClick={() => onCreateRoot()}>
+                  <button className="icon-btn" title="New page" onClick={() => onCreateRoot()}>
                     +
                   </button>
                 </span>
@@ -1167,20 +1166,20 @@ export default function Sidebar(props: Props) {
             {spaces.length === 0 && pages.length === 0 && shared.length === 0 && (
               <div className="sidebar-section leerer-anfang">
                 <p className="muted">
-                  Noch nichts angelegt. Eine Ablage ordnet Seiten zu einem Thema &mdash; oder
-                  fang einfach mit einer Seite an.
+                  Nothing here yet. A space groups pages around one subject &mdash; or
+                  just start with a page.
                 </p>
                 <button className="btn" onClick={onCreateSpace}>
-                  Erste Ablage anlegen
+                  Create the first space
                 </button>
                 <button className="btn" onClick={() => onCreateRoot()}>
-                  Erste Seite anlegen
+                  Create the first page
                 </button>
                 <button
                   className="btn"
-                  onClick={() => setEinfuhrZiel({ ziel: {}, name: "Seiten" })}
+                  onClick={() => setEinfuhrZiel({ ziel: {}, name: "Pages" })}
                 >
-                  Ablage importieren
+                  Import a space
                 </button>
               </div>
             )}
@@ -1188,7 +1187,7 @@ export default function Sidebar(props: Props) {
             {shared.length > 0 && (
               <div className="sidebar-section">
                 <Klapptitel marke="geteilt" zu={zu} klappen={klappen} anzahl={shared.length}>
-                  Mit mir geteilt
+                  Shared with me
                 </Klapptitel>
                 {!zu.has("geteilt") && shared.map(flatRow)}
               </div>
@@ -1197,7 +1196,7 @@ export default function Sidebar(props: Props) {
             {tags.length > 0 && (
               <div className="sidebar-section">
                 <Klapptitel marke="schlagwoerter" zu={zu} klappen={klappen} anzahl={tags.length}>
-                  Schlagwörter
+                  Tags
                 </Klapptitel>
                 {!zu.has("schlagwoerter") &&
                   sichtbareTags.map((t) => (
@@ -1220,13 +1219,13 @@ export default function Sidebar(props: Props) {
                 {!zu.has("schlagwoerter") && tags.length > sichtbareTags.length && (
                   <div className="tree-row mehr-zeile" onClick={() => setAlleTags(true)}>
                     <span className="tree-label">
-                      {tags.length - sichtbareTags.length} weitere Schlagwörter
+                      {tags.length - sichtbareTags.length} more tags
                     </span>
                   </div>
                 )}
                 {!zu.has("schlagwoerter") && alleTags && tags.length > KURZ && (
                   <div className="tree-row mehr-zeile" onClick={() => setAlleTags(false)}>
-                    <span className="tree-label">Weniger anzeigen</span>
+                    <span className="tree-label">Show less</span>
                   </div>
                 )}
               </div>
@@ -1239,7 +1238,7 @@ export default function Sidebar(props: Props) {
                 see below. */}
             <div className="sidebar-section">
               <Klapptitel marke="workspace" zu={zu} klappen={klappen}>
-                Arbeitsbereich
+                Workspace
               </Klapptitel>
               {!zu.has("workspace") && (
                 <>
@@ -1247,7 +1246,7 @@ export default function Sidebar(props: Props) {
                     className={"tree-row" + (currentPath === "/postfach" ? " active" : "")}
                     onClick={() => onNavigate("/postfach")}
                   >
-                    <span className="tree-label">Postfach</span>
+                    <span className="tree-label">Inbox</span>
                     {/* The number stands there only when it says something. A zero
                         beside the entry would be a prompt without occasion. */}
                     {ungelesen > 0 && <span className="postfach-zaehler">{ungelesen}</span>}
@@ -1256,13 +1255,13 @@ export default function Sidebar(props: Props) {
                     className={"tree-row" + (currentPath === "/graph" ? " active" : "")}
                     onClick={() => onNavigate("/graph")}
                   >
-                    <span className="tree-label">Graf</span>
+                    <span className="tree-label">Graph</span>
                   </div>
                   <div
                     className={"tree-row" + (currentPath === "/trash" ? " active" : "")}
                     onClick={() => onNavigate("/trash")}
                   >
-                    <span className="tree-label">Papierkorb</span>
+                    <span className="tree-label">Trash</span>
                   </div>
                 </>
               )}
@@ -1278,28 +1277,28 @@ export default function Sidebar(props: Props) {
                 list is there to read, not to configure. */}
             {user?.role === "admin" && (
               <div className="sidebar-section">
-                {/* Kein Klapptitel mehr: unter der Verwaltung steht nichts,
-                    was sich einklappen liesse. Das Protokoll war die letzte
-                    Zeile hier und ist jetzt ein Bereich in der Verwaltung
-                    selbst, also fuehrt die Ueberschrift nur noch dorthin. */}
+                {/* No collapse title any more: nothing sits under the
+                    administration that could be collapsed. The audit trail was
+                    the last row here and is now an area in the administration
+                    itself, so the heading only leads there. */}
                 <div className="sidebar-section-title ohne-klappe">
                   <button
                     className={
                       "klapp-symbol klapp-symbol-btn" +
                       (currentPath.startsWith("/einstellungen") ? " aktiv" : "")
                     }
-                    title="Verwaltung"
-                    aria-label="Verwaltung"
+                    title="Administration"
+                    aria-label="Administration"
                     onClick={() => onNavigate("/einstellungen")}
                   >
                     <Zahnrad />
                   </button>
                   <span
                     className="klapp-name klapp-name-fuehrt"
-                    title="Verwaltung"
+                    title="Administration"
                     onClick={() => onNavigate("/einstellungen")}
                   >
-                    Verwaltung
+                    Administration
                   </span>
                 </div>
               </div>
@@ -1326,10 +1325,10 @@ export default function Sidebar(props: Props) {
       )}
 
       <div className="sidebar-footer" ref={kontoEcke}>
-        {/* Das Zahnrad steht neben dem Namen und nicht im Menü darüber: was
-            jemand an seinem Konto einstellen kann, soll man sehen, ohne erst
-            ein Menü aufzuklappen. Dasselbe Symbol trägt oben die Verwaltung --
-            hier ist es das eigene Konto, dort die Instanz. */}
+        {/* The cog stands beside the name and not in the menu above it: what
+            somebody can set on their account should be seen without opening a
+            menu first. The same symbol carries the administration at the top --
+            here it is one's own account, there the instance. */}
         <button
           className="konto-knopf"
           onClick={() => setKontoMenue((auf) => !auf)}
@@ -1350,8 +1349,8 @@ export default function Sidebar(props: Props) {
         </button>
         <button
           className="icon-btn konto-zahnrad"
-          title="Mein Konto"
-          aria-label="Mein Konto"
+          title="My account"
+          aria-label="My account"
           onClick={() => {
             setKontoMenue(false);
             setKontoOffen(true);
@@ -1375,9 +1374,9 @@ export default function Sidebar(props: Props) {
                 <div className="muted small">{user?.email}</div>
               </div>
             </div>
-            {/* Zwei gleiche Knöpfe untereinander. Aus "Profil bearbeiten" und
-                "Passwort ändern" ist ein Eintrag geworden: sie waren zwei Namen
-                für dieselbe Sache, nämlich das eigene Konto. */}
+            {/* Two identical buttons one below the other. "Edit profile" and
+                "Change password" have become one entry: they were two names for
+                the same thing, namely one's own account. */}
             <button
               className="konto-menue-zeile"
               role="menuitem"
@@ -1386,7 +1385,7 @@ export default function Sidebar(props: Props) {
                 setKontoOffen(true);
               }}
             >
-              Mein Konto
+              My account
             </button>
             <button
               className="konto-menue-zeile"
@@ -1396,7 +1395,7 @@ export default function Sidebar(props: Props) {
                 logout();
               }}
             >
-              Abmelden
+              Sign out
             </button>
           </div>
         )}
@@ -1476,7 +1475,7 @@ function Klapptitel({
       <button
         className="klapp-btn"
         aria-expanded={!eingeklappt}
-        title={eingeklappt ? "Aufklappen" : "Einklappen"}
+        title={eingeklappt ? "Expand" : "Collapse"}
         onClick={() => klappen(marke)}
       >
         {eingeklappt ? "▸" : "▾"}

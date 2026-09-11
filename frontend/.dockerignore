@@ -1,0 +1,7 @@
+# Kept out of the build context. The image installs its own dependencies with
+# npm ci; a node_modules lying in the directory (on the Docker host an old one
+# from August, BlockNote 0.15) was otherwise copied over them by COPY . . and
+# the type check failed against the wrong packages -- CI green, rollout red.
+node_modules
+dist
+*.log

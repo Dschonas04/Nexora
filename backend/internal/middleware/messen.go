@@ -1,9 +1,9 @@
-// Das Messen der Anfragen, als Filter vor allen anderen.
+// Measuring requests, as the middleware in front of all the others.
 //
-// Es steht ganz vorn in der Kette und nicht bei den fachlichen Filtern, weil
-// eine Anfrage auch dann gezählt gehört, wenn sie an der Anmeldung scheitert
-// oder wenn eine Lizenz fehlt. Wer sucht, warum es hängt, will gerade die
-// sehen, die nicht durchkommen.
+// It sits right at the front of the chain and not among the domain middleware,
+// because a request deserves to be counted even when it fails at sign-in or
+// when a licence is missing. Whoever is looking for why it stalls wants to see
+// exactly those that do not get through.
 package middleware
 
 import (
@@ -16,9 +16,9 @@ import (
 	"nexora/internal/puls"
 )
 
-// schreiberMitStatus merkt sich, was geantwortet wurde. net/http gibt den
-// Status nicht her, und ohne ihn liesse sich eine überlastete Instanz nicht von
-// einer unterscheiden, die fleissig 401 verteilt.
+// schreiberMitStatus remembers what was answered. net/http does not hand the
+// status back, and without it an overloaded instance could not be told apart
+// from one busily handing out 401s.
 type schreiberMitStatus struct {
 	http.ResponseWriter
 	status int
@@ -30,45 +30,45 @@ func (s *schreiberMitStatus) WriteHeader(code int) {
 }
 
 func (s *schreiberMitStatus) Write(b []byte) (int, error) {
-	// Wer schreibt, ohne den Kopf zu setzen, hat 200 gemeint.
+	// Whoever writes without setting a header meant 200.
 	if s.status == 0 {
 		s.status = http.StatusOK
 	}
 	return s.ResponseWriter.Write(b)
 }
 
-// Hijack reicht die Leitung durch.
+// Hijack passes the connection through.
 //
-// Ohne das gäbe es kein gemeinsames Schreiben: eine WebSocket-Verbindung
-// übernimmt die nackte Verbindung, und wer hier nur den http.ResponseWriter
-// weitergibt, verdeckt die Stelle, an der sie zu holen ist. Der Aufruf käme
-// dann bis zum Aufschalten und schlüge dort fehl.
+// Without it there would be no writing together: a WebSocket takes over the
+// bare connection, and passing on only the http.ResponseWriter here hides the
+// place where it can be had. The call would then get as far as the upgrade and
+// fail there.
 func (s *schreiberMitStatus) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	h, ok := s.ResponseWriter.(http.Hijacker)
 	if !ok {
 		return nil, nil, errors.New("die Verbindung lässt sich nicht übernehmen")
 	}
-	// Von hier an schreibt jemand anderes, und der Status ist das, was der
-	// Aufschlag hinterlassen hat: 101, sonst wäre es nicht so weit gekommen.
+	// From here on somebody else writes, and the status is whatever the upgrade
+	// left behind: 101, or it would not have got this far.
 	if s.status == 0 {
 		s.status = http.StatusSwitchingProtocols
 	}
 	return h.Hijack()
 }
 
-// Messen zählt jede Anfrage und ihre Dauer.
+// Messen counts every request and how long it took.
 func Messen(m *puls.Messer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Der Weg, über den gemessen wird, zählt sich nicht selbst mit: die
-			// Oberfläche ruft ihn im Sekundentakt ab, und er stünde sonst als
-			// Grundrauschen in jeder Messung, die er anzeigen soll -- die Rate
-			// der Anfragen wäre nie null, auch wenn niemand arbeitet.
-			// Und das gemeinsame Schreiben zählt auch nicht mit. Es ist keine
-			// Anfrage, die beantwortet wird, sondern eine Leitung, die
-			// stundenlang offen steht; als eine Anfrage von zwei Stunden
-			// gezählt verdürbe sie jeden Mittelwert, den die Anzeige daneben
-			// zeigt.
+			// The route the measurements are read through does not count
+			// itself: the interface polls it once a second, and it would
+			// otherwise sit as background noise inside every measurement it is
+			// meant to show -- the request rate would never be zero, even with
+			// nobody working.
+			// Writing together does not count either. It is not a request that
+			// gets answered but a connection that stays open for hours; counted
+			// as one request of two hours it would spoil every average shown
+			// beside it.
 			if r.URL.Path == "/api/system/puls" ||
 				strings.HasPrefix(r.URL.Path, "/api/echtzeit/") {
 				next.ServeHTTP(w, r)

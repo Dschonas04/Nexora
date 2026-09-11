@@ -123,15 +123,15 @@ type spaceFarbeReq struct {
 	Farbe string `json:"farbe"`
 }
 
-// SetSpaceFarbe setzt die Farbe, in der die Ablage im Grafen erscheint.
+// SetSpaceFarbe sets the colour the space appears in inside the graph.
 //
-// Erlaubt ist es, wem die Ablage gehoert, und einer Verwaltung -- dieselbe
-// Leiter wie ueberall. Die Farbe steht an der Ablage und nicht am Browser: der
-// Graf soll bei allen gleich aussehen, sonst redet man ueber verschiedene
-// Bilder.
+// Permitted to whoever owns the space, and to an administrator -- the same
+// ladder as everywhere. The colour sits on the space and not in the browser:
+// the graph should look the same to everybody, otherwise people talk about
+// different pictures.
 //
-// Leer setzt zurueck. Dann vergibt die Oberflaeche wieder eine aus ihrer Reihe,
-// und das ist kein Sonderfall, sondern der Ausgangszustand.
+// Empty resets. The interface then hands out one from its own series again, and
+// that is no special case but the initial state.
 func (s *Server) SetSpaceFarbe(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
@@ -139,9 +139,9 @@ func (s *Server) SetSpaceFarbe(w http.ResponseWriter, r *http.Request) {
 	var req spaceFarbeReq
 	_ = decode(r, &req)
 	farbe := strings.ToLower(strings.TrimSpace(req.Farbe))
-	// Genauso eng wie beim Akzent der Oberflaeche, siehe einstellungen.go: der
-	// Wert landet in einem Attribut im Browser, und was dort ankommt, muss
-	// harmlos sein.
+	// Just as narrow as with the interface accent, see einstellungen.go: the
+	// value ends up in an attribute in the browser, and whatever arrives there
+	// has to be harmless.
 	if farbe != "" && !istHexFarbe(farbe) {
 		writeErr(w, http.StatusBadRequest, "Farbe als #rrggbb, oder leer")
 		return

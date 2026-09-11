@@ -14,17 +14,16 @@ set -euo pipefail
 
 WURZEL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARBEIT="$(mktemp -d)"
-# Ein freier Port statt eines festen.
+# A free port instead of a fixed one.
 #
-# Feste Nummern gingen so lange gut, bis zwei Laeufe sich ueberschnitten: dann
-# stand die Datenbank des einen schon auf dem Port, den der andere haben
-# wollte, und der zweite Lauf fiel mit "could not start server" durch, ohne
-# dass an ihm selbst etwas falsch gewesen waere. Wer eine Nummer vorgibt,
-# bekommt sie weiterhin.
+# Fixed numbers went well until two runs overlapped: then one run's database was
+# already on the port the other wanted, and the second run failed with "could
+# not start server" without anything being wrong with it. Whoever specifies a
+# number still gets it.
 freier_port() {
-    # Von der genannten Nummer aufwaerts, bis eine niemandem gehoert. Der
-    # Versuch, sich zu verbinden, ist die Probe: gelingt er, horcht dort schon
-    # jemand.
+    # Upwards from the given number until one belongs to nobody. The attempt to
+    # connect is the probe: if it succeeds, somebody is already listening
+    # there.
     local p="$1"
     while [ "$p" -lt $((${1} + 200)) ]; do
         if ! (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then
@@ -69,10 +68,10 @@ pruefe() {
 
 echo "== Datenbank anwerfen"
 initdb -D "$ARBEIT/db" -U nexora --auth=trust --encoding=UTF8 --locale=C >/dev/null
-# Kommt die Datenbank nicht hoch, ist ihr Protokoll das Einzige, was die Frage
-# beantwortet -- und es liegt in einem Verzeichnis, das der Aufräumer gleich
-# darauf entfernt. Es muss also vorher heraus, sonst steht am Ende nur
-# "Examine the log output" da und das Protokoll ist schon weg.
+# If the database does not come up, its log is the only thing that answers the
+# question -- and it lies in a directory the cleanup removes right afterwards.
+# So it has to come out beforehand, otherwise all that stands there in the end
+# is "Examine the log output" and the log is already gone.
 if ! pg_ctl -D "$ARBEIT/db" -l "$ARBEIT/pg.log" \
             -o "-p $PGPORT -k $ARBEIT -h 127.0.0.1" -w start >/dev/null; then
     echo "Die Datenbank kam nicht hoch. Ihr Protokoll:"
@@ -181,8 +180,8 @@ pruefe "beides zusammen wird abgewiesen" "400" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X POST "$BASIS/api/import" \
           -F "file=@$ARBEIT/ablage.md" -F "neueAblage=Zwei" -F "spaceId=$ABL_ID")"
 
-# Die Farbe einer Ablage. Sie steht in der Ablage selbst und nicht in einer
-# Einstellung des Betrachters: sie soll fuer alle gelten, die sie sehen.
+# The colour of a space. It sits in the space itself and not in a setting of
+# the viewer: it should apply to everybody who sees it.
 pruefe "anfangs ohne eigene Farbe" "" \
        "$(hole "$BASIS/api/spaces" | python3 -c '
 import json, sys
@@ -194,8 +193,8 @@ pruefe "und steht in der Liste" "#2383e2" \
        "$(hole "$BASIS/api/spaces" | python3 -c '
 import json, sys
 print(json.load(sys.stdin)[0]["farbe"])')"
-# Kein Farbwert, sondern irgendein Text: abweisen statt in die Zeile schreiben.
-# Aus der Zeile kaeme er spaeter in ein style-Attribut wieder heraus.
+# Not a colour value but some text: reject instead of writing it into the row.
+# Out of the row it would later come back out into a style attribute.
 pruefe "ein erfundener Wert wird abgewiesen" "400" \
        "$(code -X PUT "$BASIS/api/spaces/$ABL_ID/farbe" -H 'Content-Type: application/json' \
           -d '{"farbe":"rot; background:url(x)"}')"
@@ -270,7 +269,7 @@ s = json.load(sys.stdin)[0]
 ab = datetime.datetime.fromisoformat(s["angelegtAm"].replace("Z", "+00:00"))
 bis = datetime.datetime.fromisoformat(s["laeuftAb"].replace("Z", "+00:00"))
 stunden = (bis - ab).total_seconds() / 3600
-# Vorgabe sind zwoelf Stunden. Frueher waren es sieben Tage, also 168.
+# The default is twelve hours. It used to be seven days, that is 168.
 print(11.9 < stunden < 12.1)')"
 pruefe "das Geraet wird benannt" "Firefox auf Windows" \
        "$(hole "$BASIS/api/sitzungen" | python3 -c '
@@ -280,8 +279,8 @@ FREMD=$(hole "$BASIS/api/sitzungen" | python3 -c '
 import json,sys
 print(next(s["id"] for s in json.load(sys.stdin) if not s["diese"]))')
 pruefe "fremde Sitzung beenden" "200" "$(code -X DELETE "$BASIS/api/sitzungen/$FREMD")"
-# Das Token der zweiten Anmeldung muss sofort wertlos sein, genau das konnte
-# die alte, rein gerechnete Sitzung nicht.
+# The token of the second sign-in has to be worthless at once, which is exactly
+# what the old, purely computed session could not do.
 pruefe "beendetes Token gilt nicht mehr" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$ARBEIT/kekse2.txt" "$BASIS/api/auth/me")"
 pruefe "wieder nur eine Sitzung" "1" \
@@ -294,8 +293,8 @@ pruefe "nach dem Abmelden gilt das Token nicht mehr" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$ARBEIT/kekse3.txt" "$BASIS/api/auth/me")"
 
 echo "== SSO"
-# Ohne Einrichtung und ohne Lizenz darf nichts angeboten werden, ein Knopf,
-# der danach mit 402 antwortet, waere ein Versprechen ohne Deckung.
+# Without setup and without a licence nothing may be offered; a button that
+# then answers 402 would be a promise without cover.
 pruefe "nichts angeboten, weil nichts eingerichtet" "False" \
        "$(hole "$BASIS/api/auth/sso" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["oidc"] or d["ldap"])')"
 pruefe "Passwort bleibt moeglich" "True" \
@@ -410,7 +409,7 @@ pruefe "leere Liste wird abgewiesen" "400" \
 echo "== Satzspiegel einer Seite"
 BREIT=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
         -d '{"title":"Breite Seite"}' | feld "['id']")
-# Leer heisst: keine eigene Wahl, es gilt die Vorgabe der Instanz.
+# Empty means: no choice of its own, the instance default applies.
 pruefe "steht anfangs auf der Vorgabe" "" "$(hole "$BASIS/api/pages/$BREIT" | feld "['breite']")"
 pruefe "und die ist volle Breite" "voll" \
        "$(hole "$BASIS/api/design" | feld "['seitenbreite']")"
@@ -426,12 +425,12 @@ pruefe "zurueck auf die Vorgabe geht auch" "" \
           -d '{"breite":""}' | feld "['breite']")"
 
 echo "== Aussehen am eigenen Konto"
-# Grundton und Akzent liegen seit dem Umzug in der Zeile des Kontos und nicht
-# mehr in der Einstellungstabelle. Das laesst sich nur gegen eine echte
-# Datenbank pruefen: ob die Spalten da sind, ob der Wert das Neuladen ueberlebt
-# und ob Unsinn abgewiesen wird, statt in einer CSS-Variablen zu landen.
+# Since the move, base tone and accent lie in the account's row and no longer
+# in the settings table. That can only be checked against a real database:
+# whether the columns are there, whether the value survives a reload and whether
+# nonsense is rejected instead of landing in a CSS variable.
 pruefe "Vorgabe ist grau" "grau" "$(hole "$BASIS/api/design" | feld "['grundton']")"
-pruefe "Vorgabe ist Blau" "#2383e2" "$(hole "$BASIS/api/design" | feld "['akzent']")"
+pruefe "Vorgabe ist Blau" "#1b6ec2" "$(hole "$BASIS/api/design" | feld "['akzent']")"
 pruefe "eigene Wahl wird angenommen" "200" \
        "$(code -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
           -d '{"grundton":"dunkel","akzent":"#8250df"}')"
@@ -447,14 +446,23 @@ pruefe "und eine Farbe, die keine ist, auch" "400" \
 pruefe "leer setzt auf die Vorgabe zurueck" "grau" \
        "$(hole -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
           -d '{"grundton":"","akzent":""}' | feld "['grundton']")"
-# Das Aussehen taucht nicht mehr unter den Einstellungen der Verwaltung auf.
+# The interface language sits on the account as well, with a route of its own so
+# that switching it does not send base tone and accent along.
+pruefe "ohne Wahl ist die Sprache leer" "" "$(hole "$BASIS/api/design" | feld "['sprache']")"
+pruefe "Sprache wird angenommen" "200" \
+       "$(code -X PUT "$BASIS/api/design/sprache" -H 'Content-Type: application/json' -d '{"sprache":"en"}')"
+pruefe "und steht beim naechsten Abruf da" "en" "$(hole "$BASIS/api/design" | feld "['sprache']")"
+pruefe "eine unbekannte Sprache wird abgewiesen" "400" \
+       "$(code -X PUT "$BASIS/api/design/sprache" -H 'Content-Type: application/json' -d '{"sprache":"fr"}')"
+pruefe "der Grundton bleibt davon unberuehrt" "grau" "$(hole "$BASIS/api/design" | feld "['grundton']")"
+# The appearance no longer appears among the administration's settings.
 pruefe "keine Design-Einstellung mehr in der Verwaltung" "0" \
        "$(hole "$BASIS/api/einstellungen" | python3 -c 'import json,sys;print(sum(1 for e in json.load(sys.stdin) if e["schluessel"].startswith("design_")))')"
 
 echo "== Anmeldeversuche"
-# Die Auswertung rechnet mit Intervallen aus einer Zahl und mit FILTER-Zählungen.
-# Beides fällt erst auf, wenn es wirklich gegen Postgres läuft, siehe der Kopf
-# dieser Datei. Ein Fehlversuch wird deshalb hier von Hand ausgelöst.
+# The evaluation computes with intervals out of a number and with FILTER
+# counts. Both only show up once it really runs against Postgres, see the head
+# of this file. A failed attempt is therefore triggered here by hand.
 curl -s -o /dev/null -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
      -A "Mozilla/5.0 (X11; Linux x86_64) Firefox/141.0" \
      -d '{"kennung":"rauch@test.invalid","password":"falsch"}'
@@ -488,32 +496,32 @@ pruefe "Herkunft fasst die Adresse zusammen" "127.0.0.1" \
        "$(hole "$BASIS/api/system/anmeldungen" | feld "['herkunft'][0]['ip']")"
 pruefe "die Zusammenfassung zählt die Fehlversuche" "2" \
        "$(hole "$BASIS/api/system/anmeldungen" | feld "['zusammenfassung']['fehl24h']")"
-# tage=0 heißt "alles" und wird intern zu einer sehr großen Zahl. Genau daran
-# ist die Intervall-Rechnung schon einmal gescheitert.
+# tage=0 means "everything" and becomes a very large number internally. That is
+# exactly what the interval arithmetic has failed on once before.
 pruefe "tage=0 liefert alles" "200" "$(code "$BASIS/api/system/anmeldungen?tage=0")"
 pruefe "Filter nach Adresse greift" "0" \
        "$(hole "$BASIS/api/system/anmeldungen?ip=10.9.9.9" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["versuche"]))')"
 
 echo "== Puls"
-# Gezaehlt wird ohne Sperre auf dem heissen Weg, und die Faecher werden ueber
-# die Uhr gewechselt. Ob das im laufenden Dienst wirklich zusammenpasst, zeigt
-# sich erst hier: die Einheitspruefungen sehen nur das Paket, nicht die Kette.
+# Counting happens without a lock on the hot path, and the slots are switched by
+# the clock. Whether that really fits together in the running service only shows
+# up here: the unit tests see only the package, not the chain.
 pruefe "Puls antwortet" "200" "$(code "$BASIS/api/system/puls")"
 pruefe "der Vorrat nennt seine Obergrenze" "True" \
        "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(json.load(sys.stdin)["vorrat"]["hoechstens"] > 0)')"
-# Nicht die Zahl der Zugriffe ohne freie Verbindung: die steht auch auf einer
-# unbelasteten Instanz ueber null, weil der Vorrat beim Start leer ist und die
-# ersten Zugriffe ihre Verbindung erst aufbauen lassen. Aussagekraeftig ist die
-# mittlere Wartezeit, und die muss hier verschwindend sein.
+# Not the number of accesses without a free connection: that stands above zero
+# even on an unloaded instance, because the pool is empty at start-up and the
+# first accesses have their connection opened first. What is telling is the mean
+# wait time, and that has to be vanishing here.
 pruefe "kaum Wartezeit auf eine Verbindung" "True" \
        "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(json.load(sys.stdin)["vorrat"]["mittelWarteMs"] < 1.0)')"
 pruefe "die Minute hat 59 Faecher" "59" \
        "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["anfragen"]["minute"]))')"
-# Die vielen Aufrufe der Abschnitte davor muessen sich niedergeschlagen haben.
+# The many calls of the sections above must have left their mark.
 pruefe "es wurde etwas gezaehlt" "True" \
        "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(json.load(sys.stdin)["anfragen"]["gesamt"] > 50)')"
-# Der Abfrageweg zaehlt sich nicht selbst mit, sonst stuende er als
-# Grundrauschen in jeder Messung, die er anzeigen soll.
+# The query route does not count itself along, otherwise it would stand as
+# background noise in every measurement it is meant to display.
 VORHER=$(hole "$BASIS/api/system/puls" | feld "['anfragen']['gesamt']")
 hole "$BASIS/api/system/puls" >/dev/null
 hole "$BASIS/api/system/puls" >/dev/null
@@ -523,9 +531,9 @@ pruefe "ohne Anmeldung verschlossen" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/puls")"
 
 echo "== Gemeinsames Bearbeiten"
-# Ohne Lizenz bleibt die Leitung zu, der Blick der Verwaltung darauf aber offen:
-# der Schalter im Panel soll auch dann etwas anzeigen, wenn der Zusatz nicht
-# freigeschaltet ist, sonst sieht die Seite kaputt aus statt verschlossen.
+# Without a licence the wire stays shut, but the administration's view of it
+# stays open: the switch in the panel should show something even when the add-on
+# is not enabled, otherwise the page looks broken instead of closed.
 pruefe "der Zustand ist abrufbar" "200" "$(code "$BASIS/api/system/mitschrift")"
 pruefe "er sagt, dass die Lizenz fehlt" "False" \
        "$(hole "$BASIS/api/system/mitschrift" | feld "['lizenziert']")"
@@ -535,15 +543,15 @@ pruefe "es sitzt niemand in einem Raum" "0" \
        "$(hole "$BASIS/api/system/mitschrift" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["raeume"]))')"
 pruefe "ohne Anmeldung verschlossen" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/mitschrift")"
-# Die Leitung selbst und die Zahl der Mitschreibenden haengen am Zusatz.
+# The wire itself and the number of people writing along hang on the add-on.
 pruefe "die Leitung ist ohne Lizenz zu" "402" "$(code "$BASIS/api/echtzeit/$BREIT")"
 pruefe "die Zahl der Mitschreibenden ist zu" "402" \
        "$(code "$BASIS/api/pages/$BREIT/mitschreibende")"
-# Und die Seite sagt es dem Browser: ohne Lizenz wird nicht gemeinsam
-# geschrieben, also macht er auch keine Sitzung dafuer auf.
+# And the page says so to the browser: without a licence there is no writing
+# together, so it does not open a session for it either.
 pruefe "die Seite meldet sich als nicht gemeinsam" "False" \
        "$(hole "$BASIS/api/pages/$BREIT" | feld "['gemeinsam']")"
-# Der Schalter ist eine gewoehnliche Einstellung und laesst sich stellen.
+# The switch is an ordinary setting and can be set.
 pruefe "die Einstellung steht in der Liste" "1" \
        "$(hole "$BASIS/api/einstellungen" | python3 -c '
 import json, sys
@@ -558,14 +566,14 @@ pruefe "wieder eingeschaltet" "True" \
        "$(hole "$BASIS/api/system/mitschrift" | feld "['an']")"
 
 echo "== Sicherung"
-# Der eigentliche Beweis ist nicht, dass ein Archiv herauskommt, sondern dass
-# sich das Ergebnis zurueckspielen laesst. Alles andere ist eine Behauptung.
+# The actual proof is not that an archive comes out but that the result can be
+# restored. Everything else is a claim.
 pruefe "Umfang ist lesbar" "200" "$(code "$BASIS/api/system/sicherung/umfang")"
 pruefe "die Instanz haelt sich fuer bereit" "True" \
        "$(hole "$BASIS/api/system/sicherung/umfang" | feld "['bereit']")"
-# Der Stand VOR der Sicherung. Das Erstellen vermerkt sich selbst in der
-# Pruefspur, und zwar nachdem der Dump gezogen ist; ein Vergleich hinterher
-# waere um genau diesen einen Eintrag daneben und saehe wie Datenverlust aus.
+# The state BEFORE the backup. Creating one records itself in the audit trail,
+# namely after the dump has been pulled; a comparison afterwards would be off by
+# exactly that one entry and would look like data loss.
 declare -A VORHER
 for T in pages users pruefspur attachments einstellungen; do
     VORHER[$T]=$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc "SELECT count(*) FROM $T")
@@ -575,9 +583,8 @@ pruefe "ein Archiv kam an" "True" \
        "$(python3 -c "import os;print(os.path.getsize('$ARBEIT/sicherung.zip')>1000)")"
 pruefe "es ist ein gueltiges ZIP" "True" \
        "$(python3 -c "import zipfile;print(zipfile.is_zipfile('$ARBEIT/sicherung.zip'))")"
-# Die Marke am Ende. Ohne sie waere ein mittendrin abgebrochenes Archiv nicht
-# von einem vollstaendigen zu unterscheiden, denn ein halbes ZIP ist ein
-# gueltiges ZIP.
+# The marker at the end. Without it an archive broken off midway would be
+# indistinguishable from a complete one, because half a ZIP is a valid ZIP.
 pruefe "die Marke FERTIG steht darin" "True" \
        "$(python3 -c "
 import zipfile
@@ -594,9 +601,9 @@ import zipfile
 z = zipfile.ZipFile('$ARBEIT/sicherung.zip')
 d = next(n for n in z.namelist() if n.endswith('/datenbank.sql'))
 print(z.getinfo(d).file_size > 2000)")"
-# Der Suchindex gehoert NICHT hinein: such_tsv ist eine GENERATED-Spalte,
-# PostgreSQL rechnet sie beim Einspielen neu. Stuende sie im Dump, waere das
-# Zurueckspielen an genau dieser Stelle gescheitert.
+# The search index does NOT belong in it: such_tsv is a GENERATED column,
+# PostgreSQL recomputes it on restore. If it stood in the dump, restoring would
+# have failed at exactly this point.
 pruefe "die Suchspalte steht als Vorschrift darin, nicht als Daten" "True" \
        "$(python3 -c "
 import zipfile
@@ -604,16 +611,16 @@ z = zipfile.ZipFile('$ARBEIT/sicherung.zip')
 d = next(n for n in z.namelist() if n.endswith('/datenbank.sql'))
 t = z.read(d).decode('utf-8', 'replace')
 vorschrift = 'GENERATED ALWAYS AS' in t
-# In keiner COPY-Spaltenliste darf such_tsv auftauchen. Genau das ist die
-# Eigenschaft, auf die es ankommt; die Spaltenreihenfolge zu raten waere ein
-# Test, der beim naechsten ALTER TABLE grundlos faellt.
+# such_tsv must not appear in any COPY column list. That is exactly the
+# property that matters; guessing the column order would be a test that fails
+# for no reason at the next ALTER TABLE.
 inDaten = any(z.startswith('COPY public.') and 'such_tsv' in z.split(')')[0]
               for z in t.splitlines())
 print(vorschrift and not inDaten)")"
 
 echo "== Sicherung fuer ein Skript"
-# Der Weg fuer die Automatisierung. Ein Skript hat keinen Keks; ohne
-# Losungswort darf es deshalb NICHTS bekommen, und mit dem richtigen alles.
+# The route for automation. A script has no cookie; without a password it must
+# therefore get NOTHING, and with the right one everything.
 pruefe "ohne Anmeldung und ohne Wort verschlossen" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/sicherung")"
 SWORT=$(hole -X POST "$BASIS/api/system/sicherung/token" | feld "['token']")
@@ -622,10 +629,10 @@ pruefe "damit geht es ohne Keks" "200" \
        "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SWORT" "$BASIS/api/system/sicherung")"
 pruefe "mit falschem Wort nicht" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer falsch' "$BASIS/api/system/sicherung")"
-# Das Archiv aus dem Skript-Weg muss dasselbe sein wie aus dem Panel, und der
-# Abruf muss eine Spur hinterlassen. Gezaehlt wird die DIFFERENZ: die Zeilen
-# darueber haben schon einmal abgerufen, eine feste Summe haenge davon ab, wie
-# oft dieser Abschnitt zwischendurch etwas holt.
+# The archive from the script route has to be the same as from the panel, and
+# the request has to leave a trail. What is counted is the DIFFERENCE: the lines
+# above have already fetched once, and a fixed total would depend on how often
+# this section fetches something in between.
 spurZahl() {
     psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
         "SELECT count(*) FROM pruefspur WHERE aktion='sicherung.erstellt' AND akteur_name='Skript mit Losungswort'"
@@ -647,8 +654,8 @@ pruefe "danach ist der Weg wieder zu" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SWORT" "$BASIS/api/system/sicherung")"
 
 echo "== Sicherung laesst sich zurueckspielen"
-# Eine zweite Datenbank daneben, den Dump hinein, und nachzaehlen. Ohne diesen
-# Schritt ist eine Sicherung eine Vermutung.
+# A second database beside it, the dump into it, and count. Without this step a
+# backup is a guess.
 createdb -h 127.0.0.1 -p "$PGPORT" -U nexora rueck
 python3 -c "
 import zipfile
@@ -661,15 +668,15 @@ for T in pages users pruefspur attachments einstellungen; do
     B=$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d rueck -tAc "SELECT count(*) FROM $T")
     pruefe "$T vollstaendig" "${VORHER[$T]}" "$B"
 done
-# Und die Suche muss in der zurueckgespielten Datenbank von selbst wieder gehen.
-# psql schreibt Wahrheitswerte als t und f, nicht als True.
+# And the search has to work again by itself in the restored database. psql
+# writes booleans as t and f, not as True.
 pruefe "die Suchspalte wurde beim Einspielen neu berechnet" "t" \
        "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d rueck -tAc \
           "SELECT count(*) > 0 FROM pages WHERE such_tsv IS NOT NULL")"
-# Und die Suche muss darauf wirklich greifen, nicht bloss nicht null sein. Der
-# Vergleich geht gegen den eigenen Titel jeder Seite: ein festes Suchwort waere
-# ein Test, der davon abhaengt, welche Seiten die Abschnitte davor gerade
-# stehen lassen, und der Abschnitt Papierkorb entfernt eine davon endgueltig.
+# And the search really has to bite on it, not merely be non-null. The
+# comparison runs against every page's own title: a fixed search word would be a
+# test depending on which pages the sections above happen to leave standing, and
+# the wastebasket section removes one of them for good.
 pruefe "und die Suche greift darauf" "t" \
        "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d rueck -tAc \
           "SELECT count(*) > 0 FROM pages
@@ -677,18 +684,18 @@ pruefe "und die Suche greift darauf" "t" \
 dropdb -h 127.0.0.1 -p "$PGPORT" -U nexora rueck
 
 echo "== Sicherung wieder einspielen"
-# Der eigentliche Beweis: sichern, etwas aendern, einspielen, und die Aenderung
-# muss weg sein. Alles darunter -- Marke, Rueckweg, Neustart -- haengt daran.
+# The actual proof: back up, change something, restore, and the change has to
+# be gone. Everything below -- marker, way back, restart -- hangs on that.
 curl -s -b "$KEKSE" "$BASIS/api/system/sicherung" -o "$ARBEIT/stand.zip"
 SEITEN_VORHER=$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc "SELECT count(*) FROM pages")
-# Eine Seite, die es in der Sicherung NICHT gibt.
+# A page that does NOT exist in the backup.
 DANACH=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
          -d '{"title":"Nach der Sicherung entstanden"}' | feld "['id']")
 pruefe "die neue Seite ist da" "200" "$(code "$BASIS/api/pages/$DANACH")"
 
-# Ein Archiv ohne die Marke muss abgelehnt werden. Es ist ein gueltiges ZIP,
-# und genau das ist die Falle: es liesse sich sonst einspielen und legte einen
-# halben Bestand ueber einen ganzen.
+# An archive without the marker has to be rejected. It is a valid ZIP, and that
+# is precisely the trap: it could otherwise be restored and would lay half a
+# body over a whole one.
 python3 -c "
 import zipfile, shutil
 shutil.copy('$ARBEIT/stand.zip', '$ARBEIT/halb.zip')
@@ -717,8 +724,8 @@ import os
 p = os.path.join('$ARBEIT/anhaenge', '$RUECKWEG')
 print(os.path.exists(p) and os.path.getsize(p) > 1000)")"
 
-# Der Dienst beendet sich nach dem Einspielen selbst. Im Betrieb startet Docker
-# ihn neu; hier muss der Test das tun.
+# The service ends itself after the restore. In operation Docker restarts it;
+# here the test has to do that.
 sleep 3
 halte_dienst_an
 starte_dienst
@@ -726,20 +733,21 @@ pruefe "die Seite von nach der Sicherung ist weg" "404" "$(code "$BASIS/api/page
 pruefe "der Bestand entspricht wieder der Sicherung" "$SEITEN_VORHER" \
        "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc "SELECT count(*) FROM pages")"
 pruefe "und die Anmeldung gilt noch" "200" "$(code "$BASIS/api/auth/me")"
-# Die Suche muss nach dem Einspielen von selbst wieder greifen, ohne dass
-# jemand den Index neu aufbaut.
+# The search has to bite again by itself after the restore, without anybody
+# rebuilding the index.
 pruefe "die Suche greift ohne Zutun" "t" \
        "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
           "SELECT count(*) > 0 FROM pages WHERE title <> '' AND such_tsv @@ plainto_tsquery('german', title)")"
 
 echo "== Verzeichnis-Verwaltung"
-# Nachsehen darf ein Administrator immer, auch ohne Lizenz: sonst sieht eine
-# Instanz nicht einmal, dass da etwas eingerichtet ist, das nicht laeuft.
+# An administrator may always look, even without a licence: otherwise an
+# instance would not even see that something is set up there which is not
+# running.
 pruefe "Einrichtung ist lesbar" "200" "$(code "$BASIS/api/system/ldap")"
 pruefe "hier ist nichts eingerichtet" "False" "$(hole "$BASIS/api/system/ldap" | feld "['aktiv']")"
 pruefe "und nichts freigeschaltet" "False" "$(hole "$BASIS/api/system/ldap" | feld "['lizenziert']")"
-# Der Filter ist leer in der Konfiguration und darf trotzdem nicht leer
-# herauskommen: es greift dieselbe Vorgabe wie beim Anmelden.
+# The filter is empty in the configuration and must not come out empty all the
+# same: the same default applies as when signing in.
 pruefe "der Filter zeigt die Vorgabe" "True" \
        "$(hole "$BASIS/api/system/ldap" | python3 -c 'import json,sys;print("objectClass=person" in json.load(sys.stdin)["benutzerFilter"])')"
 pruefe "das Dienstkonto-Passwort steht nicht drin" "True" \
@@ -751,9 +759,9 @@ pruefe "Probieren ohne Lizenz weist ab" "402" \
           -d '{"benutzer":"wer"}')"
 
 echo "== Grenzprobe"
-# Der Weg nimmt einen Rumpf an und wirft ihn weg. Geprueft wird, dass er
-# wirklich zaehlt, was ankommt: die Oberflaeche schachtelt die Grenze anhand
-# dieser Antwort ein, eine geratene Zahl waere schlimmer als keine.
+# The route accepts a body and throws it away. What is checked is that it really
+# counts what arrives: the interface brackets in the limit using this answer, and
+# a guessed number would be worse than none.
 head -c 1048576 /dev/zero > "$ARBEIT/ein-mb"
 pruefe "ein Megabyte kommt an" "1048576" \
        "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/system/grenzprobe" \
@@ -767,10 +775,10 @@ pruefe "ohne Anmeldung verschlossen" "401" \
           -H 'Content-Type: application/octet-stream' --data-binary '')"
 
 echo "== Was ohne Lizenz zu bleibt"
-# Anhänge, Freigaben, Kommentare und die Ausgabe einer ganzen Ablage sind
-# kostenpflichtige Zusätze. Ohne Lizenz lässt sich hier nichts davon
-# durchspielen; geprüft wird darum, dass die Wege verschlossen sind und nicht
-# etwa mit einem Fehler antworten, der nach einem Defekt aussieht.
+# Attachments, shares, comments and the export of a whole space are paid
+# add-ons. Without a licence none of that can be run through here; what is
+# checked is therefore that the routes are closed and do not answer with an
+# error that looks like a defect.
 pruefe "Anhänge sind zu" "402" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" "$BASIS/api/pages/$BREIT/attachments")"
 pruefe "Freigabe ist zu" "402" "$(code -X POST "$BASIS/api/pages/$BREIT/share")"
@@ -778,9 +786,9 @@ pruefe "die @-Liste ist zu" "402" "$(code "$BASIS/api/pages/$BREIT/erwaehnbare")
 pruefe "die Ausgabe einer Ablage ist zu" "402" "$(code "$BASIS/api/spaces/$ABL_ID/export")"
 pruefe "der öffentliche Weg zu einer Datei ist zu" "402" \
        "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/public/egal/dateien/egal")"
-# 402 und nicht 404: der Weg zum Ersetzen einer markierten PDF ist eingetragen,
-# er ist nur verschlossen. Ein 404 hiesse, die Route fehlt -- und das faende
-# niemand, bevor eine Lizenz da ist.
+# 402 and not 404: the route for replacing a marked-up PDF is registered, it is
+# merely closed. A 404 would mean the route is missing -- and nobody would find
+# that out before a licence is there.
 pruefe "das Ersetzen einer markierten PDF ist zu" "402" \
        "$(curl -s -o /dev/null -w '%{http_code}' -X PUT -b "$KEKSE" \
           -H 'Content-Type: application/pdf' --data-binary '%PDF-1.4' \
@@ -788,9 +796,9 @@ pruefe "das Ersetzen einer markierten PDF ist zu" "402" \
 
 echo "== Eigenes Profil"
 SELBST_ID=$(hole "$BASIS/api/auth/me" | feld "['id']")
-# Name und Bild gehoeren dem Konto selbst, nicht der Verwaltung. Und das Bild
-# wird nach seinem INHALT geprueft: was der Browser als Typ behauptet, sagt
-# nichts darueber, was wirklich ankommt.
+# Name and picture belong to the account itself, not to the administration. And
+# the picture is checked by its CONTENT: what the browser claims as the type says
+# nothing about what really arrives.
 pruefe "anfangs kein Bild" "404" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
 pruefe "der Name laesst sich aendern" "Rauch Umbenannt" \
        "$(hole -X PUT "$BASIS/api/profil" -H 'Content-Type: application/json' \
@@ -799,9 +807,9 @@ pruefe "und steht sofort am Konto" "Rauch Umbenannt" "$(hole "$BASIS/api/auth/me
 pruefe "ein leerer Name wird abgewiesen" "400" \
        "$(code -X PUT "$BASIS/api/profil" -H 'Content-Type: application/json' -d '{"name":"  "}')"
 
-# Ein winziges echtes PNG, von Hand gebaut: ein Pixel reicht, um zu pruefen,
-# dass die Erkennung nach dem Inhalt geht. Es wiegt 69 Byte -- und genau daran
-# ist einmal eine Untergrenze in Bytes gescheitert, die gut gemeint war.
+# A tiny real PNG, built by hand: one pixel is enough to check that detection
+# goes by the content. It weighs 69 bytes -- and that is exactly what a
+# well-meant lower bound in bytes once failed on.
 python3 - "$ARBEIT" <<'PYTHON'
 import struct, sys, zlib
 def stueck(art, inhalt):
@@ -820,8 +828,9 @@ pruefe "und kommt als PNG heraus" "image/png" \
        "$(curl -s -o /dev/null -w '%{content_type}' -b "$KEKSE" "$BASIS/api/users/$SELBST_ID/bild")"
 pruefe "das Konto weiss jetzt von einem Bild" "True" \
        "$(hole "$BASIS/api/auth/me" | python3 -c 'import json,sys;print(bool(json.load(sys.stdin).get("bildStand")))')"
-# Ein umbenanntes Programm mit dem Typ eines Bildes darf NICHT durch: sonst
-# laege es spaeter als image/png in der Zeile und kaeme so auch wieder heraus.
+# A renamed executable with an image's type must NOT get through: otherwise it
+# would later lie in the row as image/png and would come back out that way
+# too.
 printf '\177ELF\002\001\001\000und noch etwas mehr Fuellung als hundert Zeichen, damit es nicht schon an der Mindestlaenge scheitert.' > "$ARBEIT/kein-bild.png"
 pruefe "eine leere Anfrage wird abgewiesen" "400" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X PUT \
@@ -833,13 +842,13 @@ pruefe "ein Programm mit Bildnamen nicht" "400" \
 pruefe "das alte Bild steht noch" "200" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
 pruefe "es laesst sich entfernen" "True" "$(hole -X DELETE "$BASIS/api/profil/bild" | feld "['ok']")"
 pruefe "danach gibt es keines mehr" "404" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
-# Zurueck auf den alten Namen, damit die folgenden Abschnitte ihn wiederfinden.
+# Back to the old name, so the following sections find it again.
 hole -X PUT "$BASIS/api/profil" -H 'Content-Type: application/json' \
      -d '{"name":"Rauch Test"}' >/dev/null
 
 echo "== Passwort wechseln"
-# Das bisherige Passwort ist Pflicht, auch bei offener Sitzung: sonst genuegte
-# ein unbeaufsichtigter Browser, um das Konto zu uebernehmen.
+# The previous password is mandatory, even with an open session: otherwise an
+# unattended browser would be enough to take over the account.
 pruefe "falsches altes Passwort wird abgewiesen" "403" \
        "$(code -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
           -d '{"alt":"stimmt-nicht","neu":"neues-passwort"}')"
@@ -852,8 +861,8 @@ pruefe "dasselbe noch einmal ist kein Wechsel" "400" \
 pruefe "der Wechsel geht durch" "True" \
        "$(hole -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
           -d '{"alt":"rauchtest-passwort","neu":"zweites-passwort"}' | feld "['ok']")"
-# Das eigene Geraet bleibt angemeldet, alles andere faellt. Ohne diese Zeile
-# waere der Wechsel eine Abmeldung.
+# One's own device stays signed in, everything else falls. Without this line the
+# change would be a sign-out.
 pruefe "dieses Gerät bleibt angemeldet" "200" "$(code "$BASIS/api/auth/me")"
 pruefe "das alte Passwort öffnet nicht mehr" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/auth/login" \
@@ -863,13 +872,14 @@ pruefe "das neue öffnet" "200" \
        "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/auth/login" \
           -H 'Content-Type: application/json' \
           -d '{"kennung":"rauch@test.invalid","password":"zweites-passwort"}')"
-# Die Pruefspur ist ein Zusatz und ohne Lizenz nicht LESBAR; geschrieben wird
-# sie trotzdem, siehe main.go. Geprueft wird deshalb in der Datenbank.
+# The audit trail is an add-on and not READABLE without a licence; it is
+# written all the same, see main.go. The check therefore happens in the
+# database.
 pruefe "der Wechsel steht im Protokoll" "1" \
        "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
           "SELECT count(*) FROM pruefspur WHERE aktion='konto.passwort'")"
 
-# Zuruecksetzen durch die Verwaltung, an einem zweiten Konto.
+# Reset by an administrator, on a second account.
 ZWEITER=$(hole -X POST "$BASIS/api/users" -H 'Content-Type: application/json' \
           -d '{"email":"zweiter@test.invalid","name":"Zweiter","password":"erstes-passwort"}' \
           | feld "['id']")
@@ -893,8 +903,8 @@ pruefe "ohne Port wird abgewiesen" "400" \
 pruefe "ein fremdes Schema auch" "400" \
        "$(code -X POST "$BASIS/api/system/rechner" -H 'Content-Type: application/json' \
           -d '{"name":"ssh","ziel":"ssh://10.0.0.5:22"}')"
-# Der Dienst klopft an sich selbst: eine Adresse, die im Rauchtest verlaesslich
-# antwortet, ohne dass ein zweiter Rechner im Spiel waere.
+# The service knocks on itself: an address that answers reliably in the smoke
+# test without a second machine being involved.
 SELBST=$(hole -X POST "$BASIS/api/system/rechner" -H 'Content-Type: application/json' \
          -d "{\"name\":\"ich selbst\",\"ziel\":\"127.0.0.1:$APIPORT\"}" | feld "['id']")
 pruefe "der eigene Port antwortet" "antwortet" \
@@ -908,8 +918,8 @@ pruefe "ein toter Port heißt still" "still" \
        "$(hole "$BASIS/api/system/rechner" | python3 -c '
 import json, sys
 print(next(r["zustand"] for r in json.load(sys.stdin)["rechner"] if r["name"] == "stiller"))')"
-# Der Dienst nennt sich selbst nicht in einer Kopfzeile Server, deshalb bleibt
-# die Spalte hier leer -- geraten wird nichts.
+# The service does not name itself in a Server header, so the column stays empty
+# here -- nothing is guessed.
 pruefe "ohne Kennung bleibt die Spalte leer" "" \
        "$(hole "$BASIS/api/system/rechner" | python3 -c '
 import json, sys
@@ -921,9 +931,9 @@ pruefe "und entfernen" "True" \
        "$(hole -X DELETE "$BASIS/api/system/rechner/$SELBST" | feld "['ok']")"
 pruefe "danach steht nur noch der stille da" "1" \
        "$(hole "$BASIS/api/system/rechner" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["rechner"]))')"
-# Und nichts von alledem braucht einen Prometheus. Der ist samt Grafana
-# ausgebaut: keine Einstellung, kein Losungswort, kein Weg. Geprueft wird das
-# hier, weil eine Ausbaustelle sich sonst still zurueckschleicht.
+# And none of all this needs a Prometheus. That one is removed together with
+# Grafana: no setting, no password, no route. It is checked here, because a
+# removal otherwise quietly creeps back in.
 pruefe "keine Prometheus-Einstellung mehr" "0" \
        "$(hole "$BASIS/api/einstellungen" | python3 -c '
 import json, sys
@@ -933,9 +943,9 @@ pruefe "den Weg /metrics gibt es nicht mehr" "404" "$(code "$BASIS/metrics")"
 pruefe "und seine Verwaltung auch nicht" "404" "$(code "$BASIS/api/system/metriken")"
 
 echo "== Programme werden nicht angenommen"
-# Anhaenge sind ein Zusatz und ohne Lizenz zu; geprueft wird deshalb die
-# Erkennung selbst und die Ablehnung an dem Weg, der offen ist: die Einfuhr.
-# Ein Archiv mit einer ELF-Datei darf die Seite anlegen und die Datei nicht.
+# Attachments are an add-on and closed without a licence; what is checked is
+# therefore the detection itself and the rejection on the route that is open: the
+# import. An archive with an ELF file may create the page and not the file.
 PROG="$ARBEIT/programm"
 printf '\177ELF\002\001\001\000ohne alles' > "$PROG"
 python3 - "$ARBEIT" <<'PYTHON'
@@ -947,9 +957,9 @@ with zipfile.ZipFile(arbeit + "/programm.zip", "w") as z:
 PYTHON
 EINFUHR=$(hole -X POST "$BASIS/api/import" -F "file=@$ARBEIT/programm.zip")
 pruefe "die Seite kommt an" "1" "$(printf '%s' "$EINFUHR" | feld "['seiten']")"
-# Weiter kommt der Rauchtest hier nicht: Beilagen sind ein Zusatz und werden
-# ohne Lizenz gar nicht erst angefasst, das Programm faellt also schon eine
-# Stufe vorher heraus. Dass die vier Bytes am Anfang erkannt werden, prueft
+# The smoke test gets no further here: attachments are an add-on and are not
+# even touched without a licence, so the executable already drops out one step
+# earlier. That the four bytes at the beginning are recognised is checked by
 # TestLinuxProgrammWirdErkannt in internal/handlers.
 pruefe "ohne Lizenz kommt keine Beilage mit" "" \
        "$(printf '%s' "$EINFUHR" | python3 -c '
@@ -958,10 +968,10 @@ d = json.load(sys.stdin)
 print(d.get("beilagen", ""))')"
 
 echo "== Verschlüsselt sprechen"
-# Der Dienst kann selbst HTTPS. Geprueft wird an einem zweiten Start mit einem
-# eigens erzeugten Zertifikat: dass er die Datei annimmt, dass er wirklich
-# verschluesselt antwortet, und dass ein Gegenueber, das die Stelle kennt, ihm
-# glaubt. Genau das tut die Oberflaeche im Verbund, siehe pki/erzeuge.sh.
+# The service can do HTTPS itself. It is checked with a second start using a
+# purpose-made certificate: that it accepts the file, that it really answers
+# encrypted, and that a counterpart which knows the authority trusts it. That is
+# exactly what the interface does inside the compound, see pki/erzeuge.sh.
 halte_dienst_an
 
 openssl req -x509 -newkey rsa:2048 -sha256 -days 2 -nodes \
@@ -988,13 +998,13 @@ done
 
 pruefe "verschlüsselt erreichbar, mit Prüfung des Zertifikats" "ok" \
        "$(curl -s --max-time 3 --cacert "$ARBEIT/dienst.crt" "$SICHER/healthz")"
-# Wer die Stelle nicht kennt, kommt nicht durch. Ohne diese Zeile bewiese die
-# vorige nur, dass irgendetwas antwortet.
+# Whoever does not know the authority does not get through. Without this line
+# the previous one would only prove that something answers.
 pruefe "ohne die Stelle bleibt es zu" "000" \
        "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "$SICHER/healthz")"
-# Und unverschluesselt geht nichts mehr durch: auf eine Anfrage im Klartext
-# antwortet Go mit 400 und der Bemerkung, hier werde TLS gesprochen -- nicht mit
-# der Seite. 400 ist hier also das gewuenschte Ergebnis und kein Fehler.
+# And nothing gets through unencrypted any more: to a request in the clear Go
+# answers 400 with the remark that TLS is spoken here -- not with the page. So
+# 400 is the desired result here and not an error.
 pruefe "im Klartext kommt nichts mehr durch" "400" \
        "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "$BASIS/healthz")"
 pruefe "und er sagt auch, warum" "1" \
