@@ -87,10 +87,13 @@ export function uebersetze(text: string, sprache: Sprache = aktiv): string | nul
       // "{0} auf {1}" (Firefox auf Linux) would swallow every German sentence
       // that happens to contain the word "auf".
       if (treffer && treffer.slice(1).every((w) => (w.match(/ /g)?.length ?? 0) <= 3)) {
-        // A value may itself be a word the list knows ("3 hours ago" → "vor 3 Stunden").
+        // A value may itself be a word the list knows ("Create 3 accounts" →
+        // "3 Konten anlegen"). Only lowercase single words, though: those are
+        // units. Anything else is a name somebody gave -- a group called
+        // "Vertrieb" must not come out as "Sales".
         ziel = m.ziel.replace(/\{(\d)\}/g, (_, i) => {
           const wert = treffer[Number(i) + 1] ?? "";
-          return tabellen[sprache].get(wert) ?? wert;
+          return /^[a-zäöüß]+$/.test(wert) ? tabellen[sprache].get(wert) ?? wert : wert;
         });
         break;
       }

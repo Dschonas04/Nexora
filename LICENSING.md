@@ -1,131 +1,133 @@
-# Lizenzierung
+# Licensing
 
-Nexora steht vollständig unter der **Business Source License 1.1** — siehe
+Nexora is licensed entirely under the **Business Source License 1.1** — see
 [LICENSE](LICENSE).
 
-Das ist keine Open-Source-Lizenz im Sinne der OSI, aber auch keine geschlossene:
-der Quelltext liegt offen, und der Additional Use Grant erlaubt ausdrücklich den
-produktiven, auch kommerziellen Einsatz — solange die kostenpflichtigen Zusätze
-nicht ohne Schlüssel benutzt werden.
+That is not an open source licence in the OSI sense, but it is not a closed one
+either: the source is open, and the Additional Use Grant expressly permits
+production use, commercial use included — as long as the paid add-ons are not
+used without a key.
 
-**Am 19.08.2030 fällt die Beschränkung weg.** Ab dann gilt Apache 2.0. Das steht
-so in der Lizenz und ist nicht widerruflich.
+**On 19.08.2030 the restriction falls away.** From then on Apache 2.0 applies.
+That is written into the licence and cannot be revoked.
 
-## Was ohne Schlüssel erlaubt ist
+## What is permitted without a key
 
-Der Kern darf produktiv laufen, auch in Firmen, auch kommerziell, ohne dass
-jemand gefragt oder etwas bezahlt werden muss:
+The core may run in production, in companies too, commercially too, without
+anybody having to ask or pay:
 
-Editor, verschachtelte Seiten, Spaces, Tags, Favoriten, Papierkorb,
-Volltextsuche über Seiten, Rückverweise, Wissensgraph, Konten und Rollen.
+Editor, nested pages, spaces, tags, favourites, trash, full-text search over
+pages, backlinks, knowledge graph, accounts and roles.
 
-Lesen, verändern, bauen und testen ist für das **gesamte** Werk immer erlaubt,
-auch zur kommerziellen Bewertung.
+Reading, changing, building and testing is always permitted for the **entire**
+work, commercial evaluation included.
 
-## Was einen Schlüssel braucht
+## What needs a key
 
-| Zusatz | Name im Schlüssel | Ohne Schlüssel |
+| Add-on | Name in the key | Without a key |
 |---|---|---|
-| Versionsverlauf | `versionen` | Schnappschüsse laufen weiter, Ansehen und Zurückholen gesperrt |
-| Anhänge | `anhaenge` | kein Upload-Bereich |
-| Teilen und öffentliche Links | `freigeben` | Seiten bleiben bei ihrem Eigentümer |
-| Prüfspur | `pruefspur` | Aufzeichnung läuft weiter, Lesen gesperrt |
-| Gruppen und Space-Rechte | `gruppen` | Rechte je Seite wie bisher |
-| SSO über OIDC | `sso` | Anmeldung mit Passwort |
-| LDAP und Active Directory | `ldap` | Anmeldung mit Passwort |
-| Volltext in Anhängen | `anhangsuche` | Suche über Seiten, nicht über Dateien |
-| Export als PDF und Word, Space-Export | `export` | Export je Seite als Markdown |
-| Kommentare | `kommentare` | keine Kommentare |
-| Konflikterkennung | `konflikte` | letzter Schreibvorgang gewinnt |
-| Gemeinsames Bearbeiten | `echtzeit` | einer schreibt, die anderen sehen es beim Neuladen |
+| Version history | `versionen` | snapshots keep being taken, viewing and restoring are locked |
+| Attachments | `anhaenge` | no upload area |
+| Sharing and public links | `freigeben` | pages stay with their owner |
+| Audit trail | `pruefspur` | recording continues, reading is locked |
+| Groups and space permissions | `gruppen` | per-page permissions as before |
+| SSO via OIDC | `sso` | sign-in with a password |
+| LDAP and Active Directory | `ldap` | sign-in with a password |
+| Full text in attachments | `anhangsuche` | search over pages, not over files |
+| Export as PDF and Word, space export | `export` | per-page export as Markdown |
+| Comments | `kommentare` | no comments |
+| Conflict detection | `konflikte` | the last write wins |
+| Editing together | `echtzeit` | one person writes, the others see it on reload |
 
-Zwei davon zeichnen auch ohne Lizenz weiter auf: **Versionsverlauf** und
-**Prüfspur**. Andernfalls klaffte nach dem Freischalten eine Lücke genau über
-dem unlizenzierten Zeitraum — und eine Prüfspur mit einem Loch ist keine.
+Two of them keep recording even without a licence: **version history** and the
+**audit trail**. Otherwise a gap would open up after enabling them, right over
+the unlicensed period — and an audit trail with a hole in it is not one.
 
-Der Server weist gesperrte Aufrufe mit `402 Payment Required` ab, die
-Oberfläche blendet die zugehörigen Bedienelemente aus. Das Ausblenden ist
-Höflichkeit, die Abweisung ist der Schutz.
+The server rejects locked calls with `402 Payment Required`, and the interface
+hides the matching controls. Hiding them is courtesy; the rejection is the
+protection.
 
-## Wo die Prüfung sitzt
+## Where the check sits
 
-Die Schlüsselprüfung liegt in `backend/premium`, das Tor selbst in
-`backend/internal/lizenz`. Das Tor weiß nichts von Signaturen — es fragt nur,
-wer sich als Prüfer registriert hat. Deshalb lässt sich der Kern auch ohne das
-Premium-Verzeichnis bauen:
+The key check lives in `backend/premium`, the gate itself in
+`backend/internal/lizenz`. The gate knows nothing about signatures — it only
+asks who has registered as a checker. That is why the core can also be built
+without the premium directory:
 
 ```bash
 rm -rf backend/premium
 cd backend && go build -tags nur_kern ./...
 ```
 
-Jeder Zusatz antwortet dann mit `402`, alles andere läuft unverändert.
+Every add-on then answers `402`, everything else runs unchanged.
 
-## Ein Schlüssel lässt sich nicht zurückziehen
+## A key cannot be revoked
 
-Geprüft wird offline gegen einen eingebauten Ed25519-Schlüssel. Kein
-Lizenzserver, kein Heimtelefonieren, funktioniert in Netzen ohne Internet.
+Keys are checked offline against a built-in Ed25519 key. No licence server, no
+phoning home, works in networks without internet access.
 
-Der Preis dafür: ein ausgestellter Schlüssel bleibt gültig. Ein Ablaufdatum ist
-der einzige Hebel, weshalb Schlüssel für zahlende Kunden eines tragen sollten.
+The price for that: an issued key stays valid. An expiry date is the only
+lever, which is why keys for paying customers should carry one.
 
-## Und der Quelltext liegt offen
+## And the source is open
 
-Wer `backend/premium/lizenz/pruefer.go` liest, findet die Zeile, die die
-Signatur prüft, und kann sie entfernen. Das ist bei jeder Software so, die auf
-fremden Rechnern läuft — pfSense, GitLab, Sentry und Elastic arbeiten alle so.
+Whoever reads `backend/premium/lizenz/pruefer.go` finds the line that checks the
+signature and can remove it. That is true of every piece of software that runs
+on other people's machines — pfSense, GitLab, Sentry and Elastic all work this
+way.
 
-Was schützt, ist nicht die Technik, sondern die Lizenz: ein solcher Eingriff ist
-ein Lizenzverstoß, kein Kniff. Und wer ihn vornimmt, hätte ohnehin nicht bezahlt.
+What protects is not the technology but the licence: such an intervention is a
+breach of the licence, not a trick. And whoever does it would not have paid
+anyway.
 
-## Fremde Bestandteile
+## Third-party components
 
-Nexora steht unter BUSL-1.1, ist aber nicht allein aus eigenem Quelltext gebaut.
-Was mitgeliefert wird und unter welcher Lizenz, steht vollständig in
-[THIRD-PARTY.md](THIRD-PARTY.md), samt der Befehle, mit denen sich der Stand
-jederzeit nachzählen lässt.
+Nexora is licensed under BUSL-1.1 but is not built from its own source alone.
+What ships with it and under which licence is listed in full in
+[THIRD-PARTY.md](THIRD-PARTY.md), together with the commands that recount the
+state at any time.
 
-Zwei Punkte davon betreffen jeden, der Nexora weitergibt oder verkauft.
+Two points from it concern everybody who passes Nexora on or sells it.
 
-**Der Editor steht unter MPL-2.0.** BlockNote ist dateiweises Copyleft. Der
-eigene Quelltext bleibt davon unberührt und das Erzeugnis darf verkauft werden;
-verlangt ist, dass der Lizenzhinweis die verteilte Form begleitet und dass
-Änderungen an den MPL-Dateien selbst unter MPL bleiben. Nexora benutzt sie
-unverändert. Den Hinweis trägt jedes erzeugte Bündel im Kopf, gesetzt in
-`frontend/vite.config.ts` — der Minimierer wirft die Lizenzköpfe der Pakete sonst
-weg, und dann ginge MPL-Quelltext ohne jeden Hinweis hinaus. Weil diese Auflage
-lautlos bricht, prüft die CI beim Bauen, dass der Kopf wirklich in jedem Bündel
-ankommt.
+**The editor is licensed under MPL-2.0.** BlockNote is file-level copyleft.
+Nexora's own source is unaffected and the product may be sold; what is required
+is that the licence notice accompanies the distributed form and that changes to
+the MPL files themselves stay under the MPL. Nexora uses them unchanged. Every
+generated bundle carries the notice in its header, set in
+`frontend/vite.config.ts` — the minifier would otherwise throw away the
+packages' licence headers, and MPL source would then go out without any notice.
+Because this obligation breaks silently, CI checks during the build that the
+header really arrives in every bundle.
 
-**Das Laufzeit-Abbild enthält GPL-2.0-Programme.** `poppler-utils` liefert
-`pdftotext` für den Volltext aus PDF-Anhängen, dazu kommt busybox aus der
-Alpine-Grundlage. Nexora ruft sie als eigene Prozesse über eine Pipe auf und
-bindet nichts davon ein; das ist ein unabhängiger Aufruf und kein abgeleitetes
-Werk, das Go-Programm bleibt unter BUSL-1.1.
+**The runtime image contains GPL-2.0 programs.** `poppler-utils` supplies
+`pdftotext` for the full text of PDF attachments, and busybox comes along from
+the Alpine base. Nexora calls them as separate processes over a pipe and links
+none of them; that is an independent invocation and not a derived work, and the
+Go program stays under BUSL-1.1.
 
-Wer das **Abbild** weitergibt, verteilt aber diese Programme mit und schuldet
-dafür den zugehörigen Quelltext. Dieses Angebot gilt hiermit:
+Whoever passes on the **image**, however, distributes these programs along with
+it and owes the corresponding source for them. This offer hereby applies:
 
-> Der Quelltext aller GPL- und LGPL-lizenzierten Bestandteile der
-> Nexora-Abbilder ist bei Alpine Linux unter
-> <https://gitlab.alpinelinux.org/alpine/aports> zu beziehen, in den Fassungen,
-> die die Kennzeichnung des jeweiligen Abbilds nennt. Wer sie stattdessen direkt
-> vom Lizenzgeber möchte, wende sich an Jonas Groll; sie werden zu den
-> Selbstkosten des Datenträgers abgegeben.
+> The source of all GPL- and LGPL-licensed components of the Nexora images can
+> be obtained from Alpine Linux at
+> <https://gitlab.alpinelinux.org/alpine/aports>, in the versions named by the
+> labels of the respective image. Whoever would rather receive it directly from
+> the licensor may contact Jonas Groll; it will be provided at the cost of the
+> storage medium.
 
-Beide Abbilder tragen diese Angaben als Kennzeichnung bei sich, damit sie auch
-dann noch mitreisen, wenn nur das Abbild weitergereicht wird:
+Both images carry this information as labels, so that it still travels along
+when only the image is passed on:
 
 ```bash
 docker inspect --format '{{json .Config.Labels}}' nexora-backend | python3 -m json.tool
 ```
 
-Wer die GPL-Bestandteile vermeiden will, kann `poppler-utils` aus
-`backend/Dockerfile` streichen. Dann fällt der Volltext aus PDF-Anhängen weg;
-eine reine Go-Lösung scheitert an Schriftkodierungen, Spalten und eingebetteten
-Bildern in echten PDF-Dateien.
+Whoever wants to avoid the GPL components can remove `poppler-utils` from
+`backend/Dockerfile`. The full text of PDF attachments is then lost; a pure Go
+solution fails on font encodings, columns and embedded images in real PDF
+files.
 
-## Lizenz erwerben
+## Obtaining a licence
 
-Für kommerzielle Lizenzen und abweichende Vereinbarungen wende dich an den
-Lizenzgeber, Jonas Groll.
+For commercial licences and other arrangements, contact the licensor, Jonas
+Groll.
