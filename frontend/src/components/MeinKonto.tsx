@@ -38,11 +38,12 @@ import Sprachwahl from "../sprache/Sprachwahl";
 // sharp on high-resolution screens and in the profile.
 const KANTE = 256;
 
-type Teil = "profil" | "aussehen" | "passwort" | "zweitfaktor" | "geraete";
+type Teil = "profil" | "aussehen" | "sprache" | "passwort" | "zweitfaktor" | "geraete";
 
 const TEILE: { id: Teil; titel: string; unter: string }[] = [
   { id: "profil", titel: "Profile", unter: "Name and picture" },
   { id: "aussehen", titel: "Appearance", unter: "Base tone and accent" },
+  { id: "sprache", titel: "Language", unter: "German or English" },
   { id: "passwort", titel: "Password", unter: "Change it" },
   { id: "zweitfaktor", titel: "Second factor", unter: "App and recovery codes" },
   { id: "geraete", titel: "Devices", unter: "Where you are signed in" },
@@ -132,12 +133,29 @@ export default function MeinKonto({ onClose }: { onClose: () => void }) {
         <div className="konto-inhalt">
           {teil === "profil" && <Profil />}
           {teil === "aussehen" && <Aussehen />}
+          {teil === "sprache" && <SpracheTeil />}
           {teil === "passwort" && <Passwort />}
           {teil === "zweitfaktor" && <ZweitfaktorTeil />}
           {teil === "geraete" && <Geraete />}
         </div>
       </div>
     </Fenster>
+  );
+}
+
+/**
+ * The interface language, stored on the account so it follows the person to
+ * every device. Before signing in the browser's language applies.
+ */
+function SpracheTeil() {
+  return (
+    <>
+      <h3>Language</h3>
+      <p className="muted small">
+        Stored on your account and applies on every device. The editor's menus follow on the next page opened.
+      </p>
+      <Sprachwahl />
+    </>
   );
 }
 
@@ -182,9 +200,6 @@ function Aussehen() {
 
   return (
     <>
-      <h3>Language</h3>
-      <p className="muted small">Stored on your account and applies on every device. The editor's menus follow on the next page opened.</p>
-      <Sprachwahl />
       <h3>Base tone</h3>
       <p className="muted small">
         Applies to this account, on every device you are signed in on.
