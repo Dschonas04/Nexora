@@ -1,7 +1,11 @@
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY package.json ./
-RUN npm install
+# npm ci and the lock file, exactly as in CI. npm install from package.json alone
+# resolved a different tree on the Docker host than in CI, and with two
+# TypeScript packages the `tsc` name went to the wrong one: CI was green, the
+# rollout failed in the type check.
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build
 
