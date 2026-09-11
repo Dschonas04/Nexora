@@ -1,99 +1,97 @@
-# Fremde Bestandteile
+# Third-party components
 
-Nexora steht unter BUSL-1.1, ist aber nicht allein aus eigenem Quelltext gebaut.
-Diese Datei sagt, was mitgeliefert wird und unter welchen Bedingungen.
+Nexora is licensed under BUSL-1.1 but is not built from its own source alone.
+This file states what ships with it and under which terms.
 
-Aufgeführt ist, was **ausgeliefert** wird, und nicht, was in den Paketdateien
-steht. Der Unterschied ist nicht kosmetisch: `go.mod` nennt 48 Module,
-eingebunden werden 34. Die Differenz ist der Kerberos-Zweig von `go-ldap`, den
-kein Aufruf erreicht und der deshalb nicht mitkompiliert wird; mit ihm bleibt
-das einzige MPL-lizenzierte Go-Modul draußen. Auf der npm-Seite landen 173
-Pakete im Bündel, der Rest im Verzeichnis sind Bauwerkzeuge.
+Listed is what is **delivered**, not what the package files name. The
+difference is not cosmetic: `go.mod` names 48 modules, 34 are linked in. The
+difference is the Kerberos branch of `go-ldap`, which no call reaches and which
+is therefore not compiled in; with it, the only MPL-licensed Go module stays
+out. On the npm side 173 packages end up in the bundle, the rest in the
+directory are build tools.
 
-Stand: 01.09.2026. Nachzählen lässt sich das jederzeit:
+As of: 01.09.2026. This can be recounted at any time:
 
 ```bash
 cd backend  && go list -deps -f '{{if .Module}}{{.Module.Path}} {{.Module.Version}}{{end}}' ./... | sort -u
 cd frontend && npm ls --omit=dev --all
 ```
 
-## Womit eine Auflage verbunden ist
+## What comes with an obligation
 
-Genau ein Bestandteil des Quelltextbestands verlangt mehr als den Hinweis, und
-einer der beiden Abbilder tut es auch. Alles andere ist MIT, BSD, Apache-2.0
-oder ISC.
+Exactly one component of the source tree demands more than the notice, and one
+of the two images does as well. Everything else is MIT, BSD, Apache-2.0 or ISC.
 
-### BlockNote, der Editor: MPL-2.0
+### BlockNote, the editor: MPL-2.0
 
-`@blocknote/core`, `@blocknote/react` und `@blocknote/mantine`, jeweils 0.15.11.
+`@blocknote/core`, `@blocknote/react` and `@blocknote/mantine`, each 0.15.11.
 
-Die Mozilla Public License 2.0 ist **dateiweises** Copyleft und nicht virales.
-Der eigene Quelltext bleibt davon unberührt, und das Erzeugnis darf verkauft
-werden. Verlangt ist zweierlei:
+The Mozilla Public License 2.0 is **file-level** copyleft, not viral. Nexora's
+own source is unaffected, and the product may be sold. Two things are required:
 
-1. Der Lizenzhinweis muss die **verteilte Form** begleiten. Verteilt wird das
-   gebaute Bündel, und der Minimierer wirft Kommentare weg, auch die
-   Lizenzköpfe der Pakete. Deshalb setzt `frontend/vite.config.ts` einen
-   eigenen Kopf, der in jedem erzeugten Bündel steht. Wird dort etwas geändert,
-   ist das die Stelle, an der die Auflage bricht, ohne dass es auffällt.
-2. Änderungen an den MPL-Dateien selbst müssten unter MPL bleiben und verfügbar
-   sein. Nexora benutzt die Pakete unverändert aus der Registry; der Quelltext
-   liegt unter <https://github.com/TypeCellOS/BlockNote>.
+1. The licence notice has to accompany the **distributed form**. What is
+   distributed is the built bundle, and the minifier throws comments away, the
+   packages' licence headers included. That is why `frontend/vite.config.ts`
+   sets a header of its own that stands in every generated bundle. If something
+   is changed there, that is the spot where the obligation breaks without
+   anybody noticing.
+2. Changes to the MPL files themselves would have to stay under the MPL and be
+   available. Nexora uses the packages unchanged from the registry; the source
+   lives at <https://github.com/TypeCellOS/BlockNote>.
 
-### Das Laufzeit-Abbild: GPL-2.0
+### The runtime image: GPL-2.0
 
-`backend/Dockerfile` setzt auf Alpine auf und installiert `poppler-utils` für
-`pdftotext`, das den Volltext aus PDF-Anhängen zieht. Damit enthält das
-verteilte Abbild Programme unter GPL:
+`backend/Dockerfile` builds on Alpine and installs `poppler-utils` for
+`pdftotext`, which extracts the full text of PDF attachments. The distributed
+image therefore contains programs under the GPL:
 
-| Paket | Lizenz | warum drin |
+| Package | Licence | why it is in there |
 |---|---|---|
-| poppler-utils, poppler | GPL-2.0-or-later | `pdftotext`, Volltext aus PDF-Anhängen |
-| busybox, busybox-binsh, ssl_client | GPL-2.0-only | die Shell des Abbilds |
-| alpine-baselayout, apk-tools, scanelf | GPL-2.0-only | Alpine selbst |
-| libgcc, libstdc++ | GPL-2.0+ mit Laufzeitausnahme | Systembibliotheken |
-| cairo | LGPL-2.1-or-later oder MPL-1.1 | über poppler |
-| freetype, zstd-libs | Doppellizenz mit GPL-Möglichkeit | über poppler |
-| musl | MIT | die C-Bibliothek |
+| poppler-utils, poppler | GPL-2.0-or-later | `pdftotext`, full text of PDF attachments |
+| busybox, busybox-binsh, ssl_client | GPL-2.0-only | the image's shell |
+| alpine-baselayout, apk-tools, scanelf | GPL-2.0-only | Alpine itself |
+| libgcc, libstdc++ | GPL-2.0+ with runtime exception | system libraries |
+| cairo | LGPL-2.1-or-later or MPL-1.1 | via poppler |
+| freetype, zstd-libs | dual licence with a GPL option | via poppler |
+| musl | MIT | the C library |
 
-Das Frontend-Abbild enthält kein poppler, wohl aber busybox aus derselben
-Grundlage.
+The frontend image contains no poppler, but it does contain busybox from the
+same base.
 
-Zwei Fragen sind dabei auseinanderzuhalten.
+Two questions have to be kept apart here.
 
-**Wird Nexora dadurch GPL?** Nein. `pdftotext` wird als eigener Prozess über
-eine Pipe aufgerufen, nichts davon wird eingebunden. Das ist ein unabhängiger
-Aufruf und kein abgeleitetes Werk; das Go-Programm bleibt unter BUSL-1.1.
+**Does this make Nexora GPL?** No. `pdftotext` is called as a separate process
+over a pipe, none of it is linked in. That is an independent invocation and not
+a derived work; the Go program stays under BUSL-1.1.
 
-**Wer das Abbild weitergibt, verteilt GPL-Programme mit** und schuldet dafür den
-zugehörigen Quelltext. Das Angebot dazu steht in [LICENSING.md](LICENSING.md).
-Alpine veröffentlicht die Quellen aller Pakete unter
-<https://gitlab.alpinelinux.org/alpine/aports>. Beide Abbilder tragen die Angabe
-zusätzlich als Kennzeichnung bei sich, damit sie auch dann mitreist, wenn nur
-das Abbild weitergereicht wird.
+**Whoever passes on the image distributes GPL programs along with it** and owes
+the corresponding source for them. The offer for that is in
+[LICENSING.md](LICENSING.md). Alpine publishes the sources of all packages at
+<https://gitlab.alpinelinux.org/alpine/aports>. Both images additionally carry
+this information as labels, so that it travels along even when only the image
+is passed on.
 
-Was ein gebautes Abbild wirklich enthält:
+What a built image really contains:
 
 ```bash
 docker run --rm --entrypoint sh nexora-backend -lc \
   "apk list -I | sed -E 's/^([^ ]+).*\((.*)\).*/\2  \1/' | sort"
 ```
 
-Wer die GPL-Bestandteile vermeiden will, streicht `poppler-utils` aus
-`backend/Dockerfile`. Dann fällt der Volltext aus PDF-Anhängen weg; eine reine
-Go-Lösung scheitert an Schriftkodierungen, Spalten und eingebetteten Bildern in
-echten PDF-Dateien.
+Whoever wants to avoid the GPL components removes `poppler-utils` from
+`backend/Dockerfile`. The full text of PDF attachments is then lost; a pure Go
+solution fails on font encodings, columns and embedded images in real PDF files.
 
-## Go, eingebundene Module (34)
+## Go, linked modules (34)
 
-| Verteilung | |
+| Distribution | |
 |---|---|
 | MIT | 17 |
 | BSD-3-Clause | 8 |
 | Apache-2.0 | 7 |
 | BSD-2-Clause | 2 |
 
-| Modul | Fassung | Lizenz |
+| Module | Version | Licence |
 |---|---|---|
 | `github.com/Azure/go-ntlmssp` | v0.1.1 | MIT |
 | `github.com/cespare/xxhash/v2` | v2.3.0 | MIT |
@@ -130,9 +128,9 @@ echten PDF-Dateien.
 | `golang.org/x/text` | v0.41.0 | BSD-3-Clause |
 | `gopkg.in/ini.v1` | v1.67.3 | Apache-2.0 |
 
-## npm, Produktivbaum (247)
+## npm, production tree (247)
 
-| Verteilung | |
+| Distribution | |
 |---|---|
 | MIT | 235 |
 | MPL-2.0 | 3 |
@@ -142,18 +140,18 @@ echten PDF-Dateien.
 | BSD-3-Clause | 1 |
 | ISC | 1 |
 | Python-2.0 | 1 |
-| MIT und Zlib | 1 |
-| MIT oder CC0-1.0 | 1 |
+| MIT and Zlib | 1 |
+| MIT or CC0-1.0 | 1 |
 
-Alle 247 einzeln aufzuführen hieße, eine Liste zu pflegen, die beim nächsten
-`npm install` still veraltet. Namentlich stehen hier deshalb die dreizehn
-direkten Abhängigkeiten und jedes Paket im Baum, das nicht MIT ist. Der Rest ist
-der übliche Unterbau von React und ProseMirror und durchgehend MIT; nachsehen
-lässt er sich mit dem Befehl oben.
+Listing all 247 individually would mean maintaining a list that silently goes
+stale at the next `npm install`. Named here are therefore the thirteen direct
+dependencies and every package in the tree that is not MIT. The rest is the
+usual foundation of React and ProseMirror and MIT throughout; it can be looked
+up with the command above.
 
-**Direkt:**
+**Direct:**
 
-| Paket | Fassung | Lizenz |
+| Package | Version | Licence |
 |---|---|---|
 | `@blocknote/core` | 0.15.11 | **MPL-2.0** |
 | `@blocknote/mantine` | 0.15.11 | **MPL-2.0** |
@@ -169,30 +167,30 @@ lässt er sich mit dem Befehl oben.
 | `y-protocols` | 1.0.7 | MIT |
 | `yjs` | 13.6.32 | MIT |
 
-**Alles Übrige im Baum, das nicht MIT ist:**
+**Everything else in the tree that is not MIT:**
 
-| Paket | Fassung | Lizenz |
+| Package | Version | Licence |
 |---|---|---|
 | `argparse` | 2.0.1 | Python-2.0 |
 | `diff` | 5.2.2 | BSD-3-Clause |
 | `entities` | 4.5.0 | BSD-2-Clause |
 | `hast-util-from-dom` | 4.2.0 | ISC |
-| `pako` | 1.0.11 | MIT und Zlib |
+| `pako` | 1.0.11 | MIT and Zlib |
 | `tslib` | 1.14.1, 2.8.1 | 0BSD |
-| `type-fest` | 4.41.0 | MIT oder CC0-1.0 |
+| `type-fest` | 4.41.0 | MIT or CC0-1.0 |
 
-`pdfjs-dist` steht unter Apache-2.0 und ist damit das erste ausgelieferte Paket
-neben BlockNote, das mehr verlangt als einen Urhebervermerk: Abschnitt 4 der
-Lizenz will den Lizenztext und einen Hinweis auf Änderungen. Geändert wird
-nichts -- die Bibliothek wird unverändert gebündelt --, und der Hinweis auf
-diese Datei steht im Kopf jedes Bündels.
+`pdfjs-dist` is licensed under Apache-2.0 and is thus the first delivered
+package besides BlockNote that demands more than a copyright notice: section 4
+of the licence wants the licence text and a notice of changes. Nothing is
+changed -- the library is bundled unchanged --, and the reference to this file
+stands in the header of every bundle.
 
-## Nur beim Bauen, nicht im Erzeugnis
+## Build only, not in the product
 
-TypeScript (Apache-2.0), Vite (MIT), `@vitejs/plugin-react` (MIT) sowie deren
-Unterbau. Eines davon fällt beim Durchsehen auf und sei darum genannt, damit
-niemand es für einen Fund hält: `caniuse-lite` steht unter CC-BY-4.0. Ein
-Bauwerkzeug, es gerät nie in ein ausgeliefertes Bündel.
+TypeScript (Apache-2.0), Vite (MIT), `@vitejs/plugin-react` (MIT) and their
+foundation. One of them stands out when looking through and is named for that
+reason, so that nobody takes it for a finding: `caniuse-lite` is licensed under
+CC-BY-4.0. A build tool, it never gets into a delivered bundle.
 
-Auf der Go-Seite gilt dasselbe für `stretchr/testify`, `davecgh/go-spew` und
-`pmezard/go-difflib`: Prüfwerkzeuge, alle MIT oder ISC, nicht im Binärprogramm.
+On the Go side the same holds for `stretchr/testify`, `davecgh/go-spew` and
+`pmezard/go-difflib`: test tools, all MIT or ISC, not in the binary.

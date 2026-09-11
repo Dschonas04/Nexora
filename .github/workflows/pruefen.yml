@@ -114,6 +114,23 @@ jobs:
             --outfile="$RUNNER_TEMP/pdfmarken.mjs" --log-level=warning
           node test/pdf-probe.mjs "$RUNNER_TEMP/pdfmarken.mjs"
 
+      - name: Farben lesbar auf jedem Grundton
+        run: |
+          # The accent chosen per account must stay readable as text on light
+          # and dark ground; the arithmetic for that lives in src/farbe.ts.
+          npx esbuild test/farbe-probe.ts --bundle --format=esm --platform=node \
+            --outfile="$RUNNER_TEMP/farbe.mjs" --log-level=warning
+          node "$RUNNER_TEMP/farbe.mjs"
+
+      - name: Deutsch und Englisch
+        run: |
+          # The interface is translated at runtime from a pair list. The probe
+          # checks lookups and patterns in both directions and that every pair
+          # uses the same placeholders on both sides.
+          npx esbuild test/sprache-probe.ts --bundle --format=esm --platform=node \
+            --outfile="$RUNNER_TEMP/sprache.mjs" --log-level=warning
+          node "$RUNNER_TEMP/sprache.mjs"
+
       - name: Der Lizenzhinweis muss im Bündel stehen
         run: |
           # BlockNote is under MPL-2.0, and that demands the notice accompany
