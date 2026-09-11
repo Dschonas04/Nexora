@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { api, brauchtZweitenSchritt } from "../api/client";
 import { useAuth } from "../auth";
-import Sprachwahl from "../sprache/Sprachwahl";
 
 export default function Login() {
   const { login, zweiterSchritt } = useAuth();
@@ -128,7 +127,6 @@ export default function Login() {
       <form className="auth-card" onSubmit={submit}>
         <h1>Nexora</h1>
         <p className="sub">Sign in to your workspace</p>
-        <Sprachwahl />
         {error && <div className="error">{error}</div>}
         <div className="field">
           <label>{ueberVerzeichnis ? "User" : "Email or username"}</label>
