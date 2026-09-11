@@ -1,34 +1,27 @@
 // Every text the interface shows must have a German/English pair in
 // src/sprache/woerterbuch.ts, otherwise it silently stays in one language.
 //
-// The probe walks the TSX/TS sources with the TypeScript compiler and collects
-// JSX text, user-facing attributes (title, placeholder, aria-label, alt and the
-// labels our own components take) and string literals that read like a
-// sentence. Each one has to appear on either side of a pair -- or as a pattern
-// with {0} -- or be listed in test/texte-ausnahmen.txt (technical strings,
-// names, units the probe cannot tell apart from prose).
+// The probe parses the TSX/TS sources and collects JSX text, user-facing
+// attributes (title, placeholder, aria-label, alt and the labels our own
+// components take) and string literals that stand as text in JSX. Each one has
+// to appear on either side of a pair -- or as a pattern with {0} -- or be listed
+// in test/texte-ausnahmen.txt (technical strings, names, units the probe cannot
+// tell apart from prose).
+//
+// It parses with @babel/parser and not with the TypeScript compiler: TypeScript
+// 7 is the native compiler and no longer ships a JavaScript API, and a second,
+// older TypeScript next to it would bring its own `tsc` and fight over the name.
 //
 //   node test/texte-probe.cjs            check, exit 1 on missing texts
 //   node test/texte-probe.cjs --liste    print the missing texts only
 const fs = require("fs");
 const path = require("path");
-// TypeScript 7 is the native compiler and no longer ships the JavaScript API
-// this probe walks the sources with. The API comes from TypeScript 5 under its
-// own name (devDependency "typescript-api"); plain "typescript" is the fallback
-// for a tree that still has a 5.x compiler.
-const ts = (() => {
-  for (const name of ["typescript-api", "typescript"]) {
-    try {
-      const t = require(name);
-      if (t && t.createSourceFile) return t;
-    } catch {}
-  }
-  throw new Error("no TypeScript with a JavaScript API found (devDependency typescript-api)");
-})();
+const { parse } = require("@babel/parser");
 
 const WURZEL = path.join(__dirname, "..");
 const SRC = path.join(WURZEL, "src");
 const UI_ATTRIBUTE = new Set(["title", "placeholder", "aria-label", "alt", "titel", "unter", "text", "hinweis", "platzhalter", "bestaetigen", "label"]);
+const UI_SCHLUESSEL = new Set(["titel", "unter", "text", "hinweis", "label"]);
 
 const normal = (s) => s.replace(/\s+/g, " ").trim();
 const entities = (s) =>
@@ -57,43 +50,75 @@ function sprachlich(s) {
   if (!/[A-Za-zÄÖÜäöüß]{2}/.test(s)) return false;             // no words at all
   if (/^[a-z0-9_.\-\/:#?=&%@]+$/.test(s)) return false;          // keys, paths, ids
   if (/^(https?:|\/|\.\/|#)/.test(s)) return false;              // addresses
-  if (/^[a-z][a-z0-9-]*( [a-z][a-z0-9-]*)*$/.test(s) && !/ /.test(s)) return false; // single css-ish token
   return true;
 }
 const funde = new Map(); // text -> first place
-function merken(text, datei, knoten, sf) {
+function merken(text, datei, knoten) {
   const t = normal(entities(text));
   if (!t || !sprachlich(t) || funde.has(t)) return;
-  funde.set(t, `${path.relative(WURZEL, datei)}:${sf.getLineAndCharacterOfPosition(knoten.getStart()).line + 1}`);
+  funde.set(t, `${path.relative(WURZEL, datei)}:${knoten.loc ? knoten.loc.start.line : "?"}`);
 }
-function vorlage(knoten) {
-  let s = knoten.head.text;
-  knoten.templateSpans.forEach((sp, i) => (s += `{${i}}` + sp.literal.text));
-  return s;
+// A template literal becomes "text {0} text {1}", the form patterns have.
+function vorlage(t) {
+  return t.quasis.map((q, i) => q.value.cooked + (i < t.expressions.length ? `{${i}}` : "")).join("");
 }
-function datei(p) {
-  const sf = ts.createSourceFile(p, fs.readFileSync(p, "utf8"), ts.ScriptTarget.Latest, true, p.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
-  (function besuch(k) {
-    if (ts.isImportDeclaration(k) || ts.isExportDeclaration(k)) return;
-    if (ts.isJsxText(k)) merken(k.text, p, k, sf);
-    else if (ts.isJsxAttribute(k) && UI_ATTRIBUTE.has(k.name.getText()) && k.initializer) {
-      if (ts.isStringLiteral(k.initializer)) merken(k.initializer.text, p, k, sf);
-      else if (ts.isJsxExpression(k.initializer) && k.initializer.expression) {
-        const e = k.initializer.expression;
-        if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) merken(e.text, p, k, sf);
-        else if (ts.isTemplateExpression(e)) merken(vorlage(e), p, k, sf);
+const schluesselName = (k) => (k.type === "Identifier" ? k.name : k.type === "StringLiteral" ? k.value : null);
+
+function besuche(knoten, eltern, datei) {
+  if (!knoten || typeof knoten.type !== "string") return;
+  switch (knoten.type) {
+    case "ImportDeclaration":
+    case "ExportAllDeclaration":
+      return;
+    case "JSXText":
+      merken(knoten.value, datei, knoten);
+      break;
+    case "JSXAttribute": {
+      const name = knoten.name && knoten.name.name;
+      const w = knoten.value;
+      if (UI_ATTRIBUTE.has(name) && w) {
+        if (w.type === "StringLiteral") merken(w.value, datei, knoten);
+        else if (w.type === "JSXExpressionContainer") {
+          const e = w.expression;
+          if (e.type === "StringLiteral") merken(e.value, datei, knoten);
+          else if (e.type === "TemplateLiteral") merken(e.expressions.length ? vorlage(e) : e.quasis[0].value.cooked, datei, knoten);
+        }
       }
-    } else if (ts.isPropertyAssignment(k) && ["titel", "unter", "text", "hinweis", "label"].includes(k.name.getText())) {
-      if (ts.isStringLiteral(k.initializer) || ts.isNoSubstitutionTemplateLiteral(k.initializer)) merken(k.initializer.text, p, k, sf);
-    } else if (ts.isJsxExpression(k) && k.expression && ts.isJsxElement(k.parent)) {
-      const e = k.expression;
-      if (ts.isStringLiteral(e)) merken(e.text, p, k, sf);
-      else if (ts.isConditionalExpression(e)) {
-        for (const zweig of [e.whenTrue, e.whenFalse]) if (ts.isStringLiteral(zweig)) merken(zweig.text, p, k, sf);
-      }
+      break;
     }
-    ts.forEachChild(k, besuch);
-  })(sf);
+    case "ObjectProperty": {
+      const name = schluesselName(knoten.key);
+      const w = knoten.value;
+      if (UI_SCHLUESSEL.has(name)) {
+        if (w.type === "StringLiteral") merken(w.value, datei, knoten);
+        else if (w.type === "TemplateLiteral" && !w.expressions.length) merken(w.quasis[0].value.cooked, datei, knoten);
+      }
+      break;
+    }
+    case "JSXExpressionContainer":
+      if (eltern && (eltern.type === "JSXElement" || eltern.type === "JSXFragment")) {
+        const e = knoten.expression;
+        if (e.type === "StringLiteral") merken(e.value, datei, knoten);
+        else if (e.type === "ConditionalExpression") {
+          for (const zweig of [e.consequent, e.alternate]) if (zweig.type === "StringLiteral") merken(zweig.value, datei, knoten);
+        }
+      }
+      break;
+  }
+  for (const schluessel of Object.keys(knoten)) {
+    if (schluessel === "loc" || schluessel === "start" || schluessel === "end" || schluessel === "extra" || schluessel.endsWith("Comments")) continue;
+    const kind = knoten[schluessel];
+    if (Array.isArray(kind)) for (const k of kind) besuche(k, knoten, datei);
+    else if (kind && typeof kind.type === "string") besuche(kind, knoten, datei);
+  }
+}
+
+function datei(p) {
+  const ast = parse(fs.readFileSync(p, "utf8"), {
+    sourceType: "module",
+    plugins: p.endsWith("x") ? ["typescript", "jsx"] : ["typescript"],
+  });
+  besuche(ast.program, null, p);
 }
 (function lauf(d) {
   for (const n of fs.readdirSync(d)) {
