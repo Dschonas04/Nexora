@@ -149,10 +149,10 @@ function attribut(el: Element, name: string) {
 }
 
 function baum(wurzel: Node) {
-  if (wurzel.nodeType === Node.TEXT_NODE) return textNode(wurzel as Text);
+  if (wurzel.nodeType === TEXT_NODE) return textNode(wurzel as Text);
   if (!(wurzel instanceof Element)) return;
   if (ausgenommen(wurzel)) return;
-  const gang = document.createTreeWalker(wurzel, NodeFilter.SHOW_TEXT);
+  const gang = document.createTreeWalker(wurzel, SHOW_TEXT);
   for (let n = gang.nextNode(); n; n = gang.nextNode()) textNode(n as Text);
   const sel = ATTRIBUTE.map((a) => `[${a}]`).join(",");
   for (const a of ATTRIBUTE) if (wurzel.hasAttribute(a)) attribut(wurzel, a);
@@ -161,7 +161,7 @@ function baum(wurzel: Node) {
 
 /** Put every remembered node back to its original, so the next pass starts clean. */
 function zurueck(wurzel: Element) {
-  const gang = document.createTreeWalker(wurzel, NodeFilter.SHOW_TEXT);
+  const gang = document.createTreeWalker(wurzel, SHOW_TEXT);
   for (let n = gang.nextNode(); n; n = gang.nextNode()) {
     const merk = texte.get(n as Text);
     if (merk) {
@@ -176,6 +176,11 @@ function zurueck(wurzel: Element) {
     attrs.delete(el);
   });
 }
+
+// The numeric DOM constants instead of NodeFilter/Node: a test environment that
+// imitates a browser (jsdom in the editor probe) does not always provide them.
+const SHOW_TEXT = 4;
+const TEXT_NODE = 3;
 
 let beobachter: MutationObserver | null = null;
 
@@ -232,4 +237,5 @@ export function useSprache(): Sprache {
   );
 }
 
-if (typeof document !== "undefined") starten();
+// Only where there is a document to watch; a probe may load this module without one.
+if (typeof document !== "undefined" && typeof MutationObserver !== "undefined") starten();

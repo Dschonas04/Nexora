@@ -48,6 +48,32 @@ export default defineConfig({
     // stillschweigend uebergangen, und der Lizenzkopf fiel damit aus jedem
     // Buendel -- ohne Fehler, ohne Warnung. Ein eigener Schritt haengt an
     // keinem Namen, den die naechste Fassung umbenennen kann.
+    //
+    // React, Yjs and the two PDF libraries each get a chunk of their own, so
+    // they stay in the browser cache across Nexora updates and the start chunk
+    // carries only Nexora's own code (227 kB instead of 536 kB).
+    // BlockNote, Mantine and ProseMirror deliberately do not: grouped, Rolldown
+    // tied the whole group to the start chunk, and the editor's megabyte was
+    // loaded on every first page view instead of with the editor.
+    // The build output has to be checked after every change of this block --
+    // Vite 8 silently ignores options it does not know.
+    //
+    // The only chunk above 500 kB is the editor, and that one is loaded lazily
+    // when a page opens; the limit is raised so the warning keeps meaning
+    // something for the start chunk.
+    chunkSizeWarningLimit: 1000,
+    rolldownOptions: {
+      output: {
+        advancedChunks: {
+          groups: [
+            { name: "react", test: /node_modules[\\/](react|react-dom|react-router|scheduler)[\\/]/ },
+            { name: "yjs", test: /node_modules[\\/](yjs|y-protocols|lib0)[\\/]/ },
+            { name: "pdfjs", test: /node_modules[\\/]pdfjs-dist[\\/]/ },
+            { name: "pdf-lib", test: /node_modules[\\/](pdf-lib|@pdf-lib|pako)[\\/]/ },
+          ],
+        },
+      },
+    },
   },
   server: {
     port: 5173,
