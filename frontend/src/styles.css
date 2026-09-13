@@ -160,6 +160,9 @@ a {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 600;
   font-size: 15px;
   letter-spacing: -0.01em;
@@ -571,6 +574,9 @@ a {
 }
 
 .auth-card h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 22px;
   margin: 0 0 4px;
 }

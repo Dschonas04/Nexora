@@ -10,6 +10,7 @@ import PageTree, { TreeGap } from "./PageTree";
 import { useAussenklick } from "../klappen";
 import SpaceRechte from "./SpaceRechte";
 import Einfuhr from "./Einfuhr";
+import Zeichen from "./Zeichen";
 import MeinKonto from "./MeinKonto";
 import Profilbild from "./Profilbild";
 
@@ -569,7 +570,10 @@ export default function Sidebar(props: Props) {
         onDoubleClick={zugZuruecksetzen}
       />
       <div className="sidebar-header">
-        <span className="brand">Nexora</span>
+        <span className="brand">
+          <Zeichen groesse={18} />
+          Nexora
+        </span>
         {/* Placed on the far right because it affects the entire sidebar and
           not its contents. */}
         <button
