@@ -43,21 +43,25 @@ export default function GraphView() {
   if (graph.nodes.length === 0) {
     return (
       <div className="graph-wrap">
+        <h1 className="nur-vorlesen">Graph</h1>
         <div className="empty-state">No pages for the graph yet.</div>
       </div>
     );
   }
 
   return (
-    <Grafbild
-      graph={graph}
-      onOeffnen={(id) => nav(`/page/${id}`)}
-      hinweis="Drag a node · drag the background · scroll to zoom · the dot in the legend colours the space"
-      legende
-      zentrieren
-      eigeneFarben={eigeneFarben}
-      onFarbe={faerbbar.size > 0 ? farbeSetzen : undefined}
-      faerbbar={faerbbar}
-    />
+    <>
+      <h1 className="nur-vorlesen">Graph</h1>
+      <Grafbild
+        graph={graph}
+        onOeffnen={(id) => nav(`/page/${id}`)}
+        hinweis="Drag a node · drag the background · scroll to zoom · the dot in the legend colours the space"
+        legende
+        zentrieren
+        eigeneFarben={eigeneFarben}
+        onFarbe={faerbbar.size > 0 ? farbeSetzen : undefined}
+        faerbbar={faerbbar}
+      />
+    </>
   );
 }

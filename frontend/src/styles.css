@@ -4462,3 +4462,50 @@ textarea::placeholder {
 .verwaltung-eintrag.aktiv .verwaltung-pfeil {
   color: var(--accent-lesbar);
 }
+
+/* Text for screen readers and search engines only: present in the document,
+   invisible on the screen. Carries the h1 of views whose heading is visible
+   elsewhere or not at all (empty start, graph). */
+.nur-vorlesen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* The page title is an input inside an h1. The h1 only gives it its rank; the
+   look stays with .page-title. */
+.page-title-kopf {
+  margin: 0;
+  font: inherit;
+}
+
+/* Phones. The open sidebar lies over the page instead of beside it -- next to
+   260 pixels of sidebar the text was a column of a few letters. The shadow
+   darkens the page behind it, so it is clear that the sidebar is on top. */
+@media (max-width: 700px) {
+  .sidebar:not(.schmal) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 60;
+    width: min(88vw, 320px) !important;
+    min-width: 0 !important;
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.28);
+  }
+  .leiste-kante {
+    display: none;
+  }
+  .page {
+    padding: 28px 18px 40vh;
+  }
+  .page-title {
+    font-size: 30px;
+  }
+}

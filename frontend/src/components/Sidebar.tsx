@@ -19,6 +19,10 @@ import Profilbild from "./Profilbild";
 const ZU_SCHLUESSEL = "nexora.leiste.eingeklappt";
 const VERSTECKT_SCHLUESSEL = "nexora.leiste.versteckt";
 const BREITE_SCHLUESSEL = "nexora.leiste.breite";
+// On a phone the open sidebar lies over the page instead of beside it: 260
+// pixels next to the page left the text a column of a few letters.
+const HANDY = "(max-width: 700px)";
+const handy = () => typeof window !== "undefined" && window.matchMedia?.(HANDY).matches === true;
 // Width constraints. Narrower than 180 pixels page titles are truncated; wider
 // than 520 pixels the page area would encroach on the space the sidebar owns.
 const BREITE_VORGABE = 260;
@@ -145,7 +149,8 @@ export default function Sidebar(props: Props) {
   const [zu, setZu] = useState<Set<string>>(gemerkteZu);
   // Whether the entire sidebar is hidden. Separate from `zu`: that collapses
   // sections, this tucks the whole sidebar aside to leave only the page.
-  const [versteckt, setVersteckt] = useState<boolean>(gemerktVersteckt);
+  // On a phone it starts tucked away, so the first thing one sees is the page.
+  const [versteckt, setVersteckt] = useState<boolean>(() => handy() || gemerktVersteckt());
   // The sidebar width in pixels. Stored in state because it is resized by
   // dragging; the value is persisted only on pointer release to avoid
   // spamming storage during a drag.
@@ -184,8 +189,17 @@ export default function Sidebar(props: Props) {
   };
   const alleZu = alleMarken().every((m) => zu.has(m));
 
+  // On a phone every navigation closes the sidebar again: it lies over the
+  // page, and whoever picked a page wants to see it.
+  useEffect(() => {
+    if (handy()) setVersteckt(true);
+  }, [currentPath]);
+
   const leisteUmschalten = () =>
     setVersteckt((v) => {
+      // On a phone the state is not remembered; it would otherwise decide how
+      // the sidebar opens on the desktop.
+      if (handy()) return !v;
       try {
         localStorage.setItem(VERSTECKT_SCHLUESSEL, v ? "nein" : "ja");
       } catch {
