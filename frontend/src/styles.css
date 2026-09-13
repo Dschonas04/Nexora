@@ -4376,91 +4376,38 @@ textarea::placeholder {
 .sprachwahl button + button { border-left: 1px solid var(--border); }
 .sprachwahl button.gewaehlt { background: var(--accent); color: var(--accent-text, #fff); }
 
-/* The administration as a place to go, not as a heading: a row of its own at
-   the end of the navigation, set apart by a line, with the cog in a small box,
-   the name and one line saying what is behind it. Active, it takes the accent
-   like a selected tree row, only more clearly -- it leads to a whole area. */
+/* The administration: a row like Inbox and Graph, with a small cog in front
+   and a line above that sets it apart from one's own work. A button and not a
+   div, for the keyboard; it therefore has to shed the browser's button look. */
 .verwaltung-rahmen {
-  margin-top: 18px;
-  padding-top: 10px;
+  margin-top: 14px;
+  padding-top: 8px;
   border-top: 1px solid var(--border);
 }
 .verwaltung-eintrag {
-  display: flex;
-  align-items: center;
-  gap: 10px;
   width: 100%;
-  padding: 7px 8px;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  border: none;
   background: transparent;
-  color: var(--text);
+  color: inherit;
   font: inherit;
   text-align: left;
-  cursor: pointer;
-}
-.verwaltung-eintrag:hover {
-  background: var(--hover);
+  gap: 8px;
 }
 .verwaltung-eintrag:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-.verwaltung-eintrag.aktiv {
-  background: var(--flaeche);
-  border-color: var(--border);
-  box-shadow: inset 3px 0 0 var(--accent);
+  outline-offset: -2px;
 }
 .verwaltung-symbol {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
-  border-radius: 7px;
-  border: 1px solid var(--border);
-  background: var(--flaeche);
   color: var(--muted);
 }
 .verwaltung-symbol svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   /* Strokes in the text colour, no fill: otherwise the browser fills both
      circles of the cog and it turns into a black dot. */
   fill: none;
   stroke: currentColor;
-}
-.verwaltung-eintrag:hover .verwaltung-symbol,
-.verwaltung-eintrag.aktiv .verwaltung-symbol {
-  color: var(--accent-lesbar);
-  border-color: var(--accent-lesbar);
-}
-.verwaltung-text {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  flex: 1;
-  line-height: 1.25;
-}
-.verwaltung-name {
-  font-size: 13px;
-  font-weight: 600;
-}
-.verwaltung-unter {
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.verwaltung-pfeil {
-  color: var(--muted);
-  font-size: 16px;
-  line-height: 1;
-}
-.verwaltung-eintrag.aktiv .verwaltung-pfeil {
-  color: var(--accent-lesbar);
 }
 
 /* Text for screen readers and search engines only: present in the document,

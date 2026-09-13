@@ -1298,7 +1298,7 @@ export default function Sidebar(props: Props) {
                 <button
                   type="button"
                   className={
-                    "verwaltung-eintrag" + (currentPath.startsWith("/einstellungen") ? " aktiv" : "")
+                    "tree-row verwaltung-eintrag" + (currentPath.startsWith("/einstellungen") ? " active" : "")
                   }
                   aria-current={currentPath.startsWith("/einstellungen") ? "page" : undefined}
                   onClick={() => onNavigate("/einstellungen")}
@@ -1306,11 +1306,7 @@ export default function Sidebar(props: Props) {
                   <span className="verwaltung-symbol" aria-hidden="true">
                     <Zahnrad />
                   </span>
-                  <span className="verwaltung-text">
-                    <span className="verwaltung-name">Administration</span>
-                    <span className="verwaltung-unter">Accounts, access, system</span>
-                  </span>
-                  <span className="verwaltung-pfeil" aria-hidden="true">›</span>
+                  <span className="tree-label">Administration</span>
                 </button>
               </div>
             )}
