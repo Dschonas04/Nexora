@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { api, brauchtZweitenSchritt } from "../api/client";
+import Zeichen from "../components/Zeichen";
 import { useAuth } from "../auth";
 
 export default function Login() {
@@ -82,7 +83,10 @@ export default function Login() {
     return (
       <div className="auth">
         <form className="auth-card" onSubmit={codeSenden}>
-          <h1>Nexora</h1>
+          <h1>
+            <Zeichen groesse={26} />
+            Nexora
+          </h1>
           <p className="sub">Second step</p>
           {error && <div className="error">{error}</div>}
           <div className="field">
@@ -125,7 +129,10 @@ export default function Login() {
   return (
     <div className="auth">
       <form className="auth-card" onSubmit={submit}>
-        <h1>Nexora</h1>
+        <h1>
+            <Zeichen groesse={26} />
+            Nexora
+          </h1>
         <p className="sub">Sign in to your workspace</p>
         {error && <div className="error">{error}</div>}
         <div className="field">
