@@ -206,6 +206,36 @@ pruefe "leer setzt zurueck" "" \
        "$(hole -X PUT "$BASIS/api/spaces/$ABL_ID/farbe" -H 'Content-Type: application/json' \
           -d '{"farbe":""}' | feld "['farbe']")"
 
+echo "== Ablage löschen legt ihre Seiten in den Papierkorb"
+# Deleting a space trashes its pages, subpages included, in one transaction.
+# Restored, a page stands under "no space": the space itself is gone.
+WEG=$(hole -X POST "$BASIS/api/spaces" -H 'Content-Type: application/json' \
+      -d '{"name":"Weg damit"}' | feld "['id']")
+OBEN=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
+       -d "{\"title\":\"Oben\",\"spaceId\":\"$WEG\"}" | feld "['id']")
+UNTEN=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
+        -d "{\"title\":\"Unten\",\"parentId\":\"$OBEN\"}" | feld "['id']")
+zaehle() { OBEN="$OBEN" UNTEN="$UNTEN" python3 -c '
+import json, os, sys
+ids = {p["id"] for p in json.load(sys.stdin)}
+print(len(ids & {os.environ["OBEN"], os.environ["UNTEN"]}))'; }
+pruefe "fremde Ablage bleibt stehen" "404" \
+       "$(code -X DELETE "$BASIS/api/spaces/00000000-0000-0000-0000-000000000000")"
+pruefe "Ablage gelöscht, zwei Seiten weggelegt" "2" \
+       "$(hole -X DELETE "$BASIS/api/spaces/$WEG" | feld "['papierkorb']")"
+pruefe "beide stehen im Papierkorb" "2" "$(hole "$BASIS/api/pages/trash" | zaehle)"
+pruefe "und nicht mehr im Baum" "0" "$(hole "$BASIS/api/pages" | zaehle)"
+hole -X POST "$BASIS/api/pages/$OBEN/restore" >/dev/null
+pruefe "wiederhergestellt samt Unterseite" "2" "$(hole "$BASIS/api/pages" | zaehle)"
+pruefe "und zwar ohne Ablage" "None" \
+       "$(hole "$BASIS/api/pages" | OBEN="$OBEN" python3 -c '
+import json, os, sys
+print(next(p for p in json.load(sys.stdin) if p["id"] == os.environ["OBEN"]).get("spaceId"))')"
+# Out again, so later counts see the same stock as before this block.
+hole -X DELETE "$BASIS/api/pages/$OBEN" >/dev/null
+hole -X DELETE "$BASIS/api/pages/$OBEN/purge" >/dev/null
+pruefe "endgültig weg" "0" "$(hole "$BASIS/api/pages/trash" | zaehle)"
+
 echo "== Ausgabe"
 pruefe "Markdown" "200" "$(code "$BASIS/api/pages/$SEITE/markdown")"
 

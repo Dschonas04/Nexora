@@ -163,21 +163,48 @@ func (s *Server) SetSpaceFarbe(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"farbe": farbe})
 }
 
-// DeleteSpace removes a space. Its pages survive and fall back to "no space"
-// through the ON DELETE SET NULL on pages.space_id: deleting a container must
-// never delete the content in it.
+// DeleteSpace removes a space and moves its pages, subpages included, to the
+// trash. Nothing is gone for good: each page lands in its owner's trash and can
+// be restored from there. Restored, it stands under "no space" -- the space
+// itself no longer exists, and the ON DELETE SET NULL on pages.space_id takes
+// care of that.
+//
+// Both steps in one transaction: a space that is gone while its pages still
+// stand in the tree, or the other way round, would be a state nobody asked for.
 func (s *Server) DeleteSpace(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	id := chi.URLParam(r, "id")
+	ctx := r.Context()
 
 	// Fetch the name beforehand: after the deletion it is gone, and an audit
 	// entry naming only an id no longer answers the question "which space was
 	// that?".
 	var name string
-	_ = s.Pool.QueryRow(r.Context(), `SELECT name FROM spaces WHERE id=$1`, id).Scan(&name)
+	_ = s.Pool.QueryRow(ctx, `SELECT name FROM spaces WHERE id=$1`, id).Scan(&name)
 
-	tag, err := s.Pool.Exec(r.Context(),
-		`DELETE FROM spaces WHERE id=$1 AND owner_id=$2`, id, uid)
+	tx, err := s.Pool.Begin(ctx)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "delete failed")
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	// Only the owner's own space; the EXISTS makes a foreign id trash nothing.
+	// Subpages are taken along even where their space_id differs, just as
+	// DeletePage does, so none of them survives as an orphan.
+	papierkorb, err := tx.Exec(ctx,
+		`WITH RECURSIVE sub AS (
+			SELECT id FROM pages
+			 WHERE space_id=$1 AND EXISTS (SELECT 1 FROM spaces WHERE id=$1 AND owner_id=$2)
+			UNION
+			SELECT p.id FROM pages p JOIN sub ON p.parent_id = sub.id
+		 )
+		 UPDATE pages SET deleted_at=now() WHERE id IN (SELECT id FROM sub) AND deleted_at IS NULL`, id, uid)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "delete failed")
+		return
+	}
+	tag, err := tx.Exec(ctx, `DELETE FROM spaces WHERE id=$1 AND owner_id=$2`, id, uid)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "delete failed")
 		return
@@ -186,14 +213,17 @@ func (s *Server) DeleteSpace(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "space not found")
 		return
 	}
+	if err := tx.Commit(ctx); err != nil {
+		writeErr(w, http.StatusInternalServerError, "delete failed")
+		return
+	}
 
-	// Deleting a space has consequences: the pages inside it lose their
-	// assignment and the rights granted on it disappear with it. Until now that
-	// left no trace, and afterwards there was no way to tell the space had ever
-	// existed.
+	// Deleting a space has consequences: its pages go to the trash and the
+	// rights granted on it disappear with it. Until now that left no trace, and
+	// afterwards there was no way to tell the space had ever existed.
 	s.spurAusRequest(r, AktSpaceGeloescht, "space", id, name, nil)
 
-	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "papierkorb": papierkorb.RowsAffected()})
 }
 
 type spaceOeffentlichReq struct {
