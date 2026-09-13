@@ -35,7 +35,7 @@ on a different schedule, and none of it belongs in the server image.
 
 | Layer    | Tech                                                     |
 | -------- | -------------------------------------------------------- |
-| Backend  | Go 1.25+, chi router, pgx, JWT (httpOnly cookie), bcrypt  |
+| Backend  | Go 1.27+, chi router, pgx, JWT (httpOnly cookie), bcrypt  |
 | Frontend | React 18, Vite, TypeScript, BlockNote editor             |
 | Database | PostgreSQL 16                                            |
 | Delivery | Docker Compose (nginx serves the SPA and proxies `/api`) |

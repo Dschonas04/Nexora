@@ -100,7 +100,7 @@ decisions in chapter 9 are exactly that collision being resolved.
 | Constraint | Consequence |
 |---|---|
 | **PostgreSQL 16+** is required, not one database among several | The search is `tsvector` with a GIN index and a generated column; the ids are `gen_random_uuid()` from `pgcrypto`. Neither is portable, and both were chosen over portability on purpose. |
-| **Go 1.25+** | Not a preference — `minio-go` requires it. |
+| **Go 1.27+** | Set in `go.mod`; `minio-go` alone would need 1.25. |
 | **Only the browser talks to the API** | There is no second client, so the API is shaped for the interface and answers JSON, not a general-purpose resource model. |
 | **The backend has no Docker socket** | It cannot see the stack it runs in. What the system view reports is what can be established over the network: which services answer, how fast, which version. |
 | **Verification of a licence key is offline** | No licence server exists, so a key cannot be revoked. The expiry date is the only lever there is. |
@@ -200,7 +200,7 @@ Every technology in use, and the reason it is the one in use.
 
 | Technology | Version | Role | Why this one |
 |---|---|---|---|
-| **Go** | 1.25 | The whole backend | One static binary, no runtime at the target, and a concurrency model that makes a request-per-goroutine server the obvious shape rather than a framework's trick. |
+| **Go** | 1.27 | The whole backend | One static binary, no runtime at the target, and a concurrency model that makes a request-per-goroutine server the obvious shape rather than a framework's trick. |
 | **chi** | v5 | HTTP router | It is `net/http` with a router and nothing else. Route groups nest, which is exactly what the licence gate needs: one `r.Group` per paid extra, one middleware on it. |
 | **pgx** | v5 | PostgreSQL driver and pool | The native protocol driver, not `database/sql` over it. It knows PostgreSQL types — `jsonb`, `uuid`, `timestamptz`, arrays — without a mapping layer inventing them. |
 | **golang-jwt** | v5 | Session token | The token says *who*; the `sitzungen` row says whether it still counts (chapter 8.1). Signed, not encrypted: it carries no secret. |
