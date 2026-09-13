@@ -10,6 +10,7 @@ import { Graph, Page, PageMeta, PagePatch, Tag, api } from "../api/client";
 // the settings needs none of it.
 const Editor = lazy(() => import("../components/Editor"));
 import { useMitschrift } from "../mitschrift";
+import { uebersetze, useSprache } from "../sprache";
 import VersionPanel from "../components/VersionPanel";
 import ShareDialog from "../components/ShareDialog";
 import Fehlergrenze from "../components/Fehlergrenze";
@@ -108,6 +109,13 @@ export default function PageView({
   const nav = useNavigate();
   const eingabe = useEingabe();
   const [page, setPage] = useState<Page | null>(null);
+  // The browser title is the page's name, as in the heading.
+  const sprache = useSprache();
+  useEffect(() => {
+    if (!page) return;
+    const name = page.title.trim() || (uebersetze("Untitled", sprache) ?? "Untitled");
+    document.title = `${name} – Nexora`;
+  }, [page?.title, sprache]);
   const [backlinks, setBacklinks] = useState<PageMeta[]>([]);
   const [links, setLinks] = useState<PageMeta[]>([]);
   const [graph, setGraph] = useState<Graph>({ nodes: [], edges: [] });
@@ -771,13 +779,18 @@ export default function PageView({
               "page" + (breiteWirksam !== "normal" ? " " + breiteWirksam : "")
             }
           >
-            <input
-              className="page-title"
-              value={page.title}
-              placeholder="Untitled"
-              disabled={!canEdit}
-              onChange={(e) => setTitle(e.target.value)}
-            />
+            {/* The title field is the page's one h1: a heading for screen readers
+                and search engines, still an input for whoever writes. */}
+            <h1 className="page-title-kopf">
+              <input
+                className="page-title"
+                value={page.title}
+                placeholder="Untitled"
+                aria-label="Page title"
+                disabled={!canEdit}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </h1>
             <div className="page-tags">
               {page.tags.map((t) => (
                 <span

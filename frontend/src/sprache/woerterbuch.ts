@@ -85,6 +85,7 @@ export const PAARE: [string, string][] = [
   ["Loslassen zum Anhängen", "Drop to attach"],
   ["Hochladen ist hier nicht eingerichtet", "Uploading is not set up here"],
   ["Ohne Titel", "Untitled"],
+  ["Seitentitel", "Page title"],
   ["Import nach „", "Import into “"],
   ["neuer Ablage", "a new space"],
   ["Fertig", "Done"],

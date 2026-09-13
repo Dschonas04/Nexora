@@ -307,6 +307,7 @@ function ZweitfaktorMahnung() {
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="empty-state">
+      <h1 className="nur-vorlesen">Workspace</h1>
       <div>Nothing open yet.</div>
       <button className="btn btn-primary" onClick={onCreate}>
         Seite erstellen

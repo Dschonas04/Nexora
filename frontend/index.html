@@ -4,6 +4,41 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nexora</title>
+    <!-- Filled in when the container starts (tls-start.sh): with a public
+         address the start page is indexed and carries canonical, Open Graph and
+         structured data; without one the whole instance is noindex. -->
+    <meta name="description" content="Nexora is a self-hosted wiki: nested pages, spaces, full-text search, a knowledge graph, version history and editing together in real time, in German and English." />
+    <meta name="robots" content="__NEXORA_ROBOTS__" />
+    <meta name="theme-color" content="#1b6ec2" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href="__NEXORA_ADRESSE__/login" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Nexora" />
+    <meta property="og:title" content="Nexora – the self-hosted wiki" />
+    <meta property="og:description" content="Pages, spaces, full-text search, knowledge graph and editing together – on your own server." />
+    <meta property="og:url" content="__NEXORA_ADRESSE__/login" />
+    <meta property="og:image" content="__NEXORA_ADRESSE__/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Nexora – the self-hosted wiki" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!--nexora-verifizierung-->
+    <!--nexora-ld-anfang-->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Nexora",
+        "description": "Self-hosted wiki with nested pages, spaces, full-text search, knowledge graph, version history and real-time collaboration.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "inLanguage": ["de", "en"],
+        "url": "__NEXORA_ADRESSE__/login",
+        "image": "__NEXORA_ADRESSE__/og-image.png",
+        "author": { "@type": "Person", "name": "Jonas Groll" }
+      }
+    </script>
+    <!--nexora-ld-ende-->
   </head>
   <body>
     <div id="root"></div>
