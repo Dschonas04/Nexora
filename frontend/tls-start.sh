@@ -97,6 +97,9 @@ Allow: /\$
 Allow: /login\$
 Allow: /assets/
 Allow: /favicon.svg
+Allow: /favicon.ico
+Allow: /favicon-32.png
+Allow: /apple-touch-icon.png
 Allow: /og-image.png
 Disallow: /
 
