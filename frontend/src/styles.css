@@ -4376,15 +4376,15 @@ textarea::placeholder {
 .sprachwahl button + button { border-left: 1px solid var(--border); }
 .sprachwahl button.gewaehlt { background: var(--accent); color: var(--accent-text, #fff); }
 
-/* The administration: a row like Inbox and Graph, with a small cog in front
-   and a line above that sets it apart from one's own work. A button and not a
+/* The groups at the end of the sidebar (inbox/graph/trash, administration):
+   rows with a small symbol in front and a line above each group. A button and not a
    div, for the keyboard; it therefore has to shed the browser's button look. */
-.verwaltung-rahmen {
+.leiste-gruppe {
   margin-top: 14px;
   padding-top: 8px;
   border-top: 1px solid var(--border);
 }
-.verwaltung-eintrag {
+.leiste-eintrag {
   width: 100%;
   border: none;
   background: transparent;
@@ -4393,15 +4393,15 @@ textarea::placeholder {
   text-align: left;
   gap: 8px;
 }
-.verwaltung-eintrag:focus-visible {
+.leiste-eintrag:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
-.verwaltung-symbol {
+.leiste-symbol {
   display: inline-flex;
   color: var(--muted);
 }
-.verwaltung-symbol svg {
+.leiste-symbol svg {
   width: 14px;
   height: 14px;
   /* Strokes in the text colour, no fill: otherwise the browser fills both
