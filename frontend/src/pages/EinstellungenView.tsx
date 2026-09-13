@@ -3032,10 +3032,10 @@ export default function EinstellungenView() {
         )}
         {teile.map((t) => (
           <Fragment key={t}>
-            {/* Always an h2, so the hierarchy runs h1 -> h2 -> h3 without a gap;
-                with a single part it would only repeat the area heading, so it
-                is there for screen readers and search engines only. */}
-            <h2 className={"teil-titel" + (teile.length > 1 ? "" : " nur-vorlesen")} id={"teil-" + t}>
+            {/* Always an h2, so the hierarchy runs h1 -> h2 -> h3 without a gap.
+                Only for screen readers: every part opens with a heading of its
+                own, and a grey title above it said the same thing twice. */}
+            <h2 className="teil-titel nur-vorlesen" id={"teil-" + t}>
               {TEIL_TITEL[t]}
             </h2>
             {teilInhalt(t)}
