@@ -1276,31 +1276,28 @@ export default function Sidebar(props: Props) {
                 they all live behind the gear in the heading. What stands in the
                 list is there to read, not to configure. */}
             {user?.role === "admin" && (
-              <div className="sidebar-section">
-                {/* No collapse title any more: nothing sits under the
-                    administration that could be collapsed. The audit trail was
-                    the last row here and is now an area in the administration
-                    itself, so the heading only leads there. */}
-                <div className="sidebar-section-title ohne-klappe">
-                  <button
-                    className={
-                      "klapp-symbol klapp-symbol-btn" +
-                      (currentPath.startsWith("/einstellungen") ? " aktiv" : "")
-                    }
-                    title="Administration"
-                    aria-label="Administration"
-                    onClick={() => onNavigate("/einstellungen")}
-                  >
+              <div className="sidebar-section verwaltung-rahmen">
+                {/* A button of its own and not a section heading: nothing sits
+                    under the administration that could be collapsed, and as a
+                    small grey heading it looked like a title without content
+                    rather than a place one can go to. */}
+                <button
+                  type="button"
+                  className={
+                    "verwaltung-eintrag" + (currentPath.startsWith("/einstellungen") ? " aktiv" : "")
+                  }
+                  aria-current={currentPath.startsWith("/einstellungen") ? "page" : undefined}
+                  onClick={() => onNavigate("/einstellungen")}
+                >
+                  <span className="verwaltung-symbol" aria-hidden="true">
                     <Zahnrad />
-                  </button>
-                  <span
-                    className="klapp-name klapp-name-fuehrt"
-                    title="Administration"
-                    onClick={() => onNavigate("/einstellungen")}
-                  >
-                    Administration
                   </span>
-                </div>
+                  <span className="verwaltung-text">
+                    <span className="verwaltung-name">Administration</span>
+                    <span className="verwaltung-unter">Accounts, access, system</span>
+                  </span>
+                  <span className="verwaltung-pfeil" aria-hidden="true">›</span>
+                </button>
               </div>
             )}
           </>
