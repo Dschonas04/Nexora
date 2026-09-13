@@ -172,7 +172,7 @@ export default function Sidebar(props: Props) {
   // closes them — pressing it a second time performs the inverse of the first
   // action instead of repeating it.
   const alleMarken = () => {
-    const marken = ["favoriten", "geteilt", "schlagwoerter", "workspace", "verwaltung", "root"];
+    const marken = ["favoriten", "geteilt", "schlagwoerter", "verwaltung", "root"];
     for (const sp of spaces) marken.push("space:" + sp.id);
     return marken;
   };
@@ -1245,40 +1245,40 @@ export default function Sidebar(props: Props) {
               </div>
             )}
 
-            {/* What belongs to one's own work. The heading was once called
-                "Workspace", an English leftover that also said nothing about the
-                content: below it stood the inbox and the trash next to user
-                administration. Administration therefore now stands on its own,
-                see below. */}
-            <div className="sidebar-section">
-              <Klapptitel marke="workspace" zu={zu} klappen={klappen}>
-                Workspace
-              </Klapptitel>
-              {!zu.has("workspace") && (
-                <>
-                  <div
-                    className={"tree-row" + (currentPath === "/postfach" ? " active" : "")}
-                    onClick={() => onNavigate("/postfach")}
-                  >
-                    <span className="tree-label">Inbox</span>
-                    {/* The number stands there only when it says something. A zero
-                        beside the entry would be a prompt without occasion. */}
-                    {ungelesen > 0 && <span className="postfach-zaehler">{ungelesen}</span>}
-                  </div>
-                  <div
-                    className={"tree-row" + (currentPath === "/graph" ? " active" : "")}
-                    onClick={() => onNavigate("/graph")}
-                  >
-                    <span className="tree-label">Graph</span>
-                  </div>
-                  <div
-                    className={"tree-row" + (currentPath === "/trash" ? " active" : "")}
-                    onClick={() => onNavigate("/trash")}
-                  >
-                    <span className="tree-label">Trash</span>
-                  </div>
-                </>
-              )}
+            {/* One's own work: inbox, graph, trash. Laid out like the administration
+                below -- a line above, one row each with a small symbol, no
+                heading to collapse: three entries need no folding. */}
+            <div className="sidebar-section leiste-gruppe">
+              <button
+                type="button"
+                className={"tree-row leiste-eintrag" + (currentPath === "/postfach" ? " active" : "")}
+                aria-current={currentPath === "/postfach" ? "page" : undefined}
+                onClick={() => onNavigate("/postfach")}
+              >
+                <span className="leiste-symbol" aria-hidden="true"><Postfach /></span>
+                <span className="tree-label">Inbox</span>
+                {/* The number stands there only when it says something. A zero
+                    beside the entry would be a prompt without occasion. */}
+                {ungelesen > 0 && <span className="postfach-zaehler">{ungelesen}</span>}
+              </button>
+              <button
+                type="button"
+                className={"tree-row leiste-eintrag" + (currentPath === "/graph" ? " active" : "")}
+                aria-current={currentPath === "/graph" ? "page" : undefined}
+                onClick={() => onNavigate("/graph")}
+              >
+                <span className="leiste-symbol" aria-hidden="true"><Netz /></span>
+                <span className="tree-label">Graph</span>
+              </button>
+              <button
+                type="button"
+                className={"tree-row leiste-eintrag" + (currentPath === "/trash" ? " active" : "")}
+                aria-current={currentPath === "/trash" ? "page" : undefined}
+                onClick={() => onNavigate("/trash")}
+              >
+                <span className="leiste-symbol" aria-hidden="true"><Eimer /></span>
+                <span className="tree-label">Trash</span>
+              </button>
             </div>
 
             {/* Administration. Visible only to administrators, which merely
@@ -1290,7 +1290,7 @@ export default function Sidebar(props: Props) {
                 they all live behind the gear in the heading. What stands in the
                 list is there to read, not to configure. */}
             {user?.role === "admin" && (
-              <div className="sidebar-section verwaltung-rahmen">
+              <div className="sidebar-section leiste-gruppe">
                 {/* A button of its own and not a section heading: nothing sits
                     under the administration that could be collapsed, and as a
                     small grey heading it looked like a title without content
@@ -1298,12 +1298,12 @@ export default function Sidebar(props: Props) {
                 <button
                   type="button"
                   className={
-                    "tree-row verwaltung-eintrag" + (currentPath.startsWith("/einstellungen") ? " active" : "")
+                    "tree-row leiste-eintrag" + (currentPath.startsWith("/einstellungen") ? " active" : "")
                   }
                   aria-current={currentPath.startsWith("/einstellungen") ? "page" : undefined}
                   onClick={() => onNavigate("/einstellungen")}
                 >
-                  <span className="verwaltung-symbol" aria-hidden="true">
+                  <span className="leiste-symbol" aria-hidden="true">
                     <Zahnrad />
                   </span>
                   <span className="tree-label">Administration</span>
@@ -1424,6 +1424,34 @@ export default function Sidebar(props: Props) {
 // Hub and rim as circles, the teeth as eight short strokes pointing outwards. At
 // thirteen pixels a side that reads more clearly than a finely worked outline,
 // which only smears at this size.
+// Small symbols for the rows at the end of the sidebar. Strokes only, in the
+// text colour (see .leiste-symbol).
+function Postfach() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M2 9.5 3.8 3.5h8.4L14 9.5v3H2z" />
+      <path d="M2 9.5h3.5l1 1.5h3l1-1.5H14" />
+    </svg>
+  );
+}
+function Netz() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <circle cx="4" cy="4.5" r="1.8" />
+      <circle cx="12" cy="6" r="1.8" />
+      <circle cx="6.5" cy="12" r="1.8" />
+      <path d="M5.7 5 10.3 5.6M11.2 7.6 7.6 10.6M4.6 6.2 5.9 10.3" />
+    </svg>
+  );
+}
+function Eimer() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M2.5 4.5h11M6 4.5V3h4v1.5M4 4.5l.8 9h6.4l.8-9" />
+    </svg>
+  );
+}
+
 function Zahnrad() {
   return (
     <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
