@@ -122,13 +122,13 @@ export default function Workspace() {
     refreshSpaces();
   };
 
-  // The pages survive and become ungrouped, which the confirmation spells out
-  // so nobody expects a space to take its content with it.
+  // The pages go to the trash with the space, which the confirmation spells
+  // out: nothing is lost, but nothing stays in the tree either.
   const deleteSpace = async (id: string) => {
     if (
       !(await frage({
         titel: "Delete space",
-        text: "The space is deleted. Its pages remain and appear under \u201eWithout a space\u201c afterwards; permissions granted on the space expire.",
+        text: "The space is deleted and its pages go to the trash, subpages included. From there they can be restored and then appear under \u201eWithout a space\u201c; permissions granted on the space expire.",
         bestaetigen: "Delete space",
         gefaehrlich: true,
       }))

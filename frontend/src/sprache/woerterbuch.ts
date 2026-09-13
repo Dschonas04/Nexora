@@ -1043,7 +1043,7 @@ export const PAARE: [string, string][] = [
   ["Neue Ablage", "New space"],
   ["Eine Ablage bündelt Seiten zu einem Thema und trägt die Rechte für sie alle.", "A space groups pages around one subject and carries the permissions for all of them."],
   ["Umbenennen", "Rename"],
-  ["Die Ablage wird gelöscht. Ihre Seiten bleiben und stehen danach unter „Ohne Ablage“; an der Ablage vergebene Rechte verfallen.", "The space is deleted. Its pages remain and appear under „Without a space“ afterwards; permissions granted on the space expire."],
+  ["Die Ablage wird gelöscht, ihre Seiten kommen samt Unterseiten in den Papierkorb. Von dort lassen sie sich wiederherstellen und stehen dann unter „Ohne Ablage“; an der Ablage vergebene Rechte verfallen.", "The space is deleted and its pages go to the trash, subpages included. From there they can be restored and then appear under „Without a space“; permissions granted on the space expire."],
   ["Diese Instanz verlangt einen zweiten Faktor. Solange keiner steht, genügt zum Anmelden dein Passwort allein.", "This instance requires a second factor. As long as none is set up, your password alone is enough to sign in."],
   ["Jetzt einrichten", "Set it up now"],
   ["Noch nichts geöffnet.", "Nothing open yet."],
