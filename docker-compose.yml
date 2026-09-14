@@ -61,6 +61,14 @@ services:
       # Unlocks the paid extras. Leaving it empty means: Nexora runs with the
       # free scope, and locked calls answer with 402.
       NEXORA_LIZENZ: ${NEXORA_LIZENZ:-}
+      # Inbox messages by e-mail, see [Mail] in config.beispiel.conf. Empty
+      # values leave config.conf in charge.
+      NEXORA_SMTP_SERVER: ${NEXORA_SMTP_SERVER:-}
+      NEXORA_SMTP_ABSENDER: ${NEXORA_SMTP_ABSENDER:-}
+      NEXORA_SMTP_BENUTZER: ${NEXORA_SMTP_BENUTZER:-}
+      NEXORA_SMTP_PASSWORT: ${NEXORA_SMTP_PASSWORT:-}
+      NEXORA_SMTP_VERSCHLUESSELUNG: ${NEXORA_SMTP_VERSCHLUESSELUNG:-}
+      NEXORA_PUBLIC_URL: ${NEXORA_PUBLIC_URL:-}
       # Object store. Leaving it empty means: attachments stay on disk. The
       # endpoint has to be reachable from THIS container's point of view; if
       # MinIO runs in another compose project, that is the host's address with

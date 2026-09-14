@@ -81,7 +81,9 @@ func (s *Server) zustellen(ctx context.Context, empfaenger, art, pageID, komment
 		nullWennLeer(ausloeserID), ausloeserName, seitenTitel, text)
 	if err != nil {
 		log.Printf("Postfach (%s an %s): %v", art, empfaenger, err)
+		return
 	}
+	s.mailZuNachricht(empfaenger, art, pageID, ausloeserName, seitenTitel, text)
 }
 
 // ListPostfach returns an account's messages, newest first.

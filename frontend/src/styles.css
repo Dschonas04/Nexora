@@ -4462,3 +4462,12 @@ textarea::placeholder {
     font-size: 30px;
   }
 }
+
+/* A checkbox with its sentence, as one clickable row. */
+.schalter-zeile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 6px;
+  cursor: pointer;
+}

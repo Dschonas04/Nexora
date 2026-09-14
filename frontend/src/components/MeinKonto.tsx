@@ -15,7 +15,7 @@
 // else over too.
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Sitzung, ZweitfaktorStand, api } from "../api/client";
+import { Benachrichtigung, Sitzung, ZweitfaktorStand, api } from "../api/client";
 import { useAuth } from "../auth";
 import {
   AKZENTE,
@@ -38,12 +38,13 @@ import Sprachwahl from "../sprache/Sprachwahl";
 // sharp on high-resolution screens and in the profile.
 const KANTE = 256;
 
-type Teil = "profil" | "aussehen" | "sprache" | "passwort" | "zweitfaktor" | "geraete";
+type Teil = "profil" | "aussehen" | "sprache" | "benachrichtigung" | "passwort" | "zweitfaktor" | "geraete";
 
 const TEILE: { id: Teil; titel: string; unter: string }[] = [
   { id: "profil", titel: "Profile", unter: "Name and picture" },
   { id: "aussehen", titel: "Appearance", unter: "Base tone and accent" },
   { id: "sprache", titel: "Language", unter: "German or English" },
+  { id: "benachrichtigung", titel: "Notifications", unter: "Inbox by e-mail" },
   { id: "passwort", titel: "Password", unter: "Change it" },
   { id: "zweitfaktor", titel: "Second factor", unter: "App and recovery codes" },
   { id: "geraete", titel: "Devices", unter: "Where you are signed in" },
@@ -134,6 +135,7 @@ export default function MeinKonto({ onClose }: { onClose: () => void }) {
           {teil === "profil" && <Profil />}
           {teil === "aussehen" && <Aussehen />}
           {teil === "sprache" && <SpracheTeil />}
+          {teil === "benachrichtigung" && <BenachrichtigungTeil />}
           {teil === "passwort" && <Passwort />}
           {teil === "zweitfaktor" && <ZweitfaktorTeil />}
           {teil === "geraete" && <Geraete />}
@@ -155,6 +157,80 @@ function SpracheTeil() {
         Stored on your account and applies on every device. The editor's menus follow on the next page opened.
       </p>
       <Sprachwahl />
+    </>
+  );
+}
+
+/**
+ * Inbox messages by e-mail as well. Off until the account switches it on: mail
+ * nobody asked for is the fastest way into the spam folder. The test button is
+ * there because a wrong port or password otherwise only shows as the comment
+ * that never arrives.
+ */
+function BenachrichtigungTeil() {
+  const [stand, setStand] = useState<Benachrichtigung | null>(null);
+  const [fehler, setFehler] = useState("");
+  const [hinweis, setHinweis] = useState("");
+  const [sendet, setSendet] = useState(false);
+
+  useEffect(() => {
+    api
+      .benachrichtigung()
+      .then(setStand)
+      .catch((e) => setFehler(e instanceof Error ? e.message : "Not loaded."));
+  }, []);
+
+  const umschalten = (email: boolean) => {
+    setFehler("");
+    setHinweis("");
+    api
+      .benachrichtigungSpeichern(email)
+      .then(setStand)
+      .catch((e) => setFehler(e instanceof Error ? e.message : "Not saved."));
+  };
+
+  const testen = () => {
+    setFehler("");
+    setHinweis("");
+    setSendet(true);
+    api
+      .benachrichtigungTesten()
+      .then((r) => setHinweis(`Test mail sent to ${r.an}.`))
+      .catch((e) => setFehler(e instanceof Error ? e.message : "Not sent."))
+      .finally(() => setSendet(false));
+  };
+
+  return (
+    <>
+      <h3>Notifications</h3>
+      <p className="muted small">
+        What lands in your inbox – a comment on your page, a reply, a mention, a shared page – can also come by e-mail.
+      </p>
+      {stand && !stand.verfuegbar && (
+        <p className="muted small">
+          E-mail is not set up on this instance. An administrator enters an SMTP server in config.conf ([Mail]).
+        </p>
+      )}
+      {stand && (
+        <label className="schalter-zeile" htmlFor="benachrichtigung-email">
+          <input
+            id="benachrichtigung-email"
+            type="checkbox"
+            checked={stand.email}
+            disabled={!stand.verfuegbar}
+            onChange={(e) => umschalten(e.target.checked)}
+          />
+          <span>Send inbox messages by e-mail</span>
+        </label>
+      )}
+      {stand?.verfuegbar && <p className="muted small">{`Goes to ${stand.adresse}.`}</p>}
+      {stand?.verfuegbar && (
+        <button className="btn" disabled={sendet} onClick={testen}>
+          {sendet ? "Sending…" : "Send test mail"}
+        </button>
+      )}
+      {hinweis && <div className="hinweis-ok">{hinweis}</div>}
+      {fehler && <div className="fehler">{fehler}</div>}
     </>
   );
 }
