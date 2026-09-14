@@ -136,6 +136,17 @@ type Konfig struct {
 	OIDCFeldEmail   string
 	OIDCGruppeAdmin string
 	OIDCKnopfText   string
+
+	// Mail
+	//
+	// Optional. With smtp_server and smtp_absender set, every account can have
+	// its inbox messages sent by e-mail as well. SMTPVerschluesselung is
+	// starttls, tls or keine.
+	SMTPServer           string
+	SMTPBenutzer         string
+	SMTPPasswort         string
+	SMTPAbsender         string
+	SMTPVerschluesselung string
 }
 
 // Standard returns the built-in defaults. Every one of them has to produce a
@@ -179,6 +190,8 @@ func Standard() Konfig {
 		OIDCFeldName:  "name",
 		OIDCFeldEmail: "email",
 		OIDCKnopfText: "Mit SSO anmelden",
+
+		SMTPVerschluesselung: "starttls",
 	}
 }
 
@@ -329,6 +342,12 @@ func Laden(pfad string) Konfig {
 	text(&k.OIDCFeldEmail, "oidc_feld_email", "NEXORA_OIDC_FELD_EMAIL")
 	text(&k.OIDCGruppeAdmin, "oidc_gruppe_admin", "NEXORA_OIDC_GRUPPE_ADMIN")
 	text(&k.OIDCKnopfText, "oidc_knopf_text", "NEXORA_OIDC_KNOPF_TEXT")
+
+	text(&k.SMTPServer, "smtp_server", "NEXORA_SMTP_SERVER")
+	text(&k.SMTPBenutzer, "smtp_benutzer", "NEXORA_SMTP_BENUTZER")
+	text(&k.SMTPPasswort, "smtp_passwort", "NEXORA_SMTP_PASSWORT")
+	text(&k.SMTPAbsender, "smtp_absender", "NEXORA_SMTP_ABSENDER")
+	text(&k.SMTPVerschluesselung, "smtp_verschluesselung", "NEXORA_SMTP_VERSCHLUESSELUNG")
 
 	return k
 }
@@ -517,6 +536,15 @@ func (k Konfig) Warnungen() []string {
 	}
 	if k.LDAPAktiv && !k.LDAPTLSPruefen {
 		w = append(w, "ldap_tls_pruefen=nein, das Serverzertifikat wird nicht geprüft")
+	}
+	if k.SMTPServer != "" && k.SMTPAbsender == "" {
+		w = append(w, "smtp_server ohne smtp_absender, es werden keine Mails verschickt")
+	}
+	if k.SMTPServer != "" && strings.EqualFold(strings.TrimSpace(k.SMTPVerschluesselung), "keine") {
+		w = append(w, "SMTP ohne Verschlüsselung, Zugangsdaten und Mails gehen im Klartext über das Netz")
+	}
+	if k.SMTPServer != "" && k.OeffentlicheURL == "" {
+		w = append(w, "smtp_server ohne oeffentliche_url, Mails enthalten keinen Link zur Seite")
 	}
 	return w
 }

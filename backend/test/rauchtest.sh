@@ -236,6 +236,20 @@ hole -X DELETE "$BASIS/api/pages/$OBEN" >/dev/null
 hole -X DELETE "$BASIS/api/pages/$OBEN/purge" >/dev/null
 pruefe "endgültig weg" "0" "$(hole "$BASIS/api/pages/trash" | zaehle)"
 
+echo "== Postfach per E-Mail"
+# Without smtp_server the instance cannot send: the setting says so, and
+# switching it on is refused instead of silently promising mail.
+pruefe "ohne SMTP nicht verfügbar" "False" \
+       "$(hole "$BASIS/api/konto/benachrichtigung" | feld "['verfuegbar']")"
+pruefe "anfangs aus" "False" \
+       "$(hole "$BASIS/api/konto/benachrichtigung" | feld "['email']")"
+pruefe "einschalten ohne SMTP abgewiesen" "409" \
+       "$(code -X PUT "$BASIS/api/konto/benachrichtigung" -H 'Content-Type: application/json' -d '{"email":true}')"
+pruefe "Testmail ohne SMTP abgewiesen" "409" \
+       "$(code -X POST "$BASIS/api/konto/benachrichtigung/test")"
+pruefe "ausschalten geht immer" "False" \
+       "$(hole -X PUT "$BASIS/api/konto/benachrichtigung" -H 'Content-Type: application/json' -d '{"email":false}' | feld "['email']")"
+
 echo "== Ausgabe"
 pruefe "Markdown" "200" "$(code "$BASIS/api/pages/$SEITE/markdown")"
 

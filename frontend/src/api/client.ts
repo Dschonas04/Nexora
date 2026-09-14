@@ -827,6 +827,11 @@ export const api = {
   spracheSpeichern: (sprache: string) =>
     req<unknown>("/design/sprache", { method: "PUT", body: JSON.stringify({ sprache }) }),
   /** Base tone and accent of one's own account. Empty resets to the default. */
+  benachrichtigung: () => req<Benachrichtigung>("/konto/benachrichtigung"),
+  benachrichtigungSpeichern: (email: boolean) =>
+    req<Benachrichtigung>("/konto/benachrichtigung", { method: "PUT", body: JSON.stringify({ email }) }),
+  benachrichtigungTesten: () =>
+    req<{ ok: boolean; an: string }>("/konto/benachrichtigung/test", { method: "POST" }),
   aussehenSpeichern: (grundton: string, akzent: string) =>
     req<{ grundton: string; akzent: string }>("/design", {
       method: "PUT",
@@ -1227,3 +1232,6 @@ export const api = {
   },
   getPublicPage: (token: string) => req<PublicPage>(`/public/${token}`),
 };
+
+/** Inbox by e-mail: the account's choice and whether the instance can send. */
+export type Benachrichtigung = { email: boolean; verfuegbar: boolean; adresse: string };

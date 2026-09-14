@@ -17,6 +17,7 @@ import (
 	"nexora/internal/db"
 	"nexora/internal/handlers"
 	"nexora/internal/lizenz"
+	"nexora/internal/mail"
 	"nexora/internal/middleware"
 	"nexora/internal/puls"
 	"nexora/internal/vertrauen"
@@ -155,6 +156,22 @@ func main() {
 			Konf:            k,
 			OeffentlicheURL: k.OeffentlicheURL,
 		},
+	}
+
+	// E-mail for inbox messages. Without smtp_server there is none, and the
+	// setting in every account stays greyed out. Assigned only when there is a
+	// sender: a nil pointer in the interface would count as "set".
+	if versender, err := mail.Neu(mail.Einstellungen{
+		Server:           k.SMTPServer,
+		Benutzer:         k.SMTPBenutzer,
+		Passwort:         k.SMTPPasswort,
+		Absender:         k.SMTPAbsender,
+		Verschluesselung: k.SMTPVerschluesselung,
+	}); err != nil {
+		log.Printf("E-Mail: %v, es wird nichts verschickt", err)
+	} else if versender != nil {
+		h.Mail = versender
+		log.Printf("E-Mail: Versand über %s", k.SMTPServer)
 	}
 
 	// Pages from before the search index get their plain text filled in. Without
@@ -345,6 +362,10 @@ func main() {
 			// which are reserved for administrators.
 			r.Put("/design", h.AussehenSpeichern)
 			r.Put("/design/sprache", h.SpracheSpeichern)
+			// Inbox by e-mail, per account like the appearance.
+			r.Get("/konto/benachrichtigung", h.Benachrichtigung)
+			r.Put("/konto/benachrichtigung", h.BenachrichtigungSpeichern)
+			r.Post("/konto/benachrichtigung/test", h.BenachrichtigungTesten)
 
 			r.Get("/einstellungen", h.ListEinstellungen)
 			r.Put("/einstellungen", h.SetzeEinstellung)

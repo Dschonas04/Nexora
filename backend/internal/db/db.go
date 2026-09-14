@@ -519,6 +519,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS design_akzent   text NOT NULL DEFAULT
 -- The interface language, 'de' or 'en', on the account so it follows the person
 -- to every device. Empty: nothing chosen yet, the browser's language decides.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS sprache text NOT NULL DEFAULT '';
+
+-- Inbox messages by e-mail as well, switched on per account. Off by default:
+-- mail nobody asked for ends up as spam, and then the one that matters too.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_benachrichtigung boolean NOT NULL DEFAULT false;
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,
