@@ -2,6 +2,7 @@
 
 A minimal, self-hosted knowledge base: think Notion or Outline, but small and yours.
 
+**[Project page](https://dschonas04.github.io/Nexora/)** ·
 **[Try the live demo](https://nexora.jonasgroll.de)** — sign in as
 `gast@nexora.demo` with the password `GastNexora2026`. It is a real instance
 with example content and resets itself every night, so nothing you do there
@@ -39,6 +40,7 @@ Whoever is weighing Nexora against Notion, Outline, Docmost, Wiki.js or
 AppFlowy will find that in [comparison](docs/comparison.md), including what
 Nexora does not do.
 
+What changed between releases is in [CHANGELOG.md](CHANGELOG.md).
 Licensing is in [LICENSING.md](LICENSING.md); what Nexora ships from other
 people, and under which terms, is listed in
 [THIRD-PARTY.md](THIRD-PARTY.md), which also carries the commands to verify the
@@ -227,6 +229,9 @@ The images are `ghcr.io/dschonas04/nexora-{backend,frontend,pki}`, built for
 amd64 and arm64. `NEXORA_FASSUNG` in the `.env` picks the version: `latest` for
 the newest release, `1.0` to stay on a minor line, `1.0.0` to pin exactly,
 `edge` for the current state of `main`.
+
+Templates for the home-server platforms — CasaOS, Umbrel, Unraid with the
+Compose Manager — are in [`vorlagen/`](vorlagen/README.md).
 
 One file, nothing else — for Portainer, Coolify, Dokploy or a bare machine.
 [`docker-compose.stack.yml`](docker-compose.stack.yml) carries Nexora and its

@@ -1,0 +1,117 @@
+# Nexora fuer CasaOS.
+#
+# Derselbe Verbund wie docker-compose.stack.yml, dazu der x-casaos-Block, aus
+# dem der Laden Titel, Symbol und Bilder nimmt. Einspielen ueber
+# App Store -> Custom Install -> Import.
+#
+# VOR DEM ERSTEN START aendern: POSTGRES_PASSWORD (bei db und backend gleich!)
+# und JWT_SECRET. Letzteres unterschreibt die Sitzungen.
+name: nexora
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: nexora-db
+    environment:
+      POSTGRES_DB: nexora
+      POSTGRES_USER: nexora
+      POSTGRES_PASSWORD: nexora-bitte-aendern
+    volumes:
+      - /DATA/AppData/nexora/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nexora -d nexora']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  pki:
+    image: ghcr.io/dschonas04/nexora-pki:latest
+    container_name: nexora-pki
+    volumes:
+      - /DATA/AppData/nexora/pki:/pki
+    restart: 'no'
+
+  backend:
+    image: ghcr.io/dschonas04/nexora-backend:latest
+    container_name: nexora-backend
+    depends_on:
+      db:
+        condition: service_healthy
+      pki:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://nexora:nexora-bitte-aendern@db:5432/nexora?sslmode=disable
+      JWT_SECRET: bitte-aendern-openssl-rand-hex-32
+      PORT: '8443'
+      NEXORA_TLS_ZERTIFIKAT: /pki/backend/backend.crt
+      NEXORA_TLS_SCHLUESSEL: /pki/backend/backend.key
+      NEXORA_TLS_WURZEL: /pki/ca.crt
+      NEXORA_ANHANG_PFAD: /data/attachments
+    volumes:
+      - /DATA/AppData/nexora/anhaenge:/data/attachments
+      - /DATA/AppData/nexora/pki:/pki:ro
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/dschonas04/nexora-frontend:latest
+    container_name: nexora
+    depends_on:
+      pki:
+        condition: service_completed_successfully
+      backend:
+        condition: service_started
+    ports:
+      - '3000:80'
+    environment:
+      NEXORA_DIENST_SCHEMA: https
+      NEXORA_DIENST_PORT: '8443'
+    volumes:
+      - /DATA/AppData/nexora/tls:/etc/nginx/tls
+      - /DATA/AppData/nexora/pki:/pki:ro
+    restart: unless-stopped
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: frontend
+  author: Dschonas04
+  developer: Dschonas04
+  category: Productivity
+  title:
+    en_us: Nexora
+  tagline:
+    en_us: Self-hosted wiki with backlinks and a knowledge graph
+    de_de: Selbst gehostete Wissensdatenbank mit Rückverweisen und Wissensgraph
+  description:
+    en_us: >-
+      A small self-hosted knowledge base. Nested pages in a block editor, spaces
+      with per-user roles, wiki links that produce backlinks, a knowledge graph,
+      version history, comments, attachments on disk or in an S3 bucket, and
+      PostgreSQL full text search. Go, React and PostgreSQL. The first account
+      that registers becomes the administrator.
+    de_de: >-
+      Eine kleine selbst gehostete Wissensdatenbank: verschachtelte Seiten im
+      Blockeditor, Ablagen mit Rollen, Rückverweise, Wissensgraph, Versionen,
+      Kommentare, Anhänge auf Platte oder im S3-Eimer und Volltextsuche in
+      PostgreSQL. Das erste Konto, das sich registriert, wird Verwaltung.
+  tips:
+    before_install:
+      en_us: >-
+        Change POSTGRES_PASSWORD (in the db AND the backend service) and
+        JWT_SECRET before the first start. openssl rand -hex 32 makes a good
+        secret.
+      de_de: >-
+        Vor dem ersten Start POSTGRES_PASSWORD (bei db UND backend) und
+        JWT_SECRET ändern. Ein guter Wert: openssl rand -hex 32.
+  icon: https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/logo/nexora-zeichen-512.png
+  thumbnail: https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/bilder/seite.png
+  screenshot_link:
+    - https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/bilder/seite.png
+    - https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/bilder/graph.png
+    - https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/bilder/suche.png
+  project_url: https://github.com/Dschonas04/Nexora
+  index: /
+  port_map: '3000'
+  scheme: http
