@@ -78,6 +78,12 @@
   .zugang { color: var(--leise); font-size: 14px; margin: 14px 0 0; }
   .zugang code { background: var(--grund-2); border: 1px solid var(--linie); border-radius: 5px; padding: 1px 6px; }
   figure { margin: 44px 0 0; }
+  figure video {
+    width: 100%; height: auto; display: block;
+    border: 1px solid var(--linie); border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(20,24,28,.08), 0 12px 32px rgba(20,24,28,.10);
+    background: var(--grund-2);
+  }
   figure img {
     width: 100%; height: auto; display: block;
     border: 1px solid var(--linie); border-radius: 10px;
@@ -144,8 +150,11 @@
   </p>
 
   <figure>
-    <a href="https://nexora.jonasgroll.de"><img src="bilder/seite.png" alt="A page open in the Nexora editor, with the page tree on the left"></a>
-    <figcaption>A page in the editor: the tree on the left, tags, tables, and wiki links that feed the backlinks on the other side.</figcaption>
+    <video src="bilder/rundgang.mp4" poster="bilder/seite.png" autoplay muted loop playsinline
+           aria-label="Half a minute in Nexora: opening a space, following a wiki link, searching, the backlinks of a page, and the graph of the whole instance">
+      <a href="bilder/rundgang.gif">Watch the walkthrough as an animation</a>
+    </video>
+    <figcaption>Half a minute: open a space, follow a <code>[[link]]</code>, search, see which pages link here — and the graph over everything.</figcaption>
   </figure>
 </header>
 
@@ -161,7 +170,7 @@
     </figure>
     <figure>
       <img src="bilder/suche.png" alt="Search results in the sidebar with matching text">
-      <figcaption><b>Search that reads the text.</b> PostgreSQL full text search over titles and content — and, if you switch it on, inside the attached files.</figcaption>
+      <figcaption><b>Search that reads the text.</b> PostgreSQL full text search over titles and content — and, if you switch it on, inside the attached files. Every page also lists who links to it.</figcaption>
     </figure>
   </div>
 </section>
