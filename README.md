@@ -228,6 +228,16 @@ amd64 and arm64. `NEXORA_FASSUNG` in the `.env` picks the version: `latest` for
 the newest release, `1.0` to stay on a minor line, `1.0.0` to pin exactly,
 `edge` for the current state of `main`.
 
+One file, nothing else — for Portainer, Coolify, Dokploy or a bare machine.
+[`docker-compose.stack.yml`](docker-compose.stack.yml) carries Nexora and its
+database together, needs no `.env`, and is meant to be pasted into a panel:
+
+```bash
+curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker-compose.stack.yml
+# change POSTGRES_PASSWORD and JWT_SECRET in it, then
+docker compose -f docker-compose.stack.yml up -d
+```
+
 Building from source instead — for development, or to run a patched version:
 
 ```bash

@@ -37,6 +37,14 @@ jobs:
       - name: Quellen holen
         uses: actions/checkout@v4
 
+      # Die Registrierung nimmt nur Kleinbuchstaben, der Kontoname hat aber
+      # grosse: Dschonas04. Deshalb einmal umschreiben, statt ihn dreimal fest
+      # einzutippen.
+      - name: Eigner klein schreiben
+        env:
+          EIGNER_ROH: ${{ github.repository_owner }}
+        run: echo "EIGNER=${EIGNER_ROH,,}" >> "$GITHUB_ENV"
+
       # Zwei Architekturen: amd64 fuer die Server, arm64 fuer die Raspberry Pis
       # und die Macs. Ohne QEMU baut der Laeufer nur seine eigene.
       - name: QEMU einrichten
@@ -56,7 +64,7 @@ jobs:
         id: marken
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/nexora-${{ matrix.dienst }}
+          images: ghcr.io/${{ env.EIGNER }}/nexora-${{ matrix.dienst }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -73,5 +81,5 @@ jobs:
           labels: ${{ steps.marken.outputs.labels }}
           # Der Zwischenspeicher liegt in derselben Registrierung: ein Release
           # baut sonst jedes Mal die ganze Abhaengigkeitskette neu.
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/nexora-${{ matrix.dienst }}:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/nexora-${{ matrix.dienst }}:buildcache,mode=max
+          cache-from: type=registry,ref=ghcr.io/${{ env.EIGNER }}/nexora-${{ matrix.dienst }}:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ env.EIGNER }}/nexora-${{ matrix.dienst }}:buildcache,mode=max
