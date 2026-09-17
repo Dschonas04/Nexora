@@ -8,15 +8,15 @@ A minimal, self-hosted knowledge base: think Notion or Outline, but small and yo
 with example content and resets itself every night, so nothing you do there
 sticks or breaks anything.
 
-[![A page in the editor](docs/bilder/seite.png)](https://nexora.jonasgroll.de)
+![Nexora in half a minute: opening a space, following a wiki link, searching, the backlinks of a page and the graph of the whole instance](docs/bilder/rundgang.gif)
 
-*A page in the editor: nested pages in the sidebar, tags, tables, `[[wiki links]]`
-that produce backlinks on the other side.*
+*Half a minute: open a space, follow a `[[link]]`, search, see which pages link
+here — and the graph over everything.*
 
-| Knowledge graph | Full text search |
-| --- | --- |
-| [![Knowledge graph](docs/bilder/graph.png)](https://nexora.jonasgroll.de) | [![Search](docs/bilder/suche.png)](https://nexora.jonasgroll.de) |
-| Every page and every link between them, coloured by space. | PostgreSQL full text search over titles, content and, optionally, attachments. |
+| A page | Backlinks and the local graph | The whole instance |
+| --- | --- | --- |
+| [![A page in the editor](docs/bilder/seite.png)](https://nexora.jonasgroll.de) | [![Search results, backlinks and the local graph of a page](docs/bilder/suche.png)](https://nexora.jonasgroll.de) | [![The knowledge graph](docs/bilder/graph.png)](https://nexora.jonasgroll.de) |
+| Nested pages, tags, tables, Markdown shortcuts. | Every page says who points at it, with the neighbourhood drawn underneath. | Every page and every link, coloured by space. |
 
 Nested pages in a block editor, spaces, per-user sharing with roles, version
 history, attachments, comments, a trash can, backlinks, a knowledge graph and a
