@@ -1,0 +1,34 @@
+name: Something is broken
+description: A defect in Nexora
+labels: [fehler]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problems do not belong here — see [SECURITY.md](../SECURITY.md).
+  - type: textarea
+    id: was
+    attributes:
+      label: What happens
+      description: What you did, what you expected, what came out instead.
+    validations:
+      required: true
+  - type: input
+    id: fassung
+    attributes:
+      label: Version
+      description: The tag or image tag you run, e.g. 1.0.0 or edge. The maintenance page names it.
+    validations:
+      required: true
+  - type: textarea
+    id: umgebung
+    attributes:
+      label: Environment
+      description: How it runs (compose files, own database or the bundled one, behind a proxy?), browser, and `docker compose logs backend` if the log says something.
+  - type: checkboxes
+    id: demo
+    attributes:
+      label: Does it happen on the demo as well?
+      options:
+        - label: I checked on https://nexora.jonasgroll.de and it happens there too
+        - label: The demo behaves correctly, so it is my instance

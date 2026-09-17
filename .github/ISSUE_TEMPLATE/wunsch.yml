@@ -1,0 +1,21 @@
+name: A wish
+description: Something Nexora should be able to do
+labels: [wunsch]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and where does Nexora get in the way? Describe the situation, not the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idee
+    attributes:
+      label: How it could work
+      description: Optional. If you already have a shape in mind, put it here.
+  - type: textarea
+    id: andere
+    attributes:
+      label: Who does it already
+      description: Optional. A product that solves this, and how it feels there.

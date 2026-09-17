@@ -17,6 +17,12 @@ use and why it is the one in use.
 Read it in order the first time. After that, chapter 5 (building blocks) and
 chapter 8 (cross-cutting concepts) are the two you come back to.
 
+## For whoever is still deciding
+
+**[Comparison](comparison.md)** — Nexora next to Notion, Outline, Docmost,
+Wiki.js, BookStack and AppFlowy, with the cases where one of the others is the
+better answer.
+
 ## For whoever has to run it
 
 | Document | Answers |
