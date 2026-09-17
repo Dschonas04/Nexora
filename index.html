@@ -100,7 +100,8 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   }
   pre .kom { color: var(--leise); }
-  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .tabelle-rahmen { overflow-x: auto; }
+  table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 15px; }
   th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--linie); vertical-align: top; }
   th { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--leise); font-weight: 600; }
   td.ja { color: var(--akzent); font-weight: 600; }
@@ -214,6 +215,7 @@ docker compose -f docker-compose.stack.yml up -d</code></pre>
 <section class="band">
   <h2>Next to the others</h2>
   <p class="leise">The short version. The <a href="https://github.com/Dschonas04/Nexora/blob/main/docs/comparison.md">long one</a> says where each of them wins.</p>
+  <div class="tabelle-rahmen">
   <table>
     <thead><tr><th>&nbsp;</th><th>Nexora</th><th>Notion</th><th>Outline</th><th>Docmost</th><th>Wiki.js</th></tr></thead>
     <tbody>
@@ -225,6 +227,7 @@ docker compose -f docker-compose.stack.yml up -d</code></pre>
       <tr><td>Extra services to operate</td><td class="ja">none</td><td>—</td><td>Redis</td><td>Redis</td><td>varies</td></tr>
     </tbody>
   </table>
+  </div>
 </section>
 
 <section class="band">
