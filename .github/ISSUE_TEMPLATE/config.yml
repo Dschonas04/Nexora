@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Try the demo
+    url: https://nexora.jonasgroll.de
+    about: A real instance with example content, reset every night. Guest access is in the README.
+  - name: Security
+    url: https://github.com/Dschonas04/Nexora/blob/main/SECURITY.md
+    about: Report a vulnerability privately, not as an issue.

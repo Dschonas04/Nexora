@@ -1,0 +1,28 @@
+# Fertige Abbilder statt selbst bauen.
+#
+# Dieselben Dienste wie in docker-compose.yml, nur werden sie gezogen statt
+# gebaut. Damit ist eine Installation ein Befehl und kein Bauwerkzeug, kein Go
+# und kein Node auf dem Rechner noetig:
+#
+#     docker compose -f docker-compose.yml -f docker-compose.db.yml \
+#                    -f docker-compose.abbild.yml up -d
+#
+# Einmal in die .env geschrieben, entfaellt die Liste bei jedem Aufruf:
+#
+#     COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.abbild.yml
+#
+# NEXORA_FASSUNG waehlt, was gezogen wird: "latest" ist das jeweils neueste
+# Release, "1.0" bleibt auf der Nebenreihe, "1.0.0" steht fest, und "edge" ist
+# der Stand von main -- gut zum Ausprobieren, nicht fuer den Betrieb.
+services:
+  pki:
+    image: ghcr.io/dschonas04/nexora-pki:${NEXORA_FASSUNG:-latest}
+    build: !reset null
+
+  backend:
+    image: ghcr.io/dschonas04/nexora-backend:${NEXORA_FASSUNG:-latest}
+    build: !reset null
+
+  frontend:
+    image: ghcr.io/dschonas04/nexora-frontend:${NEXORA_FASSUNG:-latest}
+    build: !reset null

@@ -2,6 +2,21 @@
 
 A minimal, self-hosted knowledge base: think Notion or Outline, but small and yours.
 
+**[Try the live demo](https://nexora.jonasgroll.de)** — sign in as
+`gast@nexora.demo` with the password `GastNexora2026`. It is a real instance
+with example content and resets itself every night, so nothing you do there
+sticks or breaks anything.
+
+[![A page in the editor](docs/bilder/seite.png)](https://nexora.jonasgroll.de)
+
+*A page in the editor: nested pages in the sidebar, tags, tables, `[[wiki links]]`
+that produce backlinks on the other side.*
+
+| Knowledge graph | Full text search |
+| --- | --- |
+| [![Knowledge graph](docs/bilder/graph.png)](https://nexora.jonasgroll.de) | [![Search](docs/bilder/suche.png)](https://nexora.jonasgroll.de) |
+| Every page and every link between them, coloured by space. | PostgreSQL full text search over titles, content and, optionally, attachments. |
+
 Nested pages in a block editor, spaces, per-user sharing with roles, version
 history, attachments, comments, a trash can, backlinks, a knowledge graph and a
 real full text search. **Go** backend, **React** frontend, **PostgreSQL**
@@ -20,6 +35,9 @@ reference documents for the [API](docs/api.md), the
 [configuration](docs/configuration.md), the [data model](docs/data-model.md),
 [operations](docs/operations.md) and [development](docs/development.md).
 [Capacity](#capacity) below carries measured throughput and latency figures.
+Whoever is weighing Nexora against Notion, Outline, Docmost, Wiki.js or
+AppFlowy will find that in [comparison](docs/comparison.md), including what
+Nexora does not do.
 
 Licensing is in [LICENSING.md](LICENSING.md); what Nexora ships from other
 people, and under which terms, is listed in
@@ -191,10 +209,30 @@ when the database approaches a gigabyte, not before.
 
 ## Quick Start
 
+Published images, nothing to build:
+
 ```bash
+git clone https://github.com/Dschonas04/Nexora.git && cd Nexora
 cp .env.example .env
 cp config.beispiel.conf config.conf
 # edit .env: set POSTGRES_PASSWORD and a long random JWT_SECRET
+echo 'COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.abbild.yml' >> .env
+docker compose up -d
+```
+
+Then open `http://localhost:3000`. The first account that registers becomes the
+administrator.
+
+The images are `ghcr.io/dschonas04/nexora-{backend,frontend,pki}`, built for
+amd64 and arm64. `NEXORA_FASSUNG` in the `.env` picks the version: `latest` for
+the newest release, `1.0` to stay on a minor line, `1.0.0` to pin exactly,
+`edge` for the current state of `main`.
+
+Building from source instead — for development, or to run a patched version:
+
+```bash
+cp .env.example .env
+cp config.beispiel.conf config.conf
 docker compose up -d --build
 ```
 
