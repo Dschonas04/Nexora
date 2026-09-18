@@ -225,8 +225,9 @@ docker compose up -d
 Then open `http://localhost:3000`. The first account that registers becomes the
 administrator.
 
-The images are `ghcr.io/dschonas04/nexora-{backend,frontend,pki}`, built for
-amd64 and arm64. `NEXORA_FASSUNG` in the `.env` picks the version: `latest` for
+The images are `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, with
+the same tags, `dschohnas/nexora-{backend,frontend,pki}` on Docker Hub — built
+for amd64 and arm64. `NEXORA_FASSUNG` in the `.env` picks the version: `latest` for
 the newest release, `1.0` to stay on a minor line, `1.0.0` to pin exactly,
 `edge` for the current state of `main`.
 

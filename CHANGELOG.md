@@ -9,6 +9,23 @@ something is repaired.
 Every release ships as images — `ghcr.io/dschonas04/nexora-backend`, `-frontend`
 and `-pki`, for amd64 and arm64.
 
+## [2.0.1] — 2026-09-18
+
+No change to Nexora itself — the images carry the same code as 2.0.0. What is
+new is where to get them and how to put them somewhere.
+
+### Added
+
+- **Docker Hub.** The images are now published to
+  `docker.io/dschohnas/nexora-backend`, `-frontend` and `-pki` as well as to
+  the GitHub registry, with the same tags.
+- **[Project page](https://dschonas04.github.io/Nexora/)** with a half-minute
+  walkthrough.
+- **Templates** for CasaOS and Umbrel, and the way in for Unraid through the
+  Compose Manager, in [`vorlagen/`](vorlagen/README.md).
+- A walkthrough GIF and English screenshots in the README; the demo carries two
+  English spaces next to the German ones.
+
 ## [2.0.0] — 2026-09-17
 
 First published release. Nexora ran in production before this, but installing
@@ -49,4 +66,5 @@ Markdown, PDF and Word export are free regardless, because the way out of a
 system must never sit behind one. On 2030-08-19 the whole thing becomes
 Apache 2.0.
 
+[2.0.1]: https://github.com/Dschonas04/Nexora/releases/tag/v2.0.1
 [2.0.0]: https://github.com/Dschonas04/Nexora/releases/tag/v2.0.0
