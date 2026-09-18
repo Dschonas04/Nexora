@@ -6,8 +6,10 @@ Notable changes per release, newest first, after
 an upgrade needs a hand, the minor when something is added, the patch when
 something is repaired.
 
-Every release ships as images — `ghcr.io/dschonas04/nexora-backend`, `-frontend`
-and `-pki`, for amd64 and arm64.
+Every release ships as images for amd64 and arm64, to two registries with the
+same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
+`dschohnas/nexora-{backend,frontend,pki}` on Docker Hub. See
+[Where the images are](README.md#where-the-images-are).
 
 ## [2.1.0] — 2026-09-18
 

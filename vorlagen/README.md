@@ -10,6 +10,11 @@ they follow the documented format, and the compose part underneath is the same
 of them does not take, an issue with the error is worth more than a polite
 silence.
 
+The templates pull from the GitHub Container Registry
+(`ghcr.io/dschonas04/nexora-*`). The same images with the same tags are on
+Docker Hub as `dschohnas/nexora-*`; replace the prefix to use those instead.
+Both are built for amd64 and arm64.
+
 Two values have to change before any of this runs anywhere real:
 `POSTGRES_PASSWORD` and `JWT_SECRET`. The second signs the sessions; left at
 the example, anybody who knows it can be anybody.

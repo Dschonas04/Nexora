@@ -15,6 +15,11 @@
 #
 #     openssl rand -hex 32
 #
+# Die Abbilder kommen aus der GitHub-Registrierung (ghcr.io/dschonas04). Wer
+# lieber Docker Hub nimmt, setzt NEXORA_REGISTRY=dschohnas -- dieselben
+# Abbilder, dieselben Marken, amd64 und arm64. NEXORA_FASSUNG legt die Fassung
+# fest (Standard: latest).
+#
 # Wer die Datenbank schon hat, nimmt diesen Verbund nicht, sondern die
 # Hauptdatei mit docker-compose.abbild.yml und setzt DATABASE_URL.
 #
@@ -40,13 +45,13 @@ services:
   # Laeuft einmal, legt eine kleine eigene Zertifizierungsstelle an und ist dann
   # fertig. Damit ist auch der Verkehr zwischen den Containern verschluesselt.
   pki:
-    image: ghcr.io/dschonas04/nexora-pki:${NEXORA_FASSUNG:-latest}
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-pki:${NEXORA_FASSUNG:-latest}
     volumes:
       - nexora_pki:/pki
     restart: 'no'
 
   backend:
-    image: ghcr.io/dschonas04/nexora-backend:${NEXORA_FASSUNG:-latest}
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-backend:${NEXORA_FASSUNG:-latest}
     depends_on:
       db:
         condition: service_healthy
@@ -66,7 +71,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: ghcr.io/dschonas04/nexora-frontend:${NEXORA_FASSUNG:-latest}
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-frontend:${NEXORA_FASSUNG:-latest}
     depends_on:
       pki:
         condition: service_completed_successfully
