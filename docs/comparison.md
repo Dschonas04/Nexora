@@ -22,14 +22,14 @@ considering.
 | Nested pages without a depth limit | yes | yes | yes | yes | folders | three levels, fixed | yes |
 | Knowledge graph | yes | no | no | no | no | no | no |
 | Backlinks | yes | yes | yes | yes | no | no | yes |
-| Version history | yes | paid plans | yes | yes | yes | yes | yes |
+| Version history | yes, without a key | paid plans | yes | yes | yes | yes | yes |
 | Comments | yes | yes | yes | yes | no | no | no |
 | Attachments in an S3 bucket | yes | — | yes | yes | yes | yes | — |
 | Import from Notion, Obsidian, Confluence | yes | — | markdown | markdown, Confluence | several formats | markdown, HTML | markdown |
-| Export as PDF and Word | yes | yes | PDF | PDF | PDF | PDF | markdown |
-| Public share links | yes | yes | yes | yes | yes | yes | yes |
+| Export as PDF and Word | Pro tier | yes | PDF | PDF | PDF | PDF | markdown |
+| Public share links | Pro tier | yes | yes | yes | yes | yes | yes |
 | Desktop and mobile apps | on a branch, not on main | yes | web, mobile web | web | web | web | yes, it is an app first |
-| Search | PostgreSQL full text, and inside attachments | yes | PostgreSQL full text | PostgreSQL full text | several engines | full text | local |
+| Search | PostgreSQL full text; inside attachments in the Pro tier | yes | PostgreSQL full text | PostgreSQL full text | several engines | full text | local |
 | Runs on one small machine | yes, two containers and a database | — | yes | yes, plus Redis | yes | yes | needs its cloud for sync |
 
 ## When Nexora is the better choice
@@ -45,10 +45,11 @@ considering.
 - **The structure grows sideways, not into folders.** Pages nest as deeply as
   you like, `[[links]]` produce backlinks on the other side without anybody
   maintaining them, and the graph shows what actually hangs together.
-- **Getting out matters as much as getting in.** Markdown, PDF and Word export
-  are free and always will be, and a whole space exports as one archive that
-  imports again as a space. That is a deliberate licence decision: the way in
-  and the way out must never sit behind a key.
+- **Getting out matters as much as getting in.** Markdown import and the
+  Markdown export of a page are free and always will be — a deliberate licence
+  decision: the way in and the way out must never sit behind a key. The
+  typeset exports (PDF, Word) and exporting a whole space as one archive are
+  part of the Pro tier.
 - **The wiki holds more than text.** Attachments live on disk or in any
   S3-compatible bucket, with a viewer for images, PDFs and text, and the search
   can look inside the attached files.
