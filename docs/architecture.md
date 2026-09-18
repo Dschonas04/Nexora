@@ -51,10 +51,10 @@ the right is the licence tier that unlocks it (chapter 8.5).
 | Writing | Nested pages, block editor, autosave, drag to reorder | free |
 | | Markdown and HTML import — single files or a whole ZIP | free |
 | | Markdown export of a page | free |
-| | Version history: snapshot before every change, browse, restore | advanced |
-| | Attachments per page, with a viewer for images, PDF, text | advanced |
-| | Comment threads, one reply level, settle a thread | advanced |
-| | Conflict detection on concurrent edits | pro |
+| | Version history: snapshot before every change, browse, restore | free |
+| | Attachments per page, with a viewer for images, PDF, text | free |
+| | Comment threads, one reply level, settle a thread | free |
+| | Conflict detection on concurrent edits | free |
 | | PDF and Word export of a page, export of a whole space | pro |
 | Organising | Spaces, tags, favourites, collapsible sidebar | free |
 | | Trash with an expiry sweep | free |
@@ -111,7 +111,8 @@ decisions in chapter 9 are exactly that collision being resolved.
 - **One maintainer.** Everything that cannot be operated by one person is out of
   scope: no cluster, no sharding, no separate worker fleet.
 - **Business Source License 1.1**, not an OSI licence. The core may be run
-  commercially; twelve extras need a key. The whole thing turns Apache 2.0 on
+  commercially, version history, attachments and comments included; eight
+  extras for larger teams need a key. The whole thing turns Apache 2.0 on
   2030-08-19.
 - **The repository is public**, which shapes CI: no `pull_request` trigger on
   the self-hosted runner, and no Docker socket on it (chapter 7.4).
@@ -854,7 +855,7 @@ graph TB
 
 | | |
 |---|---|
-| **Tiers** | `free` → `advanced` (versionen, anhaenge, kommentare) → `pro` (freigeben, konflikte, echtzeit, export, anhangsuche) → `business` (gruppen, pruefspur, sso, ldap). Each contains the smaller ones |
+| **Tiers** | `free`, shown as Standard (versionen, anhaenge, kommentare, konflikte — unlocked without any key) → `pro` (freigeben, echtzeit, export, anhangsuche) → `business` (gruppen, pruefspur, sso, ldap). Each contains the smaller ones. `advanced` still exists as a name so that old keys read as valid, and adds nothing since 2.1 |
 | **A key** | `payload.signature`, Ed25519. Carries holder, tier and/or individual features, issue date, expiry. Verified against a public key compiled into `pruefer.go` |
 | **Offline** | No licence server is contacted, so an air-gapped installation works. The cost: an issued key cannot be revoked, which is why keys carry an expiry of at most a year |
 | **Precedence** | A key imported through the admin pages wins over the one in the config file. Otherwise a licence imported in the browser would revert on the next restart |

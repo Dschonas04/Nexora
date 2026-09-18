@@ -17,31 +17,36 @@ The core may run in production, in companies too, commercially too, without
 anybody having to ask or pay:
 
 Editor, nested pages, spaces, tags, favourites, trash, full-text search over
-pages, backlinks, knowledge graph, accounts and roles.
+pages, backlinks, knowledge graph, accounts and roles — and, since 2.1, version
+history, attachments, comments and conflict detection. Together that is the
+**Standard** scope: what a wiki needs so that nobody loses text or has to keep
+files somewhere else.
 
 Reading, changing, building and testing is always permitted for the **entire**
 work, commercial evaluation included.
 
 ## What needs a key
 
-| Add-on | Name in the key | Without a key |
-|---|---|---|
-| Version history | `versionen` | snapshots keep being taken, viewing and restoring are locked |
-| Attachments | `anhaenge` | no upload area |
-| Sharing and public links | `freigeben` | pages stay with their owner |
-| Audit trail | `pruefspur` | recording continues, reading is locked |
-| Groups and space permissions | `gruppen` | per-page permissions as before |
-| SSO via OIDC | `sso` | sign-in with a password |
-| LDAP and Active Directory | `ldap` | sign-in with a password |
-| Full text in attachments | `anhangsuche` | search over pages, not over files |
-| Export as PDF and Word, space export | `export` | per-page export as Markdown |
-| Comments | `kommentare` | no comments |
-| Conflict detection | `konflikte` | the last write wins |
-| Editing together | `echtzeit` | one person writes, the others see it on reload |
+| Add-on | Tier | Name in the key | Without a key |
+|---|---|---|---|
+| Sharing and public links | Pro | `freigeben` | pages stay with their owner |
+| Editing together | Pro | `echtzeit` | one person writes, the others see it on reload |
+| Export as PDF and Word, space export | Pro | `export` | per-page export as Markdown |
+| Full text in attachments | Pro | `anhangsuche` | search over pages, not over files |
+| Groups and space permissions | Business | `gruppen` | per-page permissions as before |
+| Audit trail | Business | `pruefspur` | recording continues, reading is locked |
+| SSO via OIDC | Business | `sso` | sign-in with a password |
+| LDAP and Active Directory | Business | `ldap` | sign-in with a password |
 
-Two of them keep recording even without a licence: **version history** and the
-**audit trail**. Otherwise a gap would open up after enabling them, right over
-the unlicensed period — and an audit trail with a hole in it is not one.
+Version history, attachments, comments and conflict detection
+(`versionen`, `anhaenge`, `kommentare`, `konflikte`) needed a key up to 2.0 and
+are part of the Standard scope since 2.1. Keys that name them, or the old
+`advanced` tier, stay valid; they simply no longer unlock anything the
+installation would not have anyway.
+
+The **audit trail** keeps recording even without a licence. Otherwise a gap would
+open up after enabling it, right over the unlicensed period — and an audit trail
+with a hole in it is not one.
 
 The server rejects locked calls with `402 Payment Required`, and the interface
 hides the matching controls. Hiding them is courtesy; the rejection is the
@@ -59,7 +64,8 @@ rm -rf backend/premium
 cd backend && go build -tags nur_kern ./...
 ```
 
-Every add-on then answers `402`, everything else runs unchanged.
+Every Pro and Business add-on then answers `402`; the Standard scope, version
+history and attachments included, runs unchanged.
 
 ## A key cannot be revoked
 

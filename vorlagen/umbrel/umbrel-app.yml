@@ -3,7 +3,7 @@ id: nexora
 name: Nexora
 tagline: Self-hosted wiki with backlinks and a knowledge graph
 category: files
-version: "2.0.0"
+version: "2.1.0"
 port: 3000
 description: >-
   A small self-hosted knowledge base: think Notion or Outline, but small and
@@ -15,7 +15,8 @@ description: >-
   instance, version history, comments, attachments on local disk or in any
   S3-compatible bucket, a self-emptying trash, PostgreSQL full text search,
   public share links, and import from Obsidian, Notion and Confluence exports.
-  Markdown, PDF and Word export are free and stay free.
+  Version history, attachments, comments and conflict detection need no licence
+  key; Markdown import and export are free and stay free.
 
 
   A Go service, a React interface, PostgreSQL. What it does not do: real-time

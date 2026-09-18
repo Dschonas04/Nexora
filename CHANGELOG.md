@@ -9,6 +9,30 @@ something is repaired.
 Every release ships as images — `ghcr.io/dschonas04/nexora-backend`, `-frontend`
 and `-pki`, for amd64 and arm64.
 
+## [2.1.0] — 2026-09-18
+
+### Changed
+
+- **Standard needs no key, and holds more.** Version history, attachments,
+  comments and conflict detection run on every installation now, without a
+  licence key — what a wiki needs so that nobody loses text or keeps files
+  somewhere else. Keys are only for the two tiers above:
+  - **Pro** — sharing and public links, writing on a page together, PDF and Word
+    export and space export, search inside attachments.
+  - **Business** — groups and space permissions, audit trail, OIDC, LDAP.
+- The licence's Additional Use Grant says so: those four features moved from the
+  list of paid ones to the list of free ones. The `advanced` tier, which sold
+  exactly them, stays readable so that issued keys remain valid, and adds
+  nothing any more.
+- The interface asks the server what is unlocked rather than assuming that
+  "no valid licence" means "nothing unlocked", and names the scope "Standard".
+
+### Fixed
+
+- The documentation claimed in several places that PDF and Word export are
+  free. They are not and were not: Markdown export is free, the typeset
+  exports belong to Pro.
+
 ## [2.0.1] — 2026-09-18
 
 No change to Nexora itself — the images carry the same code as 2.0.0. What is
@@ -61,10 +85,11 @@ concurrent. Method and caveats are in the [README](README.md#capacity).
 ### Licence
 
 The core is BUSL 1.1 — run it in production, commercially, without paying
-anyone. Twelve extras (audit trail, groups, SSO, LDAP and more) need a key.
-Markdown, PDF and Word export are free regardless, because the way out of a
-system must never sit behind one. On 2030-08-19 the whole thing becomes
-Apache 2.0.
+anyone. Twelve extras (audit trail, groups, SSO, LDAP and more) needed a key at
+this release; see 2.1.0 for what became free since. Markdown import and export
+are free regardless, because the way out of a system must never sit behind a
+key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
+[2.1.0]: https://github.com/Dschonas04/Nexora/releases/tag/v2.1.0
 [2.0.1]: https://github.com/Dschonas04/Nexora/releases/tag/v2.0.1
 [2.0.0]: https://github.com/Dschonas04/Nexora/releases/tag/v2.0.0

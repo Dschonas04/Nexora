@@ -70,7 +70,7 @@ tier contains which feature is in [architecture chapter 8.5](architecture.md#85-
 | `GET` | `/pages/trash` | Deleted pages, each with how long it has left |
 | `POST` | `/pages` | `{title?, parentId?, spaceId?}` |
 | `GET` | `/pages/{id}` | The page including tags, favourite flag and the caller's permission |
-| `PUT` | `/pages/{id}` | `{title?, content?, icon?, parentId?, spaceId?, basis?}`. `basis` is the `updatedAt` the editor last saw — send it and a concurrent edit answers 409 instead of being overwritten (paid: `konflikte`; without the licence the field is ignored). Only the **owner** may change `parentId` / `spaceId`: re-parenting is a structural change to the owner's workspace |
+| `PUT` | `/pages/{id}` | `{title?, content?, icon?, parentId?, spaceId?, basis?}`. `basis` is the `updatedAt` the editor last saw — send it and a concurrent edit answers 409 instead of being overwritten (free since 2.1). Only the **owner** may change `parentId` / `spaceId`: re-parenting is a structural change to the owner's workspace |
 | `DELETE` | `/pages/{id}` | Move to the trash |
 | `POST` | `/pages/{id}/restore` | Back out of the trash |
 | `DELETE` | `/pages/{id}/purge` | Permanent. Cascades to versions, attachments, shares, links and **subpages** |
@@ -80,7 +80,7 @@ tier contains which feature is in [architecture chapter 8.5](architecture.md#85-
 | `POST` | `/pages/{id}/tags` | Attach a tag |
 | `DELETE` | `/pages/{id}/tags/{tagId}` | Detach it |
 
-### Versions · paid: `versionen`
+### Versions
 
 Snapshots are **written** on every installation regardless of licence — otherwise
 there would be a hole in the history right after unlocking. Only viewing and
@@ -92,7 +92,7 @@ restoring are gated.
 | `GET` | `/pages/{id}/versions/{versionId}` | One snapshot |
 | `POST` | `/pages/{id}/versions/{versionId}/restore` | Roll the page back |
 
-### Attachments · paid: `anhaenge`
+### Attachments
 
 | Method | Path | Notes |
 |---|---|---|
@@ -236,7 +236,7 @@ licensed.
 
 ---
 
-## Comments · paid: `kommentare`
+## Comments
 
 | Method | Path | Notes |
 |---|---|---|

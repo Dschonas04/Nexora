@@ -2123,7 +2123,7 @@ export default function EinstellungenView() {
                 </div>
                 <div>
                   <span className="lizenz-feldname">Stufe</span>
-                  <span className="lizenz-feldwert">{lizenzJetzt?.stufe || "Grundumfang"}</span>
+                  <span className="lizenz-feldwert">{lizenzJetzt?.stufe || "Standard"}</span>
                 </div>
                 <div>
                   <span className="lizenz-feldname">Laufzeit</span>
@@ -2149,8 +2149,8 @@ export default function EinstellungenView() {
               <div className="warnkasten">
                 <strong>{z.lizenz.grund || "Kein Schlüssel hinterlegt."}</strong>
                 <div className="muted small">
-                  Nexora läuft im freien Umfang. Aufrufe für gesperrte Funktionen antworten
-                  mit 402.
+                  Nexora läuft im Standard-Umfang, mit Versionen, Anhängen, Kommentaren
+                  und Konflikterkennung. Pro- und Business-Funktionen antworten mit 402.
                 </div>
               </div>
             )}

@@ -73,3 +73,24 @@ func TestUnbekannteStufeSchaltetNichtsFrei(t *testing.T) {
 		t.Error("gold gilt als bekannte Stufe")
 	}
 }
+
+// The free tier is what every installation gets without a key. It is pinned
+// here on purpose: moving something out of it takes a feature away from people
+// who already use it, and that must not happen as a side effect of a tidy-up.
+func TestFreierUmfang(t *testing.T) {
+	soll := map[Funktion]bool{Versionen: true, Anhaenge: true, Kommentare: true, Konflikte: true}
+	ist := FunktionenDerStufe(StufeFrei)
+	if len(ist) != len(soll) {
+		t.Fatalf("freier Umfang hat %d Funktionen, erwartet %d: %v", len(ist), len(soll), ist)
+	}
+	for _, f := range ist {
+		if !soll[f] || !OhneSchluessel(f) {
+			t.Errorf("%q gehört nicht in den freien Umfang", f)
+		}
+	}
+	for _, f := range []Funktion{Freigeben, Echtzeit, Export, Anhangsuche, Gruppen, Pruefspur, SSO, LDAP} {
+		if OhneSchluessel(f) {
+			t.Errorf("%q wäre ohne Schlüssel frei", f)
+		}
+	}
+}

@@ -25,8 +25,10 @@ storage.
 
 Licensed under the [Business Source License 1.1](LICENSING.md). The source is
 open and the core may be run in production, commercially, without paying
-anyone. Twelve extras — audit trail, groups, SSO, LDAP and more — need a
-license key. On 2030-08-19 the whole thing becomes Apache 2.0.
+anyone — version history, attachments, comments and conflict detection
+included. Eight extras for larger teams — sharing and public links, real-time
+editing, PDF and Word export, search inside attachments, groups, audit trail,
+SSO and LDAP — need a license key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
 ## Documentation
 
@@ -311,14 +313,17 @@ account, which becomes the workspace admin.
 
 ## Licensing tiers
 
-Four tiers, each containing the smaller ones:
+Three tiers, each containing the smaller ones. Standard needs no key at all:
 
-| Tier | adds |
-|---|---|
-| `free` | pages, search, trash, Markdown import and export |
-| `advanced` | version history, attachments, comments |
-| `pro` | sharing and public links, writing on a page together, conflict detection, PDF/Word export, search inside attachments |
-| `business` | groups, audit trail, OIDC, LDAP |
+| Tier | Name in the key | adds |
+|---|---|---|
+| **Standard** | `free` | pages, search, trash, backlinks and graph, Markdown import and export, **version history, attachments, comments, conflict detection** |
+| **Pro** | `pro` | sharing and public links, writing on a page together, PDF/Word export, search inside attachments |
+| **Business** | `business` | groups, audit trail, OIDC, LDAP |
+
+Up to 2.0 version history, attachments and comments were a paid `advanced` tier
+and conflict detection sat in `pro`. Keys issued for `advanced` stay valid; they
+no longer add anything the Standard scope does not already have.
 
 Keys are Ed25519-signed and verified offline, which is why they carry an expiry
 of at most a year: an issued key cannot be revoked, so the date is the only
@@ -634,7 +639,7 @@ GET    /search?q=                         search titles and content
 GET    /healthz                           liveness probe
 ```
 
-### Comments  ·  paid: `kommentare`
+### Comments
 
 ```
 GET    /pages/{id}/kommentare             the whole thread, oldest first
