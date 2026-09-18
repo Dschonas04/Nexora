@@ -82,9 +82,9 @@ tier contains which feature is in [architecture chapter 8.5](architecture.md#85-
 
 ### Versions
 
-Snapshots are **written** on every installation regardless of licence — otherwise
-there would be a hole in the history right after unlocking. Only viewing and
-restoring are gated.
+Snapshots are written on every installation, and since 2.1 viewing and
+restoring them needs no licence either — version history is part of the
+Standard scope.
 
 | Method | Path | Notes |
 |---|---|---|

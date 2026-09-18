@@ -368,11 +368,17 @@ d = json.load(sys.stdin)
 alle = set(d["alle_extras"])
 business = next(s for s in d["stufen"] if s["name"] == "business")
 print(set(business["funktionen"]) == alle)')"
-pruefe "frei enthält nichts" "0" \
+# Since 2.1 the free tier -- shown as Standard -- carries four features that
+# run without any key.
+pruefe "Standard enthält Versionen, Anhänge, Kommentare, Konflikte" "anhaenge,kommentare,konflikte,versionen" \
        "$(hole "$BASIS/api/lizenz" | python3 -c '
 import json,sys
 d = json.load(sys.stdin)
-print(len(next(s for s in d["stufen"] if s["name"] == "free")["funktionen"]))')"
+print(",".join(sorted(next(s for s in d["stufen"] if s["name"] == "free")["funktionen"])))')"
+pruefe "ohne Schlüssel sind genau diese vier frei" "anhaenge,kommentare,konflikte,versionen" \
+       "$(hole "$BASIS/api/lizenz" | python3 -c '
+import json,sys
+print(",".join(sorted(json.load(sys.stdin)["freigeschaltet"])))')"
 pruefe "leerer Schlüssel nimmt die Lizenz zurück" "200" \
        "$(code -X PUT "$BASIS/api/system/lizenz" -H 'Content-Type: application/json' -d '{"schluessel":""}')"
 
@@ -818,25 +824,32 @@ pruefe "ohne Anmeldung verschlossen" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/system/grenzprobe" \
           -H 'Content-Type: application/octet-stream' --data-binary '')"
 
-echo "== Was ohne Lizenz zu bleibt"
-# Attachments, shares, comments and the export of a whole space are paid
-# add-ons. Without a licence none of that can be run through here; what is
-# checked is therefore that the routes are closed and do not answer with an
-# error that looks like a defect.
-pruefe "Anhänge sind zu" "402" \
+echo "== Was ohne Lizenz offen ist"
+# The Standard scope: version history, attachments and comments answer without
+# a key since 2.1.
+pruefe "Anhänge sind offen" "200" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" "$BASIS/api/pages/$BREIT/attachments")"
+pruefe "Versionen sind offen" "200" "$(code "$BASIS/api/pages/$BREIT/versions")"
+pruefe "Kommentare sind offen" "200" "$(code "$BASIS/api/pages/$BREIT/kommentare")"
+pruefe "die @-Liste ist offen" "200" "$(code "$BASIS/api/pages/$BREIT/erwaehnbare")"
+# The gate lets the call through now; the attachment "egal" does not exist, so
+# the handler itself answers 404 with its own JSON body. A missing route would
+# answer 404 too, but as plain text -- the body tells the two apart.
+pruefe "das Ersetzen einer markierten PDF erreicht den Handler" "json" \
+       "$(curl -s -X PUT -b "$KEKSE" -H 'Content-Type: application/pdf' --data-binary '%PDF-1.4' \
+          "$BASIS/api/pages/$BREIT/attachments/egal/pdf" | python3 -c '
+import json,sys
+try: json.load(sys.stdin); print("json")
+except Exception: print("text")')"
+
+echo "== Was ohne Lizenz zu bleibt"
+# Pro and Business add-ons. Without a licence none of that can be run through
+# here; what is checked is that the routes are closed and do not answer with an
+# error that looks like a defect.
 pruefe "Freigabe ist zu" "402" "$(code -X POST "$BASIS/api/pages/$BREIT/share")"
-pruefe "die @-Liste ist zu" "402" "$(code "$BASIS/api/pages/$BREIT/erwaehnbare")"
 pruefe "die Ausgabe einer Ablage ist zu" "402" "$(code "$BASIS/api/spaces/$ABL_ID/export")"
 pruefe "der öffentliche Weg zu einer Datei ist zu" "402" \
        "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/public/egal/dateien/egal")"
-# 402 and not 404: the route for replacing a marked-up PDF is registered, it is
-# merely closed. A 404 would mean the route is missing -- and nobody would find
-# that out before a licence is there.
-pruefe "das Ersetzen einer markierten PDF ist zu" "402" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -X PUT -b "$KEKSE" \
-          -H 'Content-Type: application/pdf' --data-binary '%PDF-1.4' \
-          "$BASIS/api/pages/$BREIT/attachments/egal/pdf")"
 
 echo "== Eigenes Profil"
 SELBST_ID=$(hole "$BASIS/api/auth/me" | feld "['id']")
