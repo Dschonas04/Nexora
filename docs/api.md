@@ -106,7 +106,7 @@ Standard scope.
 | Method | Path | Notes |
 |---|---|---|
 | `GET` | `/pages/{id}/attachments/{attId}/word` | A `.docx` as editor blocks. Whoever may read the page may read the file |
-| `PUT` | `/pages/{id}/attachments/{attId}/word` | Write the blocks back as `.docx`. Needs write access **and** the `anhaenge` licence. Text, headings, lists and tables survive; headers, styles, comments and images do not |
+| `PUT` | `/pages/{id}/attachments/{attId}/word` | Write the blocks back as `.docx`. Needs write access; no licence since 2.1. Text, headings, lists and tables survive; headers, styles, comments and images do not |
 
 ### PDF attachments
 
