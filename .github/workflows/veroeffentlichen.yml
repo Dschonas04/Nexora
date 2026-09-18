@@ -5,6 +5,10 @@
 # Docker socket on purpose (see pruefen.yml). The images go to the GitHub
 # registry of this repository, which needs no account of its own.
 #
+# Docker Hub kommt dazu, sobald die beiden Secrets DOCKERHUB_USERNAME und
+# DOCKERHUB_TOKEN gesetzt sind; ohne sie laeuft alles wie bisher, nur nach
+# ghcr.io. So bricht der Lauf nicht, solange das Konto noch fehlt.
+#
 # A tag v1.2.3 publishes 1.2.3, 1.2 and latest. The manual run publishes
 # whatever main currently is as "edge" -- a moving image nobody has to install,
 # but which can be tried without waiting for a release.
@@ -28,6 +32,9 @@ jobs:
     name: ${{ matrix.dienst }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
     strategy:
       fail-fast: false
       matrix:
@@ -60,11 +67,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: An Docker Hub anmelden
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      # Die Liste der Ziele: ghcr immer, Docker Hub nur mit Zugangsdaten.
+      - name: Ziele bestimmen
+        id: ziele
+        run: |
+          {
+            echo "liste<<ENDE"
+            echo "ghcr.io/${EIGNER}/nexora-${DIENST}"
+            if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+              echo "docker.io/${DOCKERHUB_USERNAME,,}/nexora-${DIENST}"
+            fi
+            echo "ENDE"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          DIENST: ${{ matrix.dienst }}
+
       - name: Namen und Marken bestimmen
         id: marken
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ env.EIGNER }}/nexora-${{ matrix.dienst }}
+          images: ${{ steps.ziele.outputs.liste }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
