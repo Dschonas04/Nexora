@@ -2,6 +2,11 @@
 
 A minimal, self-hosted knowledge base: think Notion or Outline, but small and yours.
 
+[![Release](https://img.shields.io/github/v/release/Dschonas04/Nexora?style=flat-square)](https://github.com/Dschonas04/Nexora/releases)
+[![Docker Hub](https://img.shields.io/docker/pulls/dschohnas/nexora-backend?style=flat-square&logo=docker&logoColor=white&label=Docker%20Hub%20pulls)](https://hub.docker.com/r/dschohnas/nexora-backend)
+[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-dschonas04%2Fnexora--*-2496ED?style=flat-square&logo=github)](https://github.com/Dschonas04?tab=packages&repo_name=Nexora)
+[![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-555?style=flat-square)](#where-the-images-are)
+
 **[Project page](https://dschonas04.github.io/Nexora/)** ·
 **[Try the live demo](https://nexora.jonasgroll.de)** — sign in as
 `gast@nexora.demo` with the password `GastNexora2026`. It is a real instance
@@ -227,11 +232,33 @@ docker compose up -d
 Then open `http://localhost:3000`. The first account that registers becomes the
 administrator.
 
-The images are `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, with
-the same tags, `dschohnas/nexora-{backend,frontend,pki}` on Docker Hub — built
-for amd64 and arm64. `NEXORA_FASSUNG` in the `.env` picks the version: `latest` for
-the newest release, `1.0` to stay on a minor line, `1.0.0` to pin exactly,
-`edge` for the current state of `main`.
+### Where the images are
+
+Every release is published to **two registries**, with identical tags and
+identical content. Pull from whichever you prefer — nothing else differs.
+
+| Registry | Images | Page |
+|---|---|---|
+| **GitHub Container Registry** (default) | `ghcr.io/dschonas04/nexora-backend`<br>`ghcr.io/dschonas04/nexora-frontend`<br>`ghcr.io/dschonas04/nexora-pki` | [packages](https://github.com/Dschonas04?tab=packages&repo_name=Nexora) |
+| **Docker Hub** | `dschohnas/nexora-backend`<br>`dschohnas/nexora-frontend`<br>`dschohnas/nexora-pki` | [hub.docker.com/u/dschohnas](https://hub.docker.com/u/dschohnas) |
+
+| | |
+|---|---|
+| **Architectures** | `linux/amd64` (x86-64 PCs and servers) and `linux/arm64` (Raspberry Pi 4/5 on a 64-bit system, Apple Silicon, ARM servers). Docker picks the right one by itself |
+| **Tags** | `latest` — newest release · `2.1` — stays on a minor line · `2.1.0` — pinned exactly · `edge` — current state of `main`, for trying, not for running |
+| **Built by** | [`.github/workflows/veroeffentlichen.yml`](.github/workflows/veroeffentlichen.yml) on GitHub's runners, on every tag `v*` |
+| **Pull without an account** | yes, on both |
+
+Two settings in the `.env` choose what is pulled:
+
+```bash
+NEXORA_FASSUNG=2.1.0            # which version (default: latest)
+NEXORA_REGISTRY=dschohnas       # Docker Hub instead of the default ghcr.io/dschonas04
+```
+
+The three images belong together — `nexora-pki` issues the internal
+certificates, `nexora-backend` is the Go service, `nexora-frontend` the web
+interface. None of them is meant to run alone.
 
 Templates for the home-server platforms — CasaOS, Umbrel, Unraid with the
 Compose Manager — are in [`vorlagen/`](vorlagen/README.md).
