@@ -54,9 +54,10 @@ people, and under which terms, is listed in
 inventory yourself.
 
 Packaging Nexora as a desktop or mobile application for Windows, macOS, Linux,
-Android and iOS lives on the [`packaging`](../../tree/packaging) branch,
-not on `main`: those wrappers are a window onto a running instance, they build
-on a different schedule, and none of it belongs in the server image.
+Android and iOS lives in [`packaging/`](packaging/README.md). Those wrappers are
+a window onto a running instance rather than a second Nexora, they build on
+their own schedule, and nothing of them ends up in the server image: the
+Dockerfiles only ever see `backend/`, `frontend/` and `pki/`.
 
 ## Stack
 

@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexora: self-hosted wiki with backlinks and a knowledge graph</title>
+<meta name="description" content="A small self-hosted knowledge base and Notion alternative: nested pages in a block editor, backlinks, a knowledge graph, versions, attachments and PostgreSQL full text search. Go, React and PostgreSQL, in two containers plus a database.">
+<link rel="canonical" href="https://dschonas04.github.io/Nexora/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Nexora: self-hosted wiki with backlinks and a knowledge graph">
+<meta property="og:description" content="Nested pages, backlinks, a knowledge graph and full text search. Go, React, PostgreSQL. Live demo, no signup.">
+<meta property="og:url" content="https://dschonas04.github.io/Nexora/">
+<meta property="og:image" content="https://dschonas04.github.io/Nexora/bilder/seite.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="zeichen.svg" type="image/svg+xml">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Nexora",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Linux, Docker",
+  "description": "Self-hosted knowledge base with nested pages, backlinks, a knowledge graph and PostgreSQL full text search.",
+  "url": "https://dschonas04.github.io/Nexora/",
+  "downloadUrl": "https://github.com/Dschonas04/Nexora",
+  "softwareVersion": "2.0.0",
+  "license": "https://github.com/Dschonas04/Nexora/blob/main/LICENSING.md",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"}
+}
+</script>
+<style>
+  :root {
+    --grund: #ffffff;
+    --grund-2: #f7f5f1;
+    --schrift: #23282c;
+    --leise: #6f7a83;
+    --linie: #dcd7cc;
+    --akzent: #c2410c;
+    --akzent-sanft: #fdece3;
+    --breite: 1080px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --grund: #16181a;
+      --grund-2: #1e2124;
+      --schrift: #e8e6e1;
+      --leise: #9aa3aa;
+      --linie: #2e3338;
+      --akzent: #f97316;
+      --akzent-sanft: #2a1b12;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font: 16px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--schrift);
+    background: var(--grund);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--akzent); }
+  .band { max-width: var(--breite); margin: 0 auto; padding: 0 20px; }
+  header.kopf { padding: 64px 0 40px; }
+  .marke { display: flex; align-items: center; gap: 12px; font-weight: 650; font-size: 20px; letter-spacing: .2px; }
+  .marke img { width: 32px; height: 32px; }
+  h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.12; letter-spacing: -.02em; margin: 28px 0 14px; max-width: 24ch; }
+  .unter { font-size: clamp(17px, 2.2vw, 20px); color: var(--leise); max-width: 62ch; margin: 0 0 28px; }
+  .knoepfe { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .knopf {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 18px; border-radius: 8px; text-decoration: none;
+    font-weight: 550; border: 1px solid var(--linie); color: var(--schrift);
+    background: var(--grund-2);
+  }
+  .knopf.stark { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+  .knopf:hover { filter: brightness(.96); }
+  .zugang { color: var(--leise); font-size: 14px; margin: 14px 0 0; }
+  .zugang code { background: var(--grund-2); border: 1px solid var(--linie); border-radius: 5px; padding: 1px 6px; }
+  figure { margin: 44px 0 0; }
+  figure video {
+    width: 100%; height: auto; display: block;
+    border: 1px solid var(--linie); border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(20,24,28,.08), 0 12px 32px rgba(20,24,28,.10);
+    background: var(--grund-2);
+  }
+  figure img {
+    width: 100%; height: auto; display: block;
+    border: 1px solid var(--linie); border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(20,24,28,.08), 0 12px 32px rgba(20,24,28,.10);
+  }
+  figcaption { color: var(--leise); font-size: 14px; margin-top: 10px; }
+  section { padding: 56px 0; border-top: 1px solid var(--linie); margin-top: 56px; }
+  section:first-of-type { border-top: 0; }
+  h2 { font-size: clamp(22px, 3vw, 28px); letter-spacing: -.01em; margin: 0 0 8px; }
+  h2 + p.leise { color: var(--leise); margin: 0 0 26px; max-width: 64ch; }
+  .raster { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .karte { background: var(--grund-2); border: 1px solid var(--linie); border-radius: 10px; padding: 18px; }
+  .karte h3 { margin: 0 0 6px; font-size: 16px; }
+  .karte p { margin: 0; color: var(--leise); font-size: 15px; }
+  .bilder-paar { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  .bilder-paar figure { margin: 0; }
+  pre {
+    background: var(--grund-2); border: 1px solid var(--linie); border-radius: 10px;
+    padding: 16px; overflow-x: auto; font-size: 14px; line-height: 1.6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  pre .kom { color: var(--leise); }
+  .tabelle-rahmen { overflow-x: auto; }
+  table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--linie); vertical-align: top; }
+  th { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--leise); font-weight: 600; }
+  td.ja { color: var(--akzent); font-weight: 600; }
+  ul.strich { list-style: none; padding: 0; margin: 0; }
+  ul.strich li { padding: 9px 0 9px 22px; position: relative; color: var(--leise); border-bottom: 1px solid var(--linie); }
+  ul.strich li::before { content: "—"; position: absolute; left: 0; color: var(--akzent); }
+  ul.strich li b { color: var(--schrift); font-weight: 600; }
+  .zahlen { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; }
+  .zahl { background: var(--akzent-sanft); border: 1px solid var(--linie); border-radius: 10px; padding: 16px; }
+  .zahl b { display: block; font-size: 24px; letter-spacing: -.02em; }
+  .zahl span { color: var(--leise); font-size: 14px; }
+  footer { border-top: 1px solid var(--linie); margin-top: 56px; padding: 32px 0 56px; color: var(--leise); font-size: 14px; }
+  footer a { color: var(--leise); }
+  @media (max-width: 560px) {
+    header.kopf { padding: 36px 0 24px; }
+    section { padding: 40px 0; margin-top: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="kopf band">
+  <div class="marke"><img src="zeichen.svg" alt=""> Nexora</div>
+  <h1>A self-hosted wiki small enough to forget about</h1>
+  <p class="unter">
+    Nested pages in a block editor, <code>[[links]]</code> that produce backlinks
+    on the other side, a knowledge graph over everything, versions, comments,
+    attachments and real full text search. A Go service, a React interface,
+    PostgreSQL. Two containers plus a database, with no Redis, no search cluster,
+    no message queue.
+  </p>
+  <div class="knoepfe">
+    <a class="knopf stark" href="https://nexora.jonasgroll.de">Open the live demo</a>
+    <a class="knopf" href="https://github.com/Dschonas04/Nexora">Code on GitHub</a>
+    <a class="knopf" href="#einrichten">Install it</a>
+  </div>
+  <p class="zugang">
+    Demo sign-in: <code>gast@nexora.demo</code> · <code>GastNexora2026</code>.
+    A real instance with example content that resets itself every night.
+  </p>
+
+  <figure>
+    <video src="bilder/rundgang.mp4" poster="bilder/seite.png" autoplay muted loop playsinline
+           aria-label="Half a minute in Nexora: opening a space, following a wiki link, searching, the backlinks of a page, and the graph of the whole instance">
+      <a href="bilder/rundgang.gif">Watch the walkthrough as an animation</a>
+    </video>
+    <figcaption>Half a minute: open a space, follow a <code>[[link]]</code>, search, see which pages link here, and the graph over everything.</figcaption>
+  </figure>
+</header>
+
+<main>
+
+<section class="band">
+  <h2>Two things the others do not have</h2>
+  <p class="leise">Both come from the same idea: a wiki is worth more when it shows how its pages hang together.</p>
+  <div class="bilder-paar">
+    <figure>
+      <img src="bilder/graph.png" alt="The knowledge graph: pages as dots, links as lines, coloured per space">
+      <figcaption><b>The knowledge graph.</b> Every page and every link, coloured by space. Drag it, zoom it, click a dot to open the page.</figcaption>
+    </figure>
+    <figure>
+      <img src="bilder/suche.png" alt="Search results in the sidebar with matching text">
+      <figcaption><b>Search that reads the text.</b> PostgreSQL full text search over titles and content, and, if you switch it on, inside the attached files. Every page also lists who links to it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band" id="einrichten">
+  <h2>Installing takes one file</h2>
+  <p class="leise">Published images for amd64 and arm64, so a Raspberry Pi works too. Nothing to build, no account needed to pull them.</p>
+<pre><code>curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker-compose.stack.yml
+<span class="kom"># change POSTGRES_PASSWORD and JWT_SECRET in it</span>
+docker compose -f docker-compose.stack.yml up -d</code></pre>
+  <p class="leise">
+    Open <code>http://localhost:3000</code>; the first account that registers
+    becomes the administrator. Running PostgreSQL already? Then take the
+    repository with <code>docker-compose.abbild.yml</code> and set
+    <code>DATABASE_URL</code>: the
+    <a href="https://github.com/Dschonas04/Nexora#quick-start">README</a> has both ways.
+  </p>
+</section>
+
+<section class="band">
+  <h2>What is in it</h2>
+  <div class="raster">
+    <div class="karte"><h3>Pages that nest</h3><p>An infinite hierarchy in a collapsible sidebar, drag to reorder, autosave while you type.</p></div>
+    <div class="karte"><h3>Backlinks without bookkeeping</h3><p><code>[[Page title]]</code> links both ways. The target page lists who points at it, and the graph draws the line.</p></div>
+    <div class="karte"><h3>Spaces and roles</h3><p>Separate areas per team or topic, opened for reading or writing per account. Anonymous access only through a share link.</p></div>
+    <div class="karte"><h3>Versions and a trash</h3><p>A snapshot before every content change, restorable. Deleting is reversible for 30 days, then the sweep takes the attachment bytes too.</p></div>
+    <div class="karte"><h3>Attachments anywhere</h3><p>Local disk or any S3-compatible bucket: MinIO, Garage, Ceph, AWS. With a viewer for images, PDFs and text.</p></div>
+    <div class="karte"><h3>The way in</h3><p>Import an Obsidian vault, a Notion export, a Confluence HTML export or a folder of Markdown. A preview shows the tree before anything is created.</p></div>
+    <div class="karte"><h3>The way out</h3><p>Markdown export of every page, free for good, because the way out must never sit behind a licence. PDF, Word and whole-space archives come with Pro.</p></div>
+    <div class="karte"><h3>Operating it</h3><p>Two containers and PostgreSQL. Encrypted between the containers as well, backups with <code>pg_dump</code>, metrics for Prometheus.</p></div>
+  </div>
+</section>
+
+<section class="band">
+  <h2>It holds more than a homelab needs</h2>
+  <p class="leise">Measured on one 12-core host, backend and PostgreSQL on the same machine, against 2,000 pages and 40 accounts. An operation is a user action, not a request.</p>
+  <div class="zahlen">
+    <div class="zahl"><b>4,600/s</b><span>operations at saturation</span></div>
+    <div class="zahl"><b>39 ms</b><span>p95 at 100 concurrent</span></div>
+    <div class="zahl"><b>0</b><span>errors up to 3,200 concurrent</span></div>
+    <div class="zahl"><b>2</b><span>containers plus a database</span></div>
+  </div>
+  <p class="leise" style="margin-top:18px">
+    Take the paper part seriously: loopback, no TLS, a database that fits in
+    cache. What it does support is the modest claim: several hundred people
+    working at once are unremarkable. The
+    <a href="https://github.com/Dschonas04/Nexora#capacity">method is written down</a>.
+  </p>
+</section>
+
+<section class="band">
+  <h2>Next to the others</h2>
+  <p class="leise">The short version. The <a href="https://github.com/Dschonas04/Nexora/blob/main/docs/comparison.md">long one</a> says where each of them wins.</p>
+  <div class="tabelle-rahmen">
+  <table>
+    <thead><tr><th>&nbsp;</th><th>Nexora</th><th>Notion</th><th>Outline</th><th>Docmost</th><th>Wiki.js</th></tr></thead>
+    <tbody>
+      <tr><td>Self-hosted</td><td class="ja">yes</td><td>no</td><td>yes</td><td>yes</td><td>yes</td></tr>
+      <tr><td>Sign in without an identity provider</td><td class="ja">yes</td><td>—</td><td>no</td><td>yes</td><td>yes</td></tr>
+      <tr><td>Knowledge graph</td><td class="ja">yes</td><td>no</td><td>no</td><td>no</td><td>no</td></tr>
+      <tr><td>Backlinks</td><td class="ja">yes</td><td>yes</td><td>yes</td><td>yes</td><td>no</td></tr>
+      <tr><td>Several people in one page at once</td><td>no</td><td>yes</td><td>yes</td><td>yes</td><td>no</td></tr>
+      <tr><td>Extra services to operate</td><td class="ja">none</td><td>—</td><td>Redis</td><td>Redis</td><td>varies</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="band">
+  <h2>What it is not</h2>
+  <p class="leise">Better to know now than after the migration.</p>
+  <ul class="strich">
+    <li><b>No real-time editing.</b> Two people in the same paragraph is not it: the save that would overwrite somebody is refused instead. Docmost and Outline do the real thing.</li>
+    <li><b>No Notion databases.</b> No table views, no boards, no formulas. This is a wiki, not a small application platform.</li>
+    <li><b>No plugins, no AI.</b> There are settings, not an extension interface and not an assistant writing your text.</li>
+    <li><b>No OSI licence, yet.</b> BUSL 1.1: run it in production, commercially, for free, with versions, attachments and comments included. Eight extras for larger teams need a key, and the whole thing turns Apache 2.0 on 2030-08-19. Some catalogues stop right there, and that is fair.</li>
+    <li><b>No large community.</b> It is young and mostly one person's work. Outline, Docmost and BookStack have years of issues and people who hit your problem before you.</li>
+  </ul>
+</section>
+
+</main>
+
+<footer class="band">
+  <p>
+    <a href="https://github.com/Dschonas04/Nexora">GitHub</a> ·
+    <a href="https://nexora.jonasgroll.de">Demo</a> ·
+    <a href="https://github.com/Dschonas04/Nexora/releases">Releases</a> ·
+    <a href="https://github.com/Dschonas04/Nexora/blob/main/docs/README.md">Documentation</a> ·
+    <a href="https://github.com/Dschonas04/Nexora/blob/main/docs/comparison.md">Comparison</a> ·
+    <a href="https://github.com/Dschonas04/Nexora/discussions">Discussions</a>
+  </p>
+  <p>Business Source License 1.1, Apache 2.0 from 2030-08-19. Built by one person in a homelab.</p>
+</footer>
+
+</body>
+</html>
