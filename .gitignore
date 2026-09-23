@@ -4,7 +4,7 @@
 # The running configuration. It belongs to operations, not to the repository:
 # it holds credentials, and it is edited on the maintenance page; a tracked
 # version would be written over on every deployment.
-# Template: config.beispiel.conf
+# Template: config.example.conf
 config.conf
 
 # Node

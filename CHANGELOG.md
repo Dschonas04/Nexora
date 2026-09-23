@@ -48,7 +48,7 @@ new is where to get them and how to put them somewhere.
 - **[Project page](https://dschonas04.github.io/Nexora/)** with a half-minute
   walkthrough.
 - **Templates** for CasaOS and Umbrel, and the way in for Unraid through the
-  Compose Manager, in [`vorlagen/`](vorlagen/README.md).
+  Compose Manager, in [`templates/`](templates/README.md).
 - A walkthrough GIF and English screenshots in the README; the demo carries two
   English spaces next to the German ones.
 

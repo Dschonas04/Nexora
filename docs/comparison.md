@@ -63,7 +63,7 @@ considering.
 - **Notion's databases.** No table views, no boards, no calendars, no formulas.
   Nexora is a wiki, not a small application platform.
 - **Apps in the stores.** The desktop and mobile wrappers live on the
-  [`verpackung`](../../../tree/verpackung) branch and are a window onto an
+  [`verpackung`](../../../tree/packaging) branch and are a window onto an
   instance, not an offline client. AppFlowy is an app first and works offline.
 - **A plugin ecosystem, or AI.** There is no extension interface, no
   marketplace, no assistant writing text. Wiki.js has modules for nearly
