@@ -5,7 +5,7 @@
 // einen Browser nach (jsdom), hängt einen echten Editor hinein und tippt
 // Zeichen für Zeichen, so wie ein Mensch es täte.
 //
-// Aufruf: node test/editor-probe.mjs <gebündelte editorprobe-eingang.mjs>
+// Usage: node test/editor-check.mjs <bundled editor-check-entry.mjs>
 import { JSDOM } from "jsdom";
 
 const fenster = new JSDOM("<!doctype html><html><body><div id=e></div></body></html>", {
@@ -32,7 +32,7 @@ globalThis.cancelAnimationFrame = (h) => clearTimeout(h);
 
 const pfad = process.argv[2];
 if (!pfad) {
-  console.error("Aufruf: node test/editor-probe.mjs <buendel.mjs>");
+  console.error("Usage: node test/editor-check.mjs <bundle.mjs>");
   process.exit(2);
 }
 const { BlockNoteEditor, deutsch, fettKursivErweiterung } = await import(pfad);

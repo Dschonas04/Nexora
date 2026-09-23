@@ -18,12 +18,12 @@ again.
 | macOS | `Nexora-macos-arm64.dmg`, `Nexora-macos-x64.dmg` | Linux |
 | Linux | `Nexora-linux-x64` with `nexora` | Linux |
 | Android | `Nexora-android.apk` | Linux, Android SDK in a container |
-| iOS | Xcode project under `mobil/ios` | **macOS with Xcode only** |
+| iOS | Xcode project under `mobile/ios` | **macOS with Xcode only** |
 
 ## Desktop (Windows, macOS, Linux)
 
 ```
-cd schreibtisch && npm install
+cd desktop && npm install
 node bauen.mjs
 ```
 
@@ -61,7 +61,7 @@ build needs the flag stated explicitly, or the instance needs TLS.
 
 ## iOS
 
-The project under `mobil/ios` is complete, but an `.ipa` is only produced on a
+The project under `mobile/ios` is complete, but an `.ipa` is only produced on a
 Mac with Xcode, and installing it needs an Apple developer account. Without
 one the way in is the browser: open Nexora in Safari, Share, "Add to Home
 Screen". That gives an icon without an address bar — practically the same

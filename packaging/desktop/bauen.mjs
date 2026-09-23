@@ -16,7 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HIER = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const QUELLE = path.join(HIER, 'schreibtisch');
+const QUELLE = path.join(HIER, 'desktop');
 const ZIEL = path.join(HIER, 'fertig');
 const VERSION = JSON.parse(fs.readFileSync(path.join(QUELLE, 'node_modules/electron/package.json'))).version;
 

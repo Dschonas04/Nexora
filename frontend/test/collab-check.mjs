@@ -10,8 +10,8 @@
 // It is not run by a test runner, which does not exist here, but from the
 // workbench:
 //
-//   npx esbuild test/eingang.ts --bundle --format=esm --outfile=/tmp/m.mjs
-//   node test/mitschrift-probe.mjs /tmp/m.mjs
+//   npx esbuild test/entry.ts --bundle --format=esm --outfile=/tmp/m.mjs
+//   node test/collab-check.mjs /tmp/m.mjs
 const anschluesse = new Set();
 
 class FakeWS {
@@ -35,7 +35,7 @@ globalThis.window = { addEventListener() {}, removeEventListener() {}, setTimeou
 
 const gebaut = process.argv[2];
 if (!gebaut) {
-  console.error("Aufruf: node mitschrift-probe.mjs <gebündelte eingang.ts>");
+  console.error("Usage: node collab-check.mjs <bundled entry.ts>");
   process.exit(2);
 }
 const { Leitung, Y } = await import(gebaut.startsWith("/") ? gebaut : "./" + gebaut);

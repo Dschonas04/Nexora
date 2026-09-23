@@ -5,15 +5,15 @@
 // attributes (title, placeholder, aria-label, alt and the labels our own
 // components take) and string literals that stand as text in JSX. Each one has
 // to appear on either side of a pair -- or as a pattern with {0} -- or be listed
-// in test/texte-ausnahmen.txt (technical strings, names, units the probe cannot
+// in test/texts-exceptions.txt (technical strings, names, units the probe cannot
 // tell apart from prose).
 //
 // It parses with @babel/parser and not with the TypeScript compiler: TypeScript
 // 7 is the native compiler and no longer ships a JavaScript API, and a second,
 // older TypeScript next to it would bring its own `tsc` and fight over the name.
 //
-//   node test/texte-probe.cjs            check, exit 1 on missing texts
-//   node test/texte-probe.cjs --liste    print the missing texts only
+//   node test/texts-check.cjs            check, exit 1 on missing texts
+//   node test/texts-check.cjs --liste    print the missing texts only
 const fs = require("fs");
 const path = require("path");
 const { parse } = require("@babel/parser");
@@ -42,7 +42,7 @@ for (const m of quelle.matchAll(/^\s*\[("(?:[^"\\]|\\.)*"), ("(?:[^"\\]|\\.)*")\
   }
 }
 const ausnahmen = new Set(
-  fs.readFileSync(path.join(__dirname, "texte-ausnahmen.txt"), "utf8").split("\n").map((z) => z.trim()).filter((z) => z && !z.startsWith("#")),
+  fs.readFileSync(path.join(__dirname, "texts-exceptions.txt"), "utf8").split("\n").map((z) => z.trim()).filter((z) => z && !z.startsWith("#")),
 );
 
 // --- what the interface shows -------------------------------------------------
@@ -138,7 +138,7 @@ if (process.argv.includes("--liste")) {
 }
 if (fehlend.length) {
   console.error(`text probe: ${fehlend.length} interface text(s) without a German/English pair.`);
-  console.error("Add a pair to src/sprache/woerterbuch.ts, or the text to test/texte-ausnahmen.txt if it is not prose:\n");
+  console.error("Add a pair to src/sprache/woerterbuch.ts, or the text to test/texts-exceptions.txt if it is not prose:\n");
   for (const [t, wo] of fehlend) console.error(`  ${wo}\n    ${JSON.stringify(t)}`);
   process.exit(1);
 }

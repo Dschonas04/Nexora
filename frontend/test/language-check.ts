@@ -2,7 +2,7 @@
 // directions, patterns with values, values that are words themselves, and that
 // a pattern does not swallow whole sentences. Run like the other probes:
 //
-//   npx esbuild test/sprache-probe.ts --bundle --format=esm --platform=node --outfile=/tmp/sprache.mjs
+//   npx esbuild test/language-check.ts --bundle --format=esm --platform=node --outfile=/tmp/sprache.mjs
 //   node /tmp/sprache.mjs
 import { uebersetze } from "../src/sprache/index";
 import { PAARE } from "../src/sprache/woerterbuch";

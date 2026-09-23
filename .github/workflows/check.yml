@@ -13,7 +13,7 @@
 #     private repositories). Building and checking happen in the runner itself.
 #   * The key for the rollout is pinned to exactly one command at the target: it
 #     can roll out the state of origin/main and nothing else.
-name: Prüfen und ausrollen
+name: Check and roll out
 
 on:
   push:
@@ -36,38 +36,38 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - name: Quellen holen
+      - name: Check out
         uses: actions/checkout@v4
 
-      - name: Fassungen nennen
+      - name: Print versions
         run: go version
 
-      - name: Satz prüfen
+      - name: Formatting
         run: |
           # gofmt reports deviations only by printing file names, so an empty
           # output stream is the pass. metriken.go is generated and was never
           # formatted; it stays out.
-          abweichend=$(gofmt -l . | grep -v 'internal/dok/metriken.go' || true)
-          if [ -n "$abweichend" ]; then
-            echo "Nicht mit gofmt gesetzt:"
-            echo "$abweichend"
+          unformatted=$(gofmt -l . | grep -v 'internal/dok/metriken.go' || true)
+          if [ -n "$unformatted" ]; then
+            echo "Not formatted with gofmt:"
+            echo "$unformatted"
             exit 1
           fi
 
       - name: go vet
         run: go vet ./...
 
-      - name: Prüfungen
+      - name: Tests
         run: go test ./...
 
-      - name: Übersetzen
+      - name: Compile
         run: go build ./...
 
-      - name: Rauchtest gegen eine echte Datenbank
+      - name: Smoke test against a real database
         run: |
           # The checks above touch no database. That is exactly where the errors
           # sit that one only sees in operation.
-          ./test/rauchtest.sh
+          ./test/smoketest.sh
 
   frontend:
     name: Frontend
@@ -77,45 +77,45 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - name: Quellen holen
+      - name: Check out
         uses: actions/checkout@v4
 
-      - name: Fassungen nennen
+      - name: Print versions
         run: node --version && npm --version
 
-      - name: Abhängigkeiten holen
+      - name: Install dependencies
         # npm ci and not npm install: exactly what stands in package-lock.json
         # shall be built, and not whatever happens to be new today.
         run: npm ci
 
-      - name: Typen prüfen
+      - name: Type check
         run: npx tsc --noEmit -p .
 
-      - name: Bauen
+      - name: Build
         run: npm run build
 
-      - name: Gemeinsames Bearbeiten, zwei Browser gegeneinander
+      - name: Editing together, two browsers against each other
         run: |
           # The type check says nothing about whether two versions of the same
           # text really find each other. The probe puts two wires on the same
           # distributor and lets them type at the same spot at the same time.
-          npx esbuild test/eingang.ts --bundle --format=esm \
+          npx esbuild test/entry.ts --bundle --format=esm \
             --outfile="$RUNNER_TEMP/mitschrift.mjs" --log-level=warning
-          node test/mitschrift-probe.mjs "$RUNNER_TEMP/mitschrift.mjs"
+          node test/collab-check.mjs "$RUNNER_TEMP/mitschrift.mjs"
 
-      - name: Greifen die Eingaberegeln des Editors noch
+      - name: Do the editor's input rules still fire
         run: |
-          # Ob aus "**fett**" beim Tippen fetter Text wird, entscheidet keine
-          # Typpruefung, sondern ProseMirror zur Laufzeit. Die Probe stellt
-          # einen Browser nach, haengt einen echten Editor hinein und tippt
-          # Zeichen fuer Zeichen. Eine Fassung von BlockNote kann diese Regeln
-          # aendern, ohne dass sich eine einzige Signatur bewegt.
-          npx esbuild test/editorprobe-eingang.ts --bundle --format=esm \
+          # Whether "**bold**" turns into bold text while typing is decided by
+          # ProseMirror at runtime, not by any type check. The probe stands in
+          # for a browser, hangs a real editor inside it and types character by
+          # character. A release of BlockNote can change these rules without a
+          # single signature moving.
+          npx esbuild test/editor-check-entry.ts --bundle --format=esm \
             --conditions=style --loader:.css=empty \
             --outfile="$RUNNER_TEMP/editor.mjs" --log-level=warning
-          node test/editor-probe.mjs "$RUNNER_TEMP/editor.mjs"
+          node test/editor-check.mjs "$RUNNER_TEMP/editor.mjs"
 
-      - name: Markierungen in einer PDF-Datei
+      - name: Marks in a PDF file
         run: |
           # Whether a highlight lands in the right place is decided by a
           # conversion: the PDF counts from the bottom, the screen from the top.
@@ -124,54 +124,54 @@ jobs:
           # was ADDED TO and not replaced.
           npx esbuild src/pdfmarken.ts --bundle --format=esm \
             --outfile="$RUNNER_TEMP/pdfmarken.mjs" --log-level=warning
-          node test/pdf-probe.mjs "$RUNNER_TEMP/pdfmarken.mjs"
+          node test/pdf-check.mjs "$RUNNER_TEMP/pdfmarken.mjs"
 
-      - name: Farben lesbar auf jedem Grundton
+      - name: Colours readable on any ground
         run: |
           # The accent chosen per account must stay readable as text on light
           # and dark ground; the arithmetic for that lives in src/farbe.ts.
-          npx esbuild test/farbe-probe.ts --bundle --format=esm --platform=node \
+          npx esbuild test/colour-check.ts --bundle --format=esm --platform=node \
             --outfile="$RUNNER_TEMP/farbe.mjs" --log-level=warning
           node "$RUNNER_TEMP/farbe.mjs"
 
-      - name: Deutsch und Englisch
+      - name: German and English
         run: |
           # The interface is translated at runtime from a pair list. The probe
           # checks lookups and patterns in both directions and that every pair
           # uses the same placeholders on both sides.
-          npx esbuild test/sprache-probe.ts --bundle --format=esm --platform=node \
+          npx esbuild test/language-check.ts --bundle --format=esm --platform=node \
             --outfile="$RUNNER_TEMP/sprache.mjs" --log-level=warning
           node "$RUNNER_TEMP/sprache.mjs"
 
-      - name: Jeder Text zweisprachig
+      - name: Every text in both languages
         run: |
           # Every interface text needs a German/English pair, otherwise it
           # silently stays in one language. Texts that are not prose (names,
-          # technical terms) are listed in test/texte-ausnahmen.txt.
-          node test/texte-probe.cjs
+          # technical terms) are listed in test/texts-exceptions.txt.
+          node test/texts-check.cjs
 
-      - name: Der Lizenzhinweis muss im Bündel stehen
+      - name: The licence notice has to be in the bundle
         run: |
           # BlockNote is under MPL-2.0, and that demands the notice accompany
           # the DISTRIBUTED form. What is distributed is the bundle, and the
           # minifier throws comments away. vite.config.ts sets the header; here
           # it is checked that it really makes it into the artefact, because
           # this obligation breaks silently.
-          fehlend=0
+          missing=0
           for f in dist/assets/*.js; do
-            grep -q "Mozilla Public License" "$f" || { echo "ohne Hinweis: $f"; fehlend=1; }
+            grep -q "Mozilla Public License" "$f" || { echo "no notice: $f"; missing=1; }
           done
-          [ "$fehlend" = 0 ] || exit 1
-          echo "Alle Bündel tragen den Hinweis."
+          [ "$missing" = 0 ] || exit 1
+          echo "Every bundle carries the notice."
 
-  ausrollen:
-    name: Ausrollen
+  rollout:
+    name: Roll out
     needs: [backend, frontend]
     if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, homelab, nexora]
     timeout-minutes: 15
     steps:
-      - name: Auf den Docker-Host ausrollen
+      - name: Roll out onto the Docker host
         run: |
           # The key is pinned to /opt/ci/nexora-ausrollen.sh at the target;
           # whatever stood here would make no difference anyway.

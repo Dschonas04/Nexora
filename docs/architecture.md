@@ -745,7 +745,7 @@ callback cannot be built, and a public share link names the wrong host.
 
 ### 7.4 Continuous integration
 
-`.github/workflows/pruefen.yml` runs on a self-hosted runner in the maintainer's
+`.github/workflows/check.yml` runs on a self-hosted runner in the maintainer's
 network: the only one that reaches the Docker host this instance runs on.
 
 ```mermaid

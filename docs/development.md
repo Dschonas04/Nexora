@@ -48,7 +48,7 @@ gofmt -l .          # must print nothing (except internal/dok/metriken.go, which
 go vet ./...
 go test ./...
 go build ./...
-./test/rauchtest.sh # a real PostgreSQL, the real binary, real HTTP calls
+./test/smoketest.sh # a real PostgreSQL, the real binary, real HTTP calls
 
 cd ../frontend
 npx tsc --noEmit -p .
@@ -64,7 +64,7 @@ nothing else finds: a query that will not parse only shows up the first time it
 runs. The real example that caused it was `($1 || ' days')::interval`, every
 check green, and the trash never clearing itself.
 
-So `test/rauchtest.sh` starts a throwaway PostgreSQL, runs the built binary
+So `test/smoketest.sh` starts a throwaway PostgreSQL, runs the built binary
 against it and makes real HTTP calls, in a temporary directory that disappears
 at the end even when the test fails.
 
