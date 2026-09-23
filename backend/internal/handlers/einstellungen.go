@@ -1,7 +1,7 @@
 // Runtime settings: the ones an administrator changes from the browser.
 //
 // The split against config.conf is deliberate. What has to be known before the
-// database is open — its address, the listening port, the signing secret —
+// database is open, its address, the listening port, the signing secret,
 // lives in the file. What may change while the server runs lives here, because
 // nobody can edit a file inside a container from a web page.
 //
@@ -43,7 +43,7 @@ type Einstellung struct {
 }
 
 // bekannt lists every setting that may be changed at runtime. A key that is not
-// in here is rejected — otherwise a crafted request could write arbitrary rows
+// in here is rejected, otherwise a crafted request could write arbitrary rows
 // into the table and a later reader would trust them.
 var bekannt = map[string]struct {
 	Art        string
@@ -118,7 +118,7 @@ var bekannt = map[string]struct {
 }
 
 // umgebungsname maps a setting to the environment variable that overrides it at
-// start. Only the keys that config.go actually reads are in here — naming one
+// start. Only the keys that config.go actually reads are in here, naming one
 // that is never read would send someone hunting for an effect that cannot
 // happen. What is missing lives in the database alone.
 var umgebungsname = map[string]string{
@@ -240,7 +240,7 @@ func (s *Server) echtzeitAn() bool { return wert("echtzeit") == "ja" }
 
 // Seitenbreite is the default width for pages that do not specify one. An
 // unknown value would create a CSS class that does not exist and therefore
-// fall back to the narrow layout — so we validate it here rather than in the
+// fall back to the narrow layout, so we validate it here rather than in the
 // client.
 func Seitenbreite() string {
 	b := wert("seitenbreite")

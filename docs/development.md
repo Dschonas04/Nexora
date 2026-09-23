@@ -15,11 +15,11 @@ docker compose up -d --build      # interface at http://localhost:3000
 Working on the code, the two halves separately:
 
 ```bash
-# backend — needs a PostgreSQL. Point DATABASE_URL at the compose one if you like
+# backend: needs a PostgreSQL. Point DATABASE_URL at the compose one if you like
 cd backend
 go run .
 
-# frontend — proxies /api to http://localhost:8080
+# frontend: proxies /api to http://localhost:8080
 cd frontend
 npm install
 npm run dev
@@ -61,7 +61,7 @@ CI runs exactly this list.
 
 `go test` touches no database, and that is precisely where the errors sit that
 nothing else finds: a query that will not parse only shows up the first time it
-runs. The real example that caused it was `($1 || ' days')::interval` — every
+runs. The real example that caused it was `($1 || ' days')::interval`, every
 check green, and the trash never clearing itself.
 
 So `test/rauchtest.sh` starts a throwaway PostgreSQL, runs the built binary
@@ -74,13 +74,13 @@ at the end even when the test fails.
 backend/
   main.go              the route table, and the bootstrap order:
                        config → db → licence → attachment store → cache → routes
-  premium/             the licence verifier and the key issuer — deletable
+  premium/             the licence verifier and the key issuer, deletable
   internal/
     config             config.conf + environment + defaults, and the boot warnings
     db                 pool, schema, migration
     auth               JWT and bcrypt
     middleware         cookie auth
-    lizenz             feature names, tiers, the gate — no cryptography
+    lizenz             feature names, tiers, the gate: no cryptography
     ablage             attachment storage: disk or S3, behind one interface
     einlesen           Markdown and HTML → editor blocks
     dok                editor blocks → PDF and .docx, and .docx back
@@ -100,7 +100,7 @@ frontend/src
   every non-obvious line in this repository carries the reason it is that way,
   and that is the convention worth keeping above all the others.
 - **Identifiers are German, prose is English.** Once a thing has a name it keeps
-  it, from the column through the handler to the JSON field — `postfach` in the
+  it, from the column through the handler to the JSON field, `postfach` in the
   network tab is the same `postfach` as in the schema. The
   [glossary](architecture.md#12-glossary) lists every term.
 - **Handlers stay thin**: parse, check access, one query, write JSON.
@@ -130,7 +130,7 @@ default.
 
 1. A handler method on `Server` in the right subject file under
    `internal/handlers`.
-2. A line in the route table in `main.go`. **Static segments before wildcards** —
+2. A line in the route table in `main.go`. **Static segments before wildcards**,
    `/pages/trash` has to be registered before `/pages/{id}`, or chi reads
    `trash` as a page id.
 3. Access: call `pagePerm` or `isAdmin`. 404 when the caller may not read, 403
@@ -146,14 +146,15 @@ Four places, and the fourth is what makes a mistake loud:
 2. The tier it belongs to, in `stufenZusatz`.
 3. A route group in `main.go` wrapped in
    `r.Use(handlers.VerlangeFunktion(lizenz.Meins))`.
-4. The same string in the `Extra` union in `frontend/src/lizenz.tsx` — that union
+4. The same string in the `Extra` union in `frontend/src/lizenz.tsx`; that union
    is what turns a typo into a build error instead of a control that silently
    never unlocks.
 
 Then decide the question every extra has to answer: **is the data still recorded
 without the licence?** Version snapshots and audit entries are, so unlocking
 later does not reveal a hole. Space permissions are kept but do not take effect.
-Getting content out — Markdown export and import — is never gated at all.
+Getting content out, which means Markdown export and import, is never gated at
+all.
 
 ### … a setting
 
@@ -166,7 +167,7 @@ Getting content out — Markdown export and import — is never gated at all.
   lands in the `einstellungen` table and overrides the file.
 
 If it is dangerous when left wrong, add a line to `Konfig.Warnungen()`. Warn,
-do not refuse — with one exception in the whole codebase, and it is documented
+do not refuse, with one exception in the whole codebase, and it is documented
 as such.
 
 ## Licence keys

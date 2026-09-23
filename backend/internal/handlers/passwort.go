@@ -3,7 +3,7 @@
 //
 // Both routes write to the same column but differ in what they require and
 // how they treat sessions afterwards. Changing your own password keeps you
-// logged in on this device and logs you out everywhere else — the purpose of
+// logged in on this device and logs you out everywhere else: the purpose of
 // a change when an untrusted device was involved. When an administrator sets
 // a password, the account is logged out everywhere, including any session
 // currently active on it.

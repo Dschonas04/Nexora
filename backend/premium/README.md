@@ -1,7 +1,7 @@
 # Nexora Premium
 
 This directory holds the license check. It is covered by the repository's
-[Business Source License 1.1](../../LICENSE) like everything else — there is no
+[Business Source License 1.1](../../LICENSE) like everything else; there is no
 separate license here any more.
 
 What that means in practice: you may read, modify, build and test this code
@@ -13,7 +13,7 @@ freely. What needs a license key is running the paid features in production. On
 | Path | Purpose |
 |---|---|
 | `lizenz/pruefer.go` | verifies a license key and reports what it unlocks |
-| `cmd/schluessel/` | issues keys — the only place the private key is used |
+| `cmd/schluessel/` | issues keys, the only place the private key is used |
 
 The gate itself is **not** here. It sits in `backend/internal/lizenz` and knows
 nothing about signatures; it only asks whoever registered as the verifier. That
@@ -72,7 +72,7 @@ Set it on the server:
 NEXORA_LIZENZ='<key>'
 ```
 
-An absent or broken key is never fatal — the server logs why and runs on the
+An absent or broken key is never fatal: the server logs why and runs on the
 free feature set.
 
 ## Building without this directory

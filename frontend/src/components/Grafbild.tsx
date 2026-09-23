@@ -521,7 +521,7 @@ export default function Grafbild({
   };
 
   // On release: a press that never exceeded the drag threshold is treated as
-  // a click and opens the page — so a dragged node does not accidentally
+  // a click and opens the page, so a dragged node does not accidentally
   // navigate elsewhere.
   const zeigerAuf = (e: React.PointerEvent) => {
     const d = zug.current;
@@ -579,7 +579,7 @@ export default function Grafbild({
                 {/* The dot itself is the color picker: click it, choose a color,
                   done. A separate button would be an extra control for the
                   same action, and the dot is precisely what the user intends
-                  to change. For "No space" only the dot is shown — there is
+                  to change. For "No space" only the dot is shown; there is
                   no space to attach a color to. */}
               {onFarbe && l.key !== "__none__" && (!faerbbar || faerbbar.has(l.key)) ? (
                 <label className="graph-legend-dot-wahl" title="Colour of this space">
@@ -661,12 +661,12 @@ export default function Grafbild({
                   r={zeiger === node.id ? r + 2 : r}
                   fill={farbe[ablageSchluessel(node)] ?? "#2383e2"}
                   // The stroke color should match the page background so nodes
-                  // stand out from the lines behind them—light on light, dark on dark.
+                  // stand out from the lines behind them: light on light, dark on dark.
                   className={"graph-knoten" + (betont ? " betont" : "")}
                   strokeWidth={betont ? 2 : 1}
                 />
                 {/* The outline around letters keeps a name readable where it
-                  crosses a line — overlap avoidance manages labels with
+                  crosses a line, overlap avoidance manages labels with
                   respect to each other, not the edges. */}
                 <text
                   x={platz.dx}

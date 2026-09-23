@@ -1,7 +1,7 @@
 // The colors the editor knows, in the forms PDF and Word require.
 
 // In the stored text there is no color value but a name: "yellow", "red",
-// "blue". That is the editor's vocabulary and it is intentional — a name
+// "blue". That is the editor's vocabulary and it is intentional: a name
 // survives a theme change whereas a color value does not. Translation to the
 // target format happens here during rendering and is specific to each target:
 // PDF wants three numbers between 0 and 1, Word wants six hex digits and the

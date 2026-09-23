@@ -54,7 +54,7 @@ services:
       NEXORA_DATA_DIR: /data/attachments
       # Where the attachment bytes lie. Two halves belong together: this path is
       # the one INSIDE the container, NEXORA_ANHANG_ORT below is what is mounted
-      # onto it — a named volume by default, a directory of the host or a share
+      # onto it: a named volume by default, a directory of the host or a share
       # if that is set. Anybody moving the attachments changes the ort, not this
       # path.
       NEXORA_ANHANG_PFAD: ${NEXORA_ANHANG_PFAD:-/data/attachments}

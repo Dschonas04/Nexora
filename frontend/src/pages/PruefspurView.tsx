@@ -1,7 +1,7 @@
 // The audit trail, for admins.
 //
 // It answers one question: who did what, when. Everything here serves reading
-// it back under pressure — during an incident or an audit — which is why the
+// it back under pressure, during an incident or an audit, which is why the
 // filters sit at the top and the newest entry is the first one.
 //
 // It sits inside the settings and therefore brings no frame of its own along;

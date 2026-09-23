@@ -153,7 +153,7 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
                         <span className="postfach-seite">{n.seitenTitel}</span>
                       </>
                     ) : (
-                      <span className="muted"> &mdash; that page no longer exists</span>
+                      <span className="muted"> , that page no longer exists</span>
                     )}
                   </span>
                   {n.text && <span className="muted small postfach-auszug">{n.text}</span>}

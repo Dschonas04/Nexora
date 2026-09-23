@@ -3,13 +3,13 @@
 // The file's type is the claim the uploader made: it comes from the
 // Content-Type of the form part and has since been stored in the column. If
 // it were returned unchanged and marked "inline" then a page could contain an
-// HTML or SVG file that the browser executes on the origin of this instance —
+// HTML or SVG file that the browser executes on the origin of this instance,
 // including access to the viewer's session. A public reference would be
 // sufficient for an outsider to trigger that.
 
 // Therefore we restrict what can be shown inline: images, audio, video, PDF
 // and plain text. Everything else is sent as a download with a type no browser
-// will render. That is the tough side of the choice — a file you cannot view
+// will render. That is the tough side of the choice: a file you cannot view
 // immediately is an annoyance; a file that executes code in the name of the
 // instance is a breach.
 package handlers
@@ -75,7 +75,7 @@ func anhangKopf(w http.ResponseWriter, mime, dateiname string) {
 	}
 
 	// An SVG is both an image and a document. In an <img> it cannot execute
-	// scripts, but requesting its URL directly could — and then on the origin
+	// scripts, but requesting its URL directly could, and then on the origin
 	// of this instance. We therefore serve it as an image but with a policy
 	// that disables this case: `sandbox` removes scripts. The policy has no
 	// effect when the browser embeds it as an <img>, because browsers do not
@@ -97,7 +97,7 @@ func anhangKopf(w http.ResponseWriter, mime, dateiname string) {
 
 // `namensteil` builds the filename part for the header twice: once for
 // programs that only read ASCII, and once using RFC 5987 encoding for other
-// clients — this ensures a filename like "Overview.pdf" remains readable
+// clients; this ensures a filename like "Overview.pdf" remains readable
 // when saved.
 //
 // Anything that does not belong in a header is removed first: quotes would

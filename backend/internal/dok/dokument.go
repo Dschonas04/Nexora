@@ -68,7 +68,7 @@ type Absatz struct {
 	// can embed the image instead of merely naming it.
 	Bild string
 	// BildDaten contains the raw bytes of an image when the caller could
-	// obtain them. If the field is empty we fall back to the reference line —
+	// obtain them. If the field is empty we fall back to the reference line,
 	// a line stating what is missing and where it lives is more honest than an
 	// empty area.
 	BildDaten []byte
@@ -101,7 +101,7 @@ type stueckJSON struct {
 // Bildquelle fetches the bytes for an image address.
 //
 // As a callback rather than a finished list: the addresses live in the
-// document and only the caller knows how to obtain the file behind them —
+// document and only the caller knows how to obtain the file behind them,
 // via the storage backend, via a data URL in the text, or not at all. A nil
 // callback means no images; then the reference line remains as before.
 type Bildquelle func(adresse string) ([]byte, bool)

@@ -8,7 +8,7 @@ What is here is written for three different readers, so it is split three ways.
 
 ## For whoever wants to understand the system
 
-**[Architecture](architecture.md)** — the full architecture documentation,
+**[Architecture](architecture.md)**: the full architecture documentation,
 structured after [arc42](https://arc42.org), with the views drawn as
 [C4](https://c4model.com) diagrams: system context, containers, components,
 and the runtime scenarios that connect them. It also names every technology in
@@ -19,7 +19,7 @@ chapter 8 (cross-cutting concepts) are the two you come back to.
 
 ## For whoever is still deciding
 
-**[Comparison](comparison.md)** — Nexora next to Notion, Outline, Docmost,
+**[Comparison](comparison.md)**, Nexora next to Notion, Outline, Docmost,
 Wiki.js, BookStack and AppFlowy, with the cases where one of the others is the
 better answer.
 
@@ -40,7 +40,7 @@ better answer.
 
 ## A note on language
 
-The prose is English, the identifiers in the code are German — `pruefspur`,
+The prose is English, the identifiers in the code are German, `pruefspur`,
 `ablage`, `postfach`, `einlesen`. That is not an oversight, it is a
 convention with a reason, and chapter 8.9 of the architecture document explains
 it. Where a German name is the name of a thing, this documentation uses the

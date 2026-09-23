@@ -492,8 +492,8 @@ function Profil() {
         onChange={(e) => bildWaehlen(e.target.files?.[0])}
       />
       <p className="muted small">
-        Das Bild wird auf {KANTE} × {KANTE} zugeschnitten und verkleinert, bevor es hochgeht
-        — mittig, weil es als Kreis erscheint. Sichtbar ist es für jeden, der hier angemeldet
+        Das Bild wird auf {KANTE} × {KANTE} zugeschnitten und verkleinert, bevor es hochgeht,
+        mittig, weil es als Kreis erscheint. Sichtbar ist es für jeden, der hier angemeldet
         ist.
       </p>
 
@@ -516,7 +516,7 @@ function Profil() {
         </div>
         <p className="muted small">
           This is how you appear on pages, in comments and in share lists. The email
-          address is the account’s identifier and cannot be changed here — sign-in
+          address is the account’s identifier and cannot be changed here, sign-in
           and every share hang on it.
         </p>
       </div>
@@ -737,7 +737,7 @@ function Geraete() {
       </Listenkopf>
       <p className="muted small">
         If you find a device here that is not yours, end the session and change your
-        password afterwards — it ends at once, but whoever has the password would
+        password afterwards: the session ends at once, but whoever has the password would
         otherwise just sign in again.
       </p>
       <table className="tabelle">

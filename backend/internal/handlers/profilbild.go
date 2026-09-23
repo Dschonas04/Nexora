@@ -6,7 +6,7 @@
 // upload), so a few hundred avatars fit comfortably in the DB without a
 // separate storage system.
 //
-// Images are cropped client-side; the server only validates incoming bytes —
+// Images are cropped client-side; the server only validates incoming bytes,
 // that they are an actual image and within the size limit.
 package handlers
 

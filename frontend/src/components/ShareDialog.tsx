@@ -219,8 +219,8 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
               </div>
               {gewaehlt.size > 0 && (
                 <div className="muted small">
-                  {gewaehlt.size === 1 ? "One person" : `${gewaehlt.size} people`} selected
-                  — <strong>{perm === "edit" ? "can edit" : "can view"}</strong>
+                  {gewaehlt.size === 1 ? "One person" : `${gewaehlt.size} people`} selected:{" "}
+                  <strong>{perm === "edit" ? "can edit" : "can view"}</strong>
                 </div>
               )}
             </div>

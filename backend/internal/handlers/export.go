@@ -256,7 +256,7 @@ func spaceBedingung(spaceID string) string {
 //
 // The order is derived from parent_id, not from the query order: a child
 // page may appear alphabetically before its parent. Pages whose parent was
-// not included — because it belongs to another space or is restricted — are
+// not included, because it belongs to another space or is restricted, are
 // shown at the top instead of being omitted.
 func schreibeVerzeichnis(b *strings.Builder, seiten []exportSeite, namen map[string]string) {
 	kinder := map[string][]exportSeite{}

@@ -1,5 +1,5 @@
 // File attachments. Metadata lives in the database, the bytes live in the
-// configured storage (Ablage) — either local disk or an S3 bucket — stored
+// configured storage (Ablage), either local disk or an S3 bucket, stored
 // as one object per attachment id. Because metadata and bytes are separate,
 // backups must cover both; otherwise the DB may reference missing objects.
 package handlers

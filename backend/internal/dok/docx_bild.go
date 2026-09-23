@@ -2,7 +2,7 @@
 //
 // A docx stores its images in the archive: as a file under word/media, as a
 // relationship in the rels and as a drawing in the document text. If any of
-// the three are missing Word reports the file as corrupted — therefore they
+// the three are missing Word reports the file as corrupted, therefore they
 // are handled together here.
 //
 // Unlike the PDF path the bytes are inserted unchanged. Word understands PNG,

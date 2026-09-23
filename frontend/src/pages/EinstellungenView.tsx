@@ -984,7 +984,7 @@ export default function EinstellungenView() {
         text:
           r.betrachtet === 0
             ? "Alle Anhänge haben bereits einen Suchtext."
-            : `${r.betrachtet} Anhänge betrachtet, ${r.gelesen} mit Text, ${r.ohneText} ohne — ` +
+            : `${r.betrachtet} Anhänge betrachtet, ${r.gelesen} mit Text, ${r.ohneText} ohne: ` +
               `das sind Bilder, Archive oder gescannte PDF ohne Textebene.`,
         art: "ok",
       });
@@ -1005,7 +1005,7 @@ export default function EinstellungenView() {
         text:
           r.ohneSuchtext === 0
             ? "Suchindex neu aufgebaut, alle Seiten erfasst."
-            : `Suchindex neu aufgebaut. ${r.ohneSuchtext} Seiten ohne Text — das sind in aller Regel leere Seiten.`,
+            : `Suchindex neu aufgebaut. ${r.ohneSuchtext} Seiten ohne Text, das sind in aller Regel leere Seiten.`,
         art: "ok",
       });
       laden();
@@ -2416,7 +2416,7 @@ export default function EinstellungenView() {
                       überhaupt mit der Datenbank sprechen darf. Der Vorrat steht auf{" "}
                       {puls.vorrat.hoechstens}; ohne Angabe nimmt pgx eine Verbindung je Kern.
                       Höher setzen mit <code>pool_max_conns</code> in <code>DATABASE_URL</code>
-                      , und unter <code>max_connections</code> von PostgreSQL bleiben.
+                      , dabei unter <code>max_connections</code> von PostgreSQL bleiben.
                     </div>
                   </div>
                 )}
@@ -2792,7 +2792,7 @@ export default function EinstellungenView() {
                   <div className="muted small">
                     Alles, was seit der gewählten Sicherung entstanden ist, geht verloren.
                     Bevor etwas überschrieben wird, legt Nexora den jetzigen Stand als
-                    Rückweg im Datenverzeichnis ab — wer die falsche Datei erwischt, kommt
+                    Rückweg im Datenverzeichnis ab: wer die falsche Datei erwischt, kommt
                     damit zurück. Ein Archiv ohne die Marke <code>FERTIG</code> wird
                     abgelehnt: es wäre ein halber Bestand über einem ganzen.
                   </div>
@@ -2886,14 +2886,14 @@ export default function EinstellungenView() {
               <p className="muted">Wird geladen…</p>
             ) : !konfig.gefunden ? (
               <p className="muted">
-                Diese Instanz läuft ohne <code>config.conf</code> — aus Umgebungsvariablen und
+                Diese Instanz läuft ohne <code>config.conf</code>, also aus Umgebungsvariablen und
                 Vorgaben. Es gibt hier nichts zu bearbeiten.
               </p>
             ) : (
               <>
                 <p className="muted small">
                   <code>{konfig.pfad}</code>
-                  {!konfig.schreibbar && " — für den Dienst nur lesbar"}
+                  {!konfig.schreibbar && " (für den Dienst nur lesbar)"}
                 </p>
                 {/* The sentence stands here and not in the small print: whoever
                     looks for credentials and finds asterisks otherwise takes

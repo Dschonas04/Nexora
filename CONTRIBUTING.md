@@ -71,7 +71,7 @@ npm run build     # type-check + production build
   what turns a typo into a build error instead of a feature that never unlocks
 - Access checks belong in the backend even when the interface already hides the
   button. Hiding is a courtesy; the refusal is the protection
-- Never commit a working license key — not even in a test. Verification is
+- Never commit a working license key, not even in a test. Verification is
   offline, so such a key can never be withdrawn. Tests generate their own pair;
   see `internal/lizenz/lizenz_test.go`
 - Don't commit `.env`, `node_modules/`, `dist/` or build artifacts

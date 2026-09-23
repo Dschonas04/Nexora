@@ -12,7 +12,7 @@ already current:
 
 - tables are `CREATE TABLE IF NOT EXISTS`
 - new columns are **appended** as `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`,
-  never edited into the `CREATE TABLE` above — so an existing installation picks
+  never edited into the `CREATE TABLE` above, so an existing installation picks
   them up on the next start
 - indexes are `CREATE INDEX IF NOT EXISTS`
 - constraints that have no `IF NOT EXISTS` form are avoided; the handler enforces
@@ -70,7 +70,7 @@ foreign key at all.
 | `created_at` | timestamptz | |
 | `bild` | bytea | The profile picture, in the database rather than in the object store. Attachments are a paid extra, and a face on your own account must not depend on a licence key. Size makes it viable: the browser scales to 256 × 256 before uploading, which is tens of kilobytes, and the server refuses anything over 512 KB |
 | `bild_mime` | text | Determined by decoding the bytes, never taken from the request header |
-| `bild_stand` | timestamptz | When it was last set; NULL means there is none. It rides in the image URL so a new picture appears at once — the browser caches the old one for a day |
+| `bild_stand` | timestamptz | When it was last set; NULL means there is none. It rides in the image URL so a new picture appears at once, the browser caches the old one for a day |
 
 ### `sitzungen`
 
@@ -84,7 +84,7 @@ One row per sign-in. The token points at it; the row decides whether it counts.
 | `zuletzt_am` | timestamptz | Last used. Written at most every 5 minutes, or every request would be a write |
 | `laeuft_ab` | timestamptz | Renewed once half the session's life is gone |
 | `widerrufen_am` | timestamptz | Set by sign-out and by ending a session from the list |
-| `ip`, `browser` | text | So the session list is recognisable — "this device", "the one at the office" |
+| `ip`, `browser` | text | So the session list is recognisable, "this device", "the one at the office" |
 
 Indexed on `user_id` and on `laeuft_ab`; the sweep looks for expired rows, and
 without that index it would run over all the valid ones too.
@@ -128,8 +128,8 @@ Indexed on `owner_id`, `parent_id`, `space_id`, `deleted_at`, and `such_tsv`
 **Why `such_tsv` is generated rather than maintained.** The earlier search ran
 `ILIKE` over the raw JSON: it matched key names and block ids, could use no index
 because of the leading `%`, and knew no ranking. A generated column cannot go
-stale no matter which code path wrote the row — that is the property that made it
-worth a non-portable feature.
+stale no matter which code path wrote the row, and that property is what made a
+non-portable feature worth it.
 
 ### `page_versions`
 
@@ -144,7 +144,7 @@ restoring puts back what was there previously.
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | uuid PK | Also the key in the attachment store — on disk `attachments/<id>`, in a bucket the object name |
+| `id` | uuid PK | Also the key in the attachment store, on disk `attachments/<id>`, in a bucket the object name |
 | `page_id` | uuid → pages, cascade | |
 | `owner_id` | uuid → users, cascade | |
 | `filename`, `mime`, `size` | | `mime` is what the uploader claimed and is **not** trusted when serving the file back |
@@ -153,11 +153,11 @@ restoring puts back what was there previously.
 | `created_at` | timestamptz | |
 
 The **bytes** are the one part of Nexora outside the database. See
-[operations](operations.md#backup) — a `pg_dump` alone is not a complete backup.
+[operations](operations.md#backup): a `pg_dump` alone is not a complete backup.
 
 ### `spaces`, `space_reihenfolge`
 
-`spaces`: `id`, `owner_id`, `name`, `created_at`, `farbe`, plus `oeffentlich` —
+`spaces`: `id`, `owner_id`, `name`, `created_at`, `farbe`, plus `oeffentlich`,
 `nein`, `lesen` or `schreiben`, meaning open to every signed-in account of the
 instance.
 Not "public on the internet": anonymous access runs exclusively through a single
@@ -171,7 +171,7 @@ coloured clusters are describing different pictures.
 
 `space_reihenfolge` (`user_id`, `space_id`, `platz`) holds the sidebar order
 **per account**, deliberately not as a column on `spaces`. The sidebar is
-personal, and a space opened to the whole instance stands in everybody's list —
+personal, and a space opened to the whole instance stands in everybody's list,
 a shared column would mean whoever drags it last decides the order for everyone
 else, including in workspaces they cannot even see. Spaces with no entry sort
 after the ordered ones, by name; that is where a newly created space appears
@@ -179,7 +179,7 @@ until somebody drags it.
 
 ### `tags`, `page_tags`, `favorites`
 
-Tags are **per user**, hence `UNIQUE (owner_id, name)` — two people can each have
+Tags are **per user**, hence `UNIQUE (owner_id, name)`: two people can each have
 a `#draft` that means what they mean. `page_tags` and `favorites` are plain join
 tables with composite primary keys.
 
@@ -187,7 +187,7 @@ tables with composite primary keys.
 
 `(source_id, target_id)` with a created timestamp. Manual page-to-page links
 edited through the interface, independent of the `[[wiki links]]` written into
-the text — both feed backlinks and the knowledge graph. Indexed on `target_id`,
+the text, both feed backlinks and the knowledge graph. Indexed on `target_id`,
 which is the direction backlinks read.
 
 ---
@@ -196,7 +196,7 @@ which is the direction backlinks read.
 
 ### `page_shares`
 
-`(page_id, user_id)` primary key, `permission` — `read` or `edit` — and a
+`(page_id, user_id)` primary key, a `permission` of `read` or `edit`, and a
 timestamp. Indexed on `user_id`, the direction "what was shared with me" reads.
 
 ### `space_rechte`
@@ -204,20 +204,20 @@ timestamp. Indexed on `user_id`, the direction "what was shared with me" reads.
 | Column | Notes |
 |---|---|
 | `space_id` | → spaces, cascade |
-| `gruppe_id` | → gruppen, cascade — **or** |
+| `gruppe_id` | → gruppen, cascade, **or** |
 | `user_id` | → users, cascade |
 | `recht` | `lesen` < `schreiben` < `verwalten` |
 | `erteilt_am` | |
 
 Two CHECK constraints do real work here:
-`CHECK ((gruppe_id IS NULL) <> (user_id IS NULL))` — a right applies to a group
+`CHECK ((gruppe_id IS NULL) <> (user_id IS NULL))`: a right applies to a group
 **or** to an account, never both and never neither, because such a row could not
 be evaluated and the database is the only place where it is guaranteed never to
 come into being. And `CHECK (recht IN ('lesen','schreiben','verwalten'))`.
 
 Two partial unique indexes keep one right per space per subject.
 
-`verwalten` lets somebody grant rights for that space — the person responsible
+`verwalten` lets somebody grant rights for that space: the person responsible
 for an area, without needing a global role for it.
 
 ---
@@ -241,7 +241,7 @@ thread holds together.
 
 ### `postfach`
 
-The inbox. Without it a comment reached nobody — it stood under a page and waited
+The inbox. Without it a comment reached nobody; it stood under a page and waited
 for somebody to open it again by chance, and a question that goes unanswered for
 a week is no longer a question.
 
@@ -249,14 +249,14 @@ a week is no longer a question.
 |---|---|
 | `empfaenger_id` | → users, cascade |
 | `art` | Which kind of entry |
-| `page_id` | → pages, cascade — the entry disappears with the page, because an inbox entry leading nowhere is a nuisance |
+| `page_id` | → pages, cascade, the entry disappears with the page, because an inbox entry leading nowhere is a nuisance |
 | `kommentar_id` | → kommentare, cascade |
 | `ausloeser_id` | → users, set null |
 | `ausloeser_name`, `seiten_titel`, `text` | Frozen copies, so an entry stays readable when the account that triggered it is gone |
 | `gelesen_am`, `erstellt_am` | |
 
 Indexed `(empfaenger_id, erstellt_am DESC)`, plus a **partial** index on unread
-only — almost every query asks for the unread, and that is the small part of the
+only, almost every query asks for the unread, and that is the small part of the
 table.
 
 ### `pruefspur`
@@ -265,7 +265,7 @@ table.
 |---|---|
 | `id` | bigserial |
 | `zeitpunkt` | |
-| `akteur_id` | uuid, a **loose** reference — no foreign key |
+| `akteur_id` | uuid, a **loose** reference, no foreign key |
 | `akteur_name`, `akteur_email` | Frozen at that moment |
 | `aktion` | e.g. `anmeldung`, `anmeldung_fehlgeschlagen`, `seite_geaendert` |
 | `objekt_art`, `objekt_id`, `objekt_titel` | What it referred to, and what it was called then |
@@ -290,7 +290,7 @@ does not belong here: it is needed before the database is open.
 
 Current keys: `registrierung_offen`, `erlaubte_domaenen`, `max_anhang_mb`,
 `sitzung_stunden`, `papierkorb_tage`, `such_woerterbuch`, `echtzeit`,
-`seitenbreite`, `design_grundton`, `design_akzent` — plus the imported licence key, which takes
+`seitenbreite`, `design_grundton`, `design_akzent`, plus the imported licence key, which takes
 precedence over the one in the file.
 
 ### `rechner`

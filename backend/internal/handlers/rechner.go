@@ -39,8 +39,8 @@ const (
 	// seconds; without this buffer every request would re-probe all hosts and
 	// the dashboard would become a load generator.
 	rechnerFrisch = 15 * time.Second
-	// Short because the dashboard must return even when a host is unresponsive
-	// — especially then.
+	// Short because the dashboard must return even when a host is unresponsive,
+	// especially then.
 	rechnerGeduld = 3 * time.Second
 	// An upper bound so the list remains an overview and does not become a
 	// network scanner.
@@ -147,7 +147,7 @@ func anklopfen(ctx context.Context, ziel string) messung {
 
 		m := messung{Da: true, Dauer: time.Since(beginn)}
 		// The Server header is the version the service claims. Some omit it and
-		// that is fine — the field stays empty rather than guessing.
+		// that is fine: the field stays empty rather than guessing.
 		m.Fassung = kurzeKennung(antwort.Header.Get("Server"))
 		// A 404 is still a response: we ask whether a service is running there,
 		// not whether it recognises this particular path. The status is shown in
@@ -180,7 +180,7 @@ func anklopfen(ctx context.Context, ziel string) messung {
 // "which release is running" without Nexora having to log in.
 //
 // If nothing is sent within the short deadline the field stays empty and
-// nothing has waited. This probe never writes — it knocks and does not
+// nothing has waited. This probe never writes; it knocks and does not
 // enter.
 func begruessung(verbindung net.Conn) string {
 	if err := verbindung.SetReadDeadline(time.Now().Add(600 * time.Millisecond)); err != nil {
@@ -219,7 +219,7 @@ func kurzeKennung(roh string) string {
 // zertifikatsAlter reports how long the certificate is still valid.
 //
 // The numeric value is provided because an expired cert is the most common
-// reason a local service suddenly becomes unreachable — and the only one you
+// reason a local service suddenly becomes unreachable, and the only one you
 // can see weeks in advance if someone bothered to display it.
 func zertifikatsAlter(bis time.Time) (string, *int) {
 	tage := int(time.Until(bis).Hours() / 24)

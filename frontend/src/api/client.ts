@@ -440,7 +440,7 @@ export interface LDAPTestErgebnis {
 // has only partly passed.
 // MitschriftZustand is the administration's view of writing together: which
 // pages are open right now and who sits at them. Only the moment, nothing
-// stored — a room ends as soon as the last person leaves.
+// stored: a room ends as soon as the last person leaves.
 // One machine of the overview: what was entered and what was just measured in
 // one piece. Zustand is "antwortet", "still" or "unbekannt".
 export interface Rechner {

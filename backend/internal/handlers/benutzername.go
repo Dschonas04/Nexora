@@ -1,7 +1,7 @@
 // Username as a second login identifier.
 //
 // It is intentionally narrow: lowercase letters, digits, dot, hyphen and
-// underscore. This is not convenience but the reason it is usable at all — it
+// underscore. This is not convenience but the reason it is usable at all; it
 // is typed, read aloud and compared, and two names that differ only in an
 // invisible character would be a pitfall on a login form. An `@` is excluded
 // so that a username cannot be taken that looks like another user's email.
@@ -70,7 +70,7 @@ func benutzernameAusAdresse(email string) string {
 
 // freierBenutzername appends a number until the name is not taken.
 //
-// The database unique index is the ultimate guarantee — between this check
+// The database unique index is the ultimate guarantee, between this check
 // and the insert another actor may take the same name. This loop only avoids
 // the common case where two addresses share the same local part.
 func (s *Server) freierBenutzername(ctx context.Context, vorschlag string) string {
@@ -105,7 +105,7 @@ func nameSchonVergeben(constraint string) bool {
 }
 
 // leerAlsNull converts an empty username to NULL. The unique index allows
-// multiple NULLs but only a single empty string — without this conversion one
+// multiple NULLs but only a single empty string, without this conversion one
 // account without a username could exist and any further ones would fail.
 func leerAlsNull(name string) any {
 	if name == "" {

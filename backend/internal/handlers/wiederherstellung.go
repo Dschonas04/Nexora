@@ -81,7 +81,7 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 
 	ablage := s.datenVerzeichnis()
 	// Create the directory if it does not exist. On a fresh instance that
-	// never wrote attachments the directory may not exist yet — otherwise the
+	// never wrote attachments the directory may not exist yet, otherwise the
 	// restore would fail because there is nowhere to store the files. This
 	// handles the case of a new instance receiving a backup.
 	if err := os.MkdirAll(ablage, 0o700); err != nil {
