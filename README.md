@@ -54,7 +54,7 @@ people, and under which terms, is listed in
 inventory yourself.
 
 Packaging Nexora as a desktop or mobile application for Windows, macOS, Linux,
-Android and iOS lives on the [`verpackung`](../../tree/verpackung) branch,
+Android and iOS lives on the [`packaging`](../../tree/packaging) branch,
 not on `main`: those wrappers are a window onto a running instance, they build
 on a different schedule, and none of it belongs in the server image.
 
@@ -223,7 +223,7 @@ Published images, nothing to build:
 ```bash
 git clone https://github.com/Dschonas04/Nexora.git && cd Nexora
 cp .env.example .env
-cp config.beispiel.conf config.conf
+cp config.example.conf config.conf
 # edit .env: set POSTGRES_PASSWORD and a long random JWT_SECRET
 echo 'COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.abbild.yml' >> .env
 docker compose up -d
@@ -261,7 +261,7 @@ certificates, `nexora-backend` is the Go service, `nexora-frontend` the web
 interface. None of them is meant to run alone.
 
 Templates for the home-server platforms are in
-[`vorlagen/`](vorlagen/README.md): CasaOS, Umbrel, and Unraid with the Compose
+[`templates/`](templates/README.md): CasaOS, Umbrel, and Unraid with the Compose
 Manager.
 
 One file, nothing else, for Portainer, Coolify, Dokploy or a bare machine.
@@ -278,7 +278,7 @@ Building from source instead, for development or to run a patched version:
 
 ```bash
 cp .env.example .env
-cp config.beispiel.conf config.conf
+cp config.example.conf config.conf
 docker compose up -d --build
 ```
 
@@ -367,7 +367,7 @@ customer from a self-issued licence.
 ## Configuration
 
 Everything is read from **`config.conf`** (copied from
-`config.beispiel.conf`), which documents itself: 245 lines,
+`config.example.conf`), which documents itself: 245 lines,
 174 of them comment. Every setting says what it does, which environment
 variable overrides it, and what happens when it is set wrong.
 
