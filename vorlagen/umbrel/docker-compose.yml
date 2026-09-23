@@ -1,0 +1,68 @@
+# Nexora fuer Umbrel.
+#
+# Umbrel setzt den app_proxy davor und fuellt APP_PASSWORD und APP_SEED selbst,
+# deshalb muss hier nichts von Hand erzeugt werden. Die Daten liegen unter
+# ${APP_DATA_DIR}, damit Umbrels Sicherung sie mitnimmt.
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: nexora_frontend_1
+      APP_PORT: 80
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nexora
+      POSTGRES_USER: nexora
+      POSTGRES_PASSWORD: ${APP_PASSWORD}
+    volumes:
+      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexora -d nexora"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: on-failure
+
+  pki:
+    image: ghcr.io/dschonas04/nexora-pki:2.1.0
+    volumes:
+      - ${APP_DATA_DIR}/data/pki:/pki
+    restart: "no"
+
+  backend:
+    image: ghcr.io/dschonas04/nexora-backend:2.1.0
+    depends_on:
+      db:
+        condition: service_healthy
+      pki:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://nexora:${APP_PASSWORD}@db:5432/nexora?sslmode=disable
+      JWT_SECRET: ${APP_SEED}
+      PORT: "8443"
+      NEXORA_TLS_ZERTIFIKAT: /pki/backend/backend.crt
+      NEXORA_TLS_SCHLUESSEL: /pki/backend/backend.key
+      NEXORA_TLS_WURZEL: /pki/ca.crt
+      NEXORA_ANHANG_PFAD: /data/attachments
+    volumes:
+      - ${APP_DATA_DIR}/data/anhaenge:/data/attachments
+      - ${APP_DATA_DIR}/data/pki:/pki:ro
+    restart: on-failure
+
+  frontend:
+    image: ghcr.io/dschonas04/nexora-frontend:2.1.0
+    depends_on:
+      pki:
+        condition: service_completed_successfully
+      backend:
+        condition: service_started
+    environment:
+      NEXORA_DIENST_SCHEMA: https
+      NEXORA_DIENST_PORT: "8443"
+    volumes:
+      - ${APP_DATA_DIR}/data/tls:/etc/nginx/tls
+      - ${APP_DATA_DIR}/data/pki:/pki:ro
+    restart: on-failure

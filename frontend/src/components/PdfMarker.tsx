@@ -85,7 +85,7 @@ export default function PdfMarker({
     let weg = false;
     fetch(url, { credentials: "include" })
       .then((r) => {
-        if (!r.ok) throw new Error("Die Datei ließ sich nicht laden (" + r.status + ").");
+        if (!r.ok) throw new Error("The file could not be loaded (" + r.status + ").");
         return r.arrayBuffer();
       })
       .then((b) => !weg && setRoh(new Uint8Array(b)))
@@ -130,7 +130,7 @@ export default function PdfMarker({
           }
         });
       } catch (e) {
-        if (!weg) setFehler("Diese Datei ließ sich nicht anzeigen: " + (e as Error).message);
+        if (!weg) setFehler("This file could not be displayed: " + (e as Error).message);
       }
     })();
     return () => {

@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// Eine Adresse ohne Port wird abgewiesen und nicht geraten: ein geratener Port
-// meldet einen Rechner als still, der nur auf einem anderen hoert.
+// An address without a port is rejected and not guessed: a guessed port
+// reports a machine as silent that merely listens on a different one.
 func TestZielPruefen(t *testing.T) {
 	faelle := []struct {
 		wert string
@@ -40,8 +40,8 @@ func TestZielPruefen(t *testing.T) {
 	}
 }
 
-// Anklopfen misst an einem offenen Port und an einem geschlossenen, damit beide
-// Zweige einmal wirklich gelaufen sind.
+// Knocking is measured against an open port and a closed one, so that both
+// branches have really run once.
 func TestAnklopfen(t *testing.T) {
 	horcher, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -62,7 +62,7 @@ func TestAnklopfen(t *testing.T) {
 		t.Fatalf("offener Port gilt als still: %s", m.Hinweis)
 	}
 
-	// Ein Port, auf dem nichts horcht: derselbe Horcher, nachdem er zu ist.
+	// A port nothing listens on: the same listener, after it has closed.
 	zu := horcher.Addr().String()
 	horcher.Close()
 	if m := anklopfen(context.Background(), zu); m.Da {
@@ -70,8 +70,8 @@ func TestAnklopfen(t *testing.T) {
 	}
 }
 
-// Eine HTTP-Adresse zaehlt als erreichbar, auch wenn der Weg 404 gibt: gefragt
-// ist, ob dort ein Dienst laeuft, nicht ob er diesen einen Pfad kennt.
+// An HTTP address counts as reachable even when the path answers 404: the
+// question is whether a service runs there, not whether it knows this one path.
 func TestAnklopfenHTTPMitFehlerstatus(t *testing.T) {
 	dienst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
@@ -87,9 +87,8 @@ func TestAnklopfenHTTPMitFehlerstatus(t *testing.T) {
 	}
 }
 
-// Ein selbst unterschriebenes Zertifikat ist im eigenen Haus die Regel und darf
-// den Rechner nicht als still melden: Proxmox, NAS und Backup-Server tragen
-// alle eines.
+// A self-signed certificate is the rule inside one's own house and must not
+// report the machine as silent: Proxmox, NAS and backup server all carry one.
 func TestAnklopfenNimmtSelbstUnterschriebenesZertifikat(t *testing.T) {
 	dienst := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -101,8 +100,8 @@ func TestAnklopfenNimmtSelbstUnterschriebenesZertifikat(t *testing.T) {
 	}
 }
 
-// Einer Umleitung wird nicht gefolgt: sonst stuende am Ende die Erreichbarkeit
-// eines ganz anderen Rechners in der Zeile.
+// A redirect is not followed: otherwise the row would end up stating the
+// reachability of a completely different machine.
 func TestAnklopfenFolgtKeinerUmleitung(t *testing.T) {
 	besucht := 0
 	dienst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -120,9 +119,9 @@ func TestAnklopfenFolgtKeinerUmleitung(t *testing.T) {
 	}
 }
 
-// Ein Dienst, der sich beim Verbindungsaufbau vorstellt -- wie es jeder
-// SSH-Dienst tut --, landet mit seiner Kennung in der Spalte. Das ist die
-// Antwort auf "welche Fassung laeuft da", ohne Anmeldung und ohne fremde Hilfe.
+// A service that introduces itself as the connection opens -- as every SSH
+// daemon does -- lands in the column with its banner. That is the answer to
+// "which version runs there", without signing in and without outside help.
 func TestAnklopfenLiestDieBegruessung(t *testing.T) {
 	horcher, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -147,8 +146,8 @@ func TestAnklopfenLiestDieBegruessung(t *testing.T) {
 	}
 }
 
-// Wer nichts sagt, sagt nichts: die Spalte bleibt leer, und die Messung haengt
-// nicht in der Frist fest.
+// Whoever says nothing says nothing: the column stays empty, and the
+// measurement does not hang until the deadline.
 func TestStillerPortHatKeineKennung(t *testing.T) {
 	horcher, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -161,7 +160,7 @@ func TestStillerPortHatKeineKennung(t *testing.T) {
 			if err != nil {
 				return
 			}
-			// Annehmen und schweigen, wie es etwa eine Datenbank tut.
+			// Accept and stay silent, the way a database does.
 			defer c.Close()
 		}
 	}()
@@ -176,8 +175,8 @@ func TestStillerPortHatKeineKennung(t *testing.T) {
 	}
 }
 
-// Die Kopfzeile Server ist die Fassung, die ein Webdienst selbst nennt, und das
-// Zertifikat sagt, wie lange es noch gilt.
+// The Server header is the version a web service names itself, and the
+// certificate says how much longer it is valid.
 func TestAnklopfenLiestServerUndZertifikat(t *testing.T) {
 	dienst := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Server", "nginx/1.27.4")
@@ -194,8 +193,8 @@ func TestAnklopfenLiestServerUndZertifikat(t *testing.T) {
 	}
 }
 
-// Was ein fremder Rechner schickt, gehoert beschnitten, bevor es in einer
-// Oberflaeche steht: eine Zeile, nur Druckbares, hoechstens sechzig Zeichen.
+// Whatever a foreign machine sends belongs trimmed before it appears in an
+// interface: one line, printable characters only, sixty at the most.
 func TestKurzeKennungBeschneidet(t *testing.T) {
 	if raus := kurzeKennung("SSH-2.0-OpenSSH_9.2\r\nzweite Zeile"); raus != "SSH-2.0-OpenSSH_9.2" {
 		t.Fatalf("zweite Zeile nicht abgeschnitten: %q", raus)
@@ -212,9 +211,9 @@ func TestKurzeKennungBeschneidet(t *testing.T) {
 	}
 }
 
-// Ein abgelaufenes Zertifikat ist der haeufigste Grund, warum ein Dienst im
-// eigenen Haus ploetzlich nicht mehr erreichbar ist. Die Zahl steht daneben,
-// damit die Oberflaeche einfaerben kann, ohne Text auszuwerten.
+// An expired certificate is the most frequent reason a service in one's own
+// house suddenly stops being reachable. The number sits beside it so the
+// interface can colour the row without parsing text.
 func TestZertifikatsAlter(t *testing.T) {
 	text, tage := zertifikatsAlter(time.Now().Add(48 * time.Hour))
 	if tage == nil || *tage != 1 || text == "" {

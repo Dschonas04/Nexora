@@ -1,8 +1,8 @@
-// Der Einstieg, den die Probe bündelt.
+// The entry point the probe bundles.
 //
-// Yjs darf nur EINMAL im Speicher liegen: es prüft Objekte über Konstruktoren,
-// und zwei Kopien führen zu Fehlern, die nach einem Fehler im Programm
-// aussehen. Deshalb reicht dieses Modul dieselbe Kopie heraus, die auch die
-// Leitung benutzt, statt die Probe eine zweite ziehen zu lassen.
+// Yjs may only lie in memory ONCE: it checks objects through constructors, and
+// two copies lead to errors that look like a bug in the program. That is why
+// this module hands out the same copy the wire uses, instead of letting the
+// probe pull a second one.
 export { Leitung } from "../src/mitschrift";
 export * as Y from "yjs";

@@ -7,14 +7,14 @@ import (
 	"testing"
 )
 
-// Der Keks traegt Secure genau dann, wenn der BROWSER verschluesselt spricht --
-// nicht, wenn diese eine Verbindung es tut.
+// The cookie carries Secure exactly when the BROWSER speaks encrypted -- not
+// when this one connection does.
 //
-// Seit der Innenverkehr des Verbunds verschluesselt ist, kommt jede Anfrage
-// ueber TLS beim Dienst an. Entschiede r.TLS, bekaeme jemand, der ueber
-// gewoehnliches HTTP auf die Oberflaeche zugreift, einen Secure-Keks, sein
-// Browser schickte ihn nicht zurueck, und er waere nach der Anmeldung sofort
-// wieder abgemeldet. Genau das ist am 02.09.2026 passiert.
+// Since traffic inside the compound is encrypted, every request reaches the
+// service over TLS. If r.TLS decided, somebody reaching the interface over
+// plain HTTP would get a Secure cookie, their browser would not send it back,
+// and they would be signed out again immediately after signing in. That is
+// exactly what happened on 02.09.2026.
 func TestUeberTLSFolgtDemBrowser(t *testing.T) {
 	faelle := []struct {
 		name       string
@@ -24,8 +24,8 @@ func TestUeberTLSFolgtDemBrowser(t *testing.T) {
 	}{
 		{"offen, ohne Gegenstueck", false, "", false},
 		{"verschluesselt, ohne Gegenstueck", true, "", true},
-		// Der Fall, der den Ausfall gemacht hat: Browser offen, Innenverkehr
-		// verschluesselt.
+		// The case that caused the outage: browser in the clear, internal
+		// traffic encrypted.
 		{"Gegenstueck sagt http, innen TLS", true, "http", false},
 		{"Gegenstueck sagt https, innen TLS", true, "https", true},
 		{"Gegenstueck sagt https, innen offen", false, "https", true},

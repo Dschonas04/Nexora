@@ -1,18 +1,17 @@
-// Lange Listen kurz halten.
+// Keeping long lists short.
 //
-// Die Tabellen der Verwaltung wachsen mit dem Betrieb: Anmeldeversuche,
-// Sitzungen, Protokolleinträge, Konten. Nach ein paar Wochen füllt eine
-// einzige davon den Bildschirm, und wer darunter etwas sucht, rollt an ihr
-// vorbei -- auf einer Seite, die vier weitere Sachgruppen trägt.
+// The administration's tables grow with operation: sign-in attempts, sessions,
+// audit entries, accounts. After a few weeks a single one of them fills the
+// screen, and whoever is looking for something below it scrolls past it -- on a
+// page carrying four more topic groups.
 //
-// Deshalb stehen zunächst nur die ersten fünf Zeilen da, und das sind die
-// neuen: alle diese Listen kommen absteigend sortiert aus dem Backend. Der
-// Rest ist einen Klick entfernt und bleibt offen, solange man auf der Seite
-// bleibt.
+// That is why only the first five rows stand there at first, and those are the
+// new ones: all these lists come out of the backend sorted descending. The rest
+// is one click away and stays open as long as one stays on the page.
 //
-// Es ist eine Komponente und kein Hook, weil die Abschnitte der Verwaltung in
-// einem switch stehen: ein Hook dürfte dort nicht aufgerufen werden, eine
-// Komponente bringt ihren eigenen Zustand mit.
+// It is a component and not a hook, because the administration's sections sit
+// in a switch: a hook may not be called there, a component brings its own state
+// along.
 import { ReactNode, useState } from "react";
 
 export const KURZ = 5;
@@ -24,7 +23,7 @@ export default function KurzeZeilen<T>({
   grenze = KURZ,
 }: {
   alle: T[];
-  /** Wie viele Spalten die Tabelle hat, damit die Zeile mit dem Knopf durchläuft. */
+  /** How many columns the table has, so the row with the button runs through. */
   spalten: number;
   zeile: (eintrag: T, index: number) => ReactNode;
   grenze?: number;

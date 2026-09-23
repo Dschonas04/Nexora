@@ -6,13 +6,13 @@ import (
 	"time"
 )
 
-// Das Fach wird über die Uhr gewechselt, nicht über einen Zeitgeber. Der Fall,
-// der dabei schiefgehen kann, ist ein Fach aus der vorigen Minute, das
-// weitergezählt statt geleert wird: dann stünde eine alte Zahl als frische da.
+// The slot is switched by the clock, not by a timer. The case that can go
+// wrong there is a slot from the previous minute that is counted on instead of
+// cleared: an old number would then stand there as a fresh one.
 func TestFachWirdGeleertStattWeitergezaehlt(t *testing.T) {
 	m := Neu()
 	f := &m.faecher[0]
-	// Ein Fach, das zu einer Sekunde vor über einer Minute gehört.
+	// A slot belonging to a second more than a minute ago.
 	f.sekunde.Store(time.Now().Unix() - 3600)
 	f.anfragen.Store(999)
 
@@ -24,11 +24,11 @@ func TestFachWirdGeleertStattWeitergezaehlt(t *testing.T) {
 	}
 }
 
-// naechsteSekunde wartet, bis die Uhr weitergesprungen ist.
+// naechsteSekunde waits until the clock has moved on.
 //
-// Nötig, weil Lies die laufende Sekunde auslässt: sie ist erst zum Teil
-// vergangen, und eine halbe Sekunde sähe in der Anzeige wie ein Einbruch aus.
-// Frisch Gezähltes taucht deshalb erst auf, wenn seine Sekunde vorbei ist.
+// Necessary because Lies leaves out the current second: it has only partly
+// passed, and half a second would look like a slump in the display. Freshly
+// counted things therefore only show up once their second is over.
 func naechsteSekunde() {
 	for start := time.Now().Unix(); time.Now().Unix() == start; {
 		time.Sleep(5 * time.Millisecond)
@@ -45,9 +45,9 @@ func TestZaehltUndUnterscheidetDenStatus(t *testing.T) {
 	if s.Gesamt != 4 {
 		t.Fatalf("Gesamt = %d, erwartet 4", s.Gesamt)
 	}
-	// 4xx ist abgewiesen, 5xx ist kaputt. Die Unterscheidung ist der Grund,
-	// warum überhaupt nach Status getrennt wird: eine Instanz, die fleißig 401
-	// verteilt, ist nicht dieselbe wie eine, die abstürzt.
+	// 4xx is rejected, 5xx is broken. That distinction is the reason for
+	// separating by status at all: an instance busily handing out 401s is not
+	// the same as one that crashes.
 	if s.Abgelehnt != 1 {
 		t.Fatalf("Abgelehnt = %d, erwartet 1", s.Abgelehnt)
 	}
@@ -68,8 +68,8 @@ func TestLaufendGehtWiederAufNull(t *testing.T) {
 	}
 }
 
-// Gemessen wird auf dem heißen Weg, also von allen Anfragen gleichzeitig. Unter
-// -race fällt hier jede Sperre auf, die vergessen wurde.
+// Measuring happens on the hot path, that is from all requests at once. Under
+// -race every lock that was forgotten shows up here.
 func TestVieleGleichzeitig(t *testing.T) {
 	m := Neu()
 	var wg sync.WaitGroup
@@ -91,8 +91,8 @@ func TestVieleGleichzeitig(t *testing.T) {
 	}
 }
 
-// Die laufende Sekunde bleibt draußen, weil sie erst zum Teil vergangen ist.
-// Die Minute muss deshalb 59 Fächer haben und nicht 60.
+// The current second stays out because it has only partly passed. The minute
+// must therefore have 59 slots and not 60.
 func TestMinuteLaesstDieLaufendeSekundeAus(t *testing.T) {
 	if got := len(Neu().Lies().Minute); got != Faecher-1 {
 		t.Fatalf("Minute hat %d Fächer, erwartet %d", got, Faecher-1)

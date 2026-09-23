@@ -1,10 +1,10 @@
 # Environment
 .env
 
-# Die laufende Konfiguration. Sie gehoert dem Betrieb, nicht dem Verzeichnis:
-# sie enthaelt Zugangsdaten, und sie wird auf der Wartungsseite bearbeitet,
-# ein verfolgter Stand wuerde bei jedem Ausrollen darueber hinweggeschrieben.
-# Vorlage: config.beispiel.conf
+# The running configuration. It belongs to operations, not to the repository:
+# it holds credentials, and it is edited on the maintenance page; a tracked
+# version would be written over on every deployment.
+# Template: config.beispiel.conf
 config.conf
 
 # Node

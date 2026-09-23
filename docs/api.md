@@ -8,7 +8,7 @@ exception and sits outside on purpose.
 **Authentication** is an httpOnly cookie `nexora_token`, set by register, login,
 the OIDC callback or the LDAP sign-in. There is no header form and no API token.
 Two stages run before any handler: the cookie's JWT must parse, and the session
-it names must still be valid — signing out revokes it, so a copied token stops
+it names must still be valid, signing out revokes it, so a copied token stops
 working.
 
 **Unauthenticated endpoints** are exactly these:
@@ -28,7 +28,7 @@ GET  /healthz
 | 400 | Malformed body or missing field |
 | 401 | No session, or an invalid or revoked token. Identical for all three, so nothing is learned from the difference |
 | 402 | The feature is not unlocked. Body: `{error, funktion, grund}` |
-| 403 | May read, may not write — or an admin-only route |
+| 403 | May read, may not write, or an admin-only route |
 | 404 | Does not exist, **or** exists and may not be read. The two are not told apart |
 | 409 | Concurrent edit. Body: `{error, konflikt: true, stand, geaendert}` |
 | 501 | Issuing a licence key on an installation without a private signing key |
@@ -43,18 +43,18 @@ tier contains which feature is in [architecture chapter 8.5](architecture.md#85-
 | Method | Path | Notes |
 |---|---|---|
 | `POST` | `/auth/register` | `{email, name, password}`. The **first account ever created becomes admin**. Subject to `registrierung_offen` and `erlaubte_domaenen` |
-| `POST` | `/auth/login` | `{kennung, password}` — `kennung` is an email address *or* a login name; the `@` decides which. `{email, password}` is still accepted. One error message for both failure cases |
+| `POST` | `/auth/login` | `{kennung, password}`, `kennung` is an email address *or* a login name; the `@` decides which. `{email, password}` is still accepted. One error message for both failure cases |
 | `POST` | `/auth/logout` | Revokes the session row, not just the cookie |
 | `GET` | `/auth/me` | The signed-in account |
-| `POST` | `/auth/passwort` | `{alt, neu}` — change your own password. The current one is required even though the session already proves who is asking: the case guarded against is an unattended browser. Every **other** session of the account is revoked, this one survives. Answers `{ok, beendet}` with the number of sessions ended. **409** on an account that signs in through SSO |
+| `POST` | `/auth/passwort` | `{alt, neu}`, change your own password. The current one is required even though the session already proves who is asking: the case guarded against is an unattended browser. Every **other** session of the account is revoked, this one survives. Answers `{ok, beendet}` with the number of sessions ended. **409** on an account that signs in through SSO |
 | `GET` | `/auth/sso` | Which sign-in methods this instance offers. Read before the login form is drawn |
 | `GET` | `/auth/oidc/start` | 302 to the provider · paid: `sso` |
 | `GET` | `/auth/oidc/zurueck` | The provider's callback · paid: `sso` |
 | `POST` | `/auth/ldap` | `{kennung, password}`, bound against the directory · paid: `ldap` |
-| `PUT` | `/profil` | `{name}` — the display name of your own account. Free, and not an admin matter: what somebody is called is their own business. The email address is *not* changeable here, it is the identity every share and every sign-in hangs on |
-| `PUT` | `/profil/bild` | The raw bytes of a profile picture, at most 512 KB. What kind of image it is, is decided by **decoding it**, not by the `Content-Type` — PNG, JPEG and GIF are accepted, anything else gets 415. The browser crops and scales to 256 × 256 before sending |
+| `PUT` | `/profil` | `{name}`, the display name of your own account. Free, and not an admin matter: what somebody is called is their own business. The email address is *not* changeable here, it is the identity every share and every sign-in hangs on |
+| `PUT` | `/profil/bild` | The raw bytes of a profile picture, at most 512 KB. What kind of image it is, is decided by **decoding it**, not by the `Content-Type`, PNG, JPEG and GIF are accepted, anything else gets 415. The browser crops and scales to 256 × 256 before sending |
 | `DELETE` | `/profil/bild` | Remove it; the interface falls back to initials |
-| `GET` | `/users/{id}/bild` | The picture of any account, for every signed-in caller: a face beside a comment is only useful if it also appears for somebody you share no space with. 404 when there is none — which placeholder stands for an account without a picture is the interface's decision, not the server's |
+| `GET` | `/users/{id}/bild` | The picture of any account, for every signed-in caller: a face beside a comment is only useful if it also appears for somebody you share no space with. 404 when there is none, which placeholder stands for an account without a picture is the interface's decision, not the server's |
 | `GET` | `/sitzungen` | Every stored session of this account, with IP, browser, ages, and `diese: true` for the current one |
 | `DELETE` | `/sitzungen` | End every session except the current one |
 | `DELETE` | `/sitzungen/{id}` | End one, effective on its next request |
@@ -70,21 +70,21 @@ tier contains which feature is in [architecture chapter 8.5](architecture.md#85-
 | `GET` | `/pages/trash` | Deleted pages, each with how long it has left |
 | `POST` | `/pages` | `{title?, parentId?, spaceId?}` |
 | `GET` | `/pages/{id}` | The page including tags, favourite flag and the caller's permission |
-| `PUT` | `/pages/{id}` | `{title?, content?, icon?, parentId?, spaceId?, basis?}`. `basis` is the `updatedAt` the editor last saw — send it and a concurrent edit answers 409 instead of being overwritten (paid: `konflikte`; without the licence the field is ignored). Only the **owner** may change `parentId` / `spaceId`: re-parenting is a structural change to the owner's workspace |
+| `PUT` | `/pages/{id}` | `{title?, content?, icon?, parentId?, spaceId?, basis?}`. `basis` is the `updatedAt` the editor last saw, send it and a concurrent edit answers 409 instead of being overwritten (free since 2.1). Only the **owner** may change `parentId` / `spaceId`: re-parenting is a structural change to the owner's workspace |
 | `DELETE` | `/pages/{id}` | Move to the trash |
 | `POST` | `/pages/{id}/restore` | Back out of the trash |
 | `DELETE` | `/pages/{id}/purge` | Permanent. Cascades to versions, attachments, shares, links and **subpages** |
-| `PUT` | `/pages/{id}/reihenfolge` | Move and order in one call — a drag in the sidebar is one gesture, and two requests could half-fail |
+| `PUT` | `/pages/{id}/reihenfolge` | Move and order in one call, a drag in the sidebar is one gesture, and two requests could half-fail |
 | `PUT` | `/pages/{id}/breite` | Page width. Free, like the page itself |
 | `POST` · `DELETE` | `/pages/{id}/favorite` | |
 | `POST` | `/pages/{id}/tags` | Attach a tag |
 | `DELETE` | `/pages/{id}/tags/{tagId}` | Detach it |
 
-### Versions · paid: `versionen`
+### Versions
 
-Snapshots are **written** on every installation regardless of licence — otherwise
-there would be a hole in the history right after unlocking. Only viewing and
-restoring are gated.
+Snapshots are written on every installation, and since 2.1 viewing and
+restoring them needs no licence either, version history is part of the
+Standard scope.
 
 | Method | Path | Notes |
 |---|---|---|
@@ -92,7 +92,7 @@ restoring are gated.
 | `GET` | `/pages/{id}/versions/{versionId}` | One snapshot |
 | `POST` | `/pages/{id}/versions/{versionId}/restore` | Roll the page back |
 
-### Attachments · paid: `anhaenge`
+### Attachments
 
 | Method | Path | Notes |
 |---|---|---|
@@ -106,7 +106,7 @@ restoring are gated.
 | Method | Path | Notes |
 |---|---|---|
 | `GET` | `/pages/{id}/attachments/{attId}/word` | A `.docx` as editor blocks. Whoever may read the page may read the file |
-| `PUT` | `/pages/{id}/attachments/{attId}/word` | Write the blocks back as `.docx`. Needs write access **and** the `anhaenge` licence. Text, headings, lists and tables survive; headers, styles, comments and images do not |
+| `PUT` | `/pages/{id}/attachments/{attId}/word` | Write the blocks back as `.docx`. Needs write access; no licence since 2.1. Text, headings, lists and tables survive; headers, styles, comments and images do not |
 
 ### PDF attachments
 
@@ -133,14 +133,14 @@ Whoever wants to keep the original downloads it first.
 | `POST` | `/pages/{id}/share` | Publish read-only, returns a random token |
 | `DELETE` | `/pages/{id}/share` | Revoke the public link |
 | `GET` | `/pages/{id}/shares` | Who this page is shared with |
-| `POST` | `/pages/{id}/shares` | `{userId, permission}` — `"read"` or `"edit"` |
+| `POST` | `/pages/{id}/shares` | `{userId, permission}`, `"read"` or `"edit"` |
 | `DELETE` | `/pages/{id}/shares/{userId}` | |
 | `GET` | `/public/{token}` | The page, no session needed |
 | `GET` | `/public/{token}/dateien/{attId}` | Images and attachments of a shared page. Without this route a shared page with pictures would show a visitor nothing but broken images, because the ordinary attachment path demands a session |
 
 A public link is the only anonymous access there is, and it is read-only. Opening
 a **space** (`/spaces/{id}/oeffentlich`) opens it to signed-in accounts of the
-| `PUT` | `/spaces/{id}/farbe` | `{farbe}` as `#rrggbb`, or empty to reset. The colour the space wears **in the sidebar and in the graph** — a dot before its name, and every page of that space in the graph. It sits on the space and not in the browser, so everybody sees the same picture. Without a chosen colour one is derived from the space id, which keeps it stable when spaces are added or the graph is filtered · owner or admin |
+| `PUT` | `/spaces/{id}/farbe` | `{farbe}` as `#rrggbb`, or empty to reset. The colour the space wears **in the sidebar and in the graph**, a dot before its name, and every page of that space in the graph. It sits on the space and not in the browser, so everybody sees the same picture. Without a chosen colour one is derived from the space id, which keeps it stable when spaces are added or the graph is filtered · owner or admin |
 instance, never to the internet.
 
 ---
@@ -149,7 +149,7 @@ instance, never to the internet.
 
 | Method | Path | Notes |
 |---|---|---|
-| `GET` | `/echtzeit/{id}` | WebSocket. The session for one page: everything a browser sends goes to every browser in the room, the sender included. **Edit rights required** — a read-only viewer could otherwise send text that another browser would then save |
+| `GET` | `/echtzeit/{id}` | WebSocket. The session for one page: everything a browser sends goes to every browser in the room, the sender included. **Edit rights required**, a read-only viewer could otherwise send text that another browser would then save |
 | `GET` | `/pages/{id}/mitschreibende` | How many sit at this page right now, and whether the feature is switched on at all. The share dialog shows it |
 | `GET` | `/system/mitschrift` | Which pages are open and who is in them · admin. Not gated on the licence: the switch in the admin pages should show something even when the extra is locked |
 
@@ -157,7 +157,7 @@ The server keeps no document of its own. It passes packets on, and the browsers
 work out the text between them (Yjs, a CRDT); `GET /pages/{id}` says in
 `gemeinsam` whether a page is one where that happens at all. Two consequences
 worth knowing: a restart of the service costs nothing, the browsers reconnect and
-reconcile — and a room exists only while somebody is in it, so the text lives in
+reconcile, and a room exists only while somebody is in it, so the text lives in
 the database, written there by exactly one of the participants.
 
 Whatever sits in front has to pass the upgrade through. Without
@@ -188,7 +188,7 @@ already does it.
 | `PUT` | `/spaces/reihenfolge` | Order in the sidebar. Registered before `/spaces/{id}`, or chi would read `reihenfolge` as a space id |
 | `PUT` | `/spaces/{id}` | Rename |
 | `DELETE` | `/spaces/{id}` | The pages keep existing; their `space_id` is nulled |
-| `PUT` | `/spaces/{id}/oeffentlich` | `nein` \| `lesen` \| `schreiben` — for every signed-in account of the instance. An unrecognised value becomes `nein`, so a typo can open nothing |
+| `PUT` | `/spaces/{id}/oeffentlich` | `nein` \| `lesen` \| `schreiben`, for every signed-in account of the instance. An unrecognised value becomes `nein`, so a typo can open nothing |
 | `GET` | `/spaces/{id}/rechte` | Space permissions · paid: `gruppen` |
 | `PUT` | `/spaces/{id}/rechte` | Grant to an account or a group: `lesen` \| `schreiben` \| `verwalten` · paid: `gruppen` |
 | `GET` | `/spaces/{id}/export` | ZIP of Markdown; `?format=pdf` or `?format=word` returns the whole space as one typeset document · paid: `export` |
@@ -204,7 +204,7 @@ already does it.
 
 The extra gates **managing** them. Whether existing permissions still apply is
 decided by the permission check itself: without a licence they do not take
-effect, and neither are they deleted — everything comes back unchanged once the
+effect, and neither are they deleted; everything comes back unchanged once the
 extra is unlocked again.
 
 ---
@@ -236,7 +236,7 @@ licensed.
 
 ---
 
-## Comments · paid: `kommentare`
+## Comments
 
 | Method | Path | Notes |
 |---|---|---|
@@ -272,7 +272,7 @@ noise is one people stop opening.
 | `GET` | `/pruefspur/aktionen` | Which action names actually occur, for the filter dropdown |
 
 Recording runs on every installation regardless of licence. Only reading is
-paid — a trail with a hole over exactly the unlicensed period would not be one.
+paid: a trail with a hole over exactly the unlicensed period would not be one.
 
 ---
 
@@ -295,13 +295,13 @@ because put together the entries are a map of who works here and when.
 
 The answer carries three parts:
 
-- `versuche` — one row per attempt: `zeitpunkt`, `erfolg`, `kennung` (what was
+- `versuche`: one row per attempt, with `zeitpunkt`, `erfolg` and `kennung` (what was
   typed; `typed → account` where the two differ, which is how signing in by user
   name is told apart from signing in by address), `ip`, `weg`
   (`passwort` | `ldap` | `sso`), `grund` on failures, and the user agent.
-- `zusammenfassung` — successes and failures over 24 hours and 7 days, plus how
+- `zusammenfassung`, successes and failures over 24 hours and 7 days, plus how
   many distinct addresses were seen.
-- `herkunft` — the last week grouped by address, most failures first, with how
+- `herkunft`: the last week grouped by address, most failures first, with how
   many distinct accounts each address tried. Many failures from one address
   against many accounts is the pattern this table exists for.
 
@@ -321,7 +321,7 @@ success or failure.
 
 | Method | Path | Notes |
 |---|---|---|
-| `GET` | `/pages/{id}/markdown` | The page as Markdown. **Free forever** — getting your own content out must never depend on a licence |
+| `GET` | `/pages/{id}/markdown` | The page as Markdown. **Free forever**, getting your own content out must never depend on a licence |
 | `GET` | `/pages/{id}/pdf` | Typeset PDF. Bold, italic, underline, strikethrough, **text colour and highlight** all travel · paid: `export` |
 | `GET` | `/pages/{id}/word` | `.docx` · paid: `export` |
 | `POST` | `/import` | Free, for the same reason the export is |
@@ -329,7 +329,7 @@ success or failure.
 ### `POST /import`
 
 multipart, with the files under `file`. Accepts single `.md` / `.html` files or a
-whole `.zip` — an Obsidian vault, a Notion export (the id in every filename is
+whole `.zip`: an Obsidian vault, a Notion export (the id in every filename is
 stripped), a Confluence HTML export, a git wiki, a folder of notes.
 
 | Field | Effect |
@@ -360,7 +360,7 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `DELETE` | `/users/{id}` | admin, and not yourself |
 | `PUT` | `/users/{id}/role` | admin |
 | `PUT` | `/users/{id}/benutzername` | The account itself, or an admin |
-| `PUT` | `/users/{id}/passwort` | `{neu}` — an admin sets a password for a forgotten one. **Every** session of that account is revoked, including one somebody is sitting at. **400** on your own account, which goes through `/auth/passwort` instead; **409** on an SSO account, where a password would take its sign-in away |
+| `PUT` | `/users/{id}/passwort` | `{neu}`, an admin sets a password for a forgotten one. **Every** session of that account is revoked, including one somebody is sitting at. **400** on your own account, which goes through `/auth/passwort` instead; **409** on an SSO account, where a password would take its sign-in away |
 | `GET` | `/lizenz` | What is unlocked, plus the tier table so the interface can show what a higher tier would bring. Readable by everyone; it contains no secret, and hiding it would only make the interface lie |
 | `PUT` | `/system/lizenz` | Import a key, effective at once · admin |
 | `POST` | `/system/lizenz/ausstellen` | Issue a key. **501** where no private signing key is present, which is every ordinary installation |
@@ -376,7 +376,7 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `GET` | `/system` | The state of the stack: which surrounding services answer, how fast, which version they run, how much they hold. Nexora has no Docker socket on purpose, so this is what can be established over the network |
 | `GET` | `/system/ablage` | Where attachments currently live |
 | `POST` | `/system/ablage/test` | Try an object store's credentials before saving them |
-| `POST` | `/system/suchindex` | Rebuild the full text index — needed after changing `such_woerterbuch` |
+| `POST` | `/system/suchindex` | Rebuild the full text index, needed after changing `such_woerterbuch` |
 | `POST` | `/system/anhangindex` | Extract attachment text for files uploaded before the attachment index existed |
 | `GET` | `/system/anmeldungen` | Sign-in attempts, see above · admin |
 | `GET` | `/system/mitschrift` | Which pages are being written on together right now, and who is in them · admin |
@@ -384,7 +384,7 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `POST` | `/system/grenzprobe` | Reads a body and discards it, answering with the byte count. The interface uses it to *measure* how large a transfer may really be: nginx in front has its own `client_max_body_size`, which Nexora cannot read and should not have to · admin |
 | `GET` | `/system/sicherung/umfang` | What a backup would contain, and whether it can be made at all · admin |
 | `GET` | `/system/sicherung` | The whole instance as a streamed ZIP: `pg_dump` plus every attachment · admin |
-| `GET` | `/system/rechner` | The machines this instance keeps an eye on, each with a fresh probe: `zustand` is `antwortet`, `still` or `unbekannt`, plus the round trip time, the version the service names itself (`fassung`, from its greeting or the `Server` header) and, on TLS targets, how long the certificate still has (`zertifikat`, `tageBisAblauf`). Nothing outside is asked — no monitoring system, no credentials. Measurements are at most 15 seconds old; a poll in between is answered from memory · admin |
+| `GET` | `/system/rechner` | The machines this instance keeps an eye on, each with a fresh probe: `zustand` is `antwortet`, `still` or `unbekannt`, plus the round trip time, the version the service names itself (`fassung`, from its greeting or the `Server` header) and, on TLS targets, how long the certificate still has (`zertifikat`, `tageBisAblauf`). Nothing outside is asked, no monitoring system, no credentials. Measurements are at most 15 seconds old; a poll in between is answered from memory · admin |
 | `POST` | `/system/rechner` | `{name, ziel, notiz?}`. `ziel` is `host:port` or a full `http(s)://` address; a host without a port is refused rather than guessed · admin |
 | `PUT` | `/system/rechner/{id}` | Change one · admin |
 | `DELETE` | `/system/rechner/{id}` | Remove one from the list · admin |
@@ -396,7 +396,7 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 `{benutzer, passwort}`. Without a password the directory is only searched, which
 is the ordinary case: it checks the connection, the service account, the filter
 and the field names without anybody typing their password into someone else's
-form — and those four are where an LDAP setup actually fails. With a password
+form, and those four are where an LDAP setup actually fails. With a password
 the bind is attempted as well, which checks the whole chain. No account is
 created in Nexora either way; that happens only on a real sign-in.
 
@@ -404,14 +404,14 @@ A failed probe answers **200** with `{ok: false, fehler}`, not a 4xx: the reques
 was fine, only the result is negative, and a status code would force the
 interface to guess whether the test failed or could not be run. `ok` is also
 false when the entry was found but carries nothing in the configured mail field,
-because no account can be made from it — `hinweis` says so.
+because no account can be made from it, `hinweis` says so.
 
 #### `GET /system/puls`
 
 Three sources the system view shows together, because none of them says much
 alone.
 
-`anfragen` is the last minute in **one-second buckets**, oldest first — count,
+`anfragen` is the last minute in **one-second buckets**, oldest first, count,
 mean and longest duration, 4xx and 5xx counted apart. Buckets rather than a
 running average: an average over the whole uptime dilutes every spike out of
 sight, and a minute in which nothing worked disappears into eight hours of
@@ -428,7 +428,7 @@ deceptively: with every connection busy, each further request waits, which from
 outside looks like a slow database while the database is idle.
 
 `prozess` is heap, goroutines and cores. `datenbank` is size, cache hit ratio
-and total backends — the hit ratio being the number that says whether more
+and total backends: the hit ratio being the number that says whether more
 `shared_buffers` would buy anything.
 
 #### `GET /system/sicherung`
@@ -448,7 +448,7 @@ nexora-sicherung-2026-08-31_1120/
 ```
 
 **Check for `FERTIG` before trusting the archive.** A backup that broke off
-mid-stream is still a *valid* ZIP and opens fine — half a backup would otherwise
+mid-stream is still a *valid* ZIP and opens fine, half a backup would otherwise
 be indistinguishable from a whole one. The marker is the last entry written, so
 its presence means everything before it got through.
 
@@ -458,7 +458,7 @@ PostgreSQL recomputes it on restore. The same goes for the GIN index over it.
 
 The response is streamed rather than assembled, or the whole holding would sit in
 memory twice at exactly the size where a backup starts to matter. It is also
-detached from the router's 30-second timeout — watching `r.Context()` would be
+detached from the router's 30-second timeout, watching `r.Context()` would be
 wrong here, since a client going away and that timeout are indistinguishable
 there, and the backup would break off after thirty seconds every time. A client
 that does go away still ends it: writing to a closed connection fails and
@@ -469,7 +469,7 @@ secrets. Everything else is: password hashes, sessions, share tokens. This is
 the most sensitive file the instance will ever hand out.
 
 **Two ways in, and only two.** A signed-in admin (the button in the settings), or
-`Authorization: Bearer <sicherung_token>` — a script has no cookie, and that is
+`Authorization: Bearer <sicherung_token>`: a script has no cookie, and that is
 the whole point of automating it. This route therefore sits *outside* the session
 group; inside it, a token-authenticated call would be rejected by the sign-in
 check before ever reaching the handler.
@@ -478,7 +478,7 @@ The backup token is **separate from the metrics token** on purpose. That one
 hands out a summary; this one hands out the entire holding without a sign-in.
 Whoever sets up a metrics scraper should not be handing out a key to the whole
 database as a side effect. Every fetch by token is written to the audit trail
-with the address it came from — for a script that is the only trace it leaves,
+with the address it came from, for a script that is the only trace it leaves,
 having no account to read back later.
 
 | Method | Path | Notes |
@@ -498,7 +498,7 @@ about it is built so that a mistake stays survivable.
 
 **It backs up first.** Before anything is overwritten, a dump of the current
 state is written into the data directory as `vor-wiederherstellung-<stamp>.sql`,
-and the response names it. If that dump fails, nothing is restored — no restore
+and the response names it. If that dump fails, nothing is restored: no restore
 without a way back. Mistakes happen exactly here, because two archives look
 alike and differ only in a timestamp.
 
@@ -538,4 +538,4 @@ replaces the holding should not be triggerable from a script.
 
 | Method | Path | Notes |
 |---|---|---|
-| `GET` | `/healthz` | Outside `/api`, needs no session. Pings the database — a backend without one cannot serve anything useful, so an answer that ignored it would be a lie |
+| `GET` | `/healthz` | Outside `/api`, needs no session. Pings the database, a backend without one cannot serve anything useful, so an answer that ignored it would be a lie |

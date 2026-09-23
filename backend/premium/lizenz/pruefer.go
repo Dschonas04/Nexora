@@ -60,7 +60,7 @@ type Pruefer struct {
 // NeuerPruefer builds a verifier for a given public key.
 //
 // It exists so tests can generate their own key pair instead of shipping a
-// working license key in the repository — a key committed once is a key handed
+// working license key in the repository: a key committed once is a key handed
 // to everyone who clones it, and offline verification means it can never be
 // revoked.
 func NeuerPruefer(oeffentlich ...ed25519.PublicKey) *Pruefer {

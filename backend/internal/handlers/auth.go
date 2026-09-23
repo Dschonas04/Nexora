@@ -135,9 +135,9 @@ func (s *Server) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 type loginReq struct {
-	// Kennung ist Adresse oder Benutzername. Das Feld email bleibt daneben
-	// stehen, weil aeltere Fassungen der Oberflaeche und jedes Skript, das
-	// gegen diese Schnittstelle geschrieben wurde, es so schicken.
+	// Kennung is either address or user name. The email field stays alongside
+	// it, because older versions of the interface and every script written
+	// against this API send it that way.
 	Kennung  string `json:"kennung"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -183,10 +183,10 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Steht ein zweiter Faktor, endet der erste Schritt hier: keine Sitzung,
-	// kein Keks, nur ein Ticket, das fuenf Minuten gilt. Der Versuch wird noch
-	// nicht als Anmeldung vermerkt -- angemeldet ist niemand, solange der Code
-	// fehlt, und die Pruefspur soll das nicht anders behaupten.
+	// If a second factor is set up, the first step ends here: no session, no
+	// cookie, only a ticket valid for five minutes. The attempt is not yet
+	// recorded as a sign-in -- nobody is signed in as long as the code is
+	// missing, and the audit trail should not claim otherwise.
 	if s.zweitfaktorAktiv(r.Context(), u.ID) {
 		ticket, err := auth.ZweitTicket(s.Secret, u.ID)
 		if err != nil {

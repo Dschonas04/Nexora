@@ -26,7 +26,7 @@ Please include a description, steps to reproduce, and potential impact.
 - [ ] Never commit `.env` to version control
 - [ ] Confirm `.env` is actually being read
 - [ ] Read the startup log: dangerous defaults are named there
-- [ ] Turn `registrierung_offen` off once the accounts that should exist do —
+- [ ] Turn `registrierung_offen` off once the accounts that should exist do,
       but not before the first one, which becomes the administrator
 - [ ] With LDAP: leave `ldap_starttls` and `ldap_tls_pruefen` on. Without them
       directory credentials cross the network in the clear
@@ -67,7 +67,7 @@ never be withdrawn**. Give issued keys an expiry date; that is the only lever
 there is.
 
 Replacing the public key in `backend/premium/lizenz/pruefer.go` invalidates every
-key ever issued — which is the emergency exit, and the reason it is a constant
+key ever issued, which is the emergency exit, and the reason it is a constant
 rather than a setting.
 
 ## Notes

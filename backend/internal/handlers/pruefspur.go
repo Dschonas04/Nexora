@@ -3,8 +3,8 @@
 // Two rules shape this file.
 //
 // Writing never fails a request. If the trail cannot be written, the user's
-// action still goes through and the problem lands in the log. The opposite —
-// refusing to save a page because an audit row failed — turns a bookkeeping
+// action still goes through and the problem lands in the log. The opposite,
+// refusing to save a page because an audit row failed, turns a bookkeeping
 // problem into an outage.
 //
 // Writing is not gated by the license. The trail is recorded on every
@@ -177,7 +177,7 @@ func nullWennLeer(s string) interface{} {
 //
 // Admin only, and on top of that behind the Pruefspur feature. The check is
 // explicit here rather than left to the route, because this handler is the one
-// place where every user's actions become visible to someone else — that
+// place where every user's actions become visible to someone else; that
 // deserves to be readable at the point of use.
 func (s *Server) ListPruefspur(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)

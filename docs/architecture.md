@@ -1,4 +1,4 @@
-# Nexora — Architecture Documentation
+# Nexora: Architecture Documentation
 
 Structured after **arc42**, with the views drawn in the **C4** notation:
 context (level 1), containers (level 2), components (level 3), and code where a
@@ -8,7 +8,7 @@ The diagrams are Mermaid and render on GitHub without a plugin.
 
 | | |
 |---|---|
-| **System** | Nexora — self-hosted knowledge base |
+| **System** | Nexora, self-hosted knowledge base |
 | **Repository** | `github.com/Dschonas04/Nexora` |
 | **License** | Business Source License 1.1, Apache 2.0 from 2030-08-19 |
 | **Status of this document** | describes the state of the `main` branch |
@@ -17,9 +17,9 @@ The diagrams are Mermaid and render on GitHub without a plugin.
 
 1. [Introduction and goals](#1-introduction-and-goals)
 2. [Constraints](#2-constraints)
-3. [Context and scope](#3-context-and-scope) — *C4 level 1*
+3. [Context and scope](#3-context-and-scope), *C4 level 1*
 4. [Solution strategy](#4-solution-strategy)
-5. [Building block view](#5-building-block-view) — *C4 levels 2–4*
+5. [Building block view](#5-building-block-view), *C4 levels 2–4*
 6. [Runtime view](#6-runtime-view)
 7. [Deployment view](#7-deployment-view)
 8. [Cross-cutting concepts](#8-cross-cutting-concepts)
@@ -34,7 +34,7 @@ The diagrams are Mermaid and render on GitHub without a plugin.
 
 Nexora is a knowledge base for a team that wants one without renting it: nested
 pages in a block editor, spaces, sharing, versions, attachments, comments,
-search, backlinks and a graph — running on hardware its owner controls, against
+search, backlinks and a graph, running on hardware its owner controls, against
 a database its owner can dump.
 
 The comparison is Notion, Outline, Confluence. The difference is that all three
@@ -49,12 +49,12 @@ the right is the licence tier that unlocks it (chapter 8.5).
 | Area | Capability | Tier |
 |---|---|---|
 | Writing | Nested pages, block editor, autosave, drag to reorder | free |
-| | Markdown and HTML import — single files or a whole ZIP | free |
+| | Markdown and HTML import, single files or a whole ZIP | free |
 | | Markdown export of a page | free |
-| | Version history: snapshot before every change, browse, restore | advanced |
-| | Attachments per page, with a viewer for images, PDF, text | advanced |
-| | Comment threads, one reply level, settle a thread | advanced |
-| | Conflict detection on concurrent edits | pro |
+| | Version history: snapshot before every change, browse, restore | free |
+| | Attachments per page, with a viewer for images, PDF, text | free |
+| | Comment threads, one reply level, settle a thread | free |
+| | Conflict detection on concurrent edits | free |
 | | PDF and Word export of a page, export of a whole space | pro |
 | Organising | Spaces, tags, favourites, collapsible sidebar | free |
 | | Trash with an expiry sweep | free |
@@ -65,7 +65,7 @@ the right is the licence tier that unlocks it (chapter 8.5).
 | | Per-user page shares, public read-only links | pro |
 | | Groups, space permissions | business |
 | | Sign-in through OIDC, sign-in against LDAP / AD | business |
-| | Audit trail — recorded always, readable with a licence | business |
+| | Audit trail, recorded always, readable with a licence | business |
 
 ### 1.2 Quality goals
 
@@ -100,7 +100,7 @@ decisions in chapter 9 are exactly that collision being resolved.
 | Constraint | Consequence |
 |---|---|
 | **PostgreSQL 16+** is required, not one database among several | The search is `tsvector` with a GIN index and a generated column; the ids are `gen_random_uuid()` from `pgcrypto`. Neither is portable, and both were chosen over portability on purpose. |
-| **Go 1.25+** | Not a preference — `minio-go` requires it. |
+| **Go 1.27+** | Set in `go.mod`; `minio-go` alone would need 1.25. |
 | **Only the browser talks to the API** | There is no second client, so the API is shaped for the interface and answers JSON, not a general-purpose resource model. |
 | **The backend has no Docker socket** | It cannot see the stack it runs in. What the system view reports is what can be established over the network: which services answer, how fast, which version. |
 | **Verification of a licence key is offline** | No licence server exists, so a key cannot be revoked. The expiry date is the only lever there is. |
@@ -111,7 +111,8 @@ decisions in chapter 9 are exactly that collision being resolved.
 - **One maintainer.** Everything that cannot be operated by one person is out of
   scope: no cluster, no sharding, no separate worker fleet.
 - **Business Source License 1.1**, not an OSI licence. The core may be run
-  commercially; twelve extras need a key. The whole thing turns Apache 2.0 on
+  commercially, version history, attachments and comments included; eight
+  extras for larger teams need a key. The whole thing turns Apache 2.0 on
   2030-08-19.
 - **The repository is public**, which shapes CI: no `pull_request` trigger on
   the self-hosted runner, and no Docker socket on it (chapter 7.4).
@@ -128,7 +129,7 @@ decisions in chapter 9 are exactly that collision being resolved.
 
 ## 3. Context and scope
 
-### 3.1 Business context — C4 level 1
+### 3.1 Business context: C4 level 1
 
 ```mermaid
 graph TB
@@ -188,7 +189,7 @@ Five decisions carry the rest of the design. Each is expanded in chapter 9.
 |---|---|---|
 | Where does state live? | **One PostgreSQL for everything except attachment bytes.** No second store of record. | One dump is one backup. A knowledge base whose backup is a procedure rather than a command is a knowledge base that is not backed up. |
 | How does the schema evolve? | **One idempotent script, run on every start.** New columns are appended as `ALTER TABLE ... IF NOT EXISTS`. | A fresh volume and a three-year-old one reach the same schema by the same path. No migration tool, no version table, no partially applied state. |
-| Where do attachments go? | **An `Ablage` interface with two implementations**, disk and S3. The handlers never learn which. | Attachments are the only unbounded part, so they are the part that has to be movable — to another disk, a share, a bucket — without touching a handler. |
+| Where do attachments go? | **An `Ablage` interface with two implementations**, disk and S3. The handlers never learn which. | Attachments are the only unbounded part, so they are the part that has to be movable, to another disk, a share, a bucket, without touching a handler. |
 | How are paid extras enforced? | **A router middleware per extra**, answering `402`. The verifier is a separate package that can be deleted. | Enforcement in one place per feature, and a free core that still builds and runs when the licence code is removed entirely (`-tags nur_kern`). |
 | How is it delivered? | **Two containers**: a Go binary and nginx with a static bundle. | Nothing to install, nothing to compile at the target, no runtime to keep current. The SPA is served by the thing that also proxies the API, so there is no CORS to configure and no second origin. |
 
@@ -200,9 +201,9 @@ Every technology in use, and the reason it is the one in use.
 
 | Technology | Version | Role | Why this one |
 |---|---|---|---|
-| **Go** | 1.25 | The whole backend | One static binary, no runtime at the target, and a concurrency model that makes a request-per-goroutine server the obvious shape rather than a framework's trick. |
+| **Go** | 1.27 | The whole backend | One static binary, no runtime at the target, and a concurrency model that makes a request-per-goroutine server the obvious shape rather than a framework's trick. |
 | **chi** | v5 | HTTP router | It is `net/http` with a router and nothing else. Route groups nest, which is exactly what the licence gate needs: one `r.Group` per paid extra, one middleware on it. |
-| **pgx** | v5 | PostgreSQL driver and pool | The native protocol driver, not `database/sql` over it. It knows PostgreSQL types — `jsonb`, `uuid`, `timestamptz`, arrays — without a mapping layer inventing them. |
+| **pgx** | v5 | PostgreSQL driver and pool | The native protocol driver, not `database/sql` over it. It knows PostgreSQL types such as `jsonb`, `uuid` and `timestamptz`, arrays, without a mapping layer inventing them. |
 | **golang-jwt** | v5 | Session token | The token says *who*; the `sitzungen` row says whether it still counts (chapter 8.1). Signed, not encrypted: it carries no secret. |
 | **golang.org/x/crypto** | | bcrypt password hashing | The cost is tunable and the algorithm is the boring, correct choice for password storage. |
 | **go-oidc** + **oauth2** | v3 | Sign-in through an OIDC provider | Discovery document, JWKS fetch and ID-token verification are exactly the parts one must not hand-roll. |
@@ -241,7 +242,7 @@ larger than the feature.
 
 ## 5. Building block view
 
-### 5.1 Level 1 — the system decomposed
+### 5.1 Level 1: the system decomposed
 
 ```mermaid
 graph TB
@@ -258,11 +259,11 @@ graph TB
 ```
 
 Two deployable units and nothing else. There is no worker, no scheduler
-container, no queue: the two periodic jobs Nexora has — the trash sweep and the
-session sweep — are goroutines with a ticker inside the backend process
+container, no queue: the two periodic jobs Nexora has, the trash sweep and the
+session sweep, are goroutines with a ticker inside the backend process
 (chapter 6.6).
 
-### 5.2 Level 2 — containers
+### 5.2 Level 2: containers
 
 #### Frontend container
 
@@ -278,7 +279,7 @@ The Go binary, decomposed in 5.3. Around it: `poppler-utils` for `pdftotext`, a
 user with uid 10001, and `/data/attachments` declared as a volume so a fresh
 named volume inherits that ownership instead of belonging to root.
 
-### 5.3 Level 3 — components of the backend
+### 5.3 Level 3: components of the backend
 
 ```mermaid
 graph TB
@@ -315,7 +316,7 @@ graph TB
 The dotted edge is the one that carries the design: `internal/lizenz` defines
 the gate and knows nothing about signatures. `premium/lizenz` registers itself
 as the verifier in an `init`. Delete the directory, build with `-tags nur_kern`,
-and the gate answers "no verifier present" for every extra — the free core, with
+and the gate answers "no verifier present" for every extra: the free core, with
 no licence code compiled in at all.
 
 #### The packages
@@ -323,10 +324,10 @@ no licence code compiled in at all.
 | Package | Responsibility | Notable |
 |---|---|---|
 | `internal/config` | Reads `config.conf`, lets the environment override, falls back to built-in defaults. Also `Warnungen()`, the list of dangerous settings named at every boot | A hand-written parser for a deliberately dull `key = value` format. A broken line is reported with its number and skipped, never fatal |
-| `internal/db` | Pool via pgx, and `Migrate` — the whole schema as one idempotent script | No migration tool and no version table; see [ADR-2](#adr-2-the-schema-is-one-idempotent-script) |
+| `internal/db` | Pool via pgx, and `Migrate`, which is the whole schema as one idempotent script | No migration tool and no version table; see [ADR-2](#adr-2-the-schema-is-one-idempotent-script) |
 | `internal/auth` | Issues and parses the JWT, hashes and checks passwords | The token carries user id and session id, nothing else |
 | `internal/middleware` | `Auth`: validates the cookie, then asks a `SitzungPruefer` whether the session still counts, then injects the user id into the context | Answers 401 identically for missing and invalid, so nothing is learned from the difference |
-| `internal/lizenz` | The feature names, the four tiers, `Frei(f)` — and the `Pruefer` interface a verifier registers against | Contains no cryptography |
+| `internal/lizenz` | The feature names, the four tiers, `Frei(f)` and the `Pruefer` interface a verifier registers against | Contains no cryptography |
 | `internal/ablage` | `Ablage`: `Schreiben`, `Lesen`, `Loeschen`, `Name`. Implementations `platte.go` and `s3.go` | A failed write leaves nothing behind; deleting what is already gone is not an error |
 | `internal/einlesen` | Markdown and HTML into BlockNote blocks: `markdown.go`, `html.go`, `bloecke.go`, `inline.go` | The import side. Hand-written, tested against real Obsidian, Notion and Confluence exports |
 | `internal/dok` | Typesetting: `pdf.go`, `docx.go`, `word_lesen.go`, `farben.go`, image embedding, font metrics | Written without a third-party library. The PDF uses base fonts and WinAnsi encoding, so umlauts survive. Text colour and highlight travel as the editor's colour *names* and are translated per target: three numbers for PDF, six hex digits for Word, and for Word's highlight a name from its fixed palette |
@@ -350,16 +351,16 @@ no licence code compiled in at all.
 | Operations | `wartung.go`, `einstellungen.go`, `verbund.go`, `rechner.go`, `redis.go`, `lizenz.go`, `lizenzverwaltung.go` |
 | Shared | `server.go`, `leser.go` |
 
-### 5.4 Level 3 — components of the frontend
+### 5.4 Level 3: components of the frontend
 
 ```mermaid
 graph TB
     app["<b>App.tsx</b><br/>router, providers"]
 
     subgraph ctx["Context"]
-        authc["auth.tsx — who is signed in"]
-        lizc["lizenz.tsx — which extras are unlocked, asked once"]
-        design["design.tsx — the three colour schemes"]
+        authc["auth.tsx: who is signed in"]
+        lizc["lizenz.tsx: which extras are unlocked, asked once"]
+        design["design.tsx: the three colour schemes"]
     end
 
     subgraph views["Views (src/pages)"]
@@ -390,7 +391,7 @@ exist once. And **`lizenz.tsx` exports an `Extra` union** of the same strings th
 backend uses, so a control gated on a feature name that does not exist fails to
 compile rather than failing to appear.
 
-### 5.5 Level 4 — the permission check
+### 5.5 Level 4: the permission check
 
 One function is worth showing at code level, because it is the one that decides
 who sees what, and because its shape is a decision rather than an
@@ -414,7 +415,7 @@ up visible to the wrong people. Nothing is cached either: a share revoked in one
 tab takes effect in the next request from another.
 
 The space rights branch is conditional on the `gruppen` extra being licensed.
-The rows are not deleted when a licence lapses — they simply grant nothing, and
+The rows are not deleted when a licence lapses; they simply grant nothing, and
 access falls back to owner, admin and direct page shares.
 
 ---
@@ -449,7 +450,7 @@ sequenceDiagram
 
 Three things in this diagram are deliberate. **One message for both failure
 cases**, so the response cannot be used to enumerate which addresses are
-registered. **The failed attempt is recorded** — a trail without failed sign-ins
+registered. **The failed attempt is recorded**: a trail without failed sign-ins
 lacks exactly the events one opens it for. And the **`kennung` field takes either
 an address or a login name**; the `@` decides which was typed, and the SQL asks
 for both.
@@ -486,7 +487,7 @@ sequenceDiagram
     H->>A: pagePerm(uid, pageID)
     A->>D: one query: owner · admin · share · space right
     alt not readable
-        H-->>B: 404 — not 403, so the existence of a page is not leaked
+        H-->>B: 404, not 403, so the existence of a page is not leaked
     else readable but not writable
         H-->>B: 403 "read-only access"
     else
@@ -506,7 +507,7 @@ key lookup per request, cached on top.
 confirms that the page exists. The two cases are only told apart once read
 access is established.
 
-### 6.3 Saving a page — autosave, snapshot, conflict
+### 6.3 Saving a page: autosave, snapshot, conflict
 
 ```mermaid
 sequenceDiagram
@@ -523,7 +524,7 @@ sequenceDiagram
         H-->>E: 409 {konflikt: true, stand, geaendert}
         Note over E: the editor offers the choice instead of overwriting
     else
-        H->>D: INSERT page_versions — the state BEFORE the edit
+        H->>D: INSERT page_versions (the state BEFORE the edit)
         H->>D: UPDATE pages SET title, content, content_text, updated_at = now()
         Note over D: such_tsv is GENERATED and cannot go stale
         H->>D: rewrite page_links from the @ mentions
@@ -537,7 +538,7 @@ Details that are decisions rather than accidents:
 
 - **Compared down to the microsecond.** That is the resolution `timestamptz`
   keeps and the one that survives the round trip through JSON. Rounding to whole
-  seconds would blind the check to two saves inside one second — and the autosave
+  seconds would blind the check to two saves inside one second, and the autosave
   saves exactly that fast.
 - **The snapshot is of the state before the edit**, so restoring a version puts
   back what was there previously. Snapshots coalesce, or the autosave would fill
@@ -572,7 +573,7 @@ sequenceDiagram
         H-->>B: 500
     end
     H->>H: extract text (pdftotext, plain text, .docx)
-    H->>D: UPDATE attachments SET inhalt_text — feeds attachments_such_idx
+    H->>D: UPDATE attachments SET inhalt_text, feeds attachments_such_idx
     H-->>B: 201 the attachment
 ```
 
@@ -606,13 +607,13 @@ sequenceDiagram
     alt no account, registration open, domain allowed
         H->>D: INSERT users (no password hash)
     else an account exists that has its own password
-        Note over H: link, never take over — the local password stays the way in
+        Note over H: link, never take over; the local password stays the way in
     end
     H->>D: INSERT sitzungen
     H-->>B: 302 to the interface + session cookie
 ```
 
-Both external sign-in methods — OIDC here and the LDAP bind in `ldap.go` — link
+Both external sign-in methods, OIDC here and the LDAP bind in `ldap.go`, link
 by **verified email address**, and neither ever takes over an account that has a
 password of its own. `oeffentliche_url` has to be set, because the callback
 address cannot be derived from a request that has passed through a proxy; a boot
@@ -623,8 +624,8 @@ without it is warned about.
 ```mermaid
 graph LR
     subgraph proc["Inside the backend process"]
-        t1["Trash sweep — hourly"]
-        t2["Session sweep — every 6 h"]
+        t1["Trash sweep: hourly"]
+        t2["Session sweep: every 6 h"]
     end
 
     t1 -->|"pages deleted longer ago than papierkorb_tage"| purge["purge the row<br/>→ cascades to versions, shares, links, subpages"]
@@ -637,7 +638,7 @@ jobs do not justify a scheduler, and a job that shares the process shares its
 configuration and its database pool.
 
 The trash sweep deletes the **attachment bytes** as well as the rows. Without
-that, an object store slowly fills with files no page points at any more — the
+that, an object store slowly fills with files no page points at any more, the
 kind of leak nobody notices until the bucket is billed.
 
 `papierkorb_tage = 0` switches the expiry off, and pages then stay in the trash
@@ -651,7 +652,7 @@ until somebody empties it.
 
 ```mermaid
 graph TB
-    subgraph host["One host — Docker Compose"]
+    subgraph host["One host: Docker Compose"]
         pki["pki container<br/>runs once, then exits<br/>issues the stack's certificates"]
         pkiv[("volume nexora_pki<br/>authority + one cert per service")]
         subgraph fe["frontend container"]
@@ -664,9 +665,9 @@ graph TB
             filesv[("volume nexora_files<br/>or a host directory")]
         end
         subgraph opt["side files, optional"]
-            db[("postgres — docker-compose.db.yml")]
-            minio[("minio — docker-compose.minio.yml")]
-            redis[("redis — docker-compose.redis.yml")]
+            db[("postgres: docker-compose.db.yml")]
+            minio[("minio: docker-compose.minio.yml")]
+            redis[("redis: docker-compose.redis.yml")]
         end
     end
 
@@ -690,9 +691,9 @@ graph TB
 |---|---|
 | Published ports | `PORT` (3000) → 80, `PORT_TLS` (3443) → 443. The backend is **not** published; it is reachable only through the frontend container |
 | `nexora_tls` | Holds the certificate. Generated self-signed on first start, 825 days. Drop a real `zertifikat.pem` / `schluessel.pem` in and nothing is generated |
-| `nexora_files` | Attachment bytes, only while they are on disk. `NEXORA_ANHANG_ORT` replaces it with a host directory or a share — which then has to belong to uid/gid 10001 |
+| `nexora_files` | Attachment bytes, only while they are on disk. `NEXORA_ANHANG_ORT` replaces it with a host directory or a share, which then has to belong to uid/gid 10001 |
 | `config.conf` | Not tracked in git: it holds credentials and is edited from the maintenance page, so a tracked copy would be overwritten on every rollout. Mounted writable, and the file has to belong to gid 10001 for the maintenance page to save it |
-| `nexora_pki` | The stack's own authority and one certificate per service, ten years. Written once by the `pki` container, read-only everywhere else, and left alone on later starts — an authority that changed on every boot would be none |
+| `nexora_pki` | The stack's own authority and one certificate per service, ten years. Written once by the `pki` container, read-only everywhere else, and left alone on later starts, an authority that changed on every boot would be none |
 
 ### 7.1a Encrypted inside, too
 
@@ -703,7 +704,7 @@ the wrong party, encrypted.
 
 | Hop | Mechanism |
 |---|---|
-| nginx → backend | `proxy_ssl_verify on` against `/pki/ca.crt`, with `proxy_ssl_name backend` — the target comes from a variable, so nginx does not take the name from the address by itself |
+| nginx → backend | `proxy_ssl_verify on` against `/pki/ca.crt`, with `proxy_ssl_name backend`, the target comes from a variable, so nginx does not take the name from the address by itself |
 | backend → PostgreSQL | `sslmode=verify-full&sslrootcert=…` in the connection string; pgx does the rest, no code of ours |
 | backend → MinIO | minio-go with a transport of our own carrying the root pool |
 | backend → Redis | `--port 0` on the server closes the plain door; the client verifies the name |
@@ -711,7 +712,7 @@ the wrong party, encrypted.
 
 The authority is **added** to the public ones, never substituted (see
 `internal/vertrauen`). Replacing them would cost the service its trust in every
-public certificate — an identity provider behind Let's Encrypt would suddenly be
+public certificate: an identity provider behind Let's Encrypt would suddenly be
 unreachable, and nobody would connect that to having set up a local authority.
 
 Whoever runs the service elsewhere leaves `tls_zertifikat` empty and gets plain
@@ -736,7 +737,7 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.redis.yml
 
 ### 7.3 Behind a reverse proxy
 
-`chimw.RealIP` is on, so `X-Forwarded-For` is trusted — which is correct behind
+`chimw.RealIP` is on, so `X-Forwarded-For` is trusted, which is correct behind
 a proxy one controls and wrong when the container is exposed to the internet
 directly. In front of a proxy, terminate TLS there, forward to `PORT`, and set
 `oeffentliche_url` to the address the browser actually uses. Without it the OIDC
@@ -745,7 +746,7 @@ callback cannot be built, and a public share link names the wrong host.
 ### 7.4 Continuous integration
 
 `.github/workflows/pruefen.yml` runs on a self-hosted runner in the maintainer's
-network — the only one that reaches the Docker host this instance runs on.
+network: the only one that reaches the Docker host this instance runs on.
 
 ```mermaid
 graph LR
@@ -783,10 +784,10 @@ operation.
 
 Three concentric questions, each answered in exactly one place:
 
-1. **Is there a valid session?** — `middleware.Auth`. Answers 401.
-2. **Is this feature licensed?** — `VerlangeFunktion` on the route group.
+1. **Is there a valid session?**, `middleware.Auth`. Answers 401.
+2. **Is this feature licensed?**, `VerlangeFunktion` on the route group.
    Answers 402.
-3. **May this user touch this object?** — `pagePerm` / `isAdmin` in
+3. **May this user touch this object?**, `pagePerm` / `isAdmin` in
    `access.go`. Answers 404 (may not read) or 403 (may read, may not write).
 
 Ways access can be granted, strongest first: **owner** → **admin** → **direct
@@ -816,7 +817,7 @@ The full table-by-table description is in the [data model](data-model.md).
 ```mermaid
 graph LR
     save["page saved"] --> ct["content_text<br/>prose pulled out of the BlockNote JSON"]
-    ct --> tsv["such_tsv — GENERATED<br/>setweight(title,A) + setweight(content_text,B)"]
+    ct --> tsv["such_tsv: GENERATED<br/>setweight(title,A) + setweight(content_text,B)"]
     tsv --> gin["GIN index"]
     q["/api/search?q=..."] --> gin
     gin --> rank["rank, snippet, then filter to what the caller may read"]
@@ -833,7 +834,7 @@ The dictionary is `german` by default (`such_woerterbuch`). It costs a little
 precision on English content and is clearly better than `simple` for German
 pages, because the search then reaches across word forms.
 
-Results are filtered by the same rule that governs opening a single page — there
+Results are filtered by the same rule that governs opening a single page; there
 is no second, looser check for search.
 
 Attachments carry their own `inhalt_text` and `such_tsv`, filled on upload from
@@ -847,20 +848,20 @@ graph TB
     gate --> frei["lizenz.Frei(f)"]
     frei --> pr{"a verifier<br/>registered?"}
     pr -->|"yes"| ed["premium/lizenz<br/>Ed25519 over the payload<br/>public key baked in"]
-    pr -->|"no — nur_kern build"| no["nothing is unlocked"]
+    pr -->|"no: nur_kern build"| no["nothing is unlocked"]
     ed --> ok["402 or through"]
     no --> ok
 ```
 
 | | |
 |---|---|
-| **Tiers** | `free` → `advanced` (versionen, anhaenge, kommentare) → `pro` (freigeben, konflikte, echtzeit, export, anhangsuche) → `business` (gruppen, pruefspur, sso, ldap). Each contains the smaller ones |
+| **Tiers** | `free`, shown as Standard (versionen, anhaenge, kommentare, konflikte, unlocked without any key) → `pro` (freigeben, echtzeit, export, anhangsuche) → `business` (gruppen, pruefspur, sso, ldap). Each contains the smaller ones. `advanced` still exists as a name so that old keys read as valid, and adds nothing since 2.1 |
 | **A key** | `payload.signature`, Ed25519. Carries holder, tier and/or individual features, issue date, expiry. Verified against a public key compiled into `pruefer.go` |
 | **Offline** | No licence server is contacted, so an air-gapped installation works. The cost: an issued key cannot be revoked, which is why keys carry an expiry of at most a year |
 | **Precedence** | A key imported through the admin pages wins over the one in the config file. Otherwise a licence imported in the browser would revert on the next restart |
 | **Failure** | A missing or invalid key is never fatal. The reason is logged and the server runs on the free feature set |
 | **Recording vs. reading** | The audit trail is written on every installation regardless of licence; only reading it is paid. A trail with a hole over the unlicensed period would not be one |
-| **Export asymmetry** | Markdown export and import are free forever — the way out of the system must never sit behind a payment. PDF and Word are typesetting, a presentation rather than an escape route, and those are paid |
+| **Export asymmetry** | Markdown export and import are free forever, the way out of the system must never sit behind a payment. PDF and Word are typesetting, a presentation rather than an escape route, and those are paid |
 
 ### 8.6 Configuration
 
@@ -869,7 +870,7 @@ default.** The environment wins so a container can override one value without a
 rebuilt image and so a secret never has to touch disk.
 
 The file is looked for at `$NEXORA_CONFIG`, then `./config.conf`, then
-`/etc/nexora/config.conf`. **A missing file is not an error** — every setting has
+`/etc/nexora/config.conf`. **A missing file is not an error**: every setting has
 a default that produces a working server, which is what lets the binary start
 with no configuration at all. A line without `=` is reported with its number and
 skipped; a value that should be a number and is not keeps the default. A typo
@@ -886,8 +887,8 @@ The full list with defaults is the [configuration reference](configuration.md).
 
 ### 8.7 Attachment storage
 
-`ablage.Ablage` — `Schreiben`, `Lesen`, `Loeschen`, `Name` — with a disk and an
-S3 implementation. Beyond tidiness, this is what makes two operational problems
+`ablage.Ablage` with `Schreiben`, `Lesen`, `Loeschen` and `Name`, implemented
+once for disk and once for S3. Beyond tidiness, this is what makes two operational problems
 go away: attachments are the part that makes backups awkward and horizontal
 scaling impossible, because two containers cannot share a local directory.
 
@@ -902,7 +903,7 @@ behaviour for whoever wants it.
 Redis is optional and is a **cache, never a store of record**: everything in it
 also stands in PostgreSQL, so a Redis outage is not an outage of the application,
 only a slower one. This is the deliberate difference from the common design of
-keeping sessions in Redis alone — there a restart signs everyone out, and losing
+keeping sessions in Redis alone; there a restart signs everyone out, and losing
 it means nobody can say who was signed in.
 
 Keys carry `redis_vorsilbe` so two instances can share one Redis.
@@ -913,7 +914,7 @@ Identifiers are German, prose is English. It is a convention, and it holds
 consistently: `pruefspur` is the audit trail, `ablage` is the attachment store,
 `postfach` is the inbox, `einlesen` is the import side, `dok` the typesetting.
 Once a thing has a name it keeps it, from the column through the handler to the
-JSON field — so `postfach` in the browser's network tab is the same `postfach` as
+JSON field, so `postfach` in the browser's network tab is the same `postfach` as
 in the schema, with nothing translating in between. Every term is in the
 [glossary](#12-glossary).
 
@@ -924,10 +925,10 @@ in the schema, with nothing translating in between. Every term is in the
 | Bad JSON, missing field | 400 |
 | No session, invalid or revoked token | 401, identical for all three |
 | May read, may not write | 403 |
-| May not read, or does not exist | 404 — the two are not told apart |
+| May not read, or does not exist | 404, the two are not told apart |
 | Concurrent edit | 409 with `stand` and who changed it |
 | Feature not licensed | 402 with `funktion` and `grund` |
-| A panicking handler | `chimw.Recoverer` — the request fails, the process does not |
+| A panicking handler | `chimw.Recoverer`, the request fails, the process does not |
 | A request that will not end | `chimw.Timeout(30s)` |
 
 On the client, `Fehlergrenze` is a React error boundary, so a rendering fault in
@@ -942,8 +943,8 @@ changes, trash, permanent deletion, shares and public links.
 `/system/anmeldungen` rather than `/pruefspur`. Who is knocking at the door
 belongs to running an instance at all, not to reporting on it, so gating it
 behind the `pruefspur` extra would have meant an unlicensed installation cannot
-see that it is being attacked. All three ways in — password form, directory,
-identity provider — write through one function in `anmeldungen.go`, so a new way
+see that it is being attacked. All three ways in, password form, directory,
+identity provider, write through one function in `anmeldungen.go`, so a new way
 in cannot quietly record less than the others. Each entry carries the address,
 the way in, the user agent and, on a failure, why: `Kennung unbekannt` and
 `Passwort falsch` are different events even though the caller gets the same
@@ -954,7 +955,7 @@ ones.
 
 It deliberately has **no foreign key with a cascade**. Actor name, actor address
 and object title are frozen copies, so an entry stays readable after the page or
-the account it refers to is gone — and deletion is precisely the event an auditor
+the account it refers to is gone, and deletion is precisely the event an auditor
 comes looking for.
 
 The inbox (`postfach`) follows the same rule for who triggered an entry, and the
@@ -970,7 +971,7 @@ cd backend && go build -tags nur_kern ./...
 
 The result is a binary with no licence check compiled in. Every paid extra
 answers 402, everything else works unchanged. This is a build the CI could run
-and a contributor can run — the free core has to stand on its own, and the only
+and a contributor can run: the free core has to stand on its own, and the only
 way to be sure of that is for it to build without the other half present.
 
 ---
@@ -991,7 +992,7 @@ Redis; the search in an external engine.
 **Consequences.** `pg_dump` is a complete backup except for attachment bytes,
 which is the single most valuable property a self-hosted system can have.
 Transactions cover things that would otherwise need coordination. The cost is
-that PostgreSQL is required and not merely supported — `tsvector`, `jsonb`,
+that PostgreSQL is required and not merely supported, `tsvector`, `jsonb`,
 `pgcrypto` and generated columns are all load-bearing.
 
 ### ADR-2: The schema is one idempotent script
@@ -1015,7 +1016,7 @@ id; `middleware.Auth` checks both.
 
 **Consequences.** A single device can be locked out. Signing out actually
 revokes. The list answers who is signed in right now. Sessions renew while in
-use and expire when not. The cost is one primary key lookup per request —
+use and expire when not. The cost is one primary key lookup per request,
 cached, and cheap enough that the alternative was never worth its drawbacks.
 
 ### ADR-4: Attachments go through an interface, not a path
@@ -1034,8 +1035,8 @@ silently scattering files across two places.
 cryptography. `premium/lizenz` registers itself as verifier. `-tags nur_kern`
 builds without it.
 
-**Consequences.** Enforcement lives in one place per feature — a route group with
-one middleware — instead of scattered through handlers. The free core provably
+**Consequences.** Enforcement lives in one place per feature: a route group with
+one middleware, instead of scattered through handlers. The free core provably
 builds and runs alone. And the split makes the honest statement possible: the
 interface hides locked features as a courtesy, the 402 is what enforces them.
 
@@ -1061,7 +1062,7 @@ image.
 **Consequences.** No dependency whose surface exceeds the feature, no external
 process to supervise, and a container that stays small. The cost is a deliberate
 limit: base fonts and WinAnsi encoding (which is what makes umlauts survive), and
-`.docx` round-trips carry text, headings, lists and tables — headers, styles,
+`.docx` round-trips carry text, headings, lists and tables, headers, styles,
 comments and images do not survive, and the interface says so before anyone
 starts.
 
@@ -1124,7 +1125,7 @@ graph LR
 | # | Scenario | Expected behaviour | Realised by |
 |---|---|---|---|
 | Q1 | Two people edit one page; B saves after A | B is refused with 409 and told who changed it, instead of overwriting | 6.3, conflict detection on `basis` |
-| Q2 | Redis goes down | Everything keeps working, a little slower | 8.8 — cache only |
+| Q2 | Redis goes down | Everything keeps working, a little slower | 8.8, cache only |
 | Q3 | The object store goes down at startup | The boot stops, loudly, rather than writing new attachments to disk | 8.7 |
 | Q4 | A laptop with an open session is lost | That one session is ended from the session list; everyone else stays signed in | 8.1 |
 | Q5 | A licence expires | Paid routes answer 402, the free feature set carries on, the audit trail keeps recording | 8.5 |
@@ -1162,50 +1163,50 @@ schema, the code and the JSON.
 
 | Term | Meaning |
 |---|---|
-| `ablage` | Attachment store — the interface over disk and S3 |
+| `ablage` | Attachment store, the interface over disk and S3 |
 | `anhang`, `anhaenge` | Attachment(s) |
 | `anhangsuche` | Full text search inside attachments (paid extra) |
-| `aussteller` | Issuer — of an OIDC discovery document |
+| `aussteller` | Issuer, of an OIDC discovery document |
 | `basis` | The `updatedAt` the editor last saw; what conflict detection compares against |
 | `benutzername` | Login name, an alternative to the email address |
-| `breite` | Page width — normal or wide |
+| `breite` | Page width, normal or wide |
 | `dok` | The typesetting package: PDF and `.docx` |
-| `einfuhr` | Import — of Markdown, HTML or a ZIP archive |
-| `einlesen` | Parsing — the package that turns Markdown and HTML into blocks |
+| `einfuhr` | Import, of Markdown, HTML or a ZIP archive |
+| `einlesen` | Parsing, the package that turns Markdown and HTML into blocks |
 | `einstellungen` | Runtime settings, the ones that live in the database |
-| `erledigt` | Settled — a comment thread marked as dealt with |
-| `erwaehnungen` | Mentions — who may be named with `@` |
+| `erledigt` | Settled, a comment thread marked as dealt with |
+| `erwaehnungen` | Mentions, who may be named with `@` |
 | `freigeben` | Sharing (paid extra) |
 | `funktion` | One paid extra, by name |
-| `gesetzt` | Typeset — the PDF and Word export |
-| `leitung` | Line — the WebSocket carrying a collaborative session |
+| `gesetzt` | Typeset, the PDF and Word export |
+| `leitung` | Line, the WebSocket carrying a collaborative session |
 | `mitschrift` | The shared writing on one page, and the code behind it |
 | `gruppen` | Groups, and with them space permissions (paid extra) |
 | `kennung` | The identifier typed at sign-in: address or login name |
 | `kommentare` | Comments (paid extra) |
-| `echtzeit` | Real time — several accounts writing on one page at once (paid extra) |
+| `echtzeit` | Real time, several accounts writing on one page at once (paid extra) |
 | `konflikte` | Conflict detection (paid extra) |
 | `lizenz` | Licence |
-| `oeffentlich` | Public — of a space: `nein`, `lesen`, `schreiben` |
+| `oeffentlich` | Public, of a space: `nein`, `lesen`, `schreiben` |
 | `papierkorb` | Trash |
 | `postfach` | Inbox |
 | `pruefspur` | Audit trail (reading it is a paid extra) |
-| `rechner` | Machine — one line of the watch list under Settings, System |
-| `vertrauen` | Trust — whom the service believes on the way out |
-| `wurzel` | Root — a certificate authority |
+| `rechner` | Machine, one line of the watch list under Settings, System |
+| `vertrauen` | Trust, whom the service believes on the way out |
+| `wurzel` | Root, a certificate authority |
 | `zertifikat` | Certificate |
 | `rueckfall` | Fallback |
-| `schluessel` | Key — a licence key, or a settings key |
+| `schluessel` | Key, a licence key, or a settings key |
 | `sitzung`, `sitzungen` | Session(s) |
-| `spur` | Trail — the verb form, writing an audit entry |
+| `spur` | Trail, the verb form, writing an audit entry |
 | `stufe` | Tier: `free`, `advanced`, `pro`, `business` |
 | `such_tsv`, `suche` | The search vector, the search |
 | `verbund` | The stack around this service: which of the surrounding services answer |
 | `versionen` | Version history (paid extra) |
-| `vorsilbe` | Prefix — in front of every Redis key |
-| `wartung` | Maintenance — the admin page that edits the config and restarts |
-| `woerterbuch` | Dictionary — the PostgreSQL text search configuration |
-| `zusatz`, `zusaetzlich` | Additional — individual extras a key names beyond its tier |
+| `vorsilbe` | Prefix, in front of every Redis key |
+| `wartung` | Maintenance, the admin page that edits the config and restarts |
+| `woerterbuch` | Dictionary, the PostgreSQL text search configuration |
+| `zusatz`, `zusaetzlich` | Additional, individual extras a key names beyond its tier |
 
 ---
 

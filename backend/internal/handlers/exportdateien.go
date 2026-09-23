@@ -38,7 +38,7 @@ type exportDatei struct {
 //
 // Two pages may share the same filename like "Plan.png"; in the archive they
 // cannot have the same name. A counter is appended rather than silently
-// overwriting the second one — the same rule we apply to pages.
+// overwriting the second one: the same rule we apply to pages.
 func (s *Server) anhaengeSammeln(ctx context.Context, seiten []string) []exportDatei {
 	if len(seiten) == 0 {
 		return nil
@@ -95,8 +95,8 @@ func adressenAufDateien(md string, dateien []exportDatei) string {
 	}
 	for _, d := range dateien {
 		alt := "/api/pages/" + d.Seite + "/attachments/" + d.ID
-		// In spitzen Klammern, denn ein Dateiname darf Leerzeichen tragen und
-		// wuerde den Verweis sonst nach dem ersten Wort beenden.
+		// In angle brackets, because a file name may carry spaces and would
+		// otherwise end the link after the first word.
 		md = strings.ReplaceAll(md, "("+alt+")", "(<"+d.Pfad+">)")
 		md = strings.ReplaceAll(md, alt, d.Pfad)
 	}
@@ -134,7 +134,7 @@ func anhangListe(md string, dateien []exportDatei) string {
 
 // The stream goes from the storage straight into the ZIP without buffering:
 // a storage with a few hundred images would otherwise occupy memory twice.
-// A missing file is skipped rather than treated as an error — the archive
+// A missing file is skipped rather than treated as an error: the archive
 // will be incomplete but will be produced, and the missing file was already
 // gone.
 func (s *Server) dateienSchreiben(ctx context.Context, zw *zip.Writer, dateien []exportDatei) {
@@ -160,7 +160,7 @@ func (s *Server) dateienSchreiben(ctx context.Context, zw *zip.Writer, dateien [
 	}
 }
 
-// schonGepackt sagt, ob ein Format bereits verlustbehaftet oder gepackt ist.
+// schonGepackt says whether a format is already lossy or compressed.
 func schonGepackt(name string) bool {
 	switch strings.ToLower(path.Ext(name)) {
 	case ".jpg", ".jpeg", ".png", ".gif", ".webp", ".zip", ".mp4", ".mp3", ".pdf", ".docx", ".xlsx", ".pptx":

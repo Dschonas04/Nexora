@@ -16,7 +16,7 @@ openssl rand -base64 24       # → POSTGRES_PASSWORD in .env
 docker compose up -d --build
 ```
 
-Then open `http://localhost:3000` — or `https://localhost:3443`, with a
+Then open `http://localhost:3000`, or `https://localhost:3443`, with a
 certificate warning that no one can avoid, because nobody issues a trusted
 certificate for an address in a private network.
 
@@ -69,13 +69,13 @@ Nexora would mean operating a second copy of each.
 ### Moving attachments
 
 ```bash
-NEXORA_ANHANG_ORT=/srv/nexora/anhaenge     # .env — what gets mounted
-anhang_verzeichnis = /data/attachments     # config.conf — the path inside
+NEXORA_ANHANG_ORT=/srv/nexora/anhaenge     # .env: what gets mounted
+anhang_verzeichnis = /data/attachments     # config.conf: the path inside
 ```
 
 The directory has to belong to **uid/gid 10001**, the account the service runs
 under in the container. **Changing the setting does not move the files that are
-already there** — carry them over first, then restart.
+already there**, carry them over first, then restart.
 
 Or move them off disk entirely by setting `s3_aktiv` and the `s3_*` settings, or
 by binding a store from the settings page and testing it there before saving.
@@ -92,7 +92,7 @@ the same on disk and against an object store. It shows the sizes first, so
 nobody presses the button on a multi-gigabyte holding and then wonders whether
 it has hung.
 
-Check for the file `FERTIG` inside before trusting an archive — a backup that
+Check for the file `FERTIG` inside before trusting an archive: a backup that
 broke off mid-stream is still a valid ZIP, and half a backup would otherwise look
 exactly like a whole one. `LIESMICH.md` beside it carries the restore commands.
 
@@ -100,14 +100,14 @@ exactly like a whole one. `LIESMICH.md` beside it carries the restore commands.
 
 **Settings → Wartung → Sicherung einspielen**, pick the ZIP, confirm. Before
 anything is overwritten the current state is dumped into the data directory as
-`vor-wiederherstellung-<stamp>.sql` — that is the way back if the wrong archive
+`vor-wiederherstellung-<stamp>.sql`, which is the way back if the wrong archive
 was picked, and the restore refuses to run at all if that dump cannot be written.
 
 An archive without the `FERTIG` marker is rejected. The service restarts when it
 is done, and you will be signed out: the sessions now come from the archive.
 
 Attachments in the archive are written back through the storage interface, so it
-lands on disk or in the object store depending on how the target is configured —
+lands on disk or in the object store depending on how the target is configured,
 a backup taken from a disk instance restores into an S3 one and the other way
 round. Attachments already in storage that the archive does not mention are left
 alone.
@@ -118,7 +118,7 @@ holding should not be something a script can trigger.
 ### On a schedule
 
 A button in a browser is an action, not a schedule. For a timer, a script needs a
-way in, and it has no cookie — so **Settings → Wartung → Regelmäßig sichern**
+way in, and it has no cookie, so **Settings → Wartung → Regelmäßig sichern**
 generates a token for it and hands you the finished script, with the token and
 the address already in it:
 
@@ -135,7 +135,7 @@ looking exactly like a good one.
 The token is separate from the metrics one because it is worth far more: it hands
 out the entire holding without a sign-in. Every fetch with it is written to the
 audit trail with its address. Remove it under the same heading when the script
-goes away — and check first that none is still running, or it will back up into
+goes away, and check first that none is still running, or it will back up into
 nothing and say 401 to a log nobody reads.
 
 **Attachments come along**, whether they sit on disk or in an object store: they
@@ -144,7 +144,7 @@ the gap a `pg_dump` timer alone leaves.
 
 
 ```bash
-# database — the bulk of everything
+# database: the bulk of everything
 docker compose exec -T db pg_dump -U nexora nexora | gzip > nexora-$(date +%F).sql.gz
 
 # attachments, while they are on disk
@@ -162,7 +162,7 @@ gunzip -c nexora-2026-08-30.sql.gz | docker compose exec -T db psql -U nexora ne
 ```
 
 The schema is applied on every start, so an empty database plus a running
-backend is a working installation — the dump is content, not structure.
+backend is a working installation: the dump is content, not structure.
 
 **A `pg_dump` alone is not a complete backup** while attachments are on disk.
 This is the strongest practical argument for an object store: the bytes become
@@ -180,8 +180,8 @@ docker compose up -d --build
 The schema migration runs at startup and is idempotent. There is no separate
 migration step and no maintenance window beyond the restart.
 
-Take a database dump first anyway. Not because the migration is risky — it only
-adds — but because the dump is the thing you will want if something else turns
+Take a database dump first anyway. The migration itself only adds, so it is not
+the risk; the dump is what you will want if something else turns
 out to be wrong.
 
 ---
@@ -219,7 +219,7 @@ that somebody is knocking.
 Two things there answer most questions faster than the list itself. The summary
 compares 24 hours against 7 days, so a spike stands out without counting rows.
 The **Herkunft** table groups the week by address, most failures first, and shows
-how many distinct accounts each address tried — the shape of a password spray,
+how many distinct accounts each address tried: the shape of a password spray,
 which the single entries scrolling past do not show.
 
 Nothing here is ever deleted, and passwords are recorded nowhere, not even on a
@@ -286,17 +286,17 @@ carries the response time of each surrounding service.
 Nexora has **no access to the Docker socket**, on purpose: whoever holds that
 socket is all-powerful on the host, and handing it in so a page can list
 containers would be a bad bargain. What the system view reports is what can be
-established without it — which services this one talks to, whether they answer,
+established without it, which services this one talks to, whether they answer,
 how fast, which version they run, and how much they hold. Those are the
 questions people actually ask when something is stuck.
 
 Below it stands the second list, **Eigene Rechner**: machines you enter
 yourself, the ones around this service. The same restraint applies there and for
-the same reason — Nexora knocks, on the level where an answer needs no
+the same reason: Nexora only knocks, on the level where an answer needs no
 credentials (a TCP connection that comes up, an HTTP response that arrives), and
-holds no key to any of them. A wiki that may be reachable from outside is the
-wrong place to keep a general key to your network. Redirects are not followed —
-a 301 is already an answer, and where it points is a different question — and on
+it holds no key to any of them. A wiki that may be reachable from outside is the
+wrong place to keep a general key to your network. Redirects are not followed,
+a 301 is already an answer, and where it points is a different question, and on
 `https://` the certificate is not checked, since otherwise every self-signed
 appliance in the house would show up as silent while running.
 
@@ -304,7 +304,7 @@ The version comes out of the knock itself. Whoever accepts a connection usually
 says who they are in the first breath: an SSH service names its version before
 anybody has been asked for a password, a web server names it in the `Server`
 header. On a TLS target the certificate is read too, and how many days it still
-has — under thirty the cell turns red, because an expired certificate is the
+has: under thirty the cell turns red, because an expired certificate is the
 most common reason a service at home suddenly stops answering, and the only one
 you could have seen coming. Whoever stays silent leaves the column empty;
 nothing is guessed, and nothing outside is asked.
@@ -324,7 +324,7 @@ nothing is guessed, and nothing outside is asked.
 The certificates for the last four come from the `pki` container, which runs
 once at start-up and then exits. It is idempotent: what is already in the volume
 stays, so the authority does not change under you on every boot. Ten years is
-its lifetime — long, deliberately: a certificate that expires in a home
+its lifetime, long, deliberately: a certificate that expires in a home
 installation nobody watches produces an outage nobody can explain.
 
 Own certificates instead of the generated ones go into the `nexora_pki` volume
@@ -335,18 +335,18 @@ missing.
 
 Before an instance is reachable by anyone but you:
 
-- [ ] `JWT_SECRET` at least 32 random characters — `openssl rand -hex 32`
+- [ ] `JWT_SECRET` at least 32 random characters, `openssl rand -hex 32`
 - [ ] `POSTGRES_PASSWORD` at least 24 random characters
 - [ ] `.env` is not committed
 - [ ] Read the startup log: dangerous defaults are named there, every boot
-- [ ] `registrierung_offen` off once the accounts that should exist do — but not
+- [ ] `registrierung_offen` off once the accounts that should exist do, but not
       before the first one
 - [ ] `erlaubte_domaenen` set if registration stays open
 - [ ] A real TLS certificate in the `nexora_tls` volume, or a reverse proxy that
-      terminates TLS — and, if pages are written on together, one that passes
+      terminates TLS, and, if pages are written on together, one that passes
       WebSocket upgrades through to `/api/echtzeit/`
 - [ ] `oeffentliche_url` set to the address the browser actually uses
-- [ ] `s3_tls` on if an object store is in use — on by default in the bundled
+- [ ] `s3_tls` on if an object store is in use, on by default in the bundled
       stack, where the store speaks TLS anyway
 - [ ] The `pki` container ran and exited cleanly. Everything between the
       containers hangs on it; there is nothing to configure, but there is
@@ -358,7 +358,7 @@ Before an instance is reachable by anyone but you:
       colleague who forgot a password
 
 `chimw.RealIP` trusts `X-Forwarded-For`. That is correct behind a proxy you
-control and wrong when the container faces the internet directly — there, a
+control and wrong when the container faces the internet directly; there, a
 client can forge the IP that lands in the audit trail.
 
 ---
@@ -370,7 +370,7 @@ client can forge the IP that lands in the audit trail.
 | Log line | Cause |
 |---|---|
 | `db connect: ...` | Wrong `DATABASE_URL`, or the password was changed after the volume was initialised. Fix with `ALTER USER nexora WITH PASSWORD ...` inside the database |
-| `Objektspeicher nicht erreichbar` | A configured object store does not answer. **This stops the boot on purpose** — otherwise new attachments would quietly land on disk while the old ones stay in the bucket. Fix the store, or set `s3_rueckfall = ja` if the disk is an acceptable stopgap |
+| `Objektspeicher nicht erreichbar` | A configured object store does not answer. **This stops the boot on purpose**, otherwise new attachments would quietly land on disk while the old ones stay in the bucket. Fix the store, or set `s3_rueckfall = ja` if the disk is an acceptable stopgap |
 | `db migrate: ...` | The database user lacks rights, most often to `CREATE EXTENSION pgcrypto` |
 
 An invalid licence key never stops the boot; it is logged and the free feature
@@ -379,7 +379,7 @@ set applies.
 ### An upload is refused as an executable
 
 A file whose first four bytes are the ELF magic is refused with 415, however it
-is named — a Linux binary or shared object. The extension plays no part in the
+is named: a Linux binary or shared object. The extension plays no part in the
 decision: it is a claim by whoever uploads, while those four bytes are what the
 kernel reads when something is started. Scripts are **not** refused: `#!/bin/sh`
 is text, and a wiki that may no longer keep a documented backup script has lost
@@ -390,7 +390,7 @@ file is skipped and named in the warnings rather than stopping the import.
 
 The attachment directory does not belong to uid/gid 10001, or the file is larger
 than `max_anhang_mb`, or larger than nginx's `client_max_body_size` (512 MiB in
-the bundled configuration) — raising the setting alone is not enough. What the
+the bundled configuration), raising the setting alone is not enough. What the
 real limit is can be measured under **Settings → Anhänge**.
 
 ### Writing together does not start, or reconnects for ever
@@ -410,12 +410,12 @@ location /api/echtzeit/ {
 
 Without it the proxy answers 400 and the browser retries with a growing pause.
 The bundled nginx already carries this; a second proxy in front of it, the usual
-case in a home network, does not. The page keeps working meanwhile — it says
+case in a home network, does not. The page keeps working meanwhile; it says
 **Nicht verbunden** in the top bar, and the text is saved as before, whole.
 
 Other reasons the session may not start at all: the licence does not include
 `echtzeit`, the switch under **Settings → Zusammenarbeit** is off, or nobody
-else has edit rights on the page — a page that only its owner may write on opens
+else has edit rights on the page: a page that only its owner may write on opens
 no session, on purpose.
 
 ### Somebody forgot their password
@@ -428,7 +428,7 @@ bottom left of the sidebar.
 
 Two cases this does not cover. An account that signs in through SSO or the
 directory has no password here, and setting one would take its sign-in away, so
-it is refused — the password of such an account belongs in the provider. And an
+it is refused: the password of such an account belongs in the provider. And an
 instance whose **only** administrator is locked out has no way in through the
 interface; there the account has to be repaired in the database, which is what
 the backup and a fresh `password_hash` are for.
@@ -438,7 +438,7 @@ the backup and a fresh `password_hash` are for.
 It reports what it can establish, and that is one thing only: does something
 answer on that address and port. A machine that is up but has nothing listening
 on the port you entered is silent by that measure, and rightly so. Check the
-port first — SSH is 22, a web service is whatever it publishes. The list refuses
+port first, SSH is 22, a web service is whatever it publishes. The list refuses
 an address without a port on purpose rather than guessing one, because a guessed
 port produces exactly this misleading answer.
 
@@ -452,12 +452,12 @@ their right, and nothing is invented to fill the gap.
 Check the `pki` container first: `docker compose logs pki`. It has to have run
 and exited cleanly, and every other service waits for exactly that. If the
 volume was removed (`docker compose down -v`) a new authority is generated, and
-then everything fits together again — but only after every container has been
+then everything fits together again, but only after every container has been
 restarted, because the old ones still hold the old certificates.
 
 `x509: certificate signed by unknown authority` in the service's log means it
 does not know the authority: `tls_wurzel` is unset or points at a file that is
-not there. `certificate is valid for X, not Y` means a service was renamed —
+not there. `certificate is valid for X, not Y` means a service was renamed,
 the name is in the certificate, so `docker compose down` and up again, having
 removed that service's directory from the volume so it gets a fresh one.
 
@@ -487,14 +487,14 @@ ordinary attachment route requires a session.
 ### Sign-in through the provider comes back to the wrong address
 
 `oeffentliche_url` is unset or wrong. The callback cannot be derived from a
-request that has passed through a proxy — a boot with `oidc_aktiv` and no public
+request that has passed through a proxy: a boot with `oidc_aktiv` and no public
 URL warns about exactly this.
 
 ### Everything is slow
 
 Check the system view first: it names which of the surrounding services answers
 slowly. If Redis is configured and down, everything still works and is merely
-slower — that is by design and not the fault you are looking for.
+slower, which is by design and not the fault you are looking for.
 
 If nothing there stands out, the knobs and the order to turn them are under
 [When it gets slow](#when-it-gets-slow). The connection pool is the first one

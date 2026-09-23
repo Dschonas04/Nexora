@@ -3,7 +3,7 @@
 // Who may do what follows the page, not the comment: anyone who can read the
 // page can read and write comments on it, because a comment nobody may answer
 // is not a conversation. Editing and deleting stay with the author, plus the
-// page owner and admins — someone has to be able to clear out an insult without
+// page owner and admins, someone has to be able to clear out an insult without
 // asking the person who wrote it.
 package handlers
 

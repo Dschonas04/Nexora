@@ -49,12 +49,14 @@ func alleNamen() []string {
 	return s
 }
 
-func TestOhneSchluesselAllesGesperrt(t *testing.T) {
+// Without a key the free tier runs and nothing beyond it.
+func TestOhneSchluesselNurDerFreieUmfang(t *testing.T) {
 	einrichten(t)
 	kern.Laden("")
 	for _, f := range kern.Alle {
-		if kern.Frei(f) {
-			t.Fatalf("%s ist ohne Schlüssel frei", f)
+		if kern.Frei(f) != kern.OhneSchluessel(f) {
+			t.Fatalf("%s: frei=%v, gehört aber %s zum freien Umfang", f, kern.Frei(f),
+				map[bool]string{true: "", false: "nicht "}[kern.OhneSchluessel(f)])
 		}
 	}
 	if kern.Aktuell().Gueltig {
@@ -88,12 +90,12 @@ func TestNurBezahlteFunktionenSindFrei(t *testing.T) {
 	priv := einrichten(t)
 	kern.Laden(schluessel(t, priv, plizenz.Nutzlast{
 		Inhaber:    "Sparsam",
-		Funktionen: []string{string(kern.Versionen)},
+		Funktionen: []string{string(kern.Freigeben)},
 	}))
-	if !kern.Frei(kern.Versionen) {
+	if !kern.Frei(kern.Freigeben) {
 		t.Fatal("die bezahlte Funktion fehlt")
 	}
-	if kern.Frei(kern.Anhaenge) || kern.Frei(kern.Pruefspur) {
+	if kern.Frei(kern.Export) || kern.Frei(kern.Pruefspur) {
 		t.Fatal("nicht bezahlte Funktionen wurden freigeschaltet")
 	}
 }
@@ -127,7 +129,7 @@ func TestVeraenderterSchluesselWirdAbgelehnt(t *testing.T) {
 		t.Fatal("veränderter Schlüssel wurde angenommen")
 	}
 	for _, f := range kern.Alle {
-		if kern.Frei(f) {
+		if kern.Frei(f) && !kern.OhneSchluessel(f) {
 			t.Fatalf("%s trotz verändertem Schlüssel frei", f)
 		}
 	}

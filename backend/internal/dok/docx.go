@@ -201,18 +201,18 @@ func tabelleXML(zeilen [][]string) string {
 	return b.String()
 }
 
-// koerperMitBildern setzt einen Absatz und legt ein Bild, wenn es eines ist,
-// zugleich als Teil des Archivs an.
+// koerperMitBildern typesets a paragraph and, if it is a picture, also creates
+// it as a part of the archive.
 //
-// Die Bildteile wachsen dabei mit: der Text nennt sie ueber ihre
-// Beziehungskennung, und dieselbe Liste fuellt spaeter word/media und die rels.
+// The picture parts grow along with it: the text names them through their
+// relationship id, and the same list later fills word/media and the rels.
 func koerperMitBildern(a Absatz, teile *[]wordBildTeil) string {
 	if a.Art == ArtDatei && len(a.BildDaten) > 0 {
 		if t, ok := bildTeilAnlegen(a.BildDaten, len(*teile)); ok {
 			*teile = append(*teile, t)
 			xml := bildXML(t, a.Stufe*360)
-			// Die Unterschrift darunter, klein und kursiv. Der Name steht schon
-			// im Bild und wird nicht wiederholt.
+			// The caption below it, small and italic. The name already appears in
+			// the picture and is not repeated.
 			if u := bildUnterschrift(a.Text); u != "" {
 				xml += "<w:p><w:pPr>" +
 					fmt.Sprintf(`<w:ind w:left="%d"/><w:spacing w:after="160"/>`, a.Stufe*360) +

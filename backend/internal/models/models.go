@@ -14,21 +14,21 @@ type User struct {
 	ID    string `json:"id"`
 	Email string `json:"email"`
 	Name  string `json:"name"`
-	// Benutzername ist der zweite Weg an der Anmeldung und darf leer sein:
-	// Konten aus SSO und aus aelteren Fassungen haben keinen.
+	// Benutzername is the second way in at the sign-in and may be empty:
+	// accounts from SSO and from older versions have none.
 	Benutzername string    `json:"benutzername"`
 	Role         string    `json:"role"`
 	CreatedAt    time.Time `json:"createdAt"`
-	// BildStand ist der Zeitpunkt, an dem das Profilbild zuletzt gesetzt wurde,
-	// und fehlt, wenn es keines gibt. Zwei Antworten in einem Feld: OB ein Bild
-	// da ist (dann zeigt die Oberflaeche kein Namenskuerzel), und WELCHES (die
-	// Adresse traegt den Stand, damit ein neues Bild sofort erscheint statt aus
-	// dem Zwischenspeicher zu kommen).
+	// BildStand is the moment the profile picture was last set, and is missing
+	// when there is none. Two answers in one field: WHETHER a picture is there
+	// (then the interface shows no initials), and WHICH one (the address carries
+	// the timestamp so a new picture appears at once instead of coming from the
+	// cache).
 	BildStand *time.Time `json:"bildStand,omitempty"`
-	// Zweitfaktor sagt, ob an diesem Konto ein zweiter Faktor steht. Es steht
-	// hier und nicht nur in der eigenen Abfrage, weil eine Verwaltung in der
-	// Kontenliste sehen soll, wer noch keinen hat -- das ist die Frage, die man
-	// an eine solche Liste stellt.
+	// Zweitfaktor says whether a second factor is set up on this account. It
+	// sits here and not only in its own endpoint because an administrator should
+	// see in the account list who still has none -- that is the question one
+	// asks of such a list.
 	Zweitfaktor bool `json:"zweitfaktor"`
 }
 
@@ -47,8 +47,8 @@ type Space struct {
 	// DarfVerwalten tells the interface whether to show buttons for changing
 	// things at all. The decision itself is made again in the backend.
 	DarfVerwalten bool `json:"darfVerwalten"`
-	// Farbe ist die Farbe der Ablage im Grafen, als #rrggbb. Leer heisst: die
-	// Oberflaeche nimmt eine aus ihrer Reihe.
+	// Farbe is the colour of the space in the graph, as #rrggbb. Empty means:
+	// the interface takes one from its own series.
 	Farbe string `json:"farbe,omitempty"`
 }
 
@@ -140,13 +140,12 @@ type Page struct {
 	IsFavorite  bool            `json:"isFavorite"`
 	CanEdit     bool            `json:"canEdit"` // false for read-only shares
 	IsOwner     bool            `json:"isOwner"`
-	// Gemeinsam: an dieser Seite darf mehr als ein Konto schreiben, und der
-	// Dienst lässt gemeinsames Schreiben zu. Erst dann verbindet sich der
-	// Browser mit der Leitung; eine Seite, an der ohnehin nur einer sitzt,
-	// braucht sie nicht.
+	// Gemeinsam: more than one account may write on this page, and the service
+	// permits writing together. Only then does the browser connect to the wire;
+	// a page only one person sits at anyway does not need it.
 	Gemeinsam bool `json:"gemeinsam"`
-	// Breite: 'normal', 'breit' oder 'voll'. Gehoert zum Satz der Seite und
-	// haengt darum an ihr, nicht am Leser.
+	// Breite: 'normal', 'breit' or 'voll'. Belongs to the typesetting of the
+	// page and therefore hangs on it, not on the reader.
 	Breite    string    `json:"breite"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`

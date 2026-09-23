@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// An image may be shown inline — this is needed for previews and inline
+// An image may be shown inline; this is needed for previews and inline
 // images in text.
 func TestBildBleibtInline(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -75,7 +75,7 @@ func TestNameWirdEntschaerft(t *testing.T) {
 	}
 }
 
-// A name consisting solely of control characters yields no filename — in
+// A name consisting solely of control characters yields no filename, in
 // that case only the disposition remains, instead of an empty filename.
 func TestLeererNameFaelltWeg(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -85,7 +85,7 @@ func TestLeererNameFaelltWeg(t *testing.T) {
 	}
 }
 
-// An SVG remains an image — otherwise the preview would show a hole — but it
+// An SVG remains an image, otherwise the preview would show a hole, but it
 // is returned with a policy that removes scripts in case someone requests the
 // file directly.
 func TestSVGBleibtBildOhneSkripte(t *testing.T) {

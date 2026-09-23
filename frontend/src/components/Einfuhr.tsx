@@ -156,11 +156,11 @@ export default function Einfuhr({
                 onClick={() => !laeuft && wahl.current?.click()}
               >
                 {laeuft ? (
-                  <div>Wird gelesen …</div>
+                  <div>Reading …</div>
                 ) : (
                   <>
-                    <div className="einfuhr-gross">Dateien hierher ziehen</div>
-                    <div className="muted small">oder klicken, um sie auszuwählen</div>
+                    <div className="einfuhr-gross">Drag files here</div>
+                    <div className="muted small">or click to pick them</div>
                   </>
                 )}
               </div>
@@ -178,26 +178,26 @@ export default function Einfuhr({
 
               <div className="muted small einfuhr-hinweis">
                 <p>
-                  <strong>Einzelne .md- oder .html-Dateien</strong> werden je zu einer Seite. Ein{" "}
-                  <strong>.zip</strong> behält seinen Aufbau: aus jedem Ordner wird eine Seite,
-                  aus den Dateien darin ihre Unterseiten. Liegt im Ordner eine{" "}
-                  <code>index.md</code>, <code>README.md</code> oder <code>INHALT.md</code>, ist
-                  sie der Inhalt der Ordnerseite.
+                  <strong>Single .md or .html files</strong> each become one page. A{" "}
+                  <strong>.zip</strong> keeps its shape: every folder becomes a page, the files
+                  inside it become its subpages. If a folder holds an{" "}
+                  <code>index.md</code>, <code>README.md</code> or <code>INHALT.md</code>, that
+                  file is the content of the folder page.
                 </p>
                 <p>
-                  Damit lassen sich ein <strong>Obsidian</strong>-Tresor, ein{" "}
-                  <strong>Notion</strong>-Export (die Kennung im Dateinamen fällt weg) und ein{" "}
-                  <strong>Confluence</strong>-Export aus HTML-Dateien importieren.
+                  That covers an <strong>Obsidian</strong> vault, a{" "}
+                  <strong>Notion</strong> export (the id in the file name is dropped) and a{" "}
+                  <strong>Confluence</strong> export made of HTML files.
                 </p>
                 <p>
-                  Verweise zwischen importierten Dateien werden zu{" "}
-                  <code>[[Seitentitel]]</code> und zählen damit für Rückverweise und das
-                  Wissensnetz. Bilder und andere Dateien aus dem Archiv werden Anhänge der Seite,
-                  die sie verwendet.
+                  Links between imported files become{" "}
+                  <code>[[page title]]</code> and therefore count towards backlinks and the
+                  knowledge graph. Images and other files from the archive become attachments of
+                  the page that uses them.
                 </p>
                 <p>
-                  Ein Vorspann aus <code>---</code>-Zeilen liefert Titel, Schlagworte und Symbol.
-                  Sonst ist der Titel die erste Überschrift der Datei, ersatzweise ihr Dateiname.
+                  Front matter between <code>---</code> lines supplies title, tags and icon.
+                  Otherwise the title is the first heading of the file, failing that its file name.
                 </p>
               </div>
             </>
@@ -206,17 +206,17 @@ export default function Einfuhr({
           {vorschau && !bericht && (
             <div className="einfuhr-bericht">
               <p className="einfuhr-gross">
-                {vorschau.seiten} {vorschau.seiten === 1 ? "Seite" : "Seiten"} würden entstehen
+                {vorschau.seiten} {vorschau.seiten === 1 ? "page" : "pages"} would be created
                 {vorschau.beilagen > 0 &&
-                  `, ${vorschau.beilagen} ${vorschau.beilagen === 1 ? "Datei" : "Dateien"} werden Anhänge`}
-                {vorschau.ablage && ` — in der neuen Ablage „${vorschau.ablage}“`}.
+                  `, ${vorschau.beilagen} ${vorschau.beilagen === 1 ? "file" : "files"} become attachments`}
+                {vorschau.ablage && ` \u2014 in the new space \u201c${vorschau.ablage}\u201d`}.
               </p>
               <div className="einfuhr-baum">
                 <Aeste knoten={vorschau.baum} />
               </div>
               {vorschau.warnungen.length > 0 && (
                 <>
-                  <h4 className="rechte-ueberschrift">Übergangen</h4>
+                  <h4 className="rechte-ueberschrift">Skipped</h4>
                   <ul className="einfuhr-warnungen">
                     {vorschau.warnungen.map((w, i) => (
                       <li key={i}>{w}</li>
@@ -236,7 +236,7 @@ export default function Einfuhr({
                   Andere Dateien
                 </button>
                 <button className="btn btn-primary" disabled={laeuft} onClick={einfuehren}>
-                  {laeuft ? "Wird angelegt …" : "Einführen"}
+                  {laeuft ? "Creating …" : "Import"}
                 </button>
               </div>
             </div>
@@ -245,14 +245,14 @@ export default function Einfuhr({
           {bericht && (
             <div className="einfuhr-bericht">
               <p className="einfuhr-gross">
-                {bericht.seiten} {bericht.seiten === 1 ? "Seite" : "Seiten"} angelegt
+                {bericht.seiten} {bericht.seiten === 1 ? "page" : "pages"} created
                 {bericht.anhaenge > 0 &&
-                  `, ${bericht.anhaenge} ${bericht.anhaenge === 1 ? "Anhang" : "Anhänge"} übernommen`}
-                {bericht.ablage && ` in der neuen Ablage „${bericht.ablage.name}“`}.
+                  `, ${bericht.anhaenge} ${bericht.anhaenge === 1 ? "attachment" : "attachments"} taken over`}
+                {bericht.ablage && ` in the new space \u201c${bericht.ablage.name}\u201d`}.
               </p>
               {bericht.warnungen.length > 0 && (
                 <>
-                  <h4 className="rechte-ueberschrift">Übergangen</h4>
+                  <h4 className="rechte-ueberschrift">Skipped</h4>
                   <ul className="einfuhr-warnungen">
                     {bericht.warnungen.map((w, i) => (
                       <li key={i}>{w}</li>

@@ -65,11 +65,29 @@ var StufenReihe = []Stufe{StufeFrei, StufeAdvanced, StufePro, StufeBusiness}
 // stufenZusatz names what a tier adds COMPARED TO THE PREVIOUS ONE. Written
 // cumulatively the same list would appear three times, and at the next
 // rearrangement one of them would no longer be right.
+//
+// The free tier is not empty: what stands there runs on every installation,
+// with a key or without one, and in a build without the premium directory too.
+// Since 2.1 that is versions, attachments, comments and conflict detection --
+// what a wiki needs so that nobody loses text. "advanced" used to sell exactly
+// those and now adds nothing; the name stays so that keys issued for it still
+// read as valid.
 var stufenZusatz = map[Stufe][]Funktion{
-	StufeFrei:     {},
-	StufeAdvanced: {Versionen, Anhaenge, Kommentare},
-	StufePro:      {Freigeben, Konflikte, Echtzeit, Export, Anhangsuche},
+	StufeFrei:     {Versionen, Anhaenge, Kommentare, Konflikte},
+	StufeAdvanced: {},
+	StufePro:      {Freigeben, Echtzeit, Export, Anhangsuche},
 	StufeBusiness: {Gruppen, Pruefspur, SSO, LDAP},
+}
+
+// OhneSchluessel reports whether a feature belongs to the free tier and
+// therefore needs no key at all.
+func OhneSchluessel(f Funktion) bool {
+	for _, x := range stufenZusatz[StufeFrei] {
+		if x == f {
+			return true
+		}
+	}
+	return false
 }
 
 // FunktionenDerStufe returns everything a tier contains, including what the
@@ -207,8 +225,12 @@ func Laden(schluessel string) {
 }
 
 // Frei reports whether one extra is unlocked. Everything the core does without
-// a key never asks this.
+// a key never asks this, and what belongs to the free tier is unlocked here
+// regardless of whether a key is present, valid or checkable at all.
 func Frei(f Funktion) bool {
+	if OhneSchluessel(f) {
+		return true
+	}
 	mu.RLock()
 	defer mu.RUnlock()
 	if !aktuell.Gueltig {

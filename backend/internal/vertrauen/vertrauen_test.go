@@ -42,7 +42,7 @@ func stelleSchreiben(t *testing.T, pfad string) {
 	}
 }
 
-// Ohne Pfad bleibt es bei den Stellen des Systems, und die stehen fuer nil.
+// Without a path the system's authorities stand, and those are what nil means.
 func TestOhnePfadKeinVorrat(t *testing.T) {
 	vorrat, err := Wurzeln("")
 	if err != nil || vorrat != nil {
@@ -53,8 +53,8 @@ func TestOhnePfadKeinVorrat(t *testing.T) {
 	}
 }
 
-// Die eigene Stelle kommt HINZU: waere sie ein Ersatz, verloere der Dienst das
-// Vertrauen zu jedem oeffentlichen Anmeldedienst.
+// The private authority is ADDED: were it a replacement, the service would
+// lose its trust in every public identity provider.
 func TestEigeneStelleKommtHinzu(t *testing.T) {
 	pfad := filepath.Join(t.TempDir(), "ca.crt")
 	stelleSchreiben(t, pfad)
@@ -70,16 +70,16 @@ func TestEigeneStelleKommtHinzu(t *testing.T) {
 	if err != nil || system == nil {
 		t.Skip("dieses System hat keinen eigenen Vorrat, der Vergleich entfaellt")
 	}
-	// Eine Stelle mehr als das System: genau die eine aus der Datei.
+	// One authority more than the system's: exactly the one from the file.
 	if len(vorrat.Subjects()) <= len(system.Subjects()) { //nolint:staticcheck // Subjects reicht hier zum Zaehlen
 		t.Fatalf("der Vorrat wuchs nicht: %d gegen %d",
 			len(vorrat.Subjects()), len(system.Subjects())) //nolint:staticcheck
 	}
 }
 
-// Eine fehlende oder unlesbare Datei ist ein Fehler und keine stille Null:
-// sonst liefe der Dienst ohne die Stelle weiter, die jemand ausdruecklich
-// eingetragen hat, und scheiterte spaeter an einer Verbindung.
+// A missing or unreadable file is an error and not a silent nil: otherwise the
+// service would run on without the authority somebody expressly entered, and
+// would fail later on a connection.
 func TestFehlendeDateiIstEinFehler(t *testing.T) {
 	if _, err := Wurzeln(filepath.Join(t.TempDir(), "gibtsnicht.crt")); err == nil {
 		t.Fatal("fehlende Datei ohne Fehler")

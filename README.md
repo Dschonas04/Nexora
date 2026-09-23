@@ -2,6 +2,27 @@
 
 A minimal, self-hosted knowledge base: think Notion or Outline, but small and yours.
 
+[![Release](https://img.shields.io/github/v/release/Dschonas04/Nexora?style=flat-square)](https://github.com/Dschonas04/Nexora/releases)
+[![Docker Hub](https://img.shields.io/docker/pulls/dschohnas/nexora-backend?style=flat-square&logo=docker&logoColor=white&label=Docker%20Hub%20pulls)](https://hub.docker.com/r/dschohnas/nexora-backend)
+[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-dschonas04%2Fnexora--*-2496ED?style=flat-square&logo=github)](https://github.com/Dschonas04?tab=packages&repo_name=Nexora)
+[![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-555?style=flat-square)](#where-the-images-are)
+
+**[Project page](https://dschonas04.github.io/Nexora/)** ·
+**[Try the live demo](https://nexora.jonasgroll.de)**: sign in as
+`gast@nexora.demo` with the password `GastNexora2026`. It is a real instance
+with example content and resets itself every night, so nothing you do there
+sticks or breaks anything.
+
+![Nexora in half a minute: opening a space, following a wiki link, searching, the backlinks of a page and the graph of the whole instance](docs/bilder/rundgang.gif)
+
+*Half a minute: open a space, follow a `[[link]]`, search, see which pages link
+here, and the graph over everything.*
+
+| A page | Backlinks and the local graph | The whole instance |
+| --- | --- | --- |
+| [![A page in the editor](docs/bilder/seite.png)](https://nexora.jonasgroll.de) | [![Search results, backlinks and the local graph of a page](docs/bilder/suche.png)](https://nexora.jonasgroll.de) | [![The knowledge graph](docs/bilder/graph.png)](https://nexora.jonasgroll.de) |
+| Nested pages, tags, tables, Markdown shortcuts. | Every page says who points at it, with the neighbourhood drawn underneath. | Every page and every link, coloured by space. |
+
 Nested pages in a block editor, spaces, per-user sharing with roles, version
 history, attachments, comments, a trash can, backlinks, a knowledge graph and a
 real full text search. **Go** backend, **React** frontend, **PostgreSQL**
@@ -9,8 +30,10 @@ storage.
 
 Licensed under the [Business Source License 1.1](LICENSING.md). The source is
 open and the core may be run in production, commercially, without paying
-anyone. Twelve extras — audit trail, groups, SSO, LDAP and more — need a
-license key. On 2030-08-19 the whole thing becomes Apache 2.0.
+anyone. Version history, attachments, comments and conflict detection are
+included. Eight extras for larger teams need a license key: sharing and public
+links, real-time editing, PDF and Word export, search inside attachments,
+groups, audit trail, SSO and LDAP. On 2030-08-19 the whole thing becomes Apache 2.0.
 
 ## Documentation
 
@@ -20,17 +43,26 @@ reference documents for the [API](docs/api.md), the
 [configuration](docs/configuration.md), the [data model](docs/data-model.md),
 [operations](docs/operations.md) and [development](docs/development.md).
 [Capacity](#capacity) below carries measured throughput and latency figures.
+Whoever is weighing Nexora against Notion, Outline, Docmost, Wiki.js or
+AppFlowy will find that in [comparison](docs/comparison.md), including what
+Nexora does not do.
 
+What changed between releases is in [CHANGELOG.md](CHANGELOG.md).
 Licensing is in [LICENSING.md](LICENSING.md); what Nexora ships from other
 people, and under which terms, is listed in
 [THIRD-PARTY.md](THIRD-PARTY.md), which also carries the commands to verify the
 inventory yourself.
 
+Packaging Nexora as a desktop or mobile application for Windows, macOS, Linux,
+Android and iOS lives on the [`verpackung`](../../tree/verpackung) branch,
+not on `main`: those wrappers are a window onto a running instance, they build
+on a different schedule, and none of it belongs in the server image.
+
 ## Stack
 
 | Layer    | Tech                                                     |
 | -------- | -------------------------------------------------------- |
-| Backend  | Go 1.25+, chi router, pgx, JWT (httpOnly cookie), bcrypt  |
+| Backend  | Go 1.27+, chi router, pgx, JWT (httpOnly cookie), bcrypt  |
 | Frontend | React 18, Vite, TypeScript, BlockNote editor             |
 | Database | PostgreSQL 16                                            |
 | Delivery | Docker Compose (nginx serves the SPA and proxies `/api`) |
@@ -43,7 +75,7 @@ against a throwaway database seeded with 40 accounts and 2,000 pages.
 The unit is an **operation**, not a request: opening a page is three calls (the
 tree, the page, its backlinks), so an operation averages 2.3 HTTP requests. The
 mix is 50 % open a page, 18 % search, 14 % load the tree, 8 % browse tags and
-favourites, and **10 % save** — a save being the expensive one, since it
+favourites, and **10 % save**. Saving is the expensive one, because it
 snapshots the previous version, recomputes the search column and writes an audit
 row. Every account works on its own pages, so the permission check runs its full
 path rather than the shortcut an admin takes.
@@ -60,7 +92,7 @@ path rather than the shortcut an admin takes.
 Throughput is saturated at roughly 20 concurrent requests and holds at about
 4,600 operations per second from there on; beyond that, added concurrency only
 queues, and latency rises linearly with it. **No errors at any level**, up to
-3,200 concurrent — it gets slower under load, it does not fall over.
+3,200 concurrent: it gets slower under load, it does not fall over.
 
 Translated through a think time of 20 seconds between actions, that is tens of
 thousands of simultaneously active users on paper. Take the paper part
@@ -73,7 +105,7 @@ concurrent requests before p95 passes 300 ms.
 **One tuning knob is worth knowing.** `DATABASE_URL` carries no
 `pool_max_conns`, so pgx defaults to one connection per core. Raising it to 50
 gives 5,895 operations/s at 100 concurrent instead of 4,293, with p95 dropping
-from 39 ms to 32 ms — 37 % more throughput for one query parameter. PostgreSQL
+from 39 ms to 32 ms, which is 37 % more throughput for one query parameter. PostgreSQL
 allows 100 connections by default, so there is room. RAM is *not* the knob:
 `shared_buffers` sits at the 128 MB default and a real instance measured here
 held a 10 MB database at a 99.98 % cache hit ratio. Give PostgreSQL more memory
@@ -86,10 +118,10 @@ when the database approaches a gigabyte, not before.
 - **Nested pages**: infinite hierarchy in a collapsible sidebar, drag to reorder
 - **Block editor**: slash menu and markdown shortcuts via BlockNote
 - **Autosave**: title and content persist as you type
-- **Markdown export**: download the current page as `.md` — always free, because
+- **Markdown export**: download the current page as `.md`. Always free, because
   getting your own content out must never sit behind a licence
 - **Markdown and HTML import**: drop in single `.md`/`.html` files or a whole
-  `.zip` — an Obsidian vault, a Notion export (the id in every filename is
+  `.zip`: an Obsidian vault, a Notion export (the id in every filename is
   stripped), a Confluence HTML export, a git wiki, a folder of notes. A preview
   shows the page tree that would result before anything is created. The archive
   keeps its shape: a folder becomes a page, the files inside become its subpages, and an
@@ -100,17 +132,17 @@ when the database approaches a gigabyte, not before.
   attached to its folder's page rather than dropped. An archive can bring its
   own space instead of merging into an existing one, which is what makes an
   exported space importable again as a whole. Front matter supplies title,
-  tags and icon. Free, like the export — the way in must not sit behind a licence
-  either
+  tags and icon. Free, like the export, because the way in must not sit behind
+  a licence either
 - **PDF and Word export**: a typeset document for a page, or a whole space as one
   file. Written without a third-party library; the PDF uses the base fonts and
   WinAnsi encoding, so umlauts survive
 - **Version history**: a snapshot is written before every content change; browse
   and restore any earlier revision
 - **Attachments**: stored on local disk or in any S3-compatible bucket (MinIO,
-  Garage, Ceph, AWS) — the handlers never learn which. Upload files per page,
+  Garage, Ceph, AWS), and the handlers never learn which. Upload files per page,
   with a quick viewer for images, PDFs
-  and plain text — browse between files with `←` `→`, zoom with `+` `−`, rotate
+  and plain text: browse between files with `←` `→`, zoom with `+` `−`, rotate
   with `R`, `0` resets, `Esc` closes
 - **Comments**: threads under every page, one reply level deep, mark a thread as
   settled. Deleting empties the text and keeps the shell, so replies hanging off
@@ -122,7 +154,7 @@ when the database approaches a gigabyte, not before.
 
 - **Spaces**: group pages into separate areas; a page may belong to one space. A
   space can be opened to every signed-in account of the instance, for reading or
-  for writing — that means the instance, not the internet; anonymous access
+  for writing, which means the instance and not the internet; anonymous access
   still runs solely through a page's share link
 - **Collapsible sidebar sections**: every section folds away and stays folded
   across reloads; spaces and tags show the first four and reveal the rest on
@@ -151,14 +183,14 @@ when the database approaches a gigabyte, not before.
 - **Per-user sharing**: share a page with named accounts, each as `read` or `write`
 - **Public links**: publish a single page read-only behind a random token
 - **Inbox**: comments on your pages, replies to your comments, `@Name` mentions
-  and pages somebody shared with you. Three kinds and no more — an inbox that
-  carries noise is one people stop opening
+  and pages somebody shared with you. Three kinds and no more, because an inbox
+  that carries noise is one people stop opening
 - **Sessions you can see and end**: every sign-in is a row in the database, so a
   lost device can be locked out without logging everyone else out. Sessions
   renew themselves while they are in use and expire when they are not; logging
   out revokes the token rather than only clearing the browser
 - **Sign in with a username**: an account has a login name next to its address
-  and either of the two gets you in — the `@` decides which one was typed. It is
+  and either of the two gets you in; the `@` decides which one was typed. It is
   handed out on registration, derived from the address when nobody picks one, so
   the second way is there without anybody having to switch it on
 - **Sign in through Keycloak or a directory**: OIDC against any provider that
@@ -167,29 +199,86 @@ when the database approaches a gigabyte, not before.
   that has its own password
 - **Word files**: a `.docx` attachment opens in the viewer and, with write
   access, can be edited and written back. Text, headings, lists and tables
-  survive; headers, styles, comments and images do not — and the interface says
+  survive, headers, styles, comments and images do not, and the interface says
   so before you start
 - **Marking up a PDF**: a PDF attachment can be highlighted in colour and given
   notes right in the viewer. The marks are drawn into the file itself, so they
   survive every other reader and every printout, and notes become real PDF
   annotations carrying their author. The marked-up file **replaces** the old
-  one under the same id — every link to it keeps working, and the unmarked
+  one under the same id, so every link to it keeps working. The unmarked
   version is gone afterwards; the interface says so before you save
 - **Your own profile**: a display name and a picture, set by the account itself
   rather than by an administrator. The picture is cropped and scaled to 256 × 256
   in the browser before it goes up, and the server accepts it only after
-  decoding it as an actual image — the claimed content type decides nothing
-- **Audit trail**: who did what, when — sign-ins including the failed ones,
+  decoding it as an actual image; the claimed content type decides nothing
+- **Audit trail**: who did what and when, from sign-ins including the failed ones to
   accounts, pages, trash, permanent deletion, shares and public links. Entries
   survive the deletion of the page or account they refer to, because deleting is
   exactly what an auditor comes looking for
 
 ## Quick Start
 
+Published images, nothing to build:
+
 ```bash
+git clone https://github.com/Dschonas04/Nexora.git && cd Nexora
 cp .env.example .env
 cp config.beispiel.conf config.conf
 # edit .env: set POSTGRES_PASSWORD and a long random JWT_SECRET
+echo 'COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.abbild.yml' >> .env
+docker compose up -d
+```
+
+Then open `http://localhost:3000`. The first account that registers becomes the
+administrator.
+
+### Where the images are
+
+Every release is published to **two registries**, with identical tags and
+identical content. Pull from whichever you prefer, nothing else differs.
+
+| Registry | Images | Page |
+|---|---|---|
+| **GitHub Container Registry** (default) | `ghcr.io/dschonas04/nexora-backend`<br>`ghcr.io/dschonas04/nexora-frontend`<br>`ghcr.io/dschonas04/nexora-pki` | [packages](https://github.com/Dschonas04?tab=packages&repo_name=Nexora) |
+| **Docker Hub** | `dschohnas/nexora-backend`<br>`dschohnas/nexora-frontend`<br>`dschohnas/nexora-pki` | [hub.docker.com/u/dschohnas](https://hub.docker.com/u/dschohnas) |
+
+| | |
+|---|---|
+| **Architectures** | `linux/amd64` (x86-64 PCs and servers) and `linux/arm64` (Raspberry Pi 4/5 on a 64-bit system, Apple Silicon, ARM servers). Docker picks the right one by itself |
+| **Tags** | `latest` for the newest release · `2.1` stays on a minor line · `2.1.0` is pinned exactly · `edge` is the current state of `main`, for trying, not for running |
+| **Built by** | [`.github/workflows/veroeffentlichen.yml`](.github/workflows/veroeffentlichen.yml) on GitHub's runners, on every tag `v*` |
+| **Pull without an account** | yes, on both |
+
+Two settings in the `.env` choose what is pulled:
+
+```bash
+NEXORA_FASSUNG=2.1.0            # which version (default: latest)
+NEXORA_REGISTRY=dschohnas       # Docker Hub instead of the default ghcr.io/dschonas04
+```
+
+The three images belong together: `nexora-pki` issues the internal
+certificates, `nexora-backend` is the Go service, `nexora-frontend` the web
+interface. None of them is meant to run alone.
+
+Templates for the home-server platforms are in
+[`vorlagen/`](vorlagen/README.md): CasaOS, Umbrel, and Unraid with the Compose
+Manager.
+
+One file, nothing else, for Portainer, Coolify, Dokploy or a bare machine.
+[`docker-compose.stack.yml`](docker-compose.stack.yml) carries Nexora and its
+database together, needs no `.env`, and is meant to be pasted into a panel:
+
+```bash
+curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker-compose.stack.yml
+# change POSTGRES_PASSWORD and JWT_SECRET in it, then
+docker compose -f docker-compose.stack.yml up -d
+```
+
+Building from source instead, for development or to run a patched version:
+
+```bash
+cp .env.example .env
+cp config.beispiel.conf config.conf
 docker compose up -d --build
 ```
 
@@ -199,7 +288,7 @@ deployment.
 
 `.env.example` ships with `COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml`,
 so the command above brings its own PostgreSQL. The database and the object
-store are deliberately kept out of the main file — most installations already
+store are deliberately kept out of the main file, because most installations already
 run one, and tying Nexora to its own copy would mean operating them twice:
 
 ```bash
@@ -237,12 +326,12 @@ s3_aktiv = ja
 
 The directory has to belong to uid/gid `10001`, the account the service runs
 under in the container. Changing the setting does not move the files that are
-already there — carry them over first, then restart.
+already there, so carry them over first, then restart.
 
 The same instance also answers over TLS on **https://localhost:3443** with a
 certificate the container issues on first start (825 days, stored in a volume so
-a rebuild does not change it). Browsers will warn about the issuer — nobody
-issues a trusted certificate for an address in a private network. Drop a real
+a rebuild does not change it). Browsers will warn about the issuer, because
+nobody issues a trusted certificate for an address in a private network. Drop a real
 certificate into the `nexora_tls` volume as `zertifikat.pem` / `schluessel.pem`
 and nothing is generated. The session cookie is marked `Secure` whenever the
 request arrived over TLS.
@@ -252,20 +341,23 @@ account, which becomes the workspace admin.
 
 ## Licensing tiers
 
-Four tiers, each containing the smaller ones:
+Three tiers, each containing the smaller ones. Standard needs no key at all:
 
-| Tier | adds |
-|---|---|
-| `free` | pages, search, trash, Markdown import and export |
-| `advanced` | version history, attachments, comments |
-| `pro` | sharing and public links, writing on a page together, conflict detection, PDF/Word export, search inside attachments |
-| `business` | groups, audit trail, OIDC, LDAP |
+| Tier | Name in the key | adds |
+|---|---|---|
+| **Standard** | `free` | pages, search, trash, backlinks and graph, Markdown import and export, **version history, attachments, comments, conflict detection** |
+| **Pro** | `pro` | sharing and public links, writing on a page together, PDF/Word export, search inside attachments |
+| **Business** | `business` | groups, audit trail, OIDC, LDAP |
+
+Up to 2.0 version history, attachments and comments were a paid `advanced` tier
+and conflict detection sat in `pro`. Keys issued for `advanced` stay valid; they
+no longer add anything the Standard scope does not already have.
 
 Keys are Ed25519-signed and verified offline, which is why they carry an expiry
 of at most a year: an issued key cannot be revoked, so the date is the only
 lever there is. A key can name a tier, a list of individual extras, or both.
 
-Importing a key works from the maintenance page of any installation — it is
+Importing a key works from the maintenance page of any installation: the key is
 checked, stored in the database and takes effect at once. *Issuing* a key needs
 the private signing key in `NEXORA_SIGNIERSCHLUESSEL`; without it the endpoint
 answers 501 and the section does not appear. That asymmetry is the whole point:
@@ -297,8 +389,8 @@ The file can also be edited from **Settings → Wartung**, which checks the draf
 before writing it and keeps a timestamped backup of the previous version.
 Credentials are masked on the way to the browser and restored on the way back,
 so saving never overwrites them with asterisks. Because the file is only read at
-startup, that page also carries a restart button — the process ends and whatever
-runs it brings it back.
+startup, that page also carries a restart button: the process ends, and
+whatever runs it brings it back.
 
 The format is deliberately dull:
 
@@ -330,7 +422,7 @@ typo must not cause an outage.
 
 ### Warnings on start
 
-Dangerous defaults are named on every boot without preventing it — a homelab
+Dangerous defaults are named on every boot without preventing it. A homelab
 install with the default secret should still run, it should just be impossible
 to miss that it did:
 
@@ -358,8 +450,8 @@ repository:
 | --- | --- |
 | `PORT` | Host port for the web UI |
 | `POSTGRES_PASSWORD` | Database password, used by both db and backend |
-| `JWT_SECRET` | Session signing key — overrides `jwt_geheimnis` |
-| `NEXORA_LIZENZ` | License key — overrides `lizenz` |
+| `JWT_SECRET` | Session signing key, overrides `jwt_geheimnis` |
+| `NEXORA_LIZENZ` | License key, overrides `lizenz` |
 
 ## Data Model
 
@@ -391,7 +483,7 @@ and carries a GIN index. That is what makes the search a search rather than a
 
 `pruefspur` deliberately has **no** foreign key with a cascade. Names and titles
 are frozen copies, so an entry stays readable after the page or account it
-refers to is gone — deleting is exactly the event an auditor looks for.
+refers to is gone. Deleting is exactly the event an auditor looks for.
 
 Deleting a page sets `deleted_at` (trash). Purging removes the row, which cascades
 to its versions, attachments, shares, links and subpages.
@@ -475,7 +567,7 @@ caret of the person making them. The service passes the packets on and keeps no
 document of its own; the browsers merge the text between them, so a restart
 costs nothing and two people in the same sentence both keep what they wrote.
 Saving to the database is done by exactly one of them, the one with the lowest
-client id in the room — and when that browser leaves, the next takes over.
+client id in the room, and when that browser leaves, the next takes over.
 
 A proxy in front must pass WebSocket upgrades through to `/api/echtzeit/`.
 
@@ -490,8 +582,8 @@ DELETE /system/rechner/{id}               remove one
 ```
 
 Two lists in the settings under **System**. The first is what Nexora needs to
-run and therefore knows by itself — database, cache, object store, sign-in
-provider — each with its state, version and response time. The second is what you
+run and therefore knows by itself: database, cache, object store and sign-in
+provider, each with its state, version and response time. The second is what you
 enter: the machines around it.
 
 Nexora only knocks on those, and everything in the table is what it saw while
@@ -543,7 +635,7 @@ GET    /sitzungen                        the signed-in account's stored sessions
 DELETE /sitzungen                        end every session but the current one
 DELETE /sitzungen/{id}                   end one session, effective immediately
 PUT    /system/lizenz                    import a license key, effective at once (admin)
-POST   /system/lizenz/ausstellen        issue a key — only where a signing key is present
+POST   /system/lizenz/ausstellen        issue a key, only where a signing key is present
 POST   /import                           Markdown/HTML files or a ZIP, multipart; parentId/spaceId
                                          optional, or neueAblage=<name> to create a space for it
 POST   /import  (vorschau=1)              the same, but only reports the tree it would create
@@ -575,7 +667,7 @@ GET    /search?q=                         search titles and content
 GET    /healthz                           liveness probe
 ```
 
-### Comments  ·  paid: `kommentare`
+### Comments
 
 ```
 GET    /pages/{id}/kommentare             the whole thread, oldest first
@@ -592,7 +684,7 @@ GET    /pruefspur                         newest first; filter by aktion, akteur
 GET    /pruefspur/aktionen                which action names actually occur
 ```
 
-Recording runs on every installation regardless of the license — only reading
+Recording runs on every installation regardless of the license; only reading
 is paid. A trail with a hole over the unlicensed period would not be one.
 
 ## Project Structure
@@ -685,7 +777,7 @@ cd frontend && npm install && npm run dev
 
 ## Licensing
 
-**Business Source License 1.1** — see [LICENSE](LICENSE), explained in
+**Business Source License 1.1**, see [LICENSE](LICENSE), explained in
 [LICENSING.md](LICENSING.md).
 
 Not an OSI open-source license, but not a closed one either: the source is
@@ -702,7 +794,7 @@ attachment search, space export, comments, conflict detection, writing on a
 page together.
 
 Locked endpoints answer `402 Payment Required` and the browser hides the
-corresponding controls. Hiding is a courtesy to the reader — the refusal is
+corresponding controls. Hiding is a courtesy to the reader; the refusal is
 what enforces it.
 
 Build without the paid half:

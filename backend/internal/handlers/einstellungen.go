@@ -1,7 +1,7 @@
 // Runtime settings: the ones an administrator changes from the browser.
 //
 // The split against config.conf is deliberate. What has to be known before the
-// database is open — its address, the listening port, the signing secret —
+// database is open, its address, the listening port, the signing secret,
 // lives in the file. What may change while the server runs lives here, because
 // nobody can edit a file inside a container from a web page.
 //
@@ -43,7 +43,7 @@ type Einstellung struct {
 }
 
 // bekannt lists every setting that may be changed at runtime. A key that is not
-// in here is rejected — otherwise a crafted request could write arbitrary rows
+// in here is rejected, otherwise a crafted request could write arbitrary rows
 // into the table and a later reader would trust them.
 var bekannt = map[string]struct {
 	Art        string
@@ -118,7 +118,7 @@ var bekannt = map[string]struct {
 }
 
 // umgebungsname maps a setting to the environment variable that overrides it at
-// start. Only the keys that config.go actually reads are in here — naming one
+// start. Only the keys that config.go actually reads are in here, naming one
 // that is never read would send someone hunting for an effect that cannot
 // happen. What is missing lives in the database alone.
 var umgebungsname = map[string]string{
@@ -129,10 +129,11 @@ var umgebungsname = map[string]string{
 	"such_woerterbuch":    "NEXORA_SUCH_WOERTERBUCH",
 }
 
-// grundtoene sind die erlaubten Grundtoene. Eine feste Liste statt freier
-// Eingabe: die Farbwerte dahinter stehen im Stylesheet, und ein unbekannter
-// Name ergaebe eine Oberflaeche ohne Farben. Gewaehlt wird der Ton seit dem
-// Umzug am Konto (siehe aussehen.go), nicht mehr in der Verwaltung.
+// grundtoene are the permitted base tones. A fixed list instead of free
+// input: the colour values behind the names live in the stylesheet, and an
+// unknown name would produce an interface without colours. Since the move the
+// tone is chosen on the account (see aussehen.go), no longer in the
+// administration.
 var grundtoene = map[string]bool{"weiss": true, "grau": true, "dunkel": true}
 
 // speicher keeps the values in memory.
@@ -218,13 +219,13 @@ func janein(b bool) string {
 // once, without a restart.
 func RegistrierungOffen() bool { return wert("registrierung_offen") == "ja" }
 
-// ZweitfaktorPflicht sagt, ob die Instanz den zweiten Faktor von jedem Konto
-// verlangt.
+// ZweitfaktorPflicht says whether the instance requires the second factor of
+// every account.
 func ZweitfaktorPflicht() bool { return wert("zweitfaktor_pflicht") == "ja" }
 
-// ZweitfaktorAussteller ist der Name, unter dem der Eintrag in der
-// Authenticator-App steht. Leer waere dort eine namenlose Zeile, deshalb faellt
-// er auf den Namen des Programms zurueck.
+// ZweitfaktorAussteller is the name the entry appears under in the
+// authenticator app. Empty would be a nameless row there, which is why it falls
+// back to the name of the program.
 func ZweitfaktorAussteller() string {
 	if a := strings.TrimSpace(wert("zweitfaktor_aussteller")); a != "" {
 		return a
@@ -239,7 +240,7 @@ func (s *Server) echtzeitAn() bool { return wert("echtzeit") == "ja" }
 
 // Seitenbreite is the default width for pages that do not specify one. An
 // unknown value would create a CSS class that does not exist and therefore
-// fall back to the narrow layout — so we validate it here rather than in the
+// fall back to the narrow layout, so we validate it here rather than in the
 // client.
 func Seitenbreite() string {
 	b := wert("seitenbreite")
@@ -318,20 +319,21 @@ func istHexFarbe(s string) bool {
 	return true
 }
 
-// Design liefert das Aussehen an jedes angemeldete Konto, nicht nur an
-// Administratoren: die Verwaltung steht gewoehnlichen Konten nicht offen, das
-// Aussehen aber schon -- es ist ihr eigenes.
+// Design serves the appearance to every signed-in account, not only to
+// administrators: the administration is closed to ordinary accounts, but the
+// appearance is not -- it is their own.
 //
-// Grundton und Akzent kommen aus der Zeile des Kontos, die Seitenbreite bleibt
-// eine Sache der Instanz. Deshalb die beiden Herkuenfte in einer Antwort.
+// Base tone and accent come from the account's row, the page width remains a
+// matter for the instance. Hence the two origins in one response.
 func (s *Server) Design(w http.ResponseWriter, r *http.Request) {
 	a := s.aussehenLesen(r)
 	writeJSON(w, http.StatusOK, map[string]string{
 		"grundton": a.Grundton,
+		"sprache":  a.Sprache,
 		"akzent":   a.Akzent,
-		// Die Breite steht hier und nicht bei den Einstellungen: die sind der
-		// Verwaltung vorbehalten, und diese Angabe braucht jeder, der eine
-		// Seite ansieht.
+		// The width sits here and not among the settings: those are reserved
+		// for administrators, and this value is needed by everyone who looks at
+		// a page.
 		"seitenbreite": Seitenbreite(),
 	})
 }
@@ -512,7 +514,7 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"wert": wertNeu})
 }
 
-// einstellungSchreiben legt einen Wert ab und zieht den Zwischenspeicher nach.
+// einstellungSchreiben stores a value and brings the cache along with it.
 //
 // Extracted because, besides `SetzeEinstellung`, a second path also writes
 // (the generated passphrase for metrics). Two identical INSERTs would be two
@@ -533,8 +535,8 @@ func (s *Server) einstellungSchreiben(ctx context.Context, schluessel, wertNeu s
 	return nil
 }
 
-// speicherOeffentlicheURL ist die Adresse, unter der die Instanz erreichbar
-// ist, soweit sie jemand eingetragen hat.
+// speicherOeffentlicheURL is the address the instance can be reached at, as
+// far as anybody has entered one.
 func speicherOeffentlicheURL() string {
 	speicher.RLock()
 	defer speicher.RUnlock()

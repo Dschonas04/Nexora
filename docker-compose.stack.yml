@@ -1,0 +1,99 @@
+# Eine Datei, die fuer sich steht: Nexora samt Datenbank, aus fertigen
+# Abbildern, ohne .env und ohne Quellbaum.
+#
+# Gedacht fuer die Oberflaechen, in die man einen Verbund einfuegt und auf
+# "Ausrollen" drueckt -- Portainer, Coolify, Dokploy, Komodo -- und fuer den
+# schnellen Versuch auf einer leeren Maschine:
+#
+#     curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker-compose.stack.yml
+#     docker compose -f docker-compose.stack.yml up -d
+#
+# ZWEI WERTE AENDERN, bevor das irgendwo echt laeuft: POSTGRES_PASSWORD und
+# JWT_SECRET. Der zweite ist der Schluessel, mit dem Sitzungen unterschrieben
+# werden; bleibt er der Beispielwert, kann jeder, der ihn kennt, sich als jeder
+# ausgeben. Ein langer Zufallswert:
+#
+#     openssl rand -hex 32
+#
+# Die Abbilder kommen aus der GitHub-Registrierung (ghcr.io/dschonas04). Wer
+# lieber Docker Hub nimmt, setzt NEXORA_REGISTRY=dschohnas -- dieselben
+# Abbilder, dieselben Marken, amd64 und arm64. NEXORA_FASSUNG legt die Fassung
+# fest (Standard: latest).
+#
+# Wer die Datenbank schon hat, nimmt diesen Verbund nicht, sondern die
+# Hauptdatei mit docker-compose.abbild.yml und setzt DATABASE_URL.
+#
+# Alles Weitere -- Anhaenge in einen S3-Eimer, Redis davor, Post per SMTP,
+# eigene Zertifikate -- steht in docs/configuration.md und laeuft hier ueber
+# dieselben Umgebungsvariablen.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nexora
+      POSTGRES_USER: nexora
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexora-bitte-aendern}
+    volumes:
+      - nexora_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nexora -d nexora']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Laeuft einmal, legt eine kleine eigene Zertifizierungsstelle an und ist dann
+  # fertig. Damit ist auch der Verkehr zwischen den Containern verschluesselt.
+  pki:
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-pki:${NEXORA_FASSUNG:-latest}
+    volumes:
+      - nexora_pki:/pki
+    restart: 'no'
+
+  backend:
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-backend:${NEXORA_FASSUNG:-latest}
+    depends_on:
+      db:
+        condition: service_healthy
+      pki:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://nexora:${POSTGRES_PASSWORD:-nexora-bitte-aendern}@db:5432/nexora?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-bitte-aendern-openssl-rand-hex-32}
+      PORT: '8443'
+      NEXORA_TLS_ZERTIFIKAT: /pki/backend/backend.crt
+      NEXORA_TLS_SCHLUESSEL: /pki/backend/backend.key
+      NEXORA_TLS_WURZEL: /pki/ca.crt
+      NEXORA_ANHANG_PFAD: /data/attachments
+    volumes:
+      - nexora_files:/data/attachments
+      - nexora_pki:/pki:ro
+    restart: unless-stopped
+
+  frontend:
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-frontend:${NEXORA_FASSUNG:-latest}
+    depends_on:
+      pki:
+        condition: service_completed_successfully
+      backend:
+        condition: service_started
+    ports:
+      - '${PORT:-3000}:80'
+      - '${PORT_TLS:-3443}:443'
+    environment:
+      NEXORA_DIENST_SCHEMA: https
+      NEXORA_DIENST_PORT: '8443'
+      # Die Adresse, unter der die Instanz von aussen erreichbar ist. Nur damit
+      # darf eine Suchmaschine die Anmeldeseite aufnehmen; ohne sie haelt
+      # robots.txt jeden Sammler heraus. Siehe docs/seo.md.
+      NEXORA_OEFFENTLICHE_ADRESSE: ${NEXORA_OEFFENTLICHE_ADRESSE:-}
+    volumes:
+      - nexora_tls:/etc/nginx/tls
+      - nexora_pki:/pki:ro
+    restart: unless-stopped
+
+volumes:
+  nexora_db:
+  nexora_files:
+  nexora_pki:
+  nexora_tls:

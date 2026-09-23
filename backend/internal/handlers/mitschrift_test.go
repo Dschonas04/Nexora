@@ -68,12 +68,12 @@ func TestStauWirftHinaus(t *testing.T) {
 	if ImRaum("s3") != 1 {
 		t.Fatalf("erwartet: nur noch einer im Raum, ist: %d", ImRaum("s3"))
 	}
-	// Sein Kanal ist zu, sein Schreiber beendet sich von selbst.
+	// Its channel is closed, its writer ends by itself.
 	<-langsam.post
 	if _, offen := <-langsam.post; offen {
 		t.Fatal("Kanal des Hinausgeworfenen ist noch offen")
 	}
-	// Der Flotte hat beide bekommen.
+	// The fast one got both.
 	if len(flott.post) != 2 {
 		t.Fatalf("der Flotte hat %d von 2 Paketen", len(flott.post))
 	}
@@ -172,7 +172,7 @@ func TestFremdeHerkunftWirdAbgewiesen(t *testing.T) {
 //
 // The checks above operate on in-memory structures; here everything depends
 // on the connection setup working. That only succeeds if the measurement
-// middleware passes the connection through — a single line easily lost when
+// middleware passes the connection through: a single line easily lost when
 // refactoring, and which would not cause any other test to fail.
 func TestLeitungTraegtPaketeZwischenBrowsern(t *testing.T) {
 	const seite = "leitungsprobe"

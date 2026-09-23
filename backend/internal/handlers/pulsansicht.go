@@ -5,7 +5,7 @@
 //
 // The connection pool is the main reason for this view. Without tuning pgx
 // allows as many connections as CPU cores, and when they are all used every
-// further request waits — from outside this looks like a slow database even
+// further request waits, from outside this looks like a slow database even
 // though the DB is idle. Confusing the two costs hours of debugging; the
 // waiting time is shown here.
 package handlers

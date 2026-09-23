@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-// Die Untergrenze zaehlt Zeichen und nicht Bytes: ein Passwort aus sechs
-// Umlauten ist sechs Zeichen lang und darf nicht daran scheitern, dass jedes
-// davon zwei Bytes braucht.
+// The lower bound counts characters and not bytes: a password of six umlauts
+// is six characters long and must not fail because each of them needs two
+// bytes.
 func TestPasswortGrenzen(t *testing.T) {
 	faelle := []struct {
 		name    string
@@ -34,14 +34,14 @@ func TestPasswortGrenzen(t *testing.T) {
 	}
 }
 
-// Ein Konto aus dem SSO traegt statt eines Hashs eine Marke. Wird die nicht
-// erkannt, setzt eine Verwaltung ihm ein Passwort und nimmt ihm damit den
-// Zugang, weil sso.go es danach nicht mehr uebernimmt.
+// An account from SSO carries a marker instead of a hash. If that is not
+// recognised, an administrator sets a password on it and thereby takes away its
+// access, because sso.go no longer adopts it afterwards.
 func TestSSOKontoWirdErkannt(t *testing.T) {
 	if h, ja := ssoHerkunft("sso:keycloak"); !ja || h != "keycloak" {
 		t.Fatalf("Herkunft nicht erkannt: %q %v", h, ja)
 	}
-	// Ein echter bcrypt-Hash faengt mit $2 an und darf nicht als SSO gelten.
+	// A real bcrypt hash starts with $2 and must not count as SSO.
 	if _, ja := ssoHerkunft("$2a$12$abcdefghijklmnopqrstuv"); ja {
 		t.Fatal("bcrypt-Hash als SSO-Konto gelesen")
 	}
