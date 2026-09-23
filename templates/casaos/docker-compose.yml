@@ -106,11 +106,11 @@ x-casaos:
         Vor dem ersten Start POSTGRES_PASSWORD (bei db UND backend) und
         JWT_SECRET ändern. Ein guter Wert: openssl rand -hex 32.
   icon: https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/logo/nexora-zeichen-512.png
-  thumbnail: https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/bilder/seite.png
+  thumbnail: https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/images/seite.png
   screenshot_link:
-    - https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/bilder/seite.png
-    - https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/bilder/graph.png
-    - https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/bilder/suche.png
+    - https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/images/seite.png
+    - https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/images/graph.png
+    - https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/images/suche.png
   project_url: https://github.com/Dschonas04/Nexora
   index: /
   port_map: '3000'

@@ -1,7 +1,7 @@
 // Checks the colour arithmetic: contrast, the text colour on a surface, and that
 // every accent becomes readable on every base tone. Run like the other probes:
 //
-//   npx esbuild test/farbe-probe.ts --bundle --format=esm --platform=node --outfile=/tmp/farbe.mjs
+//   npx esbuild test/colour-check.ts --bundle --format=esm --platform=node --outfile=/tmp/farbe.mjs
 //   node /tmp/farbe.mjs
 import { kontrast, ausHex, lesbarAuf, schriftAuf } from "../src/farbe";
 

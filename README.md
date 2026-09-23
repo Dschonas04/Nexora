@@ -13,14 +13,14 @@ A minimal, self-hosted knowledge base: think Notion or Outline, but small and yo
 with example content and resets itself every night, so nothing you do there
 sticks or breaks anything.
 
-![Nexora in half a minute: opening a space, following a wiki link, searching, the backlinks of a page and the graph of the whole instance](docs/bilder/rundgang.gif)
+![Nexora in half a minute: opening a space, following a wiki link, searching, the backlinks of a page and the graph of the whole instance](docs/images/rundgang.gif)
 
 *Half a minute: open a space, follow a `[[link]]`, search, see which pages link
 here, and the graph over everything.*
 
 | A page | Backlinks and the local graph | The whole instance |
 | --- | --- | --- |
-| [![A page in the editor](docs/bilder/seite.png)](https://nexora.jonasgroll.de) | [![Search results, backlinks and the local graph of a page](docs/bilder/suche.png)](https://nexora.jonasgroll.de) | [![The knowledge graph](docs/bilder/graph.png)](https://nexora.jonasgroll.de) |
+| [![A page in the editor](docs/images/seite.png)](https://nexora.jonasgroll.de) | [![Search results, backlinks and the local graph of a page](docs/images/suche.png)](https://nexora.jonasgroll.de) | [![The knowledge graph](docs/images/graph.png)](https://nexora.jonasgroll.de) |
 | Nested pages, tags, tables, Markdown shortcuts. | Every page says who points at it, with the neighbourhood drawn underneath. | Every page and every link, coloured by space. |
 
 Nested pages in a block editor, spaces, per-user sharing with roles, version
@@ -247,7 +247,7 @@ identical content. Pull from whichever you prefer, nothing else differs.
 |---|---|
 | **Architectures** | `linux/amd64` (x86-64 PCs and servers) and `linux/arm64` (Raspberry Pi 4/5 on a 64-bit system, Apple Silicon, ARM servers). Docker picks the right one by itself |
 | **Tags** | `latest` for the newest release · `2.1` stays on a minor line · `2.1.0` is pinned exactly · `edge` is the current state of `main`, for trying, not for running |
-| **Built by** | [`.github/workflows/veroeffentlichen.yml`](.github/workflows/veroeffentlichen.yml) on GitHub's runners, on every tag `v*` |
+| **Built by** | [`.github/workflows/release.yml`](.github/workflows/release.yml) on GitHub's runners, on every tag `v*` |
 | **Pull without an account** | yes, on both |
 
 Two settings in the `.env` choose what is pulled:

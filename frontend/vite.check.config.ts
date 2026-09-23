@@ -1,4 +1,4 @@
-// Nur zum Gegentesten von Hand: liefert test/probe/editorprobe.html aus.
+// Nur zum Gegentesten von Hand: liefert test/check/editor.html aus.
 // Gehoert nicht ins Erzeugnis und wird von keinem Bauschritt angefasst.
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";

@@ -4,12 +4,12 @@
 // hang on nothing that needs a window. Invocation:
 //
 //     npx esbuild src/pdfmarken.ts --bundle --format=esm --outfile=/tmp/pm.mjs
-//     node test/pdf-probe.mjs /tmp/pm.mjs
+//     node test/pdf-check.mjs /tmp/pm.mjs
 import { PDFDocument, rgb } from "pdf-lib";
 
 const bundle = process.argv[2];
 if (!bundle) {
-  console.error("Aufruf: node test/pdf-probe.mjs <gebündeltes pdfmarken.mjs>");
+  console.error("Usage: node test/pdf-check.mjs <bundled pdfmarken.mjs>");
   process.exit(2);
 }
 const { markenAnwenden, ausBildschirm, normiert } = await import(bundle);

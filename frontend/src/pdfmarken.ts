@@ -4,7 +4,7 @@
 // wrong: coordinates. A PDF counts from the bottom left, a screen from the top
 // left, and between them lies a scale. Confuse that and one gets highlights
 // clinging to the top edge instead of sitting on the type. As a file of its own
-// this can be checked without a browser, see test/pdf-probe.mjs.
+// this can be checked without a browser, see test/pdf-check.mjs.
 //
 // Two different things are written:
 //

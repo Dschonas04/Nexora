@@ -5,7 +5,7 @@ name: Project page
 on:
   push:
     branches: [main]
-    paths: ['site/**', '.github/workflows/seite.yml']
+    paths: ['site/**', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -27,9 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      # The pictures live once, in docs/bilder, and are copied into the artifact
+      # The pictures live once, in docs/images, and are copied into the artifact
       # rather than kept a second time under site/.
-      - run: cp -r docs/bilder site/bilder
+      - run: cp -r docs/images site/images
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

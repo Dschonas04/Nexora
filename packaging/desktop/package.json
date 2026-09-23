@@ -1,5 +1,5 @@
 {
-  "name": "nexora-schreibtisch",
+  "name": "nexora-desktop",
   "version": "1.0.0",
   "description": "Nexora als Anwendung für Windows, macOS und Linux",
   "main": "haupt.js",

@@ -95,7 +95,7 @@ echo "== Backend bauen"
 # exactly what is to be checked.
 starte_dienst() {
     DATABASE_URL="postgres://nexora@127.0.0.1:${PGPORT}/nexora?sslmode=disable" \
-    JWT_SECRET="rauchtest-geheimnis-lang-genug-fuer-hs256" \
+    JWT_SECRET="smoketest-secret-long-enough-for-hs256" \
     NEXORA_DATA_DIR="$ARBEIT/anhaenge" \
     PORT="$APIPORT" \
     NEXORA_CONFIG="/dev/null" \
@@ -134,7 +134,7 @@ feld() { python3 -c "import json,sys;d=json.load(sys.stdin);print(d$1)"; }
 
 echo "== Konto und Seite"
 curl -s -c "$KEKSE" -X POST "$BASIS/api/auth/register" -H 'Content-Type: application/json' \
-     -d '{"email":"rauch@test.invalid","name":"Rauch Test","password":"rauchtest-passwort"}' >/dev/null
+     -d '{"email":"smoke@test.invalid","name":"Smoke Test","password":"smoketest-password"}' >/dev/null
 pruefe "angemeldet" "200" "$(code "$BASIS/api/auth/me")"
 
 SEITE=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
@@ -303,7 +303,7 @@ pruefe "sie ist als diese markiert" "True" \
 # Zweite Anmeldung von einem anderen "Geraet", eigene Keksdose.
 curl -s -c "$ARBEIT/kekse2.txt" -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
      -A "Mozilla/5.0 (Windows NT 10.0) Firefox/140.0" \
-     -d '{"email":"rauch@test.invalid","password":"rauchtest-passwort"}' >/dev/null
+     -d '{"email":"smoke@test.invalid","password":"smoketest-password"}' >/dev/null
 pruefe "jetzt zwei Sitzungen" "2" \
        "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
 pruefe "Frist steht in Stunden" "True" \
@@ -331,7 +331,7 @@ pruefe "wieder nur eine Sitzung" "1" \
        "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
 # Abmelden widerruft ebenfalls, frueher blieb das Token gueltig.
 curl -s -c "$ARBEIT/kekse3.txt" -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
-     -d '{"email":"rauch@test.invalid","password":"rauchtest-passwort"}' >/dev/null
+     -d '{"email":"smoke@test.invalid","password":"smoketest-password"}' >/dev/null
 curl -s -b "$ARBEIT/kekse3.txt" -X POST "$BASIS/api/auth/logout" >/dev/null
 pruefe "nach dem Abmelden gilt das Token nicht mehr" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$ARBEIT/kekse3.txt" "$BASIS/api/auth/me")"
@@ -515,7 +515,7 @@ echo "== Anmeldeversuche"
 # of this file. A failed attempt is therefore triggered here by hand.
 curl -s -o /dev/null -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
      -A "Mozilla/5.0 (X11; Linux x86_64) Firefox/141.0" \
-     -d '{"kennung":"rauch@test.invalid","password":"falsch"}'
+     -d '{"kennung":"smoke@test.invalid","password":"falsch"}'
 curl -s -o /dev/null -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
      -d '{"kennung":"gibtesnicht@test.invalid","password":"egal"}'
 pruefe "Auswertung antwortet" "200" "$(code "$BASIS/api/system/anmeldungen")"
@@ -525,7 +525,7 @@ pruefe "falsches Passwort wird als solches vermerkt" "Passwort falsch" \
        "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)["versuche"]
-print(next(v["grund"] for v in d if v["kennung"] == "rauch@test.invalid"))')"
+print(next(v["grund"] for v in d if v["kennung"] == "smoke@test.invalid"))')"
 pruefe "unbekannte Kennung ebenso" "Kennung unbekannt" \
        "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | python3 -c '
 import json, sys
@@ -901,7 +901,7 @@ pruefe "es laesst sich entfernen" "True" "$(hole -X DELETE "$BASIS/api/profil/bi
 pruefe "danach gibt es keines mehr" "404" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
 # Back to the old name, so the following sections find it again.
 hole -X PUT "$BASIS/api/profil" -H 'Content-Type: application/json' \
-     -d '{"name":"Rauch Test"}' >/dev/null
+     -d '{"name":"Smoke Test"}' >/dev/null
 
 echo "== Passwort wechseln"
 # The previous password is mandatory, even with an open session: otherwise an
@@ -911,24 +911,24 @@ pruefe "falsches altes Passwort wird abgewiesen" "403" \
           -d '{"alt":"stimmt-nicht","neu":"neues-passwort"}')"
 pruefe "ein zu kurzes neues auch" "400" \
        "$(code -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
-          -d '{"alt":"rauchtest-passwort","neu":"kurz"}')"
+          -d '{"alt":"smoketest-password","neu":"kurz"}')"
 pruefe "dasselbe noch einmal ist kein Wechsel" "400" \
        "$(code -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
-          -d '{"alt":"rauchtest-passwort","neu":"rauchtest-passwort"}')"
+          -d '{"alt":"smoketest-password","neu":"smoketest-password"}')"
 pruefe "der Wechsel geht durch" "True" \
        "$(hole -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
-          -d '{"alt":"rauchtest-passwort","neu":"zweites-passwort"}' | feld "['ok']")"
+          -d '{"alt":"smoketest-password","neu":"second-password"}' | feld "['ok']")"
 # One's own device stays signed in, everything else falls. Without this line the
 # change would be a sign-out.
 pruefe "dieses Gerät bleibt angemeldet" "200" "$(code "$BASIS/api/auth/me")"
 pruefe "das alte Passwort öffnet nicht mehr" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/auth/login" \
           -H 'Content-Type: application/json' \
-          -d '{"kennung":"rauch@test.invalid","password":"rauchtest-passwort"}')"
+          -d '{"kennung":"smoke@test.invalid","password":"smoketest-password"}')"
 pruefe "das neue öffnet" "200" \
        "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/auth/login" \
           -H 'Content-Type: application/json' \
-          -d '{"kennung":"rauch@test.invalid","password":"zweites-passwort"}')"
+          -d '{"kennung":"smoke@test.invalid","password":"second-password"}')"
 # The audit trail is an add-on and not READABLE without a licence; it is
 # written all the same, see main.go. The check therefore happens in the
 # database.
@@ -1037,7 +1037,7 @@ openssl req -x509 -newkey rsa:2048 -sha256 -days 2 -nodes \
     -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" >/dev/null 2>&1
 
 DATABASE_URL="postgres://nexora@127.0.0.1:${PGPORT}/nexora?sslmode=disable" \
-JWT_SECRET="rauchtest-geheimnis-lang-genug-fuer-hs256" \
+JWT_SECRET="smoketest-secret-long-enough-for-hs256" \
 NEXORA_DATA_DIR="$ARBEIT/anhaenge" \
 PORT="$APIPORT" \
 NEXORA_CONFIG="/dev/null" \
@@ -1069,7 +1069,7 @@ pruefe "und er sagt auch, warum" "1" \
 pruefe "die Anmeldung geht auch verschlüsselt" "200" \
        "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 --cacert "$ARBEIT/dienst.crt" \
           -X POST "$SICHER/api/auth/login" -H 'Content-Type: application/json' \
-          -d '{"kennung":"rauch@test.invalid","password":"zweites-passwort"}')"
+          -d '{"kennung":"smoke@test.invalid","password":"second-password"}')"
 
 echo
 if [ "$fehler" -gt 0 ]; then

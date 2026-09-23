@@ -10,7 +10,7 @@
 <meta property="og:title" content="Nexora: self-hosted wiki with backlinks and a knowledge graph">
 <meta property="og:description" content="Nested pages, backlinks, a knowledge graph and full text search. Go, React, PostgreSQL. Live demo, no signup.">
 <meta property="og:url" content="https://dschonas04.github.io/Nexora/">
-<meta property="og:image" content="https://dschonas04.github.io/Nexora/bilder/seite.png">
+<meta property="og:image" content="https://dschonas04.github.io/Nexora/images/seite.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="zeichen.svg" type="image/svg+xml">
 <script type="application/ld+json">
@@ -98,8 +98,8 @@
   .karte { background: var(--grund-2); border: 1px solid var(--linie); border-radius: 10px; padding: 18px; }
   .karte h3 { margin: 0 0 6px; font-size: 16px; }
   .karte p { margin: 0; color: var(--leise); font-size: 15px; }
-  .bilder-paar { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-  .bilder-paar figure { margin: 0; }
+  .image-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  .image-pair figure { margin: 0; }
   pre {
     background: var(--grund-2); border: 1px solid var(--linie); border-radius: 10px;
     padding: 16px; overflow-x: auto; font-size: 14px; line-height: 1.6;
@@ -150,9 +150,9 @@
   </p>
 
   <figure>
-    <video src="bilder/rundgang.mp4" poster="bilder/seite.png" autoplay muted loop playsinline
+    <video src="images/rundgang.mp4" poster="images/seite.png" autoplay muted loop playsinline
            aria-label="Half a minute in Nexora: opening a space, following a wiki link, searching, the backlinks of a page, and the graph of the whole instance">
-      <a href="bilder/rundgang.gif">Watch the walkthrough as an animation</a>
+      <a href="images/rundgang.gif">Watch the walkthrough as an animation</a>
     </video>
     <figcaption>Half a minute: open a space, follow a <code>[[link]]</code>, search, see which pages link here, and the graph over everything.</figcaption>
   </figure>
@@ -163,13 +163,13 @@
 <section class="band">
   <h2>Two things the others do not have</h2>
   <p class="leise">Both come from the same idea: a wiki is worth more when it shows how its pages hang together.</p>
-  <div class="bilder-paar">
+  <div class="image-pair">
     <figure>
-      <img src="bilder/graph.png" alt="The knowledge graph: pages as dots, links as lines, coloured per space">
+      <img src="images/graph.png" alt="The knowledge graph: pages as dots, links as lines, coloured per space">
       <figcaption><b>The knowledge graph.</b> Every page and every link, coloured by space. Drag it, zoom it, click a dot to open the page.</figcaption>
     </figure>
     <figure>
-      <img src="bilder/suche.png" alt="Search results in the sidebar with matching text">
+      <img src="images/suche.png" alt="Search results in the sidebar with matching text">
       <figcaption><b>Search that reads the text.</b> PostgreSQL full text search over titles and content, and, if you switch it on, inside the attached files. Every page also lists who links to it.</figcaption>
     </figure>
   </div>
