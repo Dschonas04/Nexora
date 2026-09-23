@@ -61,7 +61,7 @@ services:
       # Unlocks the paid extras. Leaving it empty means: Nexora runs with the
       # free scope, and locked calls answer with 402.
       NEXORA_LIZENZ: ${NEXORA_LIZENZ:-}
-      # Inbox messages by e-mail, see [Mail] in config.beispiel.conf. Empty
+      # Inbox messages by e-mail, see [Mail] in config.example.conf. Empty
       # values leave config.conf in charge.
       NEXORA_SMTP_SERVER: ${NEXORA_SMTP_SERVER:-}
       NEXORA_SMTP_ABSENDER: ${NEXORA_SMTP_ABSENDER:-}
@@ -90,7 +90,7 @@ services:
       # This file does NOT lie in the directory, it is copied once from the
       # template:
       #
-      #     cp config.beispiel.conf config.conf
+      #     cp config.example.conf config.conf
       #
       # Reason: it holds credentials and is edited on the maintenance page. A
       # tracked version would be written over on every rollout, and because a

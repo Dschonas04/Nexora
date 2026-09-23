@@ -7,7 +7,7 @@ Installing, upgrading, backing up and repairing an instance.
 ```bash
 git clone https://github.com/Dschonas04/Nexora.git && cd Nexora
 cp .env.example .env
-cp config.beispiel.conf config.conf
+cp config.example.conf config.conf
 
 # the two values nobody may leave alone
 openssl rand -hex 32          # → JWT_SECRET in .env
