@@ -2,7 +2,7 @@
 //
 // This view exists because the tags in the sidebar used to be decoration: you
 // could create them, attach them and see them, and then nothing. A label you
-// cannot follow is worse than no label — it promises an order that is not
+// cannot follow is worse than no label; it promises an order that is not
 // actually reachable.
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";

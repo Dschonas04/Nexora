@@ -26,7 +26,7 @@ export default function VersionPanel({ pageId, canEdit, onRestored, onClose }: P
     if (
       !(await frage({
         titel: "Restore version",
-        text: "This version is brought back onto the page. The current state is not lost \u2014 it is filed in the history first.",
+        text: "This version is brought back onto the page. The current state is not lost; it is filed in the history first.",
         bestaetigen: "Restore",
       }))
     )

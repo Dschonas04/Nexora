@@ -1,6 +1,6 @@
 // Images in the PDF.
 
-// Until now the PDF only referred to an image by name and its address — in a
+// Until now the PDF only referred to an image by name and its address, in a
 // wiki full of sketches and photos that is an index, not a depiction. The
 // typesetting does not use external packages: an image is unpacked, resized
 // to a reasonable edge length and embedded as a raw RGB stream.
@@ -34,7 +34,7 @@ type pdfBild struct {
 }
 
 // bildAufbereiten unpacks an image and converts it into the form the PDF
-// needs. Anything that cannot be unpacked is treated as no image — the
+// needs. Anything that cannot be unpacked is treated as no image, the
 // typesetting then falls back to the reference line.
 func bildAufbereiten(daten []byte) (*pdfBild, bool) {
 	roh, ok := bildBytes(daten)

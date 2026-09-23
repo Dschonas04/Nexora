@@ -3866,7 +3866,7 @@ textarea::placeholder {
    The administration is not reading matter but a switchboard. Round corners say
    "card", right angles say "field", and a field is what everything here is:
    every box stands for exactly one value that is on or off or carries a number.
-   That is why the radii in this area are set to zero, and only here — in the
+   That is why the radii in this area are set to zero, and only here, in the
    rest of the wiki it stays soft.
 
    Everything is confined to .einstellungen-manager, so that the same classes
@@ -3877,7 +3877,7 @@ textarea::placeholder {
    on where one stands, would be a seam without gain.
 
    The marks (.pill) stay out of it: there the corner already carries a
-   meaning — round means label, almost square means state (see .pill.frei).
+   meaning, round means label, almost square means state (see .pill.frei).
    Pulling everything to zero would have levelled precisely that
    difference. */
 .einstellungen-manager .einstellung,
@@ -3898,7 +3898,7 @@ textarea::placeholder {
   border-radius: 0;
 }
 /* The key stands exactly like this in config.conf and in the table. Whoever
-   changes something here will search for it later — so it belongs visibly on
+   changes something here will search for it later, so it belongs visibly on
    the row and not in the documentation. */
 .einstellung-titel {
   display: flex;
@@ -3923,7 +3923,7 @@ textarea::placeholder {
 }
 /* The environment variable stands beside the key, but paler: it is the second
    route to the same value and applies only at startup. Not every setting has
-   one — the mark then simply is not there. */
+   one: the mark then simply is not there. */
 .einstellung-schluessel.umgebung {
   background: none;
   border-style: dashed;

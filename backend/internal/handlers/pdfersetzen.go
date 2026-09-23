@@ -7,8 +7,8 @@
 //
 // It intentionally replaces rather than appends: an annotated version is not
 // a second document but the same document after someone highlighted it. The
-// attachment therefore keeps its address and any references — from the page
-// content, a comment or a bookmark — still point to the intended file.
+// attachment therefore keeps its address and any references, from the page
+// content, a comment or a bookmark, still point to the intended file.
 //
 // The cost is recorded in the audit trail: the previous version is lost. If
 // someone wishes to keep it they should download it beforehand; a versioning
@@ -89,7 +89,7 @@ func (s *Server) PDFErsetzen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Under the same ID: the attachment keeps its address and references
-	// remain valid. Write first, then update the size — doing it the other
+	// remain valid. Write first, then update the size, doing it the other
 	// way would record a size that does not belong to the file.
 	if _, err := s.Ablage.Schreiben(r.Context(), attID, bytes.NewReader(roh),
 		int64(len(roh)), "application/pdf"); err != nil {
@@ -99,7 +99,7 @@ func (s *Server) PDFErsetzen(w http.ResponseWriter, r *http.Request) {
 	s.Pool.Exec(r.Context(), `UPDATE attachments SET size=$2 WHERE id=$1`, attID, len(roh))
 
 	// Update the full-text index; otherwise searches would still find the
-	// old version — a bug that might only be noticed weeks later.
+	// old version: a bug that might only be noticed weeks later.
 	if lizenz.Frei(lizenz.Anhangsuche) {
 		if txt := textAusAnhang(r.Context(), roh, "application/pdf", name); txt != "" {
 			s.Pool.Exec(r.Context(),

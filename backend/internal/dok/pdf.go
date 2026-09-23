@@ -464,8 +464,8 @@ func (s *setzer) absatzSetzen(a Absatz) {
 
 	case ArtDatei:
 		// An image that can be embedded is placed; if present, its caption is
-		// written beneath it. Everything else — audio, video, an attachment,
-		// or an image that could not be unpacked — remains the reference
+		// written beneath it. Everything else, audio, video, an attachment,
+		// or an image that could not be unpacked, remains the reference
 		// line.
 		if len(a.BildDaten) > 0 {
 			if bild, ok := bildAufbereiten(a.BildDaten); ok {

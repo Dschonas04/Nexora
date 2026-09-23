@@ -39,7 +39,7 @@ func TestBenutzernamePruefen(t *testing.T) {
 
 // The suggestion derived from an address takes the local part and removes
 // characters not allowed in a username. If too little remains no suggestion
-// is returned — a trimmed remainder would be worse than none.
+// is returned: a trimmed remainder would be worse than none.
 func TestBenutzernameAusAdresse(t *testing.T) {
 	faelle := map[string]string{
 		"anna.mueller@example.com": "anna.mueller",

@@ -23,7 +23,7 @@ import * as dekodieren from "lib0/decoding";
 // wants to put a ready-made service in front speaks the same language.
 const PAKET_ABGLEICH = 0;
 const PAKET_ANWESENHEIT = 1;
-// "Who is there?" — the question somebody who has just joined asks. Without it
+// "Who is there?": the question somebody who has just joined asks. Without it
 // they would only learn of the others the next time one of them does something,
 // and until then would seemingly sit alone on a page three people work on.
 const PAKET_WER_IST_DA = 3;

@@ -2,7 +2,7 @@
 //
 // The credentials do not live in the settings table with everything else. A
 // secret access key belongs in the environment or in config.conf, not in a row
-// that a database dump carries off — the same reason the license key cannot be
+// that a database dump carries off: the same reason the license key cannot be
 // set here either.
 //
 // What this file does provide is the part that genuinely needs a browser:

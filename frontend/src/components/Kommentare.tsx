@@ -1,7 +1,7 @@
 // The comment thread under a page.
 //
 // Two levels only: a comment and its replies. Deeper nesting reads badly and
-// covers nothing people actually do — the backend flattens anything deeper.
+// covers nothing people actually do: the backend flattens anything deeper.
 import { useEffect, useRef, useState } from "react";
 
 import { Kommentar, Person, api } from "../api/client";
@@ -140,7 +140,7 @@ function Erwaehnfeld({
 
 // `mitErwaehnungen` highlights the names in the text that actually belong to
 // an account. This makes it obvious in a posted comment whether a mention was
-// recognised — previously a typo could not be distinguished from a valid
+// recognised, previously a typo could not be distinguished from a valid
 // mention.
 function mitErwaehnungen(text: string, personen: Person[]) {
   if (personen.length === 0 || !text.includes("@")) return text;
@@ -190,8 +190,8 @@ export default function Kommentare({ pageId }: { pageId: string }) {
   const [bearbeitText, setBearbeitText] = useState("");
   const [erledigteZeigen, setErledigteZeigen] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
-  // Who can be addressed here. If the list remains empty — no permission,
-  // no reply — the field behaves like an ordinary text field.
+  // Who can be addressed here. If the list remains empty: no permission,
+  // no reply: the field behaves like an ordinary text field.
   const [personen, setPersonen] = useState<Person[]>([]);
 
   const laden = () =>

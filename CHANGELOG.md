@@ -11,17 +11,17 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 `dschohnas/nexora-{backend,frontend,pki}` on Docker Hub. See
 [Where the images are](README.md#where-the-images-are).
 
-## [2.1.0] — 2026-09-18
+## [2.1.0]: 2026-09-18
 
 ### Changed
 
 - **Standard needs no key, and holds more.** Version history, attachments,
   comments and conflict detection run on every installation now, without a
-  licence key — what a wiki needs so that nobody loses text or keeps files
+  licence key, what a wiki needs so that nobody loses text or keeps files
   somewhere else. Keys are only for the two tiers above:
-  - **Pro** — sharing and public links, writing on a page together, PDF and Word
+  - **Pro**, sharing and public links, writing on a page together, PDF and Word
     export and space export, search inside attachments.
-  - **Business** — groups and space permissions, audit trail, OIDC, LDAP.
+  - **Business**, groups and space permissions, audit trail, OIDC, LDAP.
 - The licence's Additional Use Grant says so: those four features moved from the
   list of paid ones to the list of free ones. The `advanced` tier, which sold
   exactly them, stays readable so that issued keys remain valid, and adds
@@ -35,9 +35,9 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
   free. They are not and were not: Markdown export is free, the typeset
   exports belong to Pro.
 
-## [2.0.1] — 2026-09-18
+## [2.0.1]: 2026-09-18
 
-No change to Nexora itself — the images carry the same code as 2.0.0. What is
+No change to Nexora itself: the images carry the same code as 2.0.0. What is
 new is where to get them and how to put them somewhere.
 
 ### Added
@@ -52,7 +52,7 @@ new is where to get them and how to put them somewhere.
 - A walkthrough GIF and English screenshots in the README; the demo carries two
   English spaces next to the German ones.
 
-## [2.0.0] — 2026-09-17
+## [2.0.0]: 2026-09-17
 
 First published release. Nexora ran in production before this, but installing
 it meant building it; from here on there are images and a tag.
@@ -66,7 +66,7 @@ it meant building it; from here on there are images and a tag.
 - **[Comparison](docs/comparison.md)** against Notion, Outline, Docmost,
   Wiki.js, BookStack and AppFlowy, including the cases where one of those is
   the better answer.
-- **Screenshots and a live demo** in the README —
+- **Screenshots and a live demo** in the README,
   [nexora.jonasgroll.de](https://nexora.jonasgroll.de), reset every night.
 - Issue templates, and a handful of small tasks marked as a good first one.
 
@@ -86,7 +86,7 @@ concurrent. Method and caveats are in the [README](README.md#capacity).
 
 ### Licence
 
-The core is BUSL 1.1 — run it in production, commercially, without paying
+The core is BUSL 1.1, run it in production, commercially, without paying
 anyone. Twelve extras (audit trail, groups, SSO, LDAP and more) needed a key at
 this release; see 2.1.0 for what became free since. Markdown import and export
 are free regardless, because the way out of a system must never sit behind a

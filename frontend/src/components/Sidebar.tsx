@@ -170,7 +170,7 @@ export default function Sidebar(props: Props) {
     });
 
   // Toggle all sections at once. As long as at least one is open the control
-  // closes them — pressing it a second time performs the inverse of the first
+  // closes them, pressing it a second time performs the inverse of the first
   // action instead of repeating it.
   const alleMarken = () => {
     const marken = ["favoriten", "geteilt", "schlagwoerter", "verwaltung", "root"];
@@ -414,7 +414,7 @@ export default function Sidebar(props: Props) {
   // Automatically expand the path to the active page.
   //
   // Without this a page could be hidden under collapsed ancestors when it was
-  // reached not via the tree — for example via search, a link, or after
+  // reached not via the tree, for example via search, a link, or after
   // creating a child. The page would be created and opened but remain hidden
   // in the tree, which looks like nothing happened.
   //
@@ -539,7 +539,7 @@ export default function Sidebar(props: Props) {
   };
 
   // Tucked-away sidebar: a slim strip that only serves to pull it back out.
-  // It must not disappear completely — otherwise the only way back would be
+  // It must not disappear completely, otherwise the only way back would be
   // a keyboard shortcut that only someone who read the docs knows.
   if (versteckt) {
     return (
@@ -609,7 +609,7 @@ export default function Sidebar(props: Props) {
             <button className="icon-btn" title="Clear search (Esc)" aria-label="Clear search" onClick={suchtLoeschen}>
               ✕
             </button>
-            {/* The dot beside it indicates that a filter is active — otherwise
+            {/* The dot beside it indicates that a filter is active, otherwise
               one could be puzzled by unexpectedly few results. */}
             <button
               className={"icon-btn" + (filterAktiv ? " aktiv" : "")}
@@ -681,7 +681,7 @@ export default function Sidebar(props: Props) {
         <div className="sidebar-werkzeuge">
             {/* Everything that creates or exports content is grouped on this
               single line: new page, new space, import, export. Previously the
-              new-page action lived as an unlabeled plus in the header — an
+              new-page action lived as an unlabeled plus in the header, an
               icon without a word, far from the three other actions that do
               the same. */}
           <button className="text-btn" title="Create a page at the top level" onClick={() => onCreateRoot()}>
@@ -983,7 +983,7 @@ export default function Sidebar(props: Props) {
                       )}
                         {/* Import and export used to live here as extra icons on every
                           heading. They now sit in the top-left tool row and
-                          ask for the target space there — see the tool section. */}
+                          ask for the target space there, see the tool section. */}
                       {sp.darfVerwalten && (
                         <button className="icon-btn" title="Delete space" onClick={() => onDeleteSpace(sp.id)}>
                           ✕
@@ -1184,7 +1184,7 @@ export default function Sidebar(props: Props) {
             {spaces.length === 0 && pages.length === 0 && shared.length === 0 && (
               <div className="sidebar-section leerer-anfang">
                 <p className="muted">
-                  Nothing here yet. A space groups pages around one subject &mdash; or
+                  Nothing here yet. A space groups pages around one subject, or
                   just start with a page.
                 </p>
                 <button className="btn" onClick={onCreateSpace}>

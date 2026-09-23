@@ -172,7 +172,7 @@ func TestFremdeHerkunftWirdAbgewiesen(t *testing.T) {
 //
 // The checks above operate on in-memory structures; here everything depends
 // on the connection setup working. That only succeeds if the measurement
-// middleware passes the connection through — a single line easily lost when
+// middleware passes the connection through: a single line easily lost when
 // refactoring, and which would not cause any other test to fail.
 func TestLeitungTraegtPaketeZwischenBrowsern(t *testing.T) {
 	const seite = "leitungsprobe"

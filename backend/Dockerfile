@@ -36,7 +36,7 @@ LABEL org.opencontainers.image.title="Nexora Backend" \
 
 COPY --from=build /nexora /usr/local/bin/nexora
 # Declared so a fresh named volume inherits nexora ownership (uid 10001) instead
-# of defaulting to root — otherwise the non-root process can't write uploads.
+# of defaulting to root, otherwise the non-root process can't write uploads.
 VOLUME ["/data/attachments"]
 USER nexora
 EXPOSE 8080

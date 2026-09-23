@@ -1,11 +1,11 @@
 # Licensing
 
-Nexora is licensed entirely under the **Business Source License 1.1** — see
+Nexora is licensed entirely under the **Business Source License 1.1**, see
 [LICENSE](LICENSE).
 
 That is not an open source licence in the OSI sense, but it is not a closed one
 either: the source is open, and the Additional Use Grant expressly permits
-production use, commercial use included — as long as the paid add-ons are not
+production use, commercial use included, as long as the paid add-ons are not
 used without a key.
 
 **On 19.08.2030 the restriction falls away.** From then on Apache 2.0 applies.
@@ -17,7 +17,7 @@ The core may run in production, in companies too, commercially too, without
 anybody having to ask or pay:
 
 Editor, nested pages, spaces, tags, favourites, trash, full-text search over
-pages, backlinks, knowledge graph, accounts and roles — and, since 2.1, version
+pages, backlinks, knowledge graph, accounts and roles, and, since 2.1, version
 history, attachments, comments and conflict detection. Together that is the
 **Standard** scope: what a wiki needs so that nobody loses text or has to keep
 files somewhere else.
@@ -45,7 +45,7 @@ are part of the Standard scope since 2.1. Keys that name them, or the old
 installation would not have anyway.
 
 The **audit trail** keeps recording even without a licence. Otherwise a gap would
-open up after enabling it, right over the unlicensed period — and an audit trail
+open up after enabling it, right over the unlicensed period, and an audit trail
 with a hole in it is not one.
 
 The server rejects locked calls with `402 Payment Required`, and the interface
@@ -55,7 +55,7 @@ protection.
 ## Where the check sits
 
 The key check lives in `backend/premium`, the gate itself in
-`backend/internal/lizenz`. The gate knows nothing about signatures — it only
+`backend/internal/lizenz`. The gate knows nothing about signatures; it only
 asks who has registered as a checker. That is why the core can also be built
 without the premium directory:
 
@@ -79,7 +79,7 @@ lever, which is why keys for paying customers should carry one.
 
 Whoever reads `backend/premium/lizenz/pruefer.go` finds the line that checks the
 signature and can remove it. That is true of every piece of software that runs
-on other people's machines — pfSense, GitLab, Sentry and Elastic all work this
+on other people's machines, pfSense, GitLab, Sentry and Elastic all work this
 way.
 
 What protects is not the technology but the licence: such an intervention is a
@@ -100,7 +100,7 @@ Nexora's own source is unaffected and the product may be sold; what is required
 is that the licence notice accompanies the distributed form and that changes to
 the MPL files themselves stay under the MPL. Nexora uses them unchanged. Every
 generated bundle carries the notice in its header, set in
-`frontend/vite.config.ts` — the minifier would otherwise throw away the
+`frontend/vite.config.ts`: the minifier would otherwise throw away the
 packages' licence headers, and MPL source would then go out without any notice.
 Because this obligation breaks silently, CI checks during the build that the
 header really arrives in every bundle.

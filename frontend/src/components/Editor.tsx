@@ -30,7 +30,7 @@ const WIKI_RE = /\[\[([^[\]]+)\]\]/g;
 //
 // BlockNote reads a text block's styles using Object.entries. If the styles
 // field is missing or null, that throws and the editor rejects the entire
-// document instead of just the broken piece — resulting in an empty page.
+// document instead of just the broken piece, resulting in an empty page.
 // Older imports can contain such malformed blocks still stored in the DB,
 // so we must repair them on read.
 //
@@ -239,7 +239,7 @@ export default function Editor({
   const { design } = useDesign();
   const grundton = design.grundton;
 
-  // BlockNote rejects an empty array as initialContent — use undefined instead.
+  // BlockNote rejects an empty array as initialContent, use undefined instead.
   // Everything that does arrive is straightened out first: documents written by
   // an older import are missing the styles on their text pieces, and BlockNote
   // refuses the entire document over that.
