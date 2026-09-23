@@ -8,7 +8,7 @@ The whole stack, the quick way:
 
 ```bash
 cp .env.example .env
-cp config.beispiel.conf config.conf
+cp config.example.conf config.conf
 docker compose up -d --build      # interface at http://localhost:3000
 ```
 
@@ -160,7 +160,7 @@ all.
 
 - Needed **before the database is open** (port, database URL, JWT secret):
   a field in `config.Konfig`, a default in `Standard()`, a line in `Laden()`
-  giving its key and environment variable, an entry in `config.beispiel.conf`,
+  giving its key and environment variable, an entry in `config.example.conf`,
   and a row in the [configuration reference](configuration.md).
 - Changeable **at runtime**: an entry in the table in
   `handlers/einstellungen.go` with its type, title, explanation and default. It
