@@ -1,7 +1,5 @@
 # Nexora to take with you
 
-*Diese Anleitung gibt es auch [auf Deutsch](LIESMICH.md).*
-
 Nexora is a web application. What is built here is not a second Nexora, it is
 a window of its own onto the one already running: the same interface, the same
 server, the same state for everyone. A separate store inside the app would
