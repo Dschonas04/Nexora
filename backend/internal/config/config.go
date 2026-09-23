@@ -195,6 +195,63 @@ func Standard() Konfig {
 	}
 }
 
+// The keys and environment variables used to be German. They are English now,
+// and the old spellings keep working: an installation that has a config.conf or
+// a compose file from before must not stop booting over a rename. Each entry is
+// "the English name" -> {old key, old environment variable}; a boot that hits
+// one of them says so once, naming the new name.
+var frueher = map[string][2]string{
+	"data_directory":       {"daten_verzeichnis", "NEXORA_DATA_DIR"},
+	"attachment_directory": {"anhang_verzeichnis", "NEXORA_ANHANG_PFAD"},
+	"public_url":           {"oeffentliche_url", "NEXORA_PUBLIC_URL"},
+	"database_url":         {"datenbank_url", "DATABASE_URL"},
+	"jwt_secret":           {"jwt_geheimnis", "JWT_SECRET"},
+	"session_hours":        {"sitzung_stunden", "NEXORA_SESSION_HOURS"},
+	"session_days":         {"sitzung_tage", "NEXORA_SESSION_DAYS"},
+	"license":              {"lizenz", "NEXORA_LIZENZ"},
+	"registration_open":    {"registrierung_offen", "NEXORA_REGISTRIERUNG_OFFEN"},
+	"allowed_domains":      {"erlaubte_domaenen", "NEXORA_ERLAUBTE_DOMAENEN"},
+	"search_dictionary":    {"such_woerterbuch", "NEXORA_SUCH_WOERTERBUCH"},
+	"max_attachment_mb":    {"max_anhang_mb", "NEXORA_MAX_ANHANG_MB"},
+	"trash_days":           {"papierkorb_tage", "NEXORA_PAPIERKORB_TAGE"},
+	"s3_enabled":           {"s3_aktiv", "NEXORA_S3_AKTIV"},
+	"s3_endpoint":          {"s3_endpunkt", "NEXORA_S3_ENDPUNKT"},
+	"s3_access_key":        {"s3_zugriffsschluessel", "NEXORA_S3_ZUGRIFFSSCHLUESSEL"},
+	"s3_secret_key":        {"s3_geheimnis", "NEXORA_S3_GEHEIMNIS"},
+	"s3_path_style":        {"s3_pfadstil", "NEXORA_S3_PFADSTIL"},
+	"s3_fallback":          {"s3_rueckfall", "NEXORA_S3_RUECKFALL"},
+	"redis_address":        {"redis_adresse", "NEXORA_REDIS_ADRESSE"},
+	"redis_password":       {"redis_passwort", "NEXORA_REDIS_PASSWORT"},
+	"redis_database":       {"redis_datenbank", "NEXORA_REDIS_DATENBANK"},
+	"redis_prefix":         {"redis_vorsilbe", "NEXORA_REDIS_VORSILBE"},
+	"tls_certificate":      {"tls_zertifikat", "NEXORA_TLS_ZERTIFIKAT"},
+	"tls_key":              {"tls_schluessel", "NEXORA_TLS_SCHLUESSEL"},
+	"tls_root":             {"tls_wurzel", "NEXORA_TLS_WURZEL"},
+	"ldap_enabled":         {"ldap_aktiv", "NEXORA_LDAP_AKTIV"},
+	"ldap_tls_verify":      {"ldap_tls_pruefen", "NEXORA_LDAP_TLS_PRUEFEN"},
+	"ldap_bind_password":   {"ldap_bind_passwort", "NEXORA_LDAP_BIND_PASSWORT"},
+	"ldap_base_dn":         {"ldap_basis_dn", "NEXORA_LDAP_BASIS_DN"},
+	"ldap_user_filter":     {"ldap_benutzer_filter", "NEXORA_LDAP_BENUTZER_FILTER"},
+	"ldap_field_name":      {"ldap_feld_name", "NEXORA_LDAP_FELD_NAME"},
+	"ldap_field_email":     {"ldap_feld_email", "NEXORA_LDAP_FELD_EMAIL"},
+	"ldap_admin_group":     {"ldap_gruppe_admin", "NEXORA_LDAP_GRUPPE_ADMIN"},
+	"oidc_enabled":         {"oidc_aktiv", "NEXORA_OIDC_AKTIV"},
+	"oidc_issuer":          {"oidc_aussteller", "NEXORA_OIDC_AUSSTELLER"},
+	"oidc_secret":          {"oidc_geheimnis", "NEXORA_OIDC_GEHEIMNIS"},
+	"oidc_scopes":          {"oidc_bereiche", "NEXORA_OIDC_BEREICHE"},
+	"oidc_field_name":      {"oidc_feld_name", "NEXORA_OIDC_FELD_NAME"},
+	"oidc_field_email":     {"oidc_feld_email", "NEXORA_OIDC_FELD_EMAIL"},
+	"oidc_admin_group":     {"oidc_gruppe_admin", "NEXORA_OIDC_GRUPPE_ADMIN"},
+	"oidc_button_text":     {"oidc_knopf_text", "NEXORA_OIDC_KNOPF_TEXT"},
+	"smtp_user":            {"smtp_benutzer", "NEXORA_SMTP_BENUTZER"},
+	"smtp_password":        {"smtp_passwort", "NEXORA_SMTP_PASSWORT"},
+	"smtp_sender":          {"smtp_absender", "NEXORA_SMTP_ABSENDER"},
+	"smtp_encryption":      {"smtp_verschluesselung", "NEXORA_SMTP_VERSCHLUESSELUNG"},
+}
+
+// Which old spellings this boot actually read, in the order they were asked for.
+var veraltetGenutzt []string
+
 // Laden reads the file, then lets the environment override. pfad may be empty,
 // in which case NEXORA_CONFIG decides, falling back to ./config.conf and
 // /etc/nexora/config.conf.
@@ -226,15 +283,35 @@ func Laden(pfad string) Konfig {
 
 	hol := func(schluessel, umgebung string) (string, bool) {
 		merkeSchluessel(schluessel)
+		altSchluessel, altUmgebung := "", ""
+		if paar, da := frueher[schluessel]; da {
+			altSchluessel, altUmgebung = paar[0], paar[1]
+		}
+		notiere := func(was string) {
+			veraltetGenutzt = append(veraltetGenutzt, was+" -> "+schluessel)
+		}
 		// The environment beats the file. That way a single value can be
 		// overridden inside a container without touching the file, and a secret
-		// never has to reach the disk.
+		// never has to reach the disk. Within each of the two, the English name
+		// wins over the old German one.
 		if v := os.Getenv(umgebung); v != "" {
 			return v, true
+		}
+		if altUmgebung != "" && altUmgebung != umgebung {
+			if v := os.Getenv(altUmgebung); v != "" {
+				notiere(altUmgebung)
+				return v, true
+			}
 		}
 		if werte != nil {
 			if v, ok := werte[schluessel]; ok && v != "" {
 				return v, true
+			}
+			if altSchluessel != "" && altSchluessel != schluessel {
+				if v, ok := werte[altSchluessel]; ok && v != "" {
+					notiere(altSchluessel)
+					return v, true
+				}
 			}
 		}
 		return "", false
@@ -278,76 +355,83 @@ func Laden(pfad string) Konfig {
 	}
 
 	text(&k.Port, "port", "PORT")
-	text(&k.DatenVerzeich, "daten_verzeichnis", "NEXORA_DATA_DIR")
-	text(&k.AnhangVerzeich, "anhang_verzeichnis", "NEXORA_ANHANG_PFAD")
-	text(&k.OeffentlicheURL, "oeffentliche_url", "NEXORA_PUBLIC_URL")
-	text(&k.DatenbankURL, "datenbank_url", "DATABASE_URL")
-	text(&k.JWTGeheimnis, "jwt_geheimnis", "JWT_SECRET")
-	zahl(&k.SitzungStunden, "sitzung_stunden", "NEXORA_SESSION_HOURS")
+	text(&k.DatenVerzeich, "data_directory", "NEXORA_DATA_DIR")
+	text(&k.AnhangVerzeich, "attachment_directory", "NEXORA_ATTACHMENT_PATH")
+	text(&k.OeffentlicheURL, "public_url", "NEXORA_PUBLIC_URL")
+	text(&k.DatenbankURL, "database_url", "DATABASE_URL")
+	text(&k.JWTGeheimnis, "jwt_secret", "JWT_SECRET")
+	zahl(&k.SitzungStunden, "session_hours", "NEXORA_SESSION_HOURS")
 	// The old key in days is still read and converted. An existing file must not
 	// silently drop from seven days to twelve hours just because the unit
 	// changed.
 	var alteTage int
-	zahl(&alteTage, "sitzung_tage", "NEXORA_SESSION_DAYS")
+	zahl(&alteTage, "session_days", "NEXORA_SESSION_DAYS")
 	if alteTage > 0 {
 		k.SitzungStunden = alteTage * 24
 	}
-	text(&k.Lizenz, "lizenz", "NEXORA_LIZENZ")
+	text(&k.Lizenz, "license", "NEXORA_LICENSE")
 
-	jaNein(&k.RegistrierungOffen, "registrierung_offen", "NEXORA_REGISTRIERUNG_OFFEN")
-	liste(&k.ErlaubteDomaenen, "erlaubte_domaenen", "NEXORA_ERLAUBTE_DOMAENEN")
+	jaNein(&k.RegistrierungOffen, "registration_open", "NEXORA_REGISTRATION_OPEN")
+	liste(&k.ErlaubteDomaenen, "allowed_domains", "NEXORA_ALLOWED_DOMAINS")
 
-	text(&k.SuchWoerterbuch, "such_woerterbuch", "NEXORA_SUCH_WOERTERBUCH")
-	zahl(&k.MaxAnhangMB, "max_anhang_mb", "NEXORA_MAX_ANHANG_MB")
-	zahl(&k.PapierkorbTage, "papierkorb_tage", "NEXORA_PAPIERKORB_TAGE")
+	text(&k.SuchWoerterbuch, "search_dictionary", "NEXORA_SEARCH_DICTIONARY")
+	zahl(&k.MaxAnhangMB, "max_attachment_mb", "NEXORA_MAX_ATTACHMENT_MB")
+	zahl(&k.PapierkorbTage, "trash_days", "NEXORA_TRASH_DAYS")
 
-	jaNein(&k.S3Aktiv, "s3_aktiv", "NEXORA_S3_AKTIV")
-	text(&k.S3Endpunkt, "s3_endpunkt", "NEXORA_S3_ENDPUNKT")
+	jaNein(&k.S3Aktiv, "s3_enabled", "NEXORA_S3_ENABLED")
+	text(&k.S3Endpunkt, "s3_endpoint", "NEXORA_S3_ENDPOINT")
 	text(&k.S3Bucket, "s3_bucket", "NEXORA_S3_BUCKET")
-	text(&k.S3Zugriff, "s3_zugriffsschluessel", "NEXORA_S3_ZUGRIFFSSCHLUESSEL")
-	text(&k.S3Geheimnis, "s3_geheimnis", "NEXORA_S3_GEHEIMNIS")
+	text(&k.S3Zugriff, "s3_access_key", "NEXORA_S3_ACCESS_KEY")
+	text(&k.S3Geheimnis, "s3_secret_key", "NEXORA_S3_SECRET_KEY")
 	text(&k.S3Region, "s3_region", "NEXORA_S3_REGION")
 	jaNein(&k.S3TLS, "s3_tls", "NEXORA_S3_TLS")
-	jaNein(&k.S3Pfadstil, "s3_pfadstil", "NEXORA_S3_PFADSTIL")
-	jaNein(&k.S3Rueckfall, "s3_rueckfall", "NEXORA_S3_RUECKFALL")
+	jaNein(&k.S3Pfadstil, "s3_path_style", "NEXORA_S3_PATH_STYLE")
+	jaNein(&k.S3Rueckfall, "s3_fallback", "NEXORA_S3_FALLBACK")
 
-	text(&k.RedisAdresse, "redis_adresse", "NEXORA_REDIS_ADRESSE")
-	text(&k.RedisPasswort, "redis_passwort", "NEXORA_REDIS_PASSWORT")
-	zahl(&k.RedisDatenbank, "redis_datenbank", "NEXORA_REDIS_DATENBANK")
-	text(&k.RedisVorsilbe, "redis_vorsilbe", "NEXORA_REDIS_VORSILBE")
+	text(&k.RedisAdresse, "redis_address", "NEXORA_REDIS_ADDRESS")
+	text(&k.RedisPasswort, "redis_password", "NEXORA_REDIS_PASSWORD")
+	zahl(&k.RedisDatenbank, "redis_database", "NEXORA_REDIS_DATABASE")
+	text(&k.RedisVorsilbe, "redis_prefix", "NEXORA_REDIS_PREFIX")
 	jaNein(&k.RedisTLS, "redis_tls", "NEXORA_REDIS_TLS")
 
-	text(&k.TLSZertifikat, "tls_zertifikat", "NEXORA_TLS_ZERTIFIKAT")
-	text(&k.TLSSchluessel, "tls_schluessel", "NEXORA_TLS_SCHLUESSEL")
-	text(&k.TLSWurzel, "tls_wurzel", "NEXORA_TLS_WURZEL")
+	text(&k.TLSZertifikat, "tls_certificate", "NEXORA_TLS_CERTIFICATE")
+	text(&k.TLSSchluessel, "tls_key", "NEXORA_TLS_KEY")
+	text(&k.TLSWurzel, "tls_root", "NEXORA_TLS_ROOT")
 
-	jaNein(&k.LDAPAktiv, "ldap_aktiv", "NEXORA_LDAP_AKTIV")
+	jaNein(&k.LDAPAktiv, "ldap_enabled", "NEXORA_LDAP_ENABLED")
 	text(&k.LDAPServer, "ldap_server", "NEXORA_LDAP_SERVER")
 	jaNein(&k.LDAPStartTLS, "ldap_starttls", "NEXORA_LDAP_STARTTLS")
-	jaNein(&k.LDAPTLSPruefen, "ldap_tls_pruefen", "NEXORA_LDAP_TLS_PRUEFEN")
+	jaNein(&k.LDAPTLSPruefen, "ldap_tls_verify", "NEXORA_LDAP_TLS_VERIFY")
 	text(&k.LDAPBindDN, "ldap_bind_dn", "NEXORA_LDAP_BIND_DN")
-	text(&k.LDAPBindPasswort, "ldap_bind_passwort", "NEXORA_LDAP_BIND_PASSWORT")
-	text(&k.LDAPBasisDN, "ldap_basis_dn", "NEXORA_LDAP_BASIS_DN")
-	text(&k.LDAPBenutzerFilter, "ldap_benutzer_filter", "NEXORA_LDAP_BENUTZER_FILTER")
-	text(&k.LDAPFeldName, "ldap_feld_name", "NEXORA_LDAP_FELD_NAME")
-	text(&k.LDAPFeldEmail, "ldap_feld_email", "NEXORA_LDAP_FELD_EMAIL")
-	text(&k.LDAPGruppeAdmin, "ldap_gruppe_admin", "NEXORA_LDAP_GRUPPE_ADMIN")
+	text(&k.LDAPBindPasswort, "ldap_bind_password", "NEXORA_LDAP_BIND_PASSWORD")
+	text(&k.LDAPBasisDN, "ldap_base_dn", "NEXORA_LDAP_BASE_DN")
+	text(&k.LDAPBenutzerFilter, "ldap_user_filter", "NEXORA_LDAP_USER_FILTER")
+	text(&k.LDAPFeldName, "ldap_field_name", "NEXORA_LDAP_FIELD_NAME")
+	text(&k.LDAPFeldEmail, "ldap_field_email", "NEXORA_LDAP_FIELD_EMAIL")
+	text(&k.LDAPGruppeAdmin, "ldap_admin_group", "NEXORA_LDAP_ADMIN_GROUP")
 
-	jaNein(&k.OIDCAktiv, "oidc_aktiv", "NEXORA_OIDC_AKTIV")
-	text(&k.OIDCAussteller, "oidc_aussteller", "NEXORA_OIDC_AUSSTELLER")
+	jaNein(&k.OIDCAktiv, "oidc_enabled", "NEXORA_OIDC_ENABLED")
+	text(&k.OIDCAussteller, "oidc_issuer", "NEXORA_OIDC_ISSUER")
 	text(&k.OIDCClientID, "oidc_client_id", "NEXORA_OIDC_CLIENT_ID")
-	text(&k.OIDCGeheimnis, "oidc_geheimnis", "NEXORA_OIDC_GEHEIMNIS")
-	text(&k.OIDCBereiche, "oidc_bereiche", "NEXORA_OIDC_BEREICHE")
-	text(&k.OIDCFeldName, "oidc_feld_name", "NEXORA_OIDC_FELD_NAME")
-	text(&k.OIDCFeldEmail, "oidc_feld_email", "NEXORA_OIDC_FELD_EMAIL")
-	text(&k.OIDCGruppeAdmin, "oidc_gruppe_admin", "NEXORA_OIDC_GRUPPE_ADMIN")
-	text(&k.OIDCKnopfText, "oidc_knopf_text", "NEXORA_OIDC_KNOPF_TEXT")
+	text(&k.OIDCGeheimnis, "oidc_secret", "NEXORA_OIDC_SECRET")
+	text(&k.OIDCBereiche, "oidc_scopes", "NEXORA_OIDC_SCOPES")
+	text(&k.OIDCFeldName, "oidc_field_name", "NEXORA_OIDC_FIELD_NAME")
+	text(&k.OIDCFeldEmail, "oidc_field_email", "NEXORA_OIDC_FIELD_EMAIL")
+	text(&k.OIDCGruppeAdmin, "oidc_admin_group", "NEXORA_OIDC_ADMIN_GROUP")
+	text(&k.OIDCKnopfText, "oidc_button_text", "NEXORA_OIDC_BUTTON_TEXT")
 
 	text(&k.SMTPServer, "smtp_server", "NEXORA_SMTP_SERVER")
-	text(&k.SMTPBenutzer, "smtp_benutzer", "NEXORA_SMTP_BENUTZER")
-	text(&k.SMTPPasswort, "smtp_passwort", "NEXORA_SMTP_PASSWORT")
-	text(&k.SMTPAbsender, "smtp_absender", "NEXORA_SMTP_ABSENDER")
-	text(&k.SMTPVerschluesselung, "smtp_verschluesselung", "NEXORA_SMTP_VERSCHLUESSELUNG")
+	text(&k.SMTPBenutzer, "smtp_user", "NEXORA_SMTP_USER")
+	text(&k.SMTPPasswort, "smtp_password", "NEXORA_SMTP_PASSWORD")
+	text(&k.SMTPAbsender, "smtp_sender", "NEXORA_SMTP_SENDER")
+	text(&k.SMTPVerschluesselung, "smtp_encryption", "NEXORA_SMTP_ENCRYPTION")
+
+	// Say once which old spellings were read, so a rename can be done in peace
+	// instead of after a failure.
+	if len(veraltetGenutzt) > 0 {
+		log.Printf("Konfiguration: %d alte Schreibweise(n) gelesen, bitte umbenennen: %s",
+			len(veraltetGenutzt), strings.Join(veraltetGenutzt, ", "))
+	}
 
 	return k
 }
@@ -491,8 +575,8 @@ func Pruefen(inhalt string) []string {
 
 // AnhangOrt is the directory the attachments lie in.
 //
-// Two keys point at it: the new anhang_verzeichnis and, as it always has,
-// daten_verzeichnis. The second one is what every installation so far has set,
+// Two keys point at it: attachment_directory and, as it always has,
+// data_directory. The second one is what every installation so far has set,
 // so it stays the fallback -- an upgrade must not move the files out from under
 // a running instance.
 func (k Konfig) AnhangOrt() string {
@@ -511,7 +595,7 @@ func (k Konfig) Warnungen() []string {
 	// while there was nothing to complain about.
 	w := []string{}
 	if k.JWTGeheimnis == "change-me-in-production" {
-		w = append(w, "jwt_geheimnis steht auf der Vorgabe, jede Sitzung ist fälschbar")
+		w = append(w, "jwt_secret steht auf der Vorgabe, jede Sitzung ist fälschbar")
 	}
 	if strings.Contains(k.DatenbankURL, "nexora:nexora@") {
 		w = append(w, "datenbank_url benutzt das Vorgabepasswort")

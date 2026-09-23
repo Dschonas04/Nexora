@@ -26,9 +26,9 @@ Please include a description, steps to reproduce, and potential impact.
 - [ ] Never commit `.env` to version control
 - [ ] Confirm `.env` is actually being read
 - [ ] Read the startup log: dangerous defaults are named there
-- [ ] Turn `registrierung_offen` off once the accounts that should exist do,
+- [ ] Turn `registration_open` off once the accounts that should exist do,
       but not before the first one, which becomes the administrator
-- [ ] With LDAP: leave `ldap_starttls` and `ldap_tls_pruefen` on. Without them
+- [ ] With LDAP: leave `ldap_starttls` and `ldap_tls_verify` on. Without them
       directory credentials cross the network in the clear
 
 > **A missing `.env` does not stop the stack.** `docker-compose.yml` declares
@@ -45,7 +45,7 @@ Please include a description, steps to reproduce, and potential impact.
 > boot:
 >
 > ```
-> ACHTUNG: jwt_geheimnis steht auf der Vorgabe, jede Sitzung ist fälschbar
+> ACHTUNG: jwt_secret steht auf der Vorgabe, jede Sitzung ist fälschbar
 > ```
 
 ### Recommended

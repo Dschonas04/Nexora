@@ -52,7 +52,7 @@ Nexora would mean operating a second copy of each.
   data directory, so changing `POSTGRES_PASSWORD` afterwards locks the backend
   out unless you also run `ALTER USER nexora WITH PASSWORD ...` inside the
   running database, or discard the volume.
-- **Do not turn `registrierung_offen` off before the first account exists**, or
+- **Do not turn `registration_open` off before the first account exists**, or
   nobody can create it and the instance has no administrator.
 
 ---
@@ -70,14 +70,14 @@ Nexora would mean operating a second copy of each.
 
 ```bash
 NEXORA_ANHANG_ORT=/srv/nexora/anhaenge     # .env: what gets mounted
-anhang_verzeichnis = /data/attachments     # config.conf: the path inside
+attachment_directory = /data/attachments     # config.conf: the path inside
 ```
 
 The directory has to belong to **uid/gid 10001**, the account the service runs
 under in the container. **Changing the setting does not move the files that are
 already there**, carry them over first, then restart.
 
-Or move them off disk entirely by setting `s3_aktiv` and the `s3_*` settings, or
+Or move them off disk entirely by setting `s3_enabled` and the `s3_*` settings, or
 by binding a store from the settings page and testing it there before saving.
 
 ---
@@ -339,13 +339,13 @@ Before an instance is reachable by anyone but you:
 - [ ] `POSTGRES_PASSWORD` at least 24 random characters
 - [ ] `.env` is not committed
 - [ ] Read the startup log: dangerous defaults are named there, every boot
-- [ ] `registrierung_offen` off once the accounts that should exist do, but not
+- [ ] `registration_open` off once the accounts that should exist do, but not
       before the first one
-- [ ] `erlaubte_domaenen` set if registration stays open
+- [ ] `allowed_domains` set if registration stays open
 - [ ] A real TLS certificate in the `nexora_tls` volume, or a reverse proxy that
       terminates TLS, and, if pages are written on together, one that passes
       WebSocket upgrades through to `/api/echtzeit/`
-- [ ] `oeffentliche_url` set to the address the browser actually uses
+- [ ] `public_url` set to the address the browser actually uses
 - [ ] `s3_tls` on if an object store is in use, on by default in the bundled
       stack, where the store speaks TLS anyway
 - [ ] The `pki` container ran and exited cleanly. Everything between the
@@ -370,7 +370,7 @@ client can forge the IP that lands in the audit trail.
 | Log line | Cause |
 |---|---|
 | `db connect: ...` | Wrong `DATABASE_URL`, or the password was changed after the volume was initialised. Fix with `ALTER USER nexora WITH PASSWORD ...` inside the database |
-| `Objektspeicher nicht erreichbar` | A configured object store does not answer. **This stops the boot on purpose**, otherwise new attachments would quietly land on disk while the old ones stay in the bucket. Fix the store, or set `s3_rueckfall = ja` if the disk is an acceptable stopgap |
+| `Objektspeicher nicht erreichbar` | A configured object store does not answer. **This stops the boot on purpose**, otherwise new attachments would quietly land on disk while the old ones stay in the bucket. Fix the store, or set `s3_fallback = ja` if the disk is an acceptable stopgap |
 | `db migrate: ...` | The database user lacks rights, most often to `CREATE EXTENSION pgcrypto` |
 
 An invalid licence key never stops the boot; it is logged and the free feature
@@ -389,7 +389,7 @@ file is skipped and named in the warnings rather than stopping the import.
 ### Uploads fail
 
 The attachment directory does not belong to uid/gid 10001, or the file is larger
-than `max_anhang_mb`, or larger than nginx's `client_max_body_size` (512 MiB in
+than `max_attachment_mb`, or larger than nginx's `client_max_body_size` (512 MiB in
 the bundled configuration), raising the setting alone is not enough. What the
 real limit is can be measured under **Settings → Anhänge**.
 
@@ -456,21 +456,21 @@ then everything fits together again, but only after every container has been
 restarted, because the old ones still hold the old certificates.
 
 `x509: certificate signed by unknown authority` in the service's log means it
-does not know the authority: `tls_wurzel` is unset or points at a file that is
+does not know the authority: `tls_root` is unset or points at a file that is
 not there. `certificate is valid for X, not Y` means a service was renamed,
 the name is in the certificate, so `docker compose down` and up again, having
 removed that service's directory from the volume so it gets a fresh one.
 
 If the interface answers 502 and its log says `SSL_do_handshake() failed`, the
 service behind it is speaking plain HTTP while the interface expects TLS. That
-is the case when the service runs without `tls_zertifikat`; then
+is the case when the service runs without `tls_certificate`; then
 `NEXORA_DIENST_SCHEMA=http` and `NEXORA_DIENST_PORT=8080` belong in the `.env`.
 
 ### Search finds nothing for older pages
 
 Pages written before the search index existed have an empty `content_text`. The
 backend fills these in at startup, and `POST /api/system/suchindex` rebuilds the
-lot. The same call is needed after changing `such_woerterbuch`.
+lot. The same call is needed after changing `search_dictionary`.
 
 ### Attachment search finds nothing
 
@@ -486,8 +486,8 @@ ordinary attachment route requires a session.
 
 ### Sign-in through the provider comes back to the wrong address
 
-`oeffentliche_url` is unset or wrong. The callback cannot be derived from a
-request that has passed through a proxy: a boot with `oidc_aktiv` and no public
+`public_url` is unset or wrong. The callback cannot be derived from a
+request that has passed through a proxy: a boot with `oidc_enabled` and no public
 URL warns about exactly this.
 
 ### Everything is slow

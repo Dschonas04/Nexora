@@ -172,10 +172,10 @@ domain, and the operating system.
 |---|---|---|---|
 | Browser → frontend container | HTTP/1.1, HTTP/2 over TLS | in | Ports 80 and 443 in the container, published as `PORT` (3000) and `PORT_TLS` (3443) |
 | Frontend nginx → backend | HTTP, `proxy_pass` on `/api` | internal | Same compose network; the backend is not published |
-| Backend → PostgreSQL | PostgreSQL wire protocol, `pgx` pool | out | `datenbank_url` |
-| Backend → object store | S3 HTTP API, `minio-go` | out | Only when `s3_aktiv`; path style by default, which is what MinIO wants |
+| Backend → PostgreSQL | PostgreSQL wire protocol, `pgx` pool | out | `database_url` |
+| Backend → object store | S3 HTTP API, `minio-go` | out | Only when `s3_enabled`; path style by default, which is what MinIO wants |
 | Backend → Redis | RESP, `go-redis` | out | Optional. A failure is logged, never fatal |
-| Backend → OIDC issuer | OIDC discovery, authorization code flow | out | Needs `oeffentliche_url` to build the callback |
+| Backend → OIDC issuer | OIDC discovery, authorization code flow | out | Needs `public_url` to build the callback |
 | Backend → LDAP / AD | LDAP, StartTLS by default | out | Verifies the server certificate unless told not to |
 | Browser ← session | httpOnly cookie `nexora_token` | | `Secure` whenever the request arrived over TLS |
 
@@ -563,7 +563,7 @@ sequenceDiagram
     B->>H: POST /api/pages/{id}/attachments (multipart "file")
     H->>H: 402 unless anhaenge is licensed
     H->>H: pagePerm → canEdit?
-    H->>H: size against max_anhang_mb
+    H->>H: size against max_attachment_mb
     H->>D: INSERT attachments RETURNING id
     H->>A: Schreiben(id, stream, size, mime)
     A->>S: the bytes
@@ -579,7 +579,7 @@ sequenceDiagram
 
 The handler never learns whether `A` is a directory or a bucket. That is the
 whole point of the interface: an installation moves its attachments into an
-object store by setting `s3_aktiv`, and no handler changes.
+object store by setting `s3_enabled`, and no handler changes.
 
 Serving one back is not symmetric. The MIME type of an upload is whatever the
 uploader claimed, so handing it back unchanged and `inline` would let somebody
@@ -599,7 +599,7 @@ sequenceDiagram
     H->>P: discovery document (cached)
     H-->>B: 302 to the provider + state cookie
     B->>P: sign in there
-    P-->>B: 302 back to oeffentliche_url + /api/auth/oidc/zurueck?code
+    P-->>B: 302 back to public_url + /api/auth/oidc/zurueck?code
     B->>H: the callback
     H->>H: state cookie must match
     H->>P: exchange code, verify the ID token against the JWKS
@@ -615,7 +615,7 @@ sequenceDiagram
 
 Both external sign-in methods, OIDC here and the LDAP bind in `ldap.go`, link
 by **verified email address**, and neither ever takes over an account that has a
-password of its own. `oeffentliche_url` has to be set, because the callback
+password of its own. `public_url` has to be set, because the callback
 address cannot be derived from a request that has passed through a proxy; a boot
 without it is warned about.
 
@@ -628,7 +628,7 @@ graph LR
         t2["Session sweep: every 6 h"]
     end
 
-    t1 -->|"pages deleted longer ago than papierkorb_tage"| purge["purge the row<br/>→ cascades to versions, shares, links, subpages"]
+    t1 -->|"pages deleted longer ago than trash_days"| purge["purge the row<br/>→ cascades to versions, shares, links, subpages"]
     purge -->|"and the bytes"| store["Ablage.Loeschen"]
     t2 -->|"sitzungen where laeuft_ab < now()"| del["DELETE"]
 ```
@@ -641,7 +641,7 @@ The trash sweep deletes the **attachment bytes** as well as the rows. Without
 that, an object store slowly fills with files no page points at any more, the
 kind of leak nobody notices until the bucket is billed.
 
-`papierkorb_tage = 0` switches the expiry off, and pages then stay in the trash
+`trash_days = 0` switches the expiry off, and pages then stay in the trash
 until somebody empties it.
 
 ---
@@ -715,7 +715,7 @@ The authority is **added** to the public ones, never substituted (see
 public certificate: an identity provider behind Let's Encrypt would suddenly be
 unreachable, and nobody would connect that to having set up a local authority.
 
-Whoever runs the service elsewhere leaves `tls_zertifikat` empty and gets plain
+Whoever runs the service elsewhere leaves `tls_certificate` empty and gets plain
 HTTP, which is right behind something on the same machine that terminates TLS
 and wrong as soon as a network lies in between.
 
@@ -740,7 +740,7 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.redis.yml
 `chimw.RealIP` is on, so `X-Forwarded-For` is trusted, which is correct behind
 a proxy one controls and wrong when the container is exposed to the internet
 directly. In front of a proxy, terminate TLS there, forward to `PORT`, and set
-`oeffentliche_url` to the address the browser actually uses. Without it the OIDC
+`public_url` to the address the browser actually uses. Without it the OIDC
 callback cannot be built, and a public share link names the wrong host.
 
 ### 7.4 Continuous integration
@@ -776,7 +776,7 @@ operation.
 | What proves identity? | An httpOnly cookie `nexora_token` carrying a JWT over `{user id, session id}` |
 | Why a cookie and not an `Authorization` header? | Script on the page cannot read an httpOnly cookie, which limits what an XSS bug can steal |
 | Why a session row as well? | So a session can be **ended**. Signing out revokes the row; the token alone would stay valid until it expired |
-| How long? | `sitzung_stunden`, 12 by default. A session in use renews itself once half its life is gone; "last used" is written at most every 5 minutes |
+| How long? | `session_hours`, 12 by default. A session in use renews itself once half its life is gone; "last used" is written at most every 5 minutes |
 | What about `Secure`? | Set whenever the request arrived over TLS. Not unconditionally, or a home-network instance on plain HTTP could not sign anyone in |
 | Passwords | bcrypt. An account created through OIDC or LDAP has no hash and cannot be signed into with a password |
 
@@ -830,7 +830,7 @@ go stale no matter which code path wrote the row. The title carries weight `A`
 against the body's `B`, so a page with the term in its title outranks one that
 merely mentions it.
 
-The dictionary is `german` by default (`such_woerterbuch`). It costs a little
+The dictionary is `german` by default (`search_dictionary`). It costs a little
 precision on English content and is clearly better than `simple` for German
 pages, because the search then reaches across word forms.
 
@@ -895,7 +895,7 @@ scaling impossible, because two containers cannot share a local directory.
 A configured object store that does not answer at startup **stops the boot**.
 Falling back to disk sounds friendlier than it is: the instance comes up, uploads
 work, and weeks later half the attachments lie in a directory nobody backs up
-while the other half is in the bucket. `s3_rueckfall = ja` restores the old
+while the other half is in the bucket. `s3_fallback = ja` restores the old
 behaviour for whoever wants it.
 
 ### 8.8 Caching
@@ -906,7 +906,7 @@ only a slower one. This is the deliberate difference from the common design of
 keeping sessions in Redis alone; there a restart signs everyone out, and losing
 it means nobody can say who was signed in.
 
-Keys carry `redis_vorsilbe` so two instances can share one Redis.
+Keys carry `redis_prefix` so two instances can share one Redis.
 
 ### 8.9 Naming
 
@@ -1146,7 +1146,7 @@ graph LR
 | **An issued licence key cannot be revoked** | A leaked key unlocks extras until it expires | Expiry of at most a year. Rotating the public key invalidates *every* key, so it is a last resort |
 | **`RealIP` trusts `X-Forwarded-For`** | Behind no proxy, a client can forge the IP recorded in the audit trail | Correct behind a proxy one controls; do not expose the container directly |
 | **The default JWT secret starts the server** | An instance left on it has forgeable sessions | Warned at every boot; named first in the security checklist |
-| **`pgvector`-free search is `german` by default** | Slightly worse recall on English content | `such_woerterbuch` is a setting; changing it needs a reindex (`POST /system/suchindex`) |
+| **`pgvector`-free search is `german` by default** | Slightly worse recall on English content | `search_dictionary` is a setting; changing it needs a reindex (`POST /system/suchindex`) |
 | **`.docx` round-trip is lossy** | Headers, styles, comments and images do not survive an edit | The interface says so before the edit starts. Deliberate, see ADR-7 |
 | **No `pull_request` CI on a public repository** | External contributions are not built until merged to a branch | Unavoidable with a self-hosted runner; see 7.4 |
 | **Destructive schema changes have no path** | A rename or a table split would need a hand-written step | Accepted cost of ADR-2. None has been needed so far |
@@ -1186,7 +1186,7 @@ schema, the code and the JSON.
 | `kommentare` | Comments (paid extra) |
 | `echtzeit` | Real time, several accounts writing on one page at once (paid extra) |
 | `konflikte` | Conflict detection (paid extra) |
-| `lizenz` | Licence |
+| `license` | Licence |
 | `oeffentlich` | Public, of a space: `nein`, `lesen`, `schreiben` |
 | `papierkorb` | Trash |
 | `postfach` | Inbox |

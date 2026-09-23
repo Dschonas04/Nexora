@@ -65,15 +65,15 @@ Without this it is shown read-only.
 | Key | Environment | Default | What it does |
 |---|---|---|---|
 | `port` | `PORT` | `8080` | The port the API listens on. In the compose setup this is the container-internal port, `8443` there, because the service speaks TLS inside the stack; what you publish is `PORT` in `.env`, which maps to the *frontend* container |
-| `daten_verzeichnis` | `NEXORA_DATA_DIR` | `/data/attachments` | The data directory |
-| `anhang_verzeichnis` | `NEXORA_ANHANG_PFAD` | *(empty)* | Where attachment bytes go, if not the data directory. Attachments are the only part that grows without bound, so they often belong on a disk of their own. Empty means the same directory as before, so an upgrade does not move an existing installation's files |
-| `oeffentliche_url` | `NEXORA_PUBLIC_URL` | *(empty)* | The address the browser actually uses. Needed to build the OIDC callback and to name the right host in a public share link. Required as soon as `oidc_aktiv` is on |
+| `data_directory` | `NEXORA_DATA_DIR` | `/data/attachments` | The data directory |
+| `attachment_directory` | `NEXORA_ATTACHMENT_PATH` | *(empty)* | Where attachment bytes go, if not the data directory. Attachments are the only part that grows without bound, so they often belong on a disk of their own. Empty means the same directory as before, so an upgrade does not move an existing installation's files |
+| `public_url` | `NEXORA_PUBLIC_URL` | *(empty)* | The address the browser actually uses. Needed to build the OIDC callback and to name the right host in a public share link. Required as soon as `oidc_enabled` is on |
 
 ## Database
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `datenbank_url` | `DATABASE_URL` | `postgres://nexora:nexora@localhost:5432/nexora?sslmode=disable` | The connection string. The default password is warned about at every boot. The bundled stack sets `sslmode=verify-full&sslrootcert=/pki/ca.crt` instead: encrypted **and** checked against the stack's own authority |
+| `database_url` | `DATABASE_URL` | `postgres://nexora:nexora@localhost:5432/nexora?sslmode=disable` | The connection string. The default password is warned about at every boot. The bundled stack sets `sslmode=verify-full&sslrootcert=/pki/ca.crt` instead: encrypted **and** checked against the stack's own authority |
 
 **PostgreSQL fixes the password at first launch.** It is written into the data
 directory at initialisation, so changing it afterwards locks the backend out
@@ -84,15 +84,15 @@ unless you also change it inside the running database
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `jwt_geheimnis` | `JWT_SECRET` | `change-me-in-production` | Signs the session token. On the default, every session is forgeable, warned about at every boot. `openssl rand -hex 32` |
-| `sitzung_stunden` | `NEXORA_SESSION_HOURS` | `12` | How long a session lasts. One in use renews itself once half its life is gone |
-| `sitzung_tage` | `NEXORA_SESSION_DAYS` |, | **Deprecated.** The old key in days. Still read and converted (× 24), so an existing file does not silently drop from seven days to twelve hours because the unit changed |
+| `jwt_secret` | `JWT_SECRET` | `change-me-in-production` | Signs the session token. On the default, every session is forgeable, warned about at every boot. `openssl rand -hex 32` |
+| `session_hours` | `NEXORA_SESSION_HOURS` | `12` | How long a session lasts. One in use renews itself once half its life is gone |
+| `session_days` | `NEXORA_SESSION_DAYS` |, | **Deprecated.** The old key in days. Still read and converted (× 24), so an existing file does not silently drop from seven days to twelve hours because the unit changed |
 
 ## Licence
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `lizenz` | `NEXORA_LIZENZ` | *(empty)* | The licence key. A key imported through the admin pages takes precedence over this one, or an import in the browser would revert on the next restart. A missing or invalid key is never fatal |
+| `license` | `NEXORA_LICENSE` | *(empty)* | The licence key. A key imported through the admin pages takes precedence over this one, or an import in the browser would revert on the next restart. A missing or invalid key is never fatal |
 
 Issuing keys needs `NEXORA_SIGNIERSCHLUESSEL`, the Ed25519 private key. Without
 it the issuing endpoint answers 501 and the section does not appear in the
@@ -102,8 +102,8 @@ interface. See [`backend/premium/README.md`](../backend/premium/README.md).
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `registrierung_offen` | `NEXORA_REGISTRIERUNG_OFFEN` | `ja` | Whether anyone may create an account. **The very first account created becomes the administrator**, turning this off before that account exists locks everybody out |
-| `erlaubte_domaenen` | `NEXORA_ERLAUBTE_DOMAENEN` | *(empty)* | Comma-separated list of email domains that may register. Empty means all |
+| `registration_open` | `NEXORA_REGISTRATION_OPEN` | `ja` | Whether anyone may create an account. **The very first account created becomes the administrator**, turning this off before that account exists locks everybody out |
+| `allowed_domains` | `NEXORA_ALLOWED_DOMAINS` | *(empty)* | Comma-separated list of email domains that may register. Empty means all |
 
 Both are also editable at runtime from the settings page, and the stored value
 then wins over the file; it was set later and on purpose.
@@ -112,14 +112,14 @@ then wins over the file; it was set later and on purpose.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `such_woerterbuch` | `NEXORA_SUCH_WOERTERBUCH` | `german` | The PostgreSQL text search configuration. `german` reaches across word forms in German text and costs a little precision in English; `simple` does neither. Changing it needs a reindex: `POST /api/system/suchindex` |
+| `search_dictionary` | `NEXORA_SEARCH_DICTIONARY` | `german` | The PostgreSQL text search configuration. `german` reaches across word forms in German text and costs a little precision in English; `simple` does neither. Changing it needs a reindex: `POST /api/system/suchindex` |
 | `seitenbreite` |, | `voll` | How wide a page is set when it says nothing itself. `voll` uses the whole window, `normal` keeps a narrow measure like a book, `breit` sits in between. A page with a width of its own keeps it. Database only, changeable under Settings, and readable by **everybody** through `/design`, without it the browser would not know how to set the text |
 
 ## Attachments
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `max_anhang_mb` | `NEXORA_MAX_ANHANG_MB` | `25` | Largest upload. The bundled nginx caps the body at 512 MiB (`client_max_body_size`), so this is the effective limit until it exceeds that; measure the real one under Settings, Attachments |
+| `max_attachment_mb` | `NEXORA_MAX_ATTACHMENT_MB` | `25` | Largest upload. The bundled nginx caps the body at 512 MiB (`client_max_body_size`), so this is the effective limit until it exceeds that; measure the real one under Settings, Attachments |
 
 ## Collaboration
 
@@ -164,7 +164,7 @@ memory, so the page can refresh often without turning the overview into a load.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `papierkorb_tage` | `NEXORA_PAPIERKORB_TAGE` | `30` | After how many days a page in the trash disappears for good. `0` disables the sweep and pages stay until somebody empties it. The hourly sweep removes the attachment bytes too |
+| `trash_days` | `NEXORA_TRASH_DAYS` | `30` | After how many days a page in the trash disappears for good. `0` disables the sweep and pages stay until somebody empties it. The hourly sweep removes the attachment bytes too |
 
 ## TLS inside the stack
 
@@ -185,16 +185,16 @@ different one, see `PORT_TLS` below.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `tls_zertifikat` | `NEXORA_TLS_ZERTIFIKAT` | *(set by compose)* | Certificate for the service's own HTTPS listener. Empty, together with the key, means plain HTTP |
-| `tls_schluessel` | `NEXORA_TLS_SCHLUESSEL` | *(set by compose)* | Its private key. The file has to be readable by uid 10001, the account the service runs under |
-| `tls_wurzel` | `NEXORA_TLS_WURZEL` | *(set by compose)* | An **additional** authority for everything the service itself calls: database, object store, cache, and any HTTP request it makes. The public authorities stay valid alongside it, so an identity provider behind a Let's Encrypt certificate keeps working |
+| `tls_certificate` | `NEXORA_TLS_CERTIFICATE` | *(set by compose)* | Certificate for the service's own HTTPS listener. Empty, together with the key, means plain HTTP |
+| `tls_key` | `NEXORA_TLS_KEY` | *(set by compose)* | Its private key. The file has to be readable by uid 10001, the account the service runs under |
+| `tls_root` | `NEXORA_TLS_ROOT` | *(set by compose)* | An **additional** authority for everything the service itself calls: database, object store, cache, and any HTTP request it makes. The public authorities stay valid alongside it, so an identity provider behind a Let's Encrypt certificate keeps working |
 | `redis_tls` | `NEXORA_REDIS_TLS` | `nein` | Talk to the cache over TLS. On in the bundled stack: session ids live there, and whoever reads one is signed in |
 
 Running the service somewhere else, bare metal, Kubernetes, behind a proxy of
 your own, you have two honest choices. Either it sits directly behind
 something on the *same* machine that terminates TLS, and then plain HTTP over
 those few centimetres costs nothing; or a network lies in between, and then
-`tls_zertifikat` and `tls_schluessel` belong set, because otherwise session
+`tls_certificate` and `tls_key` belong set, because otherwise session
 cookies and whole pages travel that network in the clear.
 
 To use your own certificates instead of the generated ones, put them into the
@@ -206,15 +206,15 @@ there is left alone, the generator only fills in what is missing.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `s3_aktiv` | `NEXORA_S3_AKTIV` | `nein` | Store attachments in a bucket instead of on disk |
-| `s3_endpunkt` | `NEXORA_S3_ENDPUNKT` | *(empty)* | Host and port of the store, **as seen from this container**. If MinIO runs in another compose project, that is the host's address with the published port, not the container name |
+| `s3_enabled` | `NEXORA_S3_ENABLED` | `nein` | Store attachments in a bucket instead of on disk |
+| `s3_endpoint` | `NEXORA_S3_ENDPOINT` | *(empty)* | Host and port of the store, **as seen from this container**. If MinIO runs in another compose project, that is the host's address with the published port, not the container name |
 | `s3_bucket` | `NEXORA_S3_BUCKET` | `nexora` | The bucket |
-| `s3_zugriffsschluessel` | `NEXORA_S3_ZUGRIFFSSCHLUESSEL` | *(empty)* | Access key |
-| `s3_geheimnis` | `NEXORA_S3_GEHEIMNIS` | *(empty)* | Secret key |
+| `s3_access_key` | `NEXORA_S3_ACCESS_KEY` | *(empty)* | Access key |
+| `s3_secret_key` | `NEXORA_S3_SECRET_KEY` | *(empty)* | Secret key |
 | `s3_region` | `NEXORA_S3_REGION` | `us-east-1` | Region. Self-hosted stores generally do not care |
 | `s3_tls` | `NEXORA_S3_TLS` | `nein` | HTTPS to the store. Off means keys and files travel in the clear, warned about |
-| `s3_pfadstil` | `NEXORA_S3_PFADSTIL` | `ja` | Path-style addressing (`endpoint/bucket/key`). What MinIO, Garage and Ceph want; AWS wants it off |
-| `s3_rueckfall` | `NEXORA_S3_RUECKFALL` | `nein` | Whether a store that does not answer at startup may be replaced by the local disk. **Off by default on purpose**: the instance would come up, uploads would work, and weeks later half the attachments would be in a directory nobody backs up |
+| `s3_path_style` | `NEXORA_S3_PATH_STYLE` | `ja` | Path-style addressing (`endpoint/bucket/key`). What MinIO, Garage and Ceph want; AWS wants it off |
+| `s3_fallback` | `NEXORA_S3_FALLBACK` | `nein` | Whether a store that does not answer at startup may be replaced by the local disk. **Off by default on purpose**: the instance would come up, uploads would work, and weeks later half the attachments would be in a directory nobody backs up |
 
 The settings page can bind a store interactively and test it
 (`POST /api/system/ablage/test`). Credentials are deliberately *not* kept in the
@@ -225,10 +225,10 @@ dump carries off.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `redis_adresse` | `NEXORA_REDIS_ADRESSE` | *(empty)* | `host:port`. Empty means no Redis, and everything works without it |
-| `redis_passwort` | `NEXORA_REDIS_PASSWORT` | *(empty)* | |
-| `redis_datenbank` | `NEXORA_REDIS_DATENBANK` | `0` | |
-| `redis_vorsilbe` | `NEXORA_REDIS_VORSILBE` | `nexora` | Prefix in front of every key, so two instances can share one Redis |
+| `redis_address` | `NEXORA_REDIS_ADDRESS` | *(empty)* | `host:port`. Empty means no Redis, and everything works without it |
+| `redis_password` | `NEXORA_REDIS_PASSWORD` | *(empty)* | |
+| `redis_database` | `NEXORA_REDIS_DATABASE` | `0` | |
+| `redis_prefix` | `NEXORA_REDIS_PREFIX` | `nexora` | Prefix in front of every key, so two instances can share one Redis |
 
 Redis is a cache, never the source of truth. A failure to connect is logged, not
 fatal.
@@ -237,34 +237,34 @@ fatal.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `ldap_aktiv` | `NEXORA_LDAP_AKTIV` | `nein` | |
+| `ldap_enabled` | `NEXORA_LDAP_ENABLED` | `nein` | |
 | `ldap_server` | `NEXORA_LDAP_SERVER` | *(empty)* | `ldap://host:389` or `ldaps://host:636` |
 | `ldap_starttls` | `NEXORA_LDAP_STARTTLS` | `ja` | Upgrade a plain connection to TLS. Off, without `ldaps://`, means credentials cross the network in the clear, warned about |
-| `ldap_tls_pruefen` | `NEXORA_LDAP_TLS_PRUEFEN` | `ja` | Verify the server certificate. Off is warned about |
+| `ldap_tls_verify` | `NEXORA_LDAP_TLS_VERIFY` | `ja` | Verify the server certificate. Off is warned about |
 | `ldap_bind_dn` | `NEXORA_LDAP_BIND_DN` | *(empty)* | The account used to search for users |
-| `ldap_bind_passwort` | `NEXORA_LDAP_BIND_PASSWORT` | *(empty)* | |
-| `ldap_basis_dn` | `NEXORA_LDAP_BASIS_DN` | *(empty)* | Where the search starts |
-| `ldap_benutzer_filter` | `NEXORA_LDAP_BENUTZER_FILTER` | `(&(objectClass=person)(\|(uid=%s)(sAMAccountName=%s)(mail=%s)))` | `%s` is what was typed at sign-in |
-| `ldap_feld_name` | `NEXORA_LDAP_FELD_NAME` | `cn` | Attribute holding the display name |
-| `ldap_feld_email` | `NEXORA_LDAP_FELD_EMAIL` | `mail` | Attribute holding the address. Accounts are linked by **verified email** |
-| `ldap_gruppe_admin` | `NEXORA_LDAP_GRUPPE_ADMIN` | *(empty)* | Membership in this group grants the admin role |
+| `ldap_bind_password` | `NEXORA_LDAP_BIND_PASSWORD` | *(empty)* | |
+| `ldap_base_dn` | `NEXORA_LDAP_BASE_DN` | *(empty)* | Where the search starts |
+| `ldap_user_filter` | `NEXORA_LDAP_USER_FILTER` | `(&(objectClass=person)(\|(uid=%s)(sAMAccountName=%s)(mail=%s)))` | `%s` is what was typed at sign-in |
+| `ldap_field_name` | `NEXORA_LDAP_FIELD_NAME` | `cn` | Attribute holding the display name |
+| `ldap_field_email` | `NEXORA_LDAP_FIELD_EMAIL` | `mail` | Attribute holding the address. Accounts are linked by **verified email** |
+| `ldap_admin_group` | `NEXORA_LDAP_ADMIN_GROUP` | *(empty)* | Membership in this group grants the admin role |
 
 ## OIDC / Keycloak · paid extra `sso`
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `oidc_aktiv` | `NEXORA_OIDC_AKTIV` | `nein` | Requires `oeffentliche_url`, or the callback cannot be built, warned about |
-| `oidc_aussteller` | `NEXORA_OIDC_AUSSTELLER` | *(empty)* | Issuer URL. Anything publishing a discovery document works |
+| `oidc_enabled` | `NEXORA_OIDC_ENABLED` | `nein` | Requires `public_url`, or the callback cannot be built, warned about |
+| `oidc_issuer` | `NEXORA_OIDC_ISSUER` | *(empty)* | Issuer URL. Anything publishing a discovery document works |
 | `oidc_client_id` | `NEXORA_OIDC_CLIENT_ID` | *(empty)* | |
-| `oidc_geheimnis` | `NEXORA_OIDC_GEHEIMNIS` | *(empty)* | Client secret |
-| `oidc_bereiche` | `NEXORA_OIDC_BEREICHE` | `openid email profile` | Scopes |
-| `oidc_feld_name` | `NEXORA_OIDC_FELD_NAME` | `name` | Claim holding the display name |
-| `oidc_feld_email` | `NEXORA_OIDC_FELD_EMAIL` | `email` | Claim holding the address |
-| `oidc_gruppe_admin` | `NEXORA_OIDC_GRUPPE_ADMIN` | *(empty)* | Membership in this group grants the admin role |
-| `oidc_knopf_text` | `NEXORA_OIDC_KNOPF_TEXT` | `Mit SSO anmelden` | Label of the button on the sign-in page |
+| `oidc_secret` | `NEXORA_OIDC_SECRET` | *(empty)* | Client secret |
+| `oidc_scopes` | `NEXORA_OIDC_SCOPES` | `openid email profile` | Scopes |
+| `oidc_field_name` | `NEXORA_OIDC_FIELD_NAME` | `name` | Claim holding the display name |
+| `oidc_field_email` | `NEXORA_OIDC_FIELD_EMAIL` | `email` | Claim holding the address |
+| `oidc_admin_group` | `NEXORA_OIDC_ADMIN_GROUP` | *(empty)* | Membership in this group grants the admin role |
+| `oidc_button_text` | `NEXORA_OIDC_BUTTON_TEXT` | `Mit SSO anmelden` | Label of the button on the sign-in page |
 
 The callback to register with the provider is
-`<oeffentliche_url>/api/auth/oidc/zurueck`.
+`<public_url>/api/auth/oidc/zurueck`.
 
 Neither OIDC nor LDAP ever takes over an account that has its own password. Both
 link by verified email address.
@@ -277,8 +277,8 @@ These are changed at runtime from **Settings**, are stored in the
 `einstellungen` table, and override what the file says; they were set later and
 on purpose:
 
-`registrierung_offen` · `erlaubte_domaenen` · `max_anhang_mb` ·
-`sitzung_stunden` · `papierkorb_tage` · `such_woerterbuch` · `echtzeit` ·
+`registration_open` · `allowed_domains` · `max_attachment_mb` ·
+`session_hours` · `trash_days` · `search_dictionary` · `echtzeit` ·
 `seitenbreite` · `design_grundton` (`weiss` | `grau` | `dunkel`) · `design_akzent` (a colour)
 
 The database URL, the port and the JWT secret deliberately do **not** live here:
@@ -297,10 +297,10 @@ Compose reads `.env` for the values it needs before the backend starts.
 | `PORT_TLS` | Host port for HTTPS (3443) |
 | `POSTGRES_PASSWORD` | Used by both the database and the backend's `DATABASE_URL` |
 | `DATABASE_URL` | Set this instead when you run your own database |
-| `JWT_SECRET` | Overrides `jwt_geheimnis` |
-| `NEXORA_LIZENZ` | Overrides `lizenz` |
+| `JWT_SECRET` | Overrides `jwt_secret` |
+| `NEXORA_LICENSE` | Overrides `license` |
 | `NEXORA_ANHANG_ORT` | **What gets mounted** onto the attachment path, a named volume by default, or a host directory / share |
-| `NEXORA_ANHANG_PFAD` | The path **inside** the container. Moving attachments changes the *Ort*, not this |
+| `NEXORA_ATTACHMENT_PATH` | The path **inside** the container. Moving attachments changes the *Ort*, not this |
 | `NEXORA_TLS_NAME` | Name in the self-signed certificate. Without it the container's hostname is used, which produces a second browser warning |
 | `NEXORA_TLS_IP` | An IP for the certificate's SAN |
 | `NEXORA_DIENST_SCHEMA` | How the interface addresses the service behind it, `https` by default. Only needed when running the service without a certificate, then `http` |
@@ -318,15 +318,15 @@ move files that are already there, carry them over first, then restart.
 Named at every boot, none of them fatal:
 
 ```
-ACHTUNG: jwt_geheimnis steht auf der Vorgabe, jede Sitzung ist fälschbar
-ACHTUNG: datenbank_url benutzt das Vorgabepasswort
-ACHTUNG: oidc_aktiv ohne oeffentliche_url, die Rücksprungadresse lässt sich nicht bilden
-ACHTUNG: s3_aktiv ohne s3_endpunkt, Anhänge landen weiter auf der Platte
-ACHTUNG: s3_rueckfall=ja, bei einer Störung des Objektspeichers landen neue Anhänge doch auf der Platte
+ACHTUNG: jwt_secret steht auf der Vorgabe, jede Sitzung ist fälschbar
+ACHTUNG: database_url benutzt das Vorgabepasswort
+ACHTUNG: oidc_enabled ohne public_url, die Rücksprungadresse lässt sich nicht bilden
+ACHTUNG: s3_enabled ohne s3_endpoint, Anhänge landen weiter auf der Platte
+ACHTUNG: s3_fallback=ja, bei einer Störung des Objektspeichers landen neue Anhänge doch auf der Platte
 ACHTUNG: S3 ohne TLS, Zugangsschlüssel und Dateien gehen unverschlüsselt über das Netz
-ACHTUNG: ldap_aktiv ohne ldap_server, die Anmeldung fällt auf Passwörter zurück
+ACHTUNG: ldap_enabled ohne ldap_server, die Anmeldung fällt auf Passwörter zurück
 ACHTUNG: LDAP ohne TLS, Zugangsdaten gehen im Klartext über das Netz
-ACHTUNG: ldap_tls_pruefen=nein, das Serverzertifikat wird nicht geprüft
+ACHTUNG: ldap_tls_verify=nein, das Serverzertifikat wird nicht geprüft
 ```
 
 A home-lab install on default settings should still run. It should just be

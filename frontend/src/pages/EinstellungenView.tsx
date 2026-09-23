@@ -473,7 +473,7 @@ export default function EinstellungenView() {
   } | null>(null);
 
   const grenzeMessen = async () => {
-    const eingestellt = Number(entwurf["max_anhang_mb"]) || 25;
+    const eingestellt = Number(entwurf["max_attachment_mb"]) || 25;
     setGrenze({ laeuft: `${eingestellt} MB`, wirksam: null, eingestellt });
 
     // The configured value first. If it gets through, the question is answered
@@ -1417,9 +1417,9 @@ export default function EinstellungenView() {
         return (
           <>
             <h3>Zugang</h3>
-            {feld("registrierung_offen")}
-            {feld("erlaubte_domaenen")}
-            {feld("sitzung_stunden")}
+            {feld("registration_open")}
+            {feld("allowed_domains")}
+            {feld("session_hours")}
 
             <Listenkopf
               titel="Administratoren"
@@ -1899,7 +1899,7 @@ export default function EinstellungenView() {
         return (
           <>
             <h3>Volltextsuche</h3>
-            {feld("such_woerterbuch")}
+            {feld("search_dictionary")}
 
             <div className="einstellung">
               <div className="einstellung-kopf">
@@ -1959,7 +1959,7 @@ export default function EinstellungenView() {
         return (
           <>
             <h3>Anhänge</h3>
-            {feld("max_anhang_mb")}
+            {feld("max_attachment_mb")}
             <div className="kachelreihe">
               {kachel(z.zahlen?.anhaenge ?? 0, "Dateien")}
               {kachel(bytes(z.anhaengeBytes ?? 0), "Belegt")}

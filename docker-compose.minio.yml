@@ -75,8 +75,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?bitte in der .env setzen}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?bitte in der .env setzen}
       EIMER: ${NEXORA_S3_BUCKET:-nexora}
-      SCHLUESSEL: ${NEXORA_S3_ZUGRIFFSSCHLUESSEL:?bitte in der .env setzen}
-      GEHEIMNIS: ${NEXORA_S3_GEHEIMNIS:?bitte in der .env setzen, z.B. openssl rand -hex 24}
+      SCHLUESSEL: ${NEXORA_S3_ACCESS_KEY:?bitte in der .env setzen}
+      GEHEIMNIS: ${NEXORA_S3_SECRET_KEY:?bitte in der .env setzen, z.B. openssl rand -hex 24}
     entrypoint: /bin/sh
     command:
       - -c
@@ -116,17 +116,17 @@ services:
     environment:
       # Here the container name counts, not the published port: the backend
       # talks to MinIO over the compound's network.
-      NEXORA_S3_AKTIV: "ja"
-      NEXORA_S3_ENDPUNKT: ${NEXORA_S3_ENDPUNKT:-https://minio:9000}
+      NEXORA_S3_ENABLED: "ja"
+      NEXORA_S3_ENDPOINT: ${NEXORA_S3_ENDPOINT:-https://minio:9000}
       # Encrypted, and the certificate is checked against the private
-      # authority; the service knows it through NEXORA_TLS_WURZEL.
+      # authority; the service knows it through NEXORA_TLS_ROOT.
       NEXORA_S3_TLS: "ja"
       NEXORA_S3_BUCKET: ${NEXORA_S3_BUCKET:-nexora}
       # The restricted account from above, not the root one.
-      NEXORA_S3_ZUGRIFFSSCHLUESSEL: ${NEXORA_S3_ZUGRIFFSSCHLUESSEL:?bitte in der .env setzen}
-      NEXORA_S3_GEHEIMNIS: ${NEXORA_S3_GEHEIMNIS:?bitte in der .env setzen}
+      NEXORA_S3_ACCESS_KEY: ${NEXORA_S3_ACCESS_KEY:?bitte in der .env setzen}
+      NEXORA_S3_SECRET_KEY: ${NEXORA_S3_SECRET_KEY:?bitte in der .env setzen}
       # MinIO speaks path style, not Amazon's subdomains.
-      NEXORA_S3_PFADSTIL: "ja"
+      NEXORA_S3_PATH_STYLE: "ja"
     depends_on:
       minio-einrichten:
         condition: service_completed_successfully

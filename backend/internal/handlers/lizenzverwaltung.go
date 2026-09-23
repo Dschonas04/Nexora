@@ -25,7 +25,7 @@ import (
 // lizenzSchluessel is the name the imported key is stored under. Deliberately
 // not part of the ordinary settings list: it does not belong in a form next to
 // colours and deadlines, and it must not turn up in an overview by accident.
-const lizenzSchluessel = "lizenz"
+const lizenzSchluessel = "license"
 
 type lizenzEinlesenReq struct {
 	Schluessel string `json:"schluessel"`

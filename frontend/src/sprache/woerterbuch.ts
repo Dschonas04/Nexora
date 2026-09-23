@@ -1246,7 +1246,7 @@ export const PAARE: [string, string][] = [
   ["Zeile {0}: kein '=', wird übersprungen", "Line {0}: no '=', skipped"],
   ["Zeile {0}: {1} steht schon weiter oben, der letzte Wert gilt", "Line {0}: {1} already appears further up, the last value applies"],
   ["{0} kennt diese Fassung nicht. Tippfehler?", "{0} is unknown to this version. A typo?"],
-  ["jwt_geheimnis steht auf der Vorgabe, jede Sitzung ist fälschbar", "jwt_geheimnis is at its default, every session can be forged"],
+  ["jwt_secret steht auf der Vorgabe, jede Sitzung ist fälschbar", "jwt_secret is at its default, every session can be forged"],
   ["datenbank_url benutzt das Vorgabepasswort", "datenbank_url uses the default password"],
   ["oidc_aktiv ohne oeffentliche_url, die Rücksprungadresse lässt sich nicht bilden", "oidc_aktiv without oeffentliche_url, the return address cannot be formed"],
   ["s3_aktiv ohne s3_endpunkt, Anhänge landen weiter auf der Platte", "s3_aktiv without s3_endpunkt, attachments keep landing on the disk"],

@@ -45,48 +45,48 @@ services:
       # content ran between the two containers in the clear -- which bothers
       # nobody on one machine and becomes a problem the moment the Docker
       # network is spanned across two hosts.
-      NEXORA_TLS_ZERTIFIKAT: ${NEXORA_TLS_ZERTIFIKAT:-/pki/backend/backend.crt}
-      NEXORA_TLS_SCHLUESSEL: ${NEXORA_TLS_SCHLUESSEL:-/pki/backend/backend.key}
+      NEXORA_TLS_CERTIFICATE: ${NEXORA_TLS_CERTIFICATE:-/pki/backend/backend.crt}
+      NEXORA_TLS_KEY: ${NEXORA_TLS_KEY:-/pki/backend/backend.key}
       # Whom the service trusts in turn when it goes out: in addition to the
       # public authorities the private one, for database, object store and
       # cache.
-      NEXORA_TLS_WURZEL: ${NEXORA_TLS_WURZEL:-/pki/ca.crt}
+      NEXORA_TLS_ROOT: ${NEXORA_TLS_ROOT:-/pki/ca.crt}
       NEXORA_DATA_DIR: /data/attachments
       # Where the attachment bytes lie. Two halves belong together: this path is
       # the one INSIDE the container, NEXORA_ANHANG_ORT below is what is mounted
       # onto it: a named volume by default, a directory of the host or a share
       # if that is set. Anybody moving the attachments changes the ort, not this
       # path.
-      NEXORA_ANHANG_PFAD: ${NEXORA_ANHANG_PFAD:-/data/attachments}
+      NEXORA_ATTACHMENT_PATH: ${NEXORA_ATTACHMENT_PATH:-/data/attachments}
       # Unlocks the paid extras. Leaving it empty means: Nexora runs with the
       # free scope, and locked calls answer with 402.
-      NEXORA_LIZENZ: ${NEXORA_LIZENZ:-}
+      NEXORA_LICENSE: ${NEXORA_LICENSE:-}
       # Inbox messages by e-mail, see [Mail] in config.example.conf. Empty
       # values leave config.conf in charge.
       NEXORA_SMTP_SERVER: ${NEXORA_SMTP_SERVER:-}
-      NEXORA_SMTP_ABSENDER: ${NEXORA_SMTP_ABSENDER:-}
-      NEXORA_SMTP_BENUTZER: ${NEXORA_SMTP_BENUTZER:-}
-      NEXORA_SMTP_PASSWORT: ${NEXORA_SMTP_PASSWORT:-}
-      NEXORA_SMTP_VERSCHLUESSELUNG: ${NEXORA_SMTP_VERSCHLUESSELUNG:-}
+      NEXORA_SMTP_SENDER: ${NEXORA_SMTP_SENDER:-}
+      NEXORA_SMTP_USER: ${NEXORA_SMTP_USER:-}
+      NEXORA_SMTP_PASSWORD: ${NEXORA_SMTP_PASSWORD:-}
+      NEXORA_SMTP_ENCRYPTION: ${NEXORA_SMTP_ENCRYPTION:-}
       NEXORA_PUBLIC_URL: ${NEXORA_PUBLIC_URL:-}
       # Object store. Leaving it empty means: attachments stay on disk. The
       # endpoint has to be reachable from THIS container's point of view; if
       # MinIO runs in another compose project, that is the host's address with
       # the published port, not the container name.
-      NEXORA_S3_AKTIV: ${NEXORA_S3_AKTIV:-}
-      NEXORA_S3_ENDPUNKT: ${NEXORA_S3_ENDPUNKT:-}
+      NEXORA_S3_ENABLED: ${NEXORA_S3_ENABLED:-}
+      NEXORA_S3_ENDPOINT: ${NEXORA_S3_ENDPOINT:-}
       NEXORA_S3_BUCKET: ${NEXORA_S3_BUCKET:-}
-      NEXORA_S3_ZUGRIFFSSCHLUESSEL: ${NEXORA_S3_ZUGRIFFSSCHLUESSEL:-}
-      NEXORA_S3_GEHEIMNIS: ${NEXORA_S3_GEHEIMNIS:-}
+      NEXORA_S3_ACCESS_KEY: ${NEXORA_S3_ACCESS_KEY:-}
+      NEXORA_S3_SECRET_KEY: ${NEXORA_S3_SECRET_KEY:-}
       NEXORA_S3_REGION: ${NEXORA_S3_REGION:-}
       NEXORA_S3_TLS: ${NEXORA_S3_TLS:-}
-      NEXORA_S3_PFADSTIL: ${NEXORA_S3_PFADSTIL:-}
+      NEXORA_S3_PATH_STYLE: ${NEXORA_S3_PATH_STYLE:-}
       # Whether a store that cannot be reached at startup may be replaced by the
       # local disk. Empty means no, and then Nexora refuses to start rather than
       # scattering the attachments over two places.
-      NEXORA_S3_RUECKFALL: ${NEXORA_S3_RUECKFALL:-}
+      NEXORA_S3_FALLBACK: ${NEXORA_S3_FALLBACK:-}
     volumes:
-      - ${NEXORA_ANHANG_ORT:-nexora_files}:${NEXORA_ANHANG_PFAD:-/data/attachments}
+      - ${NEXORA_ANHANG_ORT:-nexora_files}:${NEXORA_ATTACHMENT_PATH:-/data/attachments}
       # This file does NOT lie in the directory, it is copied once from the
       # template:
       #

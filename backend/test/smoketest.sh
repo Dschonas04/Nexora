@@ -99,7 +99,7 @@ starte_dienst() {
     NEXORA_DATA_DIR="$ARBEIT/anhaenge" \
     PORT="$APIPORT" \
     NEXORA_CONFIG="/dev/null" \
-    NEXORA_PAPIERKORB_TAGE="${1:-}" \
+    NEXORA_TRASH_DAYS="${1:-}" \
     "$ARBEIT/nexora" >> "$ARBEIT/dienst.log" 2>&1 &
     DIENST_PID=$!
 
@@ -1041,9 +1041,9 @@ JWT_SECRET="smoketest-secret-long-enough-for-hs256" \
 NEXORA_DATA_DIR="$ARBEIT/anhaenge" \
 PORT="$APIPORT" \
 NEXORA_CONFIG="/dev/null" \
-NEXORA_TLS_ZERTIFIKAT="$ARBEIT/dienst.crt" \
-NEXORA_TLS_SCHLUESSEL="$ARBEIT/dienst.key" \
-NEXORA_TLS_WURZEL="$ARBEIT/dienst.crt" \
+NEXORA_TLS_CERTIFICATE="$ARBEIT/dienst.crt" \
+NEXORA_TLS_KEY="$ARBEIT/dienst.key" \
+NEXORA_TLS_ROOT="$ARBEIT/dienst.crt" \
 "$ARBEIT/nexora" >> "$ARBEIT/dienst.log" 2>&1 &
 DIENST_PID=$!
 

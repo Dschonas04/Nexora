@@ -60,8 +60,8 @@ services:
 
   backend:
     environment:
-      NEXORA_REDIS_ADRESSE: ${NEXORA_REDIS_ADRESSE:-redis:6379}
-      NEXORA_REDIS_VORSILBE: ${NEXORA_REDIS_VORSILBE:-nexora}
+      NEXORA_REDIS_ADDRESS: ${NEXORA_REDIS_ADDRESS:-redis:6379}
+      NEXORA_REDIS_PREFIX: ${NEXORA_REDIS_PREFIX:-nexora}
       NEXORA_REDIS_TLS: "ja"
     depends_on:
       redis:

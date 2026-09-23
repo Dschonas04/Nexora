@@ -44,10 +44,10 @@ services:
       DATABASE_URL: postgres://nexora:nexora-bitte-aendern@db:5432/nexora?sslmode=disable
       JWT_SECRET: bitte-aendern-openssl-rand-hex-32
       PORT: '8443'
-      NEXORA_TLS_ZERTIFIKAT: /pki/backend/backend.crt
-      NEXORA_TLS_SCHLUESSEL: /pki/backend/backend.key
-      NEXORA_TLS_WURZEL: /pki/ca.crt
-      NEXORA_ANHANG_PFAD: /data/attachments
+      NEXORA_TLS_CERTIFICATE: /pki/backend/backend.crt
+      NEXORA_TLS_KEY: /pki/backend/backend.key
+      NEXORA_TLS_ROOT: /pki/ca.crt
+      NEXORA_ATTACHMENT_PATH: /data/attachments
     volumes:
       - /DATA/AppData/nexora/anhaenge:/data/attachments
       - /DATA/AppData/nexora/pki:/pki:ro
