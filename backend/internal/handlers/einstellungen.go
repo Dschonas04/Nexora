@@ -57,7 +57,7 @@ var bekannt = map[string]struct {
 		Erklaerung: "Leer: Sicherung nur aus dem Panel, mit Anmeldung. Gesetzt: GET /api/system/sicherung nimmt statt der Sitzung dieses Wort an.",
 		Warnung:    "Das Archiv enthält alles: Passwort-Hashes, Freigabe-Tokens, Anhänge. Gesetzt und verwaltet unter Wartung.",
 	},
-	"registrierung_offen": {
+	"registration_open": {
 		Art:        "janein",
 		Titel:      "Selbstregistrierung",
 		Erklaerung: "An: POST /api/auth/register steht offen. Aus: 403, Konten legt nur ein Administrator an. Das allererste Konto entsteht in beiden Fällen und wird Administrator.",
@@ -74,30 +74,30 @@ var bekannt = map[string]struct {
 		Titel:      "Name in der Authenticator-App",
 		Erklaerung: "Steht als Aussteller im QR-Code und damit über dem Code in der App. Leer: Nexora. Sinnvoll, wenn jemand mehrere Instanzen im selben Telefon hat.",
 	},
-	"erlaubte_domaenen": {
+	"allowed_domains": {
 		Art:        "liste",
 		Titel:      "Erlaubte E-Mail-Domänen",
 		Erklaerung: "Kommagetrennt, verglichen wird der Teil hinter dem @ auf Gleichheit, in Kleinbuchstaben. Leer = keine Prüfung. Greift nur bei der Selbstregistrierung, nicht bei LDAP, SSO oder angelegten Konten.",
 	},
-	"max_anhang_mb": {
+	"max_attachment_mb": {
 		Art:        "zahl",
 		Titel:      "Größte Datei je Anhang (MB)",
 		Erklaerung: "Grenze je einzelner Datei, geprüft beim Hochladen. Darüber entscheidet der Platz im Datenverzeichnis oder im Objektspeicher.",
 		Warnung:    "In der Kette gilt der kleinste Wert. client_max_body_size im vorgeschalteten nginx bricht die Übertragung ab, bevor Nexora sie sieht. Die Messung unten ermittelt, was wirklich durchkommt.",
 	},
-	"sitzung_stunden": {
+	"session_hours": {
 		Art:        "zahl",
 		Titel:      "Gültigkeit einer Anmeldung (Stunden)",
 		Erklaerung: "Laufzeit einer Zeile in der Tabelle sitzungen und des dazugehörigen JWT. Ab der Hälfte der Laufzeit setzt der nächste Aufruf beides neu, samt Cookie.",
 		Warnung:    "Wirkt auf neu angelegte und auf verlängerte Sitzungen. Bereits offene behalten ihre Frist bis zur nächsten Verlängerung.",
 	},
-	"papierkorb_tage": {
+	"trash_days": {
 		Art:        "zahl",
 		Titel:      "Papierkorb leert sich nach (Tagen)",
 		Erklaerung: "Frist ab dem Löschen. 0 = kein Ablauf. Ein Lauf je Stunde, instanzweit, entfernt Seite, Versionen und Anhänge.",
 		Warnung:    "Löscht endgültig, ohne Rückfrage. Wiederherstellung nur aus einer Sicherung der Datenbank.",
 	},
-	"such_woerterbuch": {
+	"search_dictionary": {
 		Art:        "text",
 		Titel:      "Wörterbuch der Volltextsuche",
 		Erklaerung: "PostgreSQL-Textsuchkonfiguration für to_tsvector: german, english oder simple. simple stemmt nicht und trifft dafür in keiner Sprache daneben.",
@@ -122,11 +122,11 @@ var bekannt = map[string]struct {
 // that is never read would send someone hunting for an effect that cannot
 // happen. What is missing lives in the database alone.
 var umgebungsname = map[string]string{
-	"registrierung_offen": "NEXORA_REGISTRIERUNG_OFFEN",
-	"erlaubte_domaenen":   "NEXORA_ERLAUBTE_DOMAENEN",
-	"max_anhang_mb":       "NEXORA_MAX_ANHANG_MB",
-	"sitzung_stunden":     "NEXORA_SESSION_HOURS",
-	"such_woerterbuch":    "NEXORA_SUCH_WOERTERBUCH",
+	"registration_open": "NEXORA_REGISTRATION_OPEN",
+	"allowed_domains":   "NEXORA_ALLOWED_DOMAINS",
+	"max_attachment_mb": "NEXORA_MAX_ATTACHMENT_MB",
+	"session_hours":     "NEXORA_SESSION_HOURS",
+	"search_dictionary": "NEXORA_SEARCH_DICTIONARY",
 }
 
 // grundtoene are the permitted base tones. A fixed list instead of free
@@ -183,17 +183,17 @@ func wert(schluessel string) string {
 
 func ausDatei(schluessel string, k config.Konfig) string {
 	switch schluessel {
-	case "registrierung_offen":
+	case "registration_open":
 		return janein(k.RegistrierungOffen)
-	case "erlaubte_domaenen":
+	case "allowed_domains":
 		return strings.Join(k.ErlaubteDomaenen, ", ")
-	case "max_anhang_mb":
+	case "max_attachment_mb":
 		return strconv.Itoa(k.MaxAnhangMB)
-	case "papierkorb_tage":
+	case "trash_days":
 		return strconv.Itoa(k.PapierkorbTage)
-	case "sitzung_stunden":
+	case "session_hours":
 		return strconv.Itoa(k.SitzungStunden)
-	case "such_woerterbuch":
+	case "search_dictionary":
 		return k.SuchWoerterbuch
 	case "echtzeit":
 		return "ja"
@@ -217,7 +217,7 @@ func janein(b bool) string {
 // RegistrierungOffen, ErlaubteDomaenen and MaxAnhangBytes are the questions the
 // handlers actually ask. They read from the cache so a change takes effect at
 // once, without a restart.
-func RegistrierungOffen() bool { return wert("registrierung_offen") == "ja" }
+func RegistrierungOffen() bool { return wert("registration_open") == "ja" }
 
 // ZweitfaktorPflicht says whether the instance requires the second factor of
 // every account.
@@ -252,7 +252,7 @@ func Seitenbreite() string {
 
 func ErlaubteDomaenen() []string {
 	var out []string
-	for _, t := range strings.Split(wert("erlaubte_domaenen"), ",") {
+	for _, t := range strings.Split(wert("allowed_domains"), ",") {
 		if t = strings.TrimSpace(strings.ToLower(t)); t != "" {
 			out = append(out, t)
 		}
@@ -261,7 +261,7 @@ func ErlaubteDomaenen() []string {
 }
 
 func MaxAnhangBytes() int64 {
-	n, err := strconv.Atoi(wert("max_anhang_mb"))
+	n, err := strconv.Atoi(wert("max_attachment_mb"))
 	if err != nil || n <= 0 {
 		return maxUploadBytes
 	}
@@ -271,7 +271,7 @@ func MaxAnhangBytes() int64 {
 // PapierkorbTage is the deadline after which a deleted page disappears by
 // itself. 0 means never, and then the trash stays until somebody empties it.
 func PapierkorbTage() int {
-	n, err := strconv.Atoi(wert("papierkorb_tage"))
+	n, err := strconv.Atoi(wert("trash_days"))
 	if err != nil || n < 0 {
 		return 30
 	}
@@ -298,7 +298,7 @@ func SitzungDauer() time.Duration {
 // SitzungStunden is the same figure in hours. The database counts in hours, not
 // in nanoseconds.
 func SitzungStunden() int {
-	n, err := strconv.Atoi(wert("sitzung_stunden"))
+	n, err := strconv.Atoi(wert("session_hours"))
 	if err != nil || n <= 0 {
 		return 12
 	}
@@ -377,9 +377,9 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 	// A fixed order: a map iterates at random, and a page whose fields swap
 	// places on every load is unusable.
 	reihenfolge := []string{
-		"registrierung_offen", "erlaubte_domaenen",
+		"registration_open", "allowed_domains",
 		"zweitfaktor_pflicht", "zweitfaktor_aussteller",
-		"max_anhang_mb", "sitzung_stunden", "papierkorb_tage", "such_woerterbuch",
+		"max_attachment_mb", "session_hours", "trash_days", "search_dictionary",
 		"echtzeit",
 		"seitenbreite",
 	}
@@ -444,21 +444,21 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 		// Zero is only a value for the trash, where it means "never by itself".
 		// For an attachment limit or a session lifetime it would be an instance
 		// that accepts nothing or signs nobody in.
-		if err != nil || n < 0 || (n == 0 && req.Schluessel != "papierkorb_tage") {
+		if err != nil || n < 0 || (n == 0 && req.Schluessel != "trash_days") {
 			writeErr(w, http.StatusBadRequest, "erwartet eine Zahl größer null")
 			return
 		}
-		if req.Schluessel == "papierkorb_tage" && n > 3650 {
+		if req.Schluessel == "trash_days" && n > 3650 {
 			writeErr(w, http.StatusBadRequest, "höchstens 3650 Tage")
 			return
 		}
-		if req.Schluessel == "max_anhang_mb" && n > 2048 {
+		if req.Schluessel == "max_attachment_mb" && n > 2048 {
 			writeErr(w, http.StatusBadRequest, "höchstens 2048 MB")
 			return
 		}
 		// An upper bound so nobody accidentally sets a session to years: 8760
 		// hours are one year, and beyond that the figure is a typo in practice.
-		if req.Schluessel == "sitzung_stunden" && n > 8760 {
+		if req.Schluessel == "session_hours" && n > 8760 {
 			writeErr(w, http.StatusBadRequest, "höchstens 8760 Stunden, das ist ein Jahr")
 			return
 		}
@@ -470,7 +470,7 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "text":
-		if req.Schluessel == "such_woerterbuch" {
+		if req.Schluessel == "search_dictionary" {
 			switch wertNeu {
 			case "german", "english", "simple":
 			default:
@@ -483,7 +483,7 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 	// Self-registration must not be switched off while there is no account at
 	// all, or nobody could get in any more, since the first account becomes the
 	// administrator.
-	if req.Schluessel == "registrierung_offen" && wertNeu == "nein" {
+	if req.Schluessel == "registration_open" && wertNeu == "nein" {
 		var anzahl int
 		_ = s.Pool.QueryRow(r.Context(), `SELECT count(*) FROM users`).Scan(&anzahl)
 		if anzahl == 0 {

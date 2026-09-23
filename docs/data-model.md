@@ -288,8 +288,8 @@ change at runtime, which cannot live in `config.conf` because nobody can edit a
 file inside a container from a browser. The other way round, the database address
 does not belong here: it is needed before the database is open.
 
-Current keys: `registrierung_offen`, `erlaubte_domaenen`, `max_anhang_mb`,
-`sitzung_stunden`, `papierkorb_tage`, `such_woerterbuch`, `echtzeit`,
+Current keys: `registration_open`, `allowed_domains`, `max_attachment_mb`,
+`session_hours`, `trash_days`, `search_dictionary`, `echtzeit`,
 `seitenbreite`, `design_grundton`, `design_akzent`, plus the imported licence key, which takes
 precedence over the one in the file.
 
@@ -309,7 +309,7 @@ rather than claiming a machine was up because it was two days ago.
 |---|---|
 | Delete a page | `deleted_at` is set. It is in the trash, recoverable, and hidden from every query |
 | Purge a page | The row goes, cascading to its versions, attachments, shares, links, tags **and subpages**. The attachment bytes are removed too |
-| Trash sweep | Hourly. Purges pages deleted longer ago than `papierkorb_tage` (0 disables it) |
+| Trash sweep | Hourly. Purges pages deleted longer ago than `trash_days` (0 disables it) |
 | Delete a space | The space goes; its pages stay and their `space_id` becomes NULL |
 | Delete an account | Cascades to its pages, spaces, tags, favourites, sessions and group memberships. Its comments keep the frozen author name; its audit entries stay entirely |
 | Delete a comment | The text is emptied, the row stays, replies keep their place |

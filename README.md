@@ -163,7 +163,7 @@ when the database approaches a gigabyte, not before.
 - **Tags**: colored, per-user, attach any number to a page
 - **Favorites**: quick access section in the sidebar
 - **Trash**: deleting moves a page to the trash; restore it or purge permanently.
-  It empties itself after `papierkorb_tage` (30 by default, 0 disables it), and
+  It empties itself after `trash_days` (30 by default, 0 disables it), and
   every row says how long it has left. The hourly sweep removes the attachment
   bytes too, so an object store does not silently fill up with files no page
   points at any more
@@ -308,7 +308,7 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.redis.yml
 
 An existing MinIO or S3 is wired up through the `NEXORA_S3_*` settings instead
 of the third file. An object store that has been configured and does not answer
-at startup stops the boot; `s3_rueckfall = ja` allows the disk as a stopgap.
+at startup stops the boot; `s3_fallback = ja` allows the disk as a stopgap.
 
 ### Where the attachments lie
 
@@ -319,10 +319,10 @@ settings move them:
 ```bash
 # a directory of the host, a disk of its own, a mount of the file server
 NEXORA_ANHANG_ORT=/srv/nexora/anhaenge     # .env: what gets mounted
-anhang_verzeichnis = /data/attachments     # config.conf: the path inside
+attachment_directory = /data/attachments     # config.conf: the path inside
 
 # or not on any disk at all: into a bucket
-s3_aktiv = ja
+s3_enabled = ja
 ```
 
 The directory has to belong to uid/gid `10001`, the account the service runs
@@ -409,17 +409,17 @@ typo must not cause an outage.
 
 | Group | Keys |
 | --- | --- |
-| Server | `port`, `daten_verzeichnis`, `anhang_verzeichnis`, `oeffentliche_url` |
-| Database | `datenbank_url` |
-| Sessions | `jwt_geheimnis`, `sitzung_stunden` |
-| License | `lizenz` |
-| Registration | `registrierung_offen`, `erlaubte_domaenen` |
-| Search | `such_woerterbuch` |
-| Attachments | `max_anhang_mb` |
-| Trash | `papierkorb_tage` |
-| Object storage | `s3_aktiv` and eight more |
-| LDAP / AD | `ldap_aktiv` and ten more |
-| OIDC | `oidc_aktiv` and eight more |
+| Server | `port`, `data_directory`, `attachment_directory`, `public_url` |
+| Database | `database_url` |
+| Sessions | `jwt_secret`, `session_hours` |
+| License | `license` |
+| Registration | `registration_open`, `allowed_domains` |
+| Search | `search_dictionary` |
+| Attachments | `max_attachment_mb` |
+| Trash | `trash_days` |
+| Object storage | `s3_enabled` and eight more |
+| LDAP / AD | `ldap_enabled` and ten more |
+| OIDC | `oidc_enabled` and eight more |
 
 ### Warnings on start
 
@@ -428,7 +428,7 @@ install with the default secret should still run, it should just be impossible
 to miss that it did:
 
 ```
-ACHTUNG: jwt_geheimnis steht auf der Vorgabe, jede Sitzung ist fälschbar
+ACHTUNG: jwt_secret steht auf der Vorgabe, jede Sitzung ist fälschbar
 ACHTUNG: LDAP ohne TLS, Zugangsdaten gehen im Klartext über das Netz
 ```
 
@@ -439,7 +439,7 @@ ACHTUNG: LDAP ohne TLS, Zugangsdaten gehen im Klartext über das Netz
   unless you also change it inside the running database
   (`ALTER USER nexora WITH PASSWORD ...`) or discard the volume.
 - **The very first account created becomes the administrator.** Turning
-  `registrierung_offen` off before that account exists locks everyone out.
+  `registration_open` off before that account exists locks everyone out.
 
 ### `.env`
 
@@ -451,8 +451,8 @@ repository:
 | --- | --- |
 | `PORT` | Host port for the web UI |
 | `POSTGRES_PASSWORD` | Database password, used by both db and backend |
-| `JWT_SECRET` | Session signing key, overrides `jwt_geheimnis` |
-| `NEXORA_LIZENZ` | License key, overrides `lizenz` |
+| `JWT_SECRET` | Session signing key, overrides `jwt_secret` |
+| `NEXORA_LICENSE` | License key, overrides `license` |
 
 ## Data Model
 
@@ -808,7 +808,7 @@ cd backend && go build -tags nur_kern ./...
 Apply a key:
 
 ```
-NEXORA_LIZENZ='<key>'      # or lizenz = <key> in config.conf
+NEXORA_LICENSE='<key>'    # or license = <key> in config.conf
 ```
 
 A missing or invalid key is never fatal: the server logs why and runs on the

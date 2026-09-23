@@ -18,7 +18,7 @@ func schreibe(t *testing.T, inhalt string) string {
 }
 
 func TestUmgebungSchlaegtDatei(t *testing.T) {
-	p := schreibe(t, "port = 9999\nsuch_woerterbuch = english\n")
+	p := schreibe(t, "port = 9999\nsearch_dictionary = english\n")
 	t.Setenv("PORT", "7777")
 
 	k := Laden(p)
@@ -46,7 +46,7 @@ func TestKaputteZeilenKippenNichts(t *testing.T) {
 sitzung_stunden = keine-zahl
 kaputte zeile ohne gleichheitszeichen
 ; Strichpunkt-Kommentar
-such_woerterbuch = simple
+search_dictionary = simple
 `))
 	if k.SitzungStunden != 12 {
 		t.Fatalf("unlesbare Zahl hätte die Vorgabe behalten müssen, bekam %d", k.SitzungStunden)
@@ -57,7 +57,7 @@ such_woerterbuch = simple
 }
 
 func TestAnfuehrungszeichenErhaltenRand(t *testing.T) {
-	k := Laden(schreibe(t, "jwt_geheimnis = \"  mit Rand  \"\n"))
+	k := Laden(schreibe(t, "jwt_secret = \"  mit Rand  \"\n"))
 	if k.JWTGeheimnis != "  mit Rand  " {
 		t.Fatalf("Rand-Leerzeichen verloren: %q", k.JWTGeheimnis)
 	}

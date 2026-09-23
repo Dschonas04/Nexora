@@ -42,7 +42,7 @@ tier contains which feature is in [architecture chapter 8.5](architecture.md#85-
 
 | Method | Path | Notes |
 |---|---|---|
-| `POST` | `/auth/register` | `{email, name, password}`. The **first account ever created becomes admin**. Subject to `registrierung_offen` and `erlaubte_domaenen` |
+| `POST` | `/auth/register` | `{email, name, password}`. The **first account ever created becomes admin**. Subject to `registration_open` and `allowed_domains` |
 | `POST` | `/auth/login` | `{kennung, password}`, `kennung` is an email address *or* a login name; the `@` decides which. `{email, password}` is still accepted. One error message for both failure cases |
 | `POST` | `/auth/logout` | Revokes the session row, not just the cookie |
 | `GET` | `/auth/me` | The signed-in account |
@@ -97,7 +97,7 @@ Standard scope.
 | Method | Path | Notes |
 |---|---|---|
 | `GET` | `/pages/{id}/attachments` | |
-| `POST` | `/pages/{id}/attachments` | multipart, field `file`. Capped by `max_anhang_mb` (25 by default) and by nginx's `client_max_body_size`. Executables are refused with **415**: a file starting with the ELF magic (a Linux binary or shared object) is rejected whatever it is named, since the first four bytes are what the kernel reads and the extension is only a claim |
+| `POST` | `/pages/{id}/attachments` | multipart, field `file`. Capped by `max_attachment_mb` (25 by default) and by nginx's `client_max_body_size`. Executables are refused with **415**: a file starting with the ELF magic (a Linux binary or shared object) is rejected whatever it is named, since the first four bytes are what the kernel reads and the extension is only a claim |
 | `GET` | `/pages/{id}/attachments/{attId}` | The bytes. Headers are decided by the server, not by the MIME type the uploader claimed |
 | `DELETE` | `/pages/{id}/attachments/{attId}` | Removes the row and the bytes |
 
@@ -112,7 +112,7 @@ Standard scope.
 
 | Method | Path | Notes |
 |---|---|---|
-| `PUT` | `/pages/{id}/attachments/{attId}/pdf` | The raw bytes of a marked-up PDF, `Content-Type: application/pdf`. Needs write access **and** the `anhaenge` licence. The body must start with `%PDF-` and is capped by `max_anhang_mb` |
+| `PUT` | `/pages/{id}/attachments/{attId}/pdf` | The raw bytes of a marked-up PDF, `Content-Type: application/pdf`. Needs write access **and** the `anhaenge` licence. The body must start with `%PDF-` and is capped by `max_attachment_mb` |
 
 The marking itself happens in the browser: pdf.js draws the pages, the reader
 drags rectangles over them, and pdf-lib writes the highlights into the file
@@ -376,7 +376,7 @@ Admin-only routes are enforced inside the handler, not by a separate gate.
 | `GET` | `/system` | The state of the stack: which surrounding services answer, how fast, which version they run, how much they hold. Nexora has no Docker socket on purpose, so this is what can be established over the network |
 | `GET` | `/system/ablage` | Where attachments currently live |
 | `POST` | `/system/ablage/test` | Try an object store's credentials before saving them |
-| `POST` | `/system/suchindex` | Rebuild the full text index, needed after changing `such_woerterbuch` |
+| `POST` | `/system/suchindex` | Rebuild the full text index, needed after changing `search_dictionary` |
 | `POST` | `/system/anhangindex` | Extract attachment text for files uploaded before the attachment index existed |
 | `GET` | `/system/anmeldungen` | Sign-in attempts, see above · admin |
 | `GET` | `/system/mitschrift` | Which pages are being written on together right now, and who is in them · admin |

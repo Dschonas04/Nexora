@@ -27,8 +27,8 @@ import (
 // of a session somebody leaves open. Whoever wants to change a value writes the
 // new one; whoever wants to read it goes to the file.
 var geheimeSchluessel = []string{
-	"jwt_geheimnis", "datenbank_url", "s3_geheimnis", "s3_zugriffsschluessel",
-	"ldap_bind_passwort", "oidc_geheimnis", "lizenz",
+	"jwt_secret", "database_url", "s3_secret_key", "s3_access_key",
+	"ldap_bind_password", "oidc_secret", "license",
 }
 
 const versteckt = "********"

@@ -11,13 +11,13 @@ import (
 func TestGeheimnisseUeberlebenDenRundlauf(t *testing.T) {
 	alt := `# Kopf
 [Datenbank]
-datenbank_url = postgres://nexora:s3hr%20geheim@db:5432/nexora
+database_url = postgres://nexora:s3hr%20geheim@db:5432/nexora
 port = 8080
 
 [Sitzungen]
-jwt_geheimnis = abcdef123456
+jwt_secret = abcdef123456
 ; ein Kommentar
-oidc_geheimnis =
+oidc_secret =
 `
 	gezeigt := verstecken(alt)
 	if strings.Contains(gezeigt, "s3hr%20geheim") || strings.Contains(gezeigt, "abcdef123456") {
@@ -28,7 +28,7 @@ oidc_geheimnis =
 	}
 	// An empty value stays empty, otherwise asterisks would stand there that one
 	// would take for a real value while saving.
-	if !strings.Contains(gezeigt, "oidc_geheimnis =\n") {
+	if !strings.Contains(gezeigt, "oidc_secret =\n") {
 		t.Error("leerer Wert wurde zu Sternen")
 	}
 
@@ -41,10 +41,10 @@ oidc_geheimnis =
 // Whoever really changes a value must have their input arrive; the restoring
 // step may only replace the asterisks.
 func TestGeaendertesGeheimnisWirdUebernommen(t *testing.T) {
-	alt := "jwt_geheimnis = altwert\nport = 8080\n"
-	entwurf := "jwt_geheimnis = neuwert\nport = 9090\n"
+	alt := "jwt_secret = altwert\nport = 8080\n"
+	entwurf := "jwt_secret = neuwert\nport = 9090\n"
 	got := zurueckSetzen(entwurf, alt)
-	if !strings.Contains(got, "jwt_geheimnis = neuwert") {
+	if !strings.Contains(got, "jwt_secret = neuwert") {
 		t.Errorf("neuer Wert ging verloren: %q", got)
 	}
 	if !strings.Contains(got, "port = 9090") {
