@@ -8,40 +8,46 @@ import (
 	"nexora/internal/middleware"
 )
 
-// Das Aussehen gehoert dem Konto.
+// The appearance belongs to the account.
 //
-// Grundton und Akzent standen als design_grundton und design_akzent in der
-// Einstellungstabelle, also einmal fuer die ganze Instanz und nur fuer
-// Administratoren aenderbar. Das war die falsche Ebene: welche Farbe jemand
-// ertraegt und ob er hell oder dunkel arbeitet, geht niemanden sonst etwas an,
-// und wer nachts dunkel stellte, stellte alle anderen mit um.
+// Base tone and accent used to sit in the settings table as design_grundton and
+// design_akzent, that is once for the whole instance and changeable only by
+// administrators. That was the wrong level: which colour somebody can bear and
+// whether they work light or dark is nobody else's business, and whoever
+// switched to dark at night switched everybody else over too.
 //
-// Jetzt liegen beide Werte in der Zeile des Kontos. Leer heisst "nichts
-// gewaehlt": dann gilt die Vorgabe, und zwar dieselbe, die auch der
-// Abgemeldete auf der Anmeldeseite sieht.
+// Now both values live in the account's row. Empty means "nothing chosen": then
+// the default applies, and it is the same one the signed-out visitor sees on
+// the login page.
 const (
 	grundtonVorgabe = "grau"
-	akzentVorgabe   = "#2383e2"
+	akzentVorgabe   = "#1b6ec2"
 )
 
 type aussehenAntwort struct {
 	Grundton string `json:"grundton"`
 	Akzent   string `json:"akzent"`
+	// Sprache is the interface language, "de" or "en". Empty: nothing chosen,
+	// the browser decides.
+	Sprache string `json:"sprache"`
 }
 
-// aussehenLesen holt die Wahl des Kontos und ergaenzt fehlende Werte durch die
-// Vorgabe. Ein Fehler beim Lesen ist keiner, der die Oberflaeche aufhalten
-// darf: dann sieht das Konto eben die Vorgabe.
+// sprachen are the interface languages there is a word list for.
+var sprachen = map[string]bool{"de": true, "en": true}
+
+// aussehenLesen fetches the account's choice and fills missing values from the
+// default. A read error is not one that may hold up the interface: the account
+// simply sees the default then.
 func (s *Server) aussehenLesen(r *http.Request) aussehenAntwort {
 	a := aussehenAntwort{Grundton: grundtonVorgabe, Akzent: akzentVorgabe}
 	uid := middleware.UserID(r)
 	if uid == "" {
 		return a
 	}
-	var grundton, akzent string
+	var grundton, akzent, sprache string
 	if s.Pool.QueryRow(r.Context(),
-		`SELECT design_grundton, design_akzent FROM users WHERE id=$1`, uid).
-		Scan(&grundton, &akzent) != nil {
+		`SELECT design_grundton, design_akzent, sprache FROM users WHERE id=$1`, uid).
+		Scan(&grundton, &akzent, &sprache) != nil {
 		return a
 	}
 	if grundtoene[grundton] {
@@ -50,14 +56,17 @@ func (s *Server) aussehenLesen(r *http.Request) aussehenAntwort {
 	if istHexFarbe(akzent) {
 		a.Akzent = akzent
 	}
+	if sprachen[sprache] {
+		a.Sprache = sprache
+	}
 	return a
 }
 
-// AussehenSpeichern nimmt die Wahl des angemeldeten Kontos entgegen.
+// AussehenSpeichern takes in the signed-in account's choice.
 //
-// Geprueft wird beides, obwohl die Oberflaeche nur gueltige Werte schickt: der
-// Akzent landet unveraendert in einer CSS-Variablen, und eine Zeichenkette mit
-// Klammern waere ein Weg hinein.
+// Both are checked although the interface only ever sends valid values: the
+// accent ends up unchanged in a CSS variable, and a string with braces in it
+// would be a way inside.
 func (s *Server) AussehenSpeichern(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Grundton string `json:"grundton"`
@@ -70,7 +79,7 @@ func (s *Server) AussehenSpeichern(w http.ResponseWriter, r *http.Request) {
 	req.Grundton = strings.TrimSpace(req.Grundton)
 	req.Akzent = strings.ToLower(strings.TrimSpace(req.Akzent))
 
-	// Leer ist erlaubt und heisst "zurueck auf die Vorgabe".
+	// Empty is allowed and means "back to the default".
 	if req.Grundton != "" && !grundtoene[req.Grundton] {
 		writeErr(w, http.StatusBadRequest, "erwartet weiss, grau oder dunkel")
 		return
@@ -84,6 +93,31 @@ func (s *Server) AussehenSpeichern(w http.ResponseWriter, r *http.Request) {
 	if _, err := s.Pool.Exec(r.Context(),
 		`UPDATE users SET design_grundton=$2, design_akzent=$3 WHERE id=$1`,
 		uid, req.Grundton, req.Akzent); err != nil {
+		writeErr(w, http.StatusInternalServerError, "nicht gespeichert")
+		return
+	}
+	writeJSON(w, http.StatusOK, s.aussehenLesen(r))
+}
+
+// SpracheSpeichern stores the interface language on the signed-in account. A
+// route of its own and not part of AussehenSpeichern: switching the language
+// must not send base tone and accent along, or a second tab with an older
+// choice would write it back.
+func (s *Server) SpracheSpeichern(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Sprache string `json:"sprache"`
+	}
+	if json.NewDecoder(r.Body).Decode(&req) != nil {
+		writeErr(w, http.StatusBadRequest, "ungültige Anfrage")
+		return
+	}
+	req.Sprache = strings.TrimSpace(req.Sprache)
+	if req.Sprache != "" && !sprachen[req.Sprache] {
+		writeErr(w, http.StatusBadRequest, "erwartet de oder en")
+		return
+	}
+	if _, err := s.Pool.Exec(r.Context(),
+		`UPDATE users SET sprache=$2 WHERE id=$1`, middleware.UserID(r), req.Sprache); err != nil {
 		writeErr(w, http.StatusInternalServerError, "nicht gespeichert")
 		return
 	}

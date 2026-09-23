@@ -12,18 +12,19 @@ Additional Use Grant: You may make production use of the Licensed Work,
                       the paid features listed below without a valid license
                       key issued by the Licensor.
 
-                      The paid features are: version history, attachments,
-                      sharing and public links, audit trail, groups and space
-                      permissions, single sign-on via OIDC, LDAP and Active
-                      Directory sign-in, full text search inside attachments,
-                      space export, page templates, comments, and concurrent
-                      edit detection.
+                      The paid features are: sharing with accounts and public
+                      links, editing a page together in real time, PDF and
+                      Word export and space export, full text search inside
+                      attachments, page templates, groups and space
+                      permissions, audit trail, single sign-on via OIDC, and
+                      LDAP and Active Directory sign-in.
 
                       Everything else -- the editor, nested pages, spaces,
                       tags, favourites, trash, full text search over pages,
-                      backlinks, the knowledge graph, accounts and roles -- may
-                      be used in production without a license key and without
-                      any payment.
+                      backlinks, the knowledge graph, accounts and roles,
+                      version history, attachments, comments, and concurrent
+                      edit detection -- may be used in production without a
+                      license key and without any payment.
 
                       Reading, modifying, building and testing the whole
                       Licensed Work is always permitted, including commercial

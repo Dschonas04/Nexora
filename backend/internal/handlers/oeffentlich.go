@@ -71,13 +71,13 @@ func (s *Server) OeffentlicheDatei(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	// Ueber anhangKopf und nicht von Hand: der Typ ist die Behauptung dessen,
-	// der die Datei hochgeladen hat. Unveraendert und "inline" ausgeliefert
-	// waere eine HTML- oder SVG-Datei ein Dokument auf dem Ursprung dieser
-	// Instanz -- und hier reichte dafuer ein Fremder mit dem Verweis.
+	// Through anhangKopf and not by hand: the type is a claim made by whoever
+	// uploaded the file. Served unchanged and "inline", an HTML or SVG file
+	// would be a document on this instance's own origin -- and here a stranger
+	// with the link would be enough for that.
 	anhangKopf(w, mime, filename)
-	// Kein Suchmaschinenfutter: eine geteilte Seite ist nicht veroeffentlicht,
-	// sie ist weitergegeben.
+	// No food for search engines: a shared page is not published, it is passed
+	// on.
 	w.Header().Set("X-Robots-Tag", "noindex")
 	io.Copy(w, f)
 }

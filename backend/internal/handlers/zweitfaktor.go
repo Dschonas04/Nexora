@@ -1,10 +1,10 @@
-// Der zweite Faktor: Einrichten, Abschalten und der zweite Schritt an der
-// Anmeldung.
+// The second factor: setting it up, switching it off, and the second step at
+// sign-in.
 //
-// Das Verfahren selbst steht in auth/zweitfaktor.go. Hier steht, wann was in
-// der Datenbank passiert, und die eine Regel, um die es dabei geht: zwischen
-// Passwort und Code entsteht keine Sitzung. Wer nur das Passwort hat, bekommt
-// ein Ticket, das fünf Minuten gilt und nichts öffnet.
+// The scheme itself lives in auth/zweitfaktor.go. What lives here is when
+// which row changes, and the one rule it all turns on: no session comes into
+// being between password and code. Whoever holds only the password gets a
+// ticket that is good for five minutes and opens nothing.
 package handlers
 
 import (
@@ -22,24 +22,24 @@ import (
 	"nexora/internal/models"
 )
 
-// ErsatzcodeAnzahl ist die Länge der Liste, die beim Einschalten entsteht. Zehn
-// ist genug für die Fälle, für die sie da ist, und wenig genug, dass man sie
-// abschreibt statt sie in eine Datei zu legen.
+// ErsatzcodeAnzahl is the length of the list created when switching on. Ten is
+// enough for the cases it exists for, and few enough that one writes them out
+// by hand instead of dropping them into a file.
 const ErsatzcodeAnzahl = 10
 
 type zweitStand struct {
 	Aktiv bool `json:"aktiv"`
-	// Seit steht als Text und nicht als Zeit, weil die Oberfläche nur ein Datum
-	// zeigt und ein leeres Feld sonst als 1. Januar Jahr eins erschiene.
+	// Seit is a string and not a time because the interface only shows a date,
+	// and an empty field would otherwise appear as 1 January of year one.
 	Seit string `json:"seit,omitempty"`
-	// Offen ist die Zahl der Ersatzcodes, die noch nicht verbraucht sind. Sie
-	// steht in der Oberfläche, damit niemand erst merkt, dass keiner mehr da
-	// ist, wenn er einen braucht.
+	// Offen is the number of recovery codes not yet spent. It shows in the
+	// interface so that nobody first notices none are left at the moment they
+	// need one.
 	Offen   int  `json:"offen"`
 	Pflicht bool `json:"pflicht"`
 }
 
-// zweitfaktorAktiv sagt, ob ein Konto den zweiten Schritt verlangt.
+// zweitfaktorAktiv says whether an account demands the second step.
 func (s *Server) zweitfaktorAktiv(ctx context.Context, userID string) bool {
 	var geheim string
 	var seit *time.Time
@@ -58,8 +58,9 @@ func (s *Server) offeneErsatzcodes(ctx context.Context, userID string) int {
 	return n
 }
 
-// ZweitfaktorStand beantwortet die Frage, die die Einstellungsseite beim Öffnen
-// stellt: steht der zweite Faktor, seit wann, wie viele Ersatzcodes sind übrig.
+// ZweitfaktorStand answers the question the settings page asks when it opens:
+// is the second factor in place, since when, and how many recovery codes are
+// left.
 func (s *Server) ZweitfaktorStand(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var geheim string
@@ -80,18 +81,18 @@ func (s *Server) ZweitfaktorStand(w http.ResponseWriter, r *http.Request) {
 type zweitStartAntwort struct {
 	Geheim string `json:"geheim"`
 	URI    string `json:"uri"`
-	// QR ist ein fertiges SVG. Der Server zeichnet es, weil das Frontend sonst
-	// eine Bibliothek für einen einzigen Bildschirm mitschleppen müsste, und als
-	// SVG statt als PNG, weil es dann in jeder Größe scharf bleibt.
+	// QR is a finished SVG. The server draws it because the frontend would
+	// otherwise have to carry a library around for a single screen, and as SVG
+	// rather than PNG because it then stays sharp at any size.
 	QR string `json:"qr"`
 }
 
-// ZweitfaktorStart legt ein Geheimnis an und gibt es zusammen mit dem QR-Code
-// zurück. Gültig wird es erst durch ZweitfaktorAn.
+// ZweitfaktorStart creates a secret and returns it together with the QR code.
+// It only becomes valid through ZweitfaktorAn.
 //
-// Ein bereits eingeschalteter zweiter Faktor wird dabei nicht angerührt: wer ihn
-// erneuern will, schaltet ihn erst ab. Sonst genügte eine übernommene Sitzung,
-// um das Geheimnis eines fremden Kontos auf das eigene Telefon zu holen.
+// A second factor already switched on is not touched: whoever wants to renew it
+// switches it off first. Otherwise a hijacked session would be enough to pull
+// another account's secret onto one's own phone.
 func (s *Server) ZweitfaktorStart(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if s.zweitfaktorAktiv(r.Context(), uid) {
@@ -122,9 +123,8 @@ func (s *Server) ZweitfaktorStart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uri := auth.OtpauthURI(ZweitfaktorAussteller(), email, geheim)
-	// Fehlerkorrektur auf mittlerer Stufe: der Code wird von einem Bildschirm
-	// abfotografiert, nicht von bedrucktem Papier, und bleibt so klein genug,
-	// um ohne Zoom lesbar zu sein.
+	// Medium error correction: the code is photographed off a screen, not off
+	// printed paper, and thus stays small enough to be read without zooming.
 	q, err := qrcode.New(uri, qrcode.Medium)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "QR-Code konnte nicht gezeichnet werden")
@@ -133,9 +133,9 @@ func (s *Server) ZweitfaktorStart(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, zweitStartAntwort{Geheim: geheim, URI: uri, QR: qrSVG(q)})
 }
 
-// qrSVG zeichnet die Matrix als SVG: ein Pfad aus lauter Quadraten auf weißem
-// Grund. Ein QR-Code muss dunkel auf hell bleiben, auch im dunklen Grundton --
-// deshalb steht die weiße Fläche fest und kommt nicht aus den Farbmarken.
+// qrSVG draws the matrix as SVG: one path made of squares on a white ground. A
+// QR code has to stay dark on light, even in the dark base tone -- which is why
+// the white area is fixed and does not come from the colour tokens.
 func qrSVG(q *qrcode.QRCode) string {
 	m := q.Bitmap()
 	n := len(m)
@@ -178,9 +178,9 @@ type zweitCodeReq struct {
 	Code string `json:"code"`
 }
 
-// ZweitfaktorAn schaltet ein, was ZweitfaktorStart vorbereitet hat, und gibt die
-// Ersatzcodes zurück. Sie stehen genau einmal in einer Antwort und danach nie
-// wieder -- in der Datenbank liegen nur ihre Hashes.
+// ZweitfaktorAn switches on what ZweitfaktorStart prepared and returns the
+// recovery codes. They appear in exactly one response and never again -- only
+// their hashes sit in the database.
 func (s *Server) ZweitfaktorAn(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var req zweitCodeReq
@@ -228,9 +228,9 @@ type zweitAusReq struct {
 	Passwort string `json:"passwort"`
 }
 
-// ZweitfaktorAus schaltet ab, gegen das eigene Passwort. Ohne diese Rückfrage
-// genügte ein unbeaufsichtigter Bildschirm, um den zweiten Faktor zu entfernen
-// -- und damit genau das, wogegen er steht.
+// ZweitfaktorAus switches off, against one's own password. Without that
+// question an unattended screen would be enough to remove the second factor --
+// and thus exactly what it stands against.
 func (s *Server) ZweitfaktorAus(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var req zweitAusReq
@@ -238,9 +238,9 @@ func (s *Server) ZweitfaktorAus(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "invalid body")
 		return
 	}
-	// Die Pflicht steht vor der Passwortpruefung: sie kostet nichts, und bcrypt
-	// mit Kostenfaktor 12 fuer eine Antwort zu rechnen, die ohnehin 403 lautet,
-	// waere verschenkte Zeit.
+	// The mandatory check comes before the password check: it costs nothing,
+	// and computing bcrypt at cost 12 for an answer that reads 403 anyway would
+	// be time thrown away.
 	if ZweitfaktorPflicht() && !s.isAdmin(r.Context(), uid) {
 		writeErr(w, http.StatusForbidden, "Der zweite Faktor ist für diese Instanz vorgeschrieben.")
 		return
@@ -257,9 +257,9 @@ func (s *Server) ZweitfaktorAus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-// ZweitfaktorCodesNeu ersetzt die Ersatzcodes. Die alten gelten danach nicht
-// mehr, auch die unbenutzten -- eine Liste, von der man nicht weiß, wer sie
-// gesehen hat, ist der Grund, hier zu sein.
+// ZweitfaktorCodesNeu replaces the recovery codes. The old ones stop working,
+// unused ones included -- a list you do not know who has seen is the very
+// reason for being here.
 func (s *Server) ZweitfaktorCodesNeu(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	var req zweitAusReq
@@ -284,10 +284,10 @@ func (s *Server) ZweitfaktorCodesNeu(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ersatzcodes": codes})
 }
 
-// ZweitfaktorZuruecksetzen ist der Weg der Verwaltung für den Fall, den es
-// wirklich gibt: das Telefon ist weg und die Ersatzcodes liegen darauf. Das
-// Konto meldet sich danach wieder allein mit dem Passwort an und muss den
-// zweiten Faktor neu einrichten.
+// ZweitfaktorZuruecksetzen is the administrator's route for the case that
+// really happens: the phone is gone and the recovery codes were on it. The
+// account then signs in with the password alone again and has to set the second
+// factor up anew.
 func (s *Server) ZweitfaktorZuruecksetzen(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 	if !s.isAdmin(r.Context(), uid) {
@@ -309,18 +309,18 @@ func (s *Server) ZweitfaktorZuruecksetzen(w http.ResponseWriter, r *http.Request
 }
 
 // ---------------------------------------------------------------------------
-// Die Bremse am zweiten Schritt
+// The brake on the second step
 //
-// Ein Code hat sechs Stellen, und drei Fenster gelten gleichzeitig -- das sind
-// drei Treffer in einer Million je Versuch. Ohne Bremse braeuchte jemand mit
-// einem gueltigen Ticket und einer schnellen Leitung dafuer keine Nacht. Nach
-// acht Fehlversuchen ist das Konto fuer den zweiten Schritt zehn Minuten dicht;
-// der erste Schritt bleibt davon unberuehrt, sonst waere die Bremse ein Mittel,
-// fremde Konten auszusperren.
+// A code has six digits, and three windows are valid at once -- that is three
+// hits in a million per attempt. Without a brake, somebody holding a valid
+// ticket and a fast line would not need a whole night for it. After eight
+// failures the account is shut out of the second step for ten minutes; the
+// first step stays untouched by that, otherwise the brake would be a means of
+// locking other people out.
 //
-// Im Arbeitsspeicher und nicht in der Datenbank: die Sperre soll einen Angriff
-// ausbremsen, nicht ihn ueberdauern, und ein Neustart des Dienstes ist ohnehin
-// die groessere Unterbrechung.
+// In memory and not in the database: the lock is meant to slow an attack down,
+// not to outlive it, and a restart of the service is the greater interruption
+// anyway.
 const (
 	zweitVersucheMax = 8
 	zweitSperrdauer  = 10 * time.Minute
@@ -336,8 +336,8 @@ type zweitZaehler struct {
 	bis    time.Time
 }
 
-// zweitGesperrt sagt, ob das Konto gerade nicht drankommt, und raeumt dabei
-// abgelaufene Eintraege weg.
+// zweitGesperrt says whether the account is currently shut out, and clears
+// expired entries while it is there.
 func zweitGesperrt(userID string) bool {
 	zweitBremse.Lock()
 	defer zweitBremse.Unlock()
@@ -375,12 +375,12 @@ type zweitPruefReq struct {
 	Code   string `json:"code"`
 }
 
-// ZweitfaktorPruefen ist der zweite Schritt der Anmeldung. Er steht öffentlich,
-// denn an dieser Stelle gibt es noch keine Sitzung; ausgewiesen wird sich mit
-// dem Ticket aus dem ersten Schritt.
+// ZweitfaktorPruefen is the second step of signing in. It is public, because
+// at this point no session exists yet; the caller identifies itself with the
+// ticket from the first step.
 //
-// Angenommen wird der laufende Code aus der App oder einer der Ersatzcodes. Ein
-// verbrauchter Ersatzcode gilt danach nicht mehr.
+// Accepted is the current code from the app or one of the recovery codes. A
+// spent recovery code stops working.
 func (s *Server) ZweitfaktorPruefen(w http.ResponseWriter, r *http.Request) {
 	var req zweitPruefReq
 	if err := decode(r, &req); err != nil {
@@ -408,9 +408,9 @@ func (s *Server) ZweitfaktorPruefen(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusUnauthorized, "unbekanntes Konto")
 		return
 	}
-	// Zwischen den beiden Schritten kann die Verwaltung den zweiten Faktor
-	// zurückgesetzt haben. Dann ist das Passwort bereits geprüft und der Weg
-	// steht offen -- eine Fehlermeldung wäre hier nur eine Sackgasse.
+	// Between the two steps an administrator may have reset the second factor.
+	// The password has already been checked by then and the way is open -- an
+	// error message here would only be a dead end.
 	if abgelegt == "" || seit == nil {
 		s.issueSession(w, r, u.ID)
 		s.anmeldeSpur(r, WegPasswort, u.Email, "", &u)
@@ -439,8 +439,8 @@ func (s *Server) ZweitfaktorPruefen(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, u)
 }
 
-// ersatzcodesNeu wirft die alte Liste weg und legt eine neue an. Zurück kommen
-// die Codes im Klartext -- das einzige Mal, dass es sie so gibt.
+// ersatzcodesNeu throws the old list away and creates a new one. What comes
+// back are the codes in the clear -- the only time they exist that way.
 func (s *Server) ersatzcodesNeu(ctx context.Context, userID string) ([]string, error) {
 	if _, err := s.Pool.Exec(ctx, `DELETE FROM zweitfaktor_codes WHERE user_id=$1`, userID); err != nil {
 		return nil, err
@@ -464,9 +464,9 @@ func (s *Server) ersatzcodesNeu(ctx context.Context, userID string) ([]string, e
 	return codes, nil
 }
 
-// ersatzcodeVerbrauchen prüft die Eingabe gegen die offenen Codes und streicht
-// den, der passt. Verglichen wird gegen jeden einzeln, weil bcrypt-Hashes sich
-// nicht nachschlagen lassen -- bei zehn Zeilen ist das kein Preis.
+// ersatzcodeVerbrauchen checks the input against the open codes and strikes
+// out the one that matches. It compares against each of them in turn because
+// bcrypt hashes cannot be looked up -- with ten rows that is no price at all.
 func (s *Server) ersatzcodeVerbrauchen(ctx context.Context, userID, eingabe string) bool {
 	eingabe = strings.ToLower(strings.TrimSpace(eingabe))
 	if eingabe == "" {
@@ -489,8 +489,8 @@ func (s *Server) ersatzcodeVerbrauchen(ctx context.Context, userID, eingabe stri
 
 	for _, e := range offen {
 		if auth.CheckPassword(e.hash, eingabe) {
-			// Nur streichen, wenn die Zeile noch offen ist: zwei gleichzeitige
-			// Anmeldungen mit demselben Code sollen nicht beide durchkommen.
+			// Only strike it out while the row is still open: two simultaneous
+			// sign-ins with the same code must not both get through.
 			tag, err := s.Pool.Exec(ctx,
 				`UPDATE zweitfaktor_codes SET benutzt_am=now() WHERE id=$1 AND benutzt_am IS NULL`, e.id)
 			return err == nil && tag.RowsAffected() == 1

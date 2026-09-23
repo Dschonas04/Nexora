@@ -2,9 +2,9 @@ package handlers
 
 import "testing"
 
-// Der Anhang muss als PDF erkannt werden, auch wenn der Browser beim Hochladen
-// keinen brauchbaren Typ mitgeschickt hat -- aus einer Einfuhr traegt manche
-// Datei nur application/octet-stream.
+// The attachment has to be recognised as a PDF even when the browser sent no
+// usable type along on upload -- out of an import some files carry no more than
+// application/octet-stream.
 func TestPDFWirdErkannt(t *testing.T) {
 	faelle := []struct {
 		mime, name string
@@ -16,7 +16,8 @@ func TestPDFWirdErkannt(t *testing.T) {
 		{"application/octet-stream", "vertrag.docx", false},
 		{"image/png", "bild.png", false},
 		{"", "", false},
-		// Kein PDF, nur ein Name, der so tut: die Endung steht mitten drin.
+		// No PDF, only a name pretending to be one: the extension sits in the
+		// middle.
 		{"text/plain", "vertrag.pdf.txt", false},
 	}
 	for _, f := range faelle {

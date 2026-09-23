@@ -189,7 +189,7 @@ func TestWordBettetDasBildEin(t *testing.T) {
 
 // This is the strongest test available without Word itself: the file must be
 // constructed so that a reader that follows relationships and drawing truly
-// finds the image — not merely that the parts are present.
+// finds the image, not merely that the parts are present.
 func TestWordRundlaufFindetDasBild(t *testing.T) {
 	roh, err := Word(dokumentMitBild(t))
 	if err != nil {

@@ -1,0 +1,45 @@
+manifestVersion: 1
+id: nexora
+name: Nexora
+tagline: Self-hosted wiki with backlinks and a knowledge graph
+category: files
+version: "2.1.0"
+port: 3000
+description: >-
+  A small self-hosted knowledge base: think Notion or Outline, but small and
+  yours.
+
+
+  Nested pages in a block editor, spaces with per-user roles, wiki links that
+  produce backlinks on the other side, a knowledge graph over the whole
+  instance, version history, comments, attachments on local disk or in any
+  S3-compatible bucket, a self-emptying trash, PostgreSQL full text search,
+  public share links, and import from Obsidian, Notion and Confluence exports.
+  Version history, attachments, comments and conflict detection need no licence
+  key; Markdown import and export are free and stay free.
+
+
+  A Go service, a React interface, PostgreSQL. What it does not do: real-time
+  editing in one page (a save that would overwrite somebody is refused instead),
+  Notion-style databases, plugins or AI.
+
+
+  The first account that registers becomes the administrator, so open it once
+  yourself right after installing.
+releaseNotes: >-
+  First published release. Images for amd64 and arm64, a one-file stack, and a
+  comparison against the alternatives. See
+  https://github.com/Dschonas04/Nexora/blob/main/CHANGELOG.md
+developer: Dschonas04
+website: https://dschonas04.github.io/Nexora/
+submitter: Dschonas04
+submission: https://github.com/Dschonas04/Nexora
+repo: https://github.com/Dschonas04/Nexora
+support: https://github.com/Dschonas04/Nexora/issues
+gallery:
+  - 1.png
+  - 2.png
+  - 3.png
+path: ""
+defaultUsername: ""
+defaultPassword: ""

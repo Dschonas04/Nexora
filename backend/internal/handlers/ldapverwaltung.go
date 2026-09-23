@@ -66,7 +66,7 @@ type ldapTestReq struct {
 	Passwort string `json:"passwort"`
 }
 
-// LDAPTesten fragt das Verzeichnis nach einem Konto.
+// LDAPTesten asks the directory about an account.
 //
 // Without a password only a lookup is performed. This is the typical case:
 // an administrator tests the setup against an external account and does not

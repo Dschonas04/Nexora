@@ -90,8 +90,8 @@ func TestVerzeichnisZeigtDenBaum(t *testing.T) {
 	if !strings.Contains(got, "- [Mutter](<Mutter.md>)\n  - [Kind](<Kind.md>)") {
 		t.Fatalf("Baum nicht eingerückt:\n%s", got)
 	}
-	// Die Mutter der Waise liegt ausserhalb dieser Ausgabe. Sie steht trotzdem
-	// da, nur eben oben: fehlen darf sie nicht.
+	// The orphan's parent lies outside this output. It appears all the same,
+	// only at the top: missing it may not be.
 	if !strings.Contains(got, "- [Waise](<Waise.md>)") {
 		t.Fatalf("Seite ohne ausgegebene Mutter fehlt:\n%s", got)
 	}

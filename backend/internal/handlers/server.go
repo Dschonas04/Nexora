@@ -42,6 +42,9 @@ type Server struct {
 	// `Puls` counts requests in the last minute. It may be nil; then the
 	// system view reports no live values and nothing changes.
 	Puls *puls.Messer
+	// Mail sends inbox messages by e-mail as well. nil without an SMTP server;
+	// then nothing is sent and the setting cannot be switched on.
+	Mail Mailer
 }
 
 // writeJSON sends `v` as JSON. An encoding error is intentionally ignored:

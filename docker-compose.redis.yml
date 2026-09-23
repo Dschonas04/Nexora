@@ -27,8 +27,8 @@ services:
       - ${REDIS_SPEICHER:-128mb}
       - --maxmemory-policy
       - allkeys-lru
-      # Verschlüsselt und NUR verschlüsselt: --port 0 schließt die offene Tür.
-      # Hier liegen Sitzungskennungen, und wer eine mitliest, ist angemeldet.
+      # Encrypted and ONLY encrypted: --port 0 shuts the open door. Session ids
+      # lie here, and whoever reads one along is signed in.
       - --port
       - "0"
       - --tls-port
@@ -39,9 +39,9 @@ services:
       - /pki/redis/redis.key
       - --tls-ca-cert-file
       - /pki/ca.crt
-      # Der Dienst weist sich mit Passwort aus und nicht mit einem Zertifikat.
-      # Ein zweites Zertifikat je Anwender wäre mehr Verwaltung, als diese
-      # Leitung wert ist.
+      # The service identifies itself with a password and not with a
+      # certificate. A second certificate per client would be more
+      # administration than this wire is worth.
       - --tls-auth-clients
       - "no"
     depends_on:
@@ -50,8 +50,8 @@ services:
     volumes:
       - nexora_pki:/pki:ro
     healthcheck:
-      # Auch die Probe muss jetzt verschlüsselt fragen, sonst meldet sie den
-      # Dienst für tot, während er läuft.
+      # The probe has to ask encrypted now too, otherwise it reports the
+      # service dead while it is running.
       test: ["CMD", "redis-cli", "--tls", "--cacert", "/pki/ca.crt", "-h", "redis", "ping"]
       interval: 10s
       timeout: 3s

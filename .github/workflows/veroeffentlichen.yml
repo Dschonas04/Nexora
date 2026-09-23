@@ -1,0 +1,114 @@
+# Build the images and publish them, so that installing does not mean building.
+#
+# Runs on GitHub's own runners, NOT on the self hosted one: the only thing this
+# needs is a Docker daemon and the registry, and the self hosted runner has no
+# Docker socket on purpose (see pruefen.yml). The images go to the GitHub
+# registry of this repository, which needs no account of its own.
+#
+# Docker Hub kommt dazu, sobald die beiden Secrets DOCKERHUB_USERNAME und
+# DOCKERHUB_TOKEN gesetzt sind; ohne sie laeuft alles wie bisher, nur nach
+# ghcr.io. So bricht der Lauf nicht, solange das Konto noch fehlt.
+#
+# A tag v1.2.3 publishes 1.2.3, 1.2 and latest. The manual run publishes
+# whatever main currently is as "edge" -- a moving image nobody has to install,
+# but which can be tried without waiting for a release.
+name: Abbilder veröffentlichen
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: veroeffentlichen-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  abbilder:
+    name: ${{ matrix.dienst }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        dienst: [backend, frontend, pki]
+
+    steps:
+      - name: Quellen holen
+        uses: actions/checkout@v4
+
+      # Die Registrierung nimmt nur Kleinbuchstaben, der Kontoname hat aber
+      # grosse: Dschonas04. Deshalb einmal umschreiben, statt ihn dreimal fest
+      # einzutippen.
+      - name: Eigner klein schreiben
+        env:
+          EIGNER_ROH: ${{ github.repository_owner }}
+        run: echo "EIGNER=${EIGNER_ROH,,}" >> "$GITHUB_ENV"
+
+      # Zwei Architekturen: amd64 fuer die Server, arm64 fuer die Raspberry Pis
+      # und die Macs. Ohne QEMU baut der Laeufer nur seine eigene.
+      - name: QEMU einrichten
+        uses: docker/setup-qemu-action@v3
+
+      - name: Buildx einrichten
+        uses: docker/setup-buildx-action@v3
+
+      - name: An der Registrierung anmelden
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: An Docker Hub anmelden
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      # Die Liste der Ziele: ghcr immer, Docker Hub nur mit Zugangsdaten.
+      - name: Ziele bestimmen
+        id: ziele
+        run: |
+          {
+            echo "liste<<ENDE"
+            echo "ghcr.io/${EIGNER}/nexora-${DIENST}"
+            if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+              echo "docker.io/${DOCKERHUB_USERNAME,,}/nexora-${DIENST}"
+            fi
+            echo "ENDE"
+          } >> "$GITHUB_OUTPUT"
+        env:
+          DIENST: ${{ matrix.dienst }}
+
+      - name: Namen und Marken bestimmen
+        id: marken
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.ziele.outputs.liste }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+            type=raw,value=edge,enable=${{ github.event_name == 'workflow_dispatch' }}
+
+      - name: Bauen und schieben
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.dienst }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.marken.outputs.tags }}
+          labels: ${{ steps.marken.outputs.labels }}
+          # Der Zwischenspeicher liegt in derselben Registrierung: ein Release
+          # baut sonst jedes Mal die ganze Abhaengigkeitskette neu.
+          cache-from: type=registry,ref=ghcr.io/${{ env.EIGNER }}/nexora-${{ matrix.dienst }}:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ env.EIGNER }}/nexora-${{ matrix.dienst }}:buildcache,mode=max

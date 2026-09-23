@@ -29,14 +29,14 @@ func (s *Server) seiteAlsDokument(r *http.Request, id string) (dok.Dokument, boo
 		`SELECT title, content FROM pages WHERE id=$1`, id).Scan(&titel, &inhalt); err != nil {
 		return dok.Dokument{}, false
 	}
-	// Mit den Bildern: ein PDF, das die Bilder der Seite weglaesst, ist eine
-	// Inhaltsangabe der Seite und nicht ihr Abbild.
+	// With the pictures: a PDF that leaves out the page's images is a summary of
+	// the page and not a likeness of it.
 	return dok.AusInhaltMitBildern(json.RawMessage(inhalt), titel, s.bildquelle(r.Context(), uid)), true
 }
 
 // `dateiKopf` sets the type and the file name. Two entries on purpose:
 // `filename` for clients that understand only ASCII, `filename*` per RFC
-// 5987 for others — so that "Overview" remains an Overview.
+// 5987 for others, so that "Overview" remains an Overview.
 func dateiKopf(w http.ResponseWriter, typ, name, endung string) {
 	w.Header().Set("Content-Type", typ)
 	w.Header().Set("Content-Disposition",

@@ -6,12 +6,12 @@
 // the background on the side.
 //
 // Here the same question stands in the application's window: with a title, an
-// explanation and a button that names what it does ("Löschen") instead of "OK".
+// explanation and a button that names what it does ("Delete") instead of "OK".
 //
 // It is used like confirm, only with await:
 //
 //     const frage = useRueckfrage();
-//     if (!(await frage({ text: "Wirklich?", bestaetigen: "Löschen" }))) return;
+//     if (!(await frage({ text: "Really?", bestaetigen: "Delete" }))) return;
 //
 // The promise is only resolved once somebody has answered.
 import { ReactNode, createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -159,7 +159,7 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-header">
-              <h3>{offen.titel ?? "Bitte bestätigen"}</h3>
+              <h3>{offen.titel ?? "Please confirm"}</h3>
             </div>
             <div className="modal-section">
               {offen.text && <p className="rueckfrage-text">{offen.text}</p>}
@@ -179,7 +179,7 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
             </div>
             <div className="rueckfrage-knoepfe">
               <button className="btn" onClick={() => schliessen(false)}>
-                {offen.abbrechen ?? "Abbrechen"}
+                {offen.abbrechen ?? "Cancel"}
               </button>
               <button
                 ref={jaRef}
@@ -187,7 +187,7 @@ export function RueckfrageProvider({ children }: { children: ReactNode }) {
                 disabled={offen.mitFeld && ausFeld(wert) === ""}
                 onClick={() => schliessen(true, ausFeld(wert))}
               >
-                {offen.bestaetigen ?? "Fortfahren"}
+                {offen.bestaetigen ?? "Continue"}
               </button>
             </div>
           </div>

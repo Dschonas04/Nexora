@@ -19,16 +19,16 @@ export default function GruppenView() {
   const { frei, geladen } = useLizenz();
 
   const [gruppen, setGruppen] = useState<Gruppe[]>([]);
-  // Die Gruppe, deren Mitglieder gerade im Fenster stehen. Vorher klappte die
-  // Liste unter der Zeile auf und schob die Tabelle auseinander; bei acht
-  // Gruppen und vierzig Konten war von der Tabelle danach nichts mehr zu sehen.
+  // The group whose members are currently in the dialog. Before, the list
+  // opened under the row and pushed the table apart; with eight groups and
+  // forty accounts nothing of the table was left to be seen afterwards.
   const [offen, setOffen] = useState<Gruppe | null>(null);
   const [mitglieder, setMitglieder] = useState<Mitglied[]>([]);
   const [anlegenOffen, setAnlegenOffen] = useState(false);
   const [name, setName] = useState("");
   const [beschreibung, setBeschreibung] = useState("");
   const [suche, setSuche] = useState("");
-  // Der Filter über der Gruppenliste selbst, nicht über den Mitgliedern.
+  // The filter above the group list itself, not above the members.
   const [filter, setFilter] = useState("");
   const [meldung, setMeldung] = useState<{ text: string; art: "ok" | "fehler" } | null>(null);
 
@@ -67,11 +67,11 @@ export default function GruppenView() {
     // too, which may hit people who are working right now.
     if (
       !(await frage({
-        titel: "Gruppe löschen",
+        titel: "Delete group",
         text:
-          `Die Gruppe „${g.name}“ wird gelöscht. Alle über sie vergebenen Rechte an Ablagen ` +
-          `entfallen damit; die Konten selbst bleiben.`,
-        bestaetigen: "Gruppe löschen",
+          `The group \u201c${g.name}\u201d is deleted. Every permission on spaces granted ` +
+          `through it goes with it; the accounts themselves remain.`,
+        bestaetigen: "Delete group",
         gefaehrlich: true,
       }))
     )
@@ -92,18 +92,18 @@ export default function GruppenView() {
   if (user?.role !== "admin") {
     return (
       <>
-        <h3>Gruppen</h3>
-        <p className="muted small">Dieser Bereich ist Administratoren vorbehalten.</p>
+        <h3>Groups</h3>
+        <p className="muted small">This area is for administrators only.</p>
       </>
     );
   }
   if (!frei("gruppen")) {
     return (
       <>
-        <h3>Gruppen</h3>
+        <h3>Groups</h3>
         <p className="muted small">
-          Diese Funktion gehört zum Zusatzumfang und ist in der vorliegenden Lizenz nicht
-          enthalten.
+          This feature belongs to the paid scope and is not included in the licence
+          currently installed.
         </p>
       </>
     );
@@ -124,35 +124,35 @@ export default function GruppenView() {
   return (
     <div className="gruppenliste">
       <Listenkopf
-        titel="Gruppen"
-        zahl={`${gruppen.length} ${gruppen.length === 1 ? "Gruppe" : "Gruppen"}`}
+        titel="Groups"
+        zahl={`${gruppen.length} ${gruppen.length === 1 ? "group" : "groups"}`}
         filter={filter}
         setFilter={setFilter}
-        platzhalter="Filtern nach Name"
+        platzhalter="Filter by name"
       >
         <button className="btn btn-primary" onClick={() => setAnlegenOffen(true)}>
-          Gruppe anlegen
+          Create group
         </button>
       </Listenkopf>
       <p className="muted small">
-        Eine Gruppe bündelt Konten. Zugriff bekommt sie nicht hier, sondern an der Ablage
-        selbst, über das Schlüsselsymbol neben ihrem Namen in der Seitenleiste.
+        A group bundles accounts. It gets access not here but on the space itself, through
+        the key icon next to its name in the sidebar.
       </p>
 
       {meldung && (
         <div className={meldung.art === "ok" ? "hinweis-ok" : "fehler"}>{meldung.text}</div>
       )}
 
-      {/* Als Tabelle, wie die Konten daneben. Jede Gruppe traegt dieselben drei
-          Angaben, und untereinander in Spalten sind sie zu vergleichen; als
-          Bloecke fing jede woanders an. */}
+      {/* As a table, like the accounts beside it. Every group carries the same
+          three figures, and one below the other in columns they can be
+          compared; as blocks each began somewhere else. */}
       <div className="tabelle-rollen">
         <table className="tabelle gruppen-tabelle">
           <thead>
             <tr>
               <th>Name</th>
-              <th>Beschreibung</th>
-              <th>Mitglieder</th>
+              <th>Description</th>
+              <th>Members</th>
               <th />
             </tr>
           </thead>
@@ -164,15 +164,15 @@ export default function GruppenView() {
               <tr key={g.id}>
                 <td>{g.name}</td>
                 <td className="muted">
-                  {g.beschreibung || <span className="muted">ohne Beschreibung</span>}
+                  {g.beschreibung || <span className="muted">no description</span>}
                 </td>
                 <td className="zahl">{g.mitglieder}</td>
                 <td className="zeilen-aktionen">
                   <button className="btn-schlicht" onClick={() => oeffnen(g)}>
-                    Mitglieder
+                    Members
                   </button>
                   <button className="btn-schlicht gefaehrlich" onClick={() => loeschen(g)}>
-                    Löschen
+                    Delete
                   </button>
                 </td>
               </tr>
@@ -182,8 +182,8 @@ export default function GruppenView() {
               <tr>
                 <td colSpan={4} className="muted">
                   {gruppen.length === 0
-                    ? "Noch keine Gruppe angelegt."
-                    : "Keine Gruppe passt auf den Filter."}
+                    ? "No group created yet."
+                    : "No group matches the filter."}
                 </td>
               </tr>
             )}
@@ -193,16 +193,16 @@ export default function GruppenView() {
 
       {anlegenOffen && (
         <Fenster
-          titel="Neue Gruppe"
-          unter="Rechte bekommt sie später, an der Ablage"
+          titel="New group"
+          unter="It gets permissions later, on the space"
           schliessen={() => setAnlegenOffen(false)}
           fuss={
             <>
               <button className="btn" onClick={() => setAnlegenOffen(false)}>
-                Abbrechen
+                Cancel
               </button>
               <button className="btn btn-primary" disabled={!name.trim()} onClick={anlegen}>
-                Anlegen
+                Create
               </button>
             </>
           }
@@ -218,10 +218,10 @@ export default function GruppenView() {
               />
             </label>
             <label>
-              <span>Beschreibung</span>
+              <span>Description</span>
               <input
                 value={beschreibung}
-                placeholder="wofür sie steht"
+                placeholder="what it stands for"
                 onChange={(e) => setBeschreibung(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && anlegen()}
               />
@@ -231,10 +231,10 @@ export default function GruppenView() {
       )}
 
       {offen && (
-        // Die Mitglieder im Fenster und nicht aufgeklappt unter der Zeile: die
-        // Liste ist so lang wie die Belegschaft, und aufgeklappt schob sie
-        // alles darunter aus dem Bild. Ein Haken wirkt sofort -- es gibt hier
-        // nichts zu speichern und deshalb auch keinen Knopf dafür.
+        // The members in the dialog and not expanded under the row: the
+        // list is as long as the workforce, and expanded it pushed everything
+        // below it out of the picture. A tick takes effect at once -- there is
+        // nothing to save here and therefore no button for it either.
         <Fenster
           titel={offen.name}
           unter={`${mitglieder.filter((m) => m.drin).length} von ${mitglieder.length} Konten in der Gruppe`}
@@ -243,14 +243,14 @@ export default function GruppenView() {
             <>
               <span className="fuss-luecke" />
               <button className="btn btn-primary" onClick={() => setOffen(null)}>
-                Fertig
+                Done
               </button>
             </>
           }
         >
           <input
             className="listenfilter"
-            placeholder="Konto suchen…"
+            placeholder="Find an account…"
             value={suche}
             onChange={(e) => setSuche(e.target.value)}
           />
@@ -263,7 +263,7 @@ export default function GruppenView() {
                 {m.rolle === "admin" && <span className="muted small">Administrator</span>}
               </label>
             ))}
-            {sichtbar.length === 0 && <div className="muted small">Kein Treffer.</div>}
+            {sichtbar.length === 0 && <div className="muted small">No match.</div>}
           </div>
         </Fenster>
       )}

@@ -7,21 +7,20 @@ interface AuthCtx {
   user: User | null;
   loading: boolean;
   /**
-   * Anmelden. Zurück kommt entweder das Konto -- dann steht die Sitzung und der
-   * Zustand hier ist gesetzt -- oder die Aufforderung zum zweiten Schritt. Die
-   * Entscheidung liegt beim Server; die Anmeldeseite liest sie hier ab, statt
-   * sie selbst zu treffen.
+   * Signing in. Back comes either the account -- then the session is up and the
+   * state here is set -- or the prompt for the second step. The decision lies
+   * with the server; the sign-in page reads it off here instead of making it
+   * itself.
    */
   login: (kennung: string, password: string) => Promise<Anmeldung>;
-  /** Der zweite Schritt: Code aus der App oder ein Ersatzcode. */
+  /** The second step: code from the app or a recovery code. */
   zweiterSchritt: (ticket: string, code: string) => Promise<void>;
   register: (email: string, name: string, password: string, benutzername?: string) => Promise<void>;
   logout: () => Promise<void>;
   /**
-   * Das Konto noch einmal lesen. Gebraucht, nachdem jemand am eigenen Profil
-   * etwas geändert hat: Name und Bild stehen an mehreren Stellen der
-   * Oberfläche, und die sollen es sofort zeigen und nicht erst nach einem
-   * Neuladen.
+   * Read the account once more. Needed after somebody has changed something on
+   * their own profile: name and picture stand in several places of the
+   * interface, and those should show it at once and not only after a reload.
    */
   neuLaden: () => Promise<void>;
 }
@@ -46,9 +45,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (kennung: string, password: string) => {
     const antwort = await api.login(kennung, password);
-    // Beim zweiten Schritt bleibt der Zustand leer: angemeldet ist noch
-    // niemand, und ein hier gesetztes Konto liesse die Oberfläche den
-    // Arbeitsbereich zeigen, den der Server gar nicht herausgibt.
+    // With the second step the state stays empty: nobody is signed in yet, and
+    // an account set here would let the interface show the workspace the server
+    // does not hand out at all.
     if (!brauchtZweitenSchritt(antwort)) setUser(antwort);
     return antwort;
   };
@@ -64,8 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api.logout();
     setUser(null);
   };
-  // Ein Fehlschlag lässt den bisherigen Stand stehen: er ist veraltet, aber
-  // brauchbar. Abzumelden, weil eine Nachfrage scheiterte, wäre schlimmer.
+  // A failure leaves the previous state standing: it is stale, but usable.
+  // Signing out because a follow-up request failed would be worse.
   const neuLaden = async () => {
     try {
       setUser(await api.me());

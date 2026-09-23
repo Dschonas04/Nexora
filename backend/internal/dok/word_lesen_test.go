@@ -133,7 +133,7 @@ func TestWordNummerierungUndVerschachtelung(t *testing.T) {
 		}
 	}
 
-	// Der Untereintrag gehoert unter seinen Punkt und nicht daneben.
+	// The sub-entry belongs beneath its item and not beside it.
 	bl := NachBloecken(d)
 	if len(bl) != 3 {
 		t.Fatalf("erwartet 3 Bloecke auf oberster Ebene, bekam %d", len(bl))
@@ -160,8 +160,8 @@ func TestWordUmbruchTrenntAbsatz(t *testing.T) {
 	}
 }
 
-// Ein eingebettetes Bild reist als Datenadresse mit. Ohne das fehlte im
-// gelesenen Dokument genau die Stelle, um die es oft geht.
+// An embedded picture travels along as a data URL. Without that, the very spot
+// the document is often about would be missing from it.
 func TestWordBildKommtMit(t *testing.T) {
 	png, _ := base64.StdEncoding.DecodeString(
 		"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")

@@ -43,7 +43,7 @@ Anything else keeps the default and is logged.
 
 **Settings → Wartung** shows and writes exactly the file that was read. It checks
 the draft before writing, keeps a timestamped backup of the previous version,
-masks credentials on the way to the browser and restores them on the way back —
+masks credentials on the way to the browser and restores them on the way back,
 so saving never overwrites a secret with asterisks.
 
 Because the file is only read at startup, that page also carries a restart
@@ -64,7 +64,7 @@ Without this it is shown read-only.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `port` | `PORT` | `8080` | The port the API listens on. In the compose setup this is the container-internal port — `8443` there, because the service speaks TLS inside the stack; what you publish is `PORT` in `.env`, which maps to the *frontend* container |
+| `port` | `PORT` | `8080` | The port the API listens on. In the compose setup this is the container-internal port, `8443` there, because the service speaks TLS inside the stack; what you publish is `PORT` in `.env`, which maps to the *frontend* container |
 | `daten_verzeichnis` | `NEXORA_DATA_DIR` | `/data/attachments` | The data directory |
 | `anhang_verzeichnis` | `NEXORA_ANHANG_PFAD` | *(empty)* | Where attachment bytes go, if not the data directory. Attachments are the only part that grows without bound, so they often belong on a disk of their own. Empty means the same directory as before, so an upgrade does not move an existing installation's files |
 | `oeffentliche_url` | `NEXORA_PUBLIC_URL` | *(empty)* | The address the browser actually uses. Needed to build the OIDC callback and to name the right host in a public share link. Required as soon as `oidc_aktiv` is on |
@@ -84,9 +84,9 @@ unless you also change it inside the running database
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `jwt_geheimnis` | `JWT_SECRET` | `change-me-in-production` | Signs the session token. On the default, every session is forgeable — warned about at every boot. `openssl rand -hex 32` |
+| `jwt_geheimnis` | `JWT_SECRET` | `change-me-in-production` | Signs the session token. On the default, every session is forgeable, warned about at every boot. `openssl rand -hex 32` |
 | `sitzung_stunden` | `NEXORA_SESSION_HOURS` | `12` | How long a session lasts. One in use renews itself once half its life is gone |
-| `sitzung_tage` | `NEXORA_SESSION_DAYS` | — | **Deprecated.** The old key in days. Still read and converted (× 24), so an existing file does not silently drop from seven days to twelve hours because the unit changed |
+| `sitzung_tage` | `NEXORA_SESSION_DAYS` |, | **Deprecated.** The old key in days. Still read and converted (× 24), so an existing file does not silently drop from seven days to twelve hours because the unit changed |
 
 ## Licence
 
@@ -102,18 +102,18 @@ interface. See [`backend/premium/README.md`](../backend/premium/README.md).
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `registrierung_offen` | `NEXORA_REGISTRIERUNG_OFFEN` | `ja` | Whether anyone may create an account. **The very first account created becomes the administrator** — turning this off before that account exists locks everybody out |
+| `registrierung_offen` | `NEXORA_REGISTRIERUNG_OFFEN` | `ja` | Whether anyone may create an account. **The very first account created becomes the administrator**, turning this off before that account exists locks everybody out |
 | `erlaubte_domaenen` | `NEXORA_ERLAUBTE_DOMAENEN` | *(empty)* | Comma-separated list of email domains that may register. Empty means all |
 
 Both are also editable at runtime from the settings page, and the stored value
-then wins over the file — it was set later and on purpose.
+then wins over the file; it was set later and on purpose.
 
 ## Search
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
 | `such_woerterbuch` | `NEXORA_SUCH_WOERTERBUCH` | `german` | The PostgreSQL text search configuration. `german` reaches across word forms in German text and costs a little precision in English; `simple` does neither. Changing it needs a reindex: `POST /api/system/suchindex` |
-| `seitenbreite` | — | `voll` | How wide a page is set when it says nothing itself. `voll` uses the whole window, `normal` keeps a narrow measure like a book, `breit` sits in between. A page with a width of its own keeps it. Database only, changeable under Settings, and readable by **everybody** through `/design` — without it the browser would not know how to set the text |
+| `seitenbreite` |, | `voll` | How wide a page is set when it says nothing itself. `voll` uses the whole window, `normal` keeps a narrow measure like a book, `breit` sits in between. A page with a width of its own keeps it. Database only, changeable under Settings, and readable by **everybody** through `/design`, without it the browser would not know how to set the text |
 
 ## Attachments
 
@@ -125,13 +125,13 @@ then wins over the file — it was set later and on purpose.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `echtzeit` | — | `ja` | Whether several accounts may write on one page at the same time. Database only, changeable under Settings, Zusammenarbeit. Off means the old behaviour: the page is written whole and the last save wins. Needs the `echtzeit` extra and a reverse proxy that passes WebSocket upgrades through to `/api/echtzeit/` |
+| `echtzeit` |, | `ja` | Whether several accounts may write on one page at the same time. Database only, changeable under Settings, Zusammenarbeit. Off means the old behaviour: the page is written whole and the last save wins. Needs the `echtzeit` extra and a reverse proxy that passes WebSocket upgrades through to `/api/echtzeit/` |
 
 ## Watching other machines
 
 A list of addresses kept under **Settings → System**: a name and an address per
 line, either `host:port` or a full `http(s)://` URL. Nexora knocks on them and
-reports what it saw itself. There is nothing to install and nothing to wire up —
+reports what it saw itself. There is nothing to install and nothing to wire up,
 no monitoring system, no agent on the far side, no key to your machines. A wiki
 that may be reachable from outside is the wrong place to keep a general key to
 your network.
@@ -146,14 +146,14 @@ date it expires. That is what the columns hold.
 |---|---|
 | Zustand | A TCP connection that comes up, or an HTTP response that arrives |
 | Antwort | How long that took |
-| Fassung | The greeting a service sends on connect (`SSH-2.0-OpenSSH_9.2p1 …`), or the `Server` header. Whoever stays silent leaves the column empty — nothing is guessed |
+| Fassung | The greeting a service sends on connect (`SSH-2.0-OpenSSH_9.2p1 …`), or the `Server` header. Whoever stays silent leaves the column empty, nothing is guessed |
 | Zertifikat | Days left on the certificate of an `https://` target. Under thirty the cell turns red: an expired certificate is the most common reason a service at home suddenly stops answering, and the only one you could have seen coming |
 
 A host without a port is refused rather than guessed, since a guessed port
 reports a machine as silent that merely listens elsewhere. On an `https://`
 address the certificate is deliberately **not** verified: the question is
 whether something answers, nothing is read, and with verification every
-Proxmox, NAS and backup server in the house — all of them self-signed — would be
+Proxmox, NAS and backup server in the house, all of them self-signed, would be
 reported as silent while running. Redirects are not followed: a 301 is already
 an answer, and where it points is a different question.
 
@@ -174,11 +174,11 @@ own on the first start and issues one certificate per service into a volume.
 Interface → service, service → database, service → object store, service →
 cache: all four hops are TLS, and each one **verifies** the certificate against
 that authority. Encryption without verification would be a reassurance rather
-than a statement — whoever does not check who is on the other end may be
+than a statement, whoever does not check who is on the other end may be
 talking to the wrong party, encrypted.
 
 The authority is internal on purpose. The names here are `backend`, `db`,
-`minio` — names from the stack's own network that exist nowhere else, and no
+`minio`, names from the stack's own network that exist nowhere else, and no
 public authority issues certificates for those, nor should it: these
 connections never leave the machine. The certificate the *browser* sees is a
 different one, see `PORT_TLS` below.
@@ -190,8 +190,8 @@ different one, see `PORT_TLS` below.
 | `tls_wurzel` | `NEXORA_TLS_WURZEL` | *(set by compose)* | An **additional** authority for everything the service itself calls: database, object store, cache, and any HTTP request it makes. The public authorities stay valid alongside it, so an identity provider behind a Let's Encrypt certificate keeps working |
 | `redis_tls` | `NEXORA_REDIS_TLS` | `nein` | Talk to the cache over TLS. On in the bundled stack: session ids live there, and whoever reads one is signed in |
 
-Running the service somewhere else — bare metal, Kubernetes, behind a proxy of
-your own — you have two honest choices. Either it sits directly behind
+Running the service somewhere else, bare metal, Kubernetes, behind a proxy of
+your own, you have two honest choices. Either it sits directly behind
 something on the *same* machine that terminates TLS, and then plain HTTP over
 those few centimetres costs nothing; or a network lies in between, and then
 `tls_zertifikat` and `tls_schluessel` belong set, because otherwise session
@@ -199,7 +199,7 @@ cookies and whole pages travel that network in the clear.
 
 To use your own certificates instead of the generated ones, put them into the
 `nexora_pki` volume under the names the services expect
-(`backend/backend.crt`, `db/db.key`, `minio/public.crt`, …) — anything already
+(`backend/backend.crt`, `db/db.key`, `minio/public.crt`, …), anything already
 there is left alone, the generator only fills in what is missing.
 
 ## Object storage (S3)
@@ -212,13 +212,13 @@ there is left alone, the generator only fills in what is missing.
 | `s3_zugriffsschluessel` | `NEXORA_S3_ZUGRIFFSSCHLUESSEL` | *(empty)* | Access key |
 | `s3_geheimnis` | `NEXORA_S3_GEHEIMNIS` | *(empty)* | Secret key |
 | `s3_region` | `NEXORA_S3_REGION` | `us-east-1` | Region. Self-hosted stores generally do not care |
-| `s3_tls` | `NEXORA_S3_TLS` | `nein` | HTTPS to the store. Off means keys and files travel in the clear — warned about |
+| `s3_tls` | `NEXORA_S3_TLS` | `nein` | HTTPS to the store. Off means keys and files travel in the clear, warned about |
 | `s3_pfadstil` | `NEXORA_S3_PFADSTIL` | `ja` | Path-style addressing (`endpoint/bucket/key`). What MinIO, Garage and Ceph want; AWS wants it off |
 | `s3_rueckfall` | `NEXORA_S3_RUECKFALL` | `nein` | Whether a store that does not answer at startup may be replaced by the local disk. **Off by default on purpose**: the instance would come up, uploads would work, and weeks later half the attachments would be in a directory nobody backs up |
 
 The settings page can bind a store interactively and test it
 (`POST /api/system/ablage/test`). Credentials are deliberately *not* kept in the
-settings table — a secret access key does not belong in a row that a database
+settings table: a secret access key does not belong in a row that a database
 dump carries off.
 
 ## Redis (optional cache)
@@ -239,7 +239,7 @@ fatal.
 |---|---|---|---|
 | `ldap_aktiv` | `NEXORA_LDAP_AKTIV` | `nein` | |
 | `ldap_server` | `NEXORA_LDAP_SERVER` | *(empty)* | `ldap://host:389` or `ldaps://host:636` |
-| `ldap_starttls` | `NEXORA_LDAP_STARTTLS` | `ja` | Upgrade a plain connection to TLS. Off, without `ldaps://`, means credentials cross the network in the clear — warned about |
+| `ldap_starttls` | `NEXORA_LDAP_STARTTLS` | `ja` | Upgrade a plain connection to TLS. Off, without `ldaps://`, means credentials cross the network in the clear, warned about |
 | `ldap_tls_pruefen` | `NEXORA_LDAP_TLS_PRUEFEN` | `ja` | Verify the server certificate. Off is warned about |
 | `ldap_bind_dn` | `NEXORA_LDAP_BIND_DN` | *(empty)* | The account used to search for users |
 | `ldap_bind_passwort` | `NEXORA_LDAP_BIND_PASSWORT` | *(empty)* | |
@@ -253,7 +253,7 @@ fatal.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `oidc_aktiv` | `NEXORA_OIDC_AKTIV` | `nein` | Requires `oeffentliche_url`, or the callback cannot be built — warned about |
+| `oidc_aktiv` | `NEXORA_OIDC_AKTIV` | `nein` | Requires `oeffentliche_url`, or the callback cannot be built, warned about |
 | `oidc_aussteller` | `NEXORA_OIDC_AUSSTELLER` | *(empty)* | Issuer URL. Anything publishing a discovery document works |
 | `oidc_client_id` | `NEXORA_OIDC_CLIENT_ID` | *(empty)* | |
 | `oidc_geheimnis` | `NEXORA_OIDC_GEHEIMNIS` | *(empty)* | Client secret |
@@ -274,7 +274,7 @@ link by verified email address.
 ## Settings that live in the database, not the file
 
 These are changed at runtime from **Settings**, are stored in the
-`einstellungen` table, and override what the file says — they were set later and
+`einstellungen` table, and override what the file says; they were set later and
 on purpose:
 
 `registrierung_offen` · `erlaubte_domaenen` · `max_anhang_mb` ·
@@ -286,7 +286,7 @@ they are needed before the database is open.
 
 ---
 
-## `.env` — what Docker Compose reads
+## `.env`: what Docker Compose reads
 
 Compose reads `.env` for the values it needs before the backend starts.
 
@@ -299,17 +299,17 @@ Compose reads `.env` for the values it needs before the backend starts.
 | `DATABASE_URL` | Set this instead when you run your own database |
 | `JWT_SECRET` | Overrides `jwt_geheimnis` |
 | `NEXORA_LIZENZ` | Overrides `lizenz` |
-| `NEXORA_ANHANG_ORT` | **What gets mounted** onto the attachment path — a named volume by default, or a host directory / share |
+| `NEXORA_ANHANG_ORT` | **What gets mounted** onto the attachment path, a named volume by default, or a host directory / share |
 | `NEXORA_ANHANG_PFAD` | The path **inside** the container. Moving attachments changes the *Ort*, not this |
 | `NEXORA_TLS_NAME` | Name in the self-signed certificate. Without it the container's hostname is used, which produces a second browser warning |
 | `NEXORA_TLS_IP` | An IP for the certificate's SAN |
-| `NEXORA_DIENST_SCHEMA` | How the interface addresses the service behind it, `https` by default. Only needed when running the service without a certificate — then `http` |
+| `NEXORA_DIENST_SCHEMA` | How the interface addresses the service behind it, `https` by default. Only needed when running the service without a certificate, then `http` |
 | `NEXORA_DIENST_PORT` | The port it listens on, `8443` by default (`8080` unencrypted) |
 | `NEXORA_S3_*` | Wire up an existing object store without the MinIO side file |
 
 A directory given as `NEXORA_ANHANG_ORT` has to belong to **uid/gid 10001**, the
 account the service runs under in the container. Changing the setting does not
-move files that are already there — carry them over first, then restart.
+move files that are already there, carry them over first, then restart.
 
 ---
 

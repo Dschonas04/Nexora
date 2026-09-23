@@ -96,22 +96,21 @@ type Konfig struct {
 	RedisPasswort  string
 	RedisDatenbank int
 	RedisVorsilbe  string
-	// RedisTLS spricht den Zwischenspeicher verschlüsselt an. Er hält
-	// Sitzungskennungen, und die sind so viel wert wie ein Passwort.
+	// RedisTLS talks to the cache encrypted. It holds session ids, and those are
+	// worth as much as a password.
 	RedisTLS bool
 
-	// TLS im Verbund
+	// TLS inside the compound
 	//
-	// TLSZertifikat und TLSSchluessel machen aus dem Dienst einen, der HTTPS
-	// spricht. Beide leer heißt: unverschlüsselt wie bisher, was für einen
-	// Dienst richtig ist, vor dem ohnehin ein Gegenstück steht, das die
-	// Verschlüsselung übernimmt und auf demselben Rechner sitzt.
+	// TLSZertifikat and TLSSchluessel turn the service into one that speaks
+	// HTTPS. Both empty means: unencrypted as before, which is right for a
+	// service that has a counterpart in front of it anyway which takes over the
+	// encryption and sits on the same machine.
 	TLSZertifikat string
 	TLSSchluessel string
-	// TLSWurzel ist eine ZUSÄTZLICHE Zertifizierungsstelle für alles, was
-	// dieser Dienst seinerseits anspricht: Datenbank, Ablage,
-	// Zwischenspeicher. Die öffentlichen Stellen bleiben daneben gültig, siehe
-	// internal/vertrauen.
+	// TLSWurzel is an ADDITIONAL certificate authority for everything this
+	// service talks to in turn: database, object store, cache. The public
+	// authorities stay valid alongside it, see internal/vertrauen.
 	TLSWurzel string
 
 	// LDAP / Active Directory
@@ -137,6 +136,17 @@ type Konfig struct {
 	OIDCFeldEmail   string
 	OIDCGruppeAdmin string
 	OIDCKnopfText   string
+
+	// Mail
+	//
+	// Optional. With smtp_server and smtp_absender set, every account can have
+	// its inbox messages sent by e-mail as well. SMTPVerschluesselung is
+	// starttls, tls or keine.
+	SMTPServer           string
+	SMTPBenutzer         string
+	SMTPPasswort         string
+	SMTPAbsender         string
+	SMTPVerschluesselung string
 }
 
 // Standard returns the built-in defaults. Every one of them has to produce a
@@ -180,6 +190,8 @@ func Standard() Konfig {
 		OIDCFeldName:  "name",
 		OIDCFeldEmail: "email",
 		OIDCKnopfText: "Mit SSO anmelden",
+
+		SMTPVerschluesselung: "starttls",
 	}
 }
 
@@ -330,6 +342,12 @@ func Laden(pfad string) Konfig {
 	text(&k.OIDCFeldEmail, "oidc_feld_email", "NEXORA_OIDC_FELD_EMAIL")
 	text(&k.OIDCGruppeAdmin, "oidc_gruppe_admin", "NEXORA_OIDC_GRUPPE_ADMIN")
 	text(&k.OIDCKnopfText, "oidc_knopf_text", "NEXORA_OIDC_KNOPF_TEXT")
+
+	text(&k.SMTPServer, "smtp_server", "NEXORA_SMTP_SERVER")
+	text(&k.SMTPBenutzer, "smtp_benutzer", "NEXORA_SMTP_BENUTZER")
+	text(&k.SMTPPasswort, "smtp_passwort", "NEXORA_SMTP_PASSWORT")
+	text(&k.SMTPAbsender, "smtp_absender", "NEXORA_SMTP_ABSENDER")
+	text(&k.SMTPVerschluesselung, "smtp_verschluesselung", "NEXORA_SMTP_VERSCHLUESSELUNG")
 
 	return k
 }
@@ -518,6 +536,15 @@ func (k Konfig) Warnungen() []string {
 	}
 	if k.LDAPAktiv && !k.LDAPTLSPruefen {
 		w = append(w, "ldap_tls_pruefen=nein, das Serverzertifikat wird nicht geprüft")
+	}
+	if k.SMTPServer != "" && k.SMTPAbsender == "" {
+		w = append(w, "smtp_server ohne smtp_absender, es werden keine Mails verschickt")
+	}
+	if k.SMTPServer != "" && strings.EqualFold(strings.TrimSpace(k.SMTPVerschluesselung), "keine") {
+		w = append(w, "SMTP ohne Verschlüsselung, Zugangsdaten und Mails gehen im Klartext über das Netz")
+	}
+	if k.SMTPServer != "" && k.OeffentlicheURL == "" {
+		w = append(w, "smtp_server ohne oeffentliche_url, Mails enthalten keinen Link zur Seite")
 	}
 	return w
 }

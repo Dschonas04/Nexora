@@ -28,7 +28,7 @@ type Ablage interface {
 
 	/*
 		Schreiben stores the stream under key and returns how many bytes landed.
-		A failed write must leave nothing behind — a half-written attachment that
+		A failed write must leave nothing behind: a half-written attachment that
 		the database believes in is worse than a failed upload.
 	*/
 	Schreiben(ctx context.Context, key string, r io.Reader, groesse int64, mime string) (int64, error)

@@ -21,12 +21,12 @@ func (s *Server) isAdmin(ctx context.Context, uid string) bool {
 
 // pagePerm resolves a user's access to a non-deleted page.
 //
-//	canRead — owner, admin, page share, a right on the space it sits in, or a
+//	canRead, owner, admin, page share, a right on the space it sits in, or a
 //	          space that is open to the whole instance
-//	canEdit — owner, admin, share with 'edit', 'schreiben'/'verwalten' on the
+//	canEdit, owner, admin, share with 'edit', 'schreiben'/'verwalten' on the
 //	          space, or a space that is open for writing
-//	isOwner — the user owns the page
-//	ok      — the page exists, is not in the trash, and the user may read it
+//	isOwner: the user owns the page
+//	ok     : the page exists, is not in the trash, and the user may read it
 //
 // Everything is resolved in ONE query. That matters more than it looks: this
 // function runs on every request that touches a page, and it is the single
