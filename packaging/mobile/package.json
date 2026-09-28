@@ -5,7 +5,7 @@
   "description": "Nexora als App für Android und iOS",
   "devDependencies": {
     "@capacitor/android": "^6.2.0",
-    "@capacitor/cli": "^6.2.0",
+    "@capacitor/cli": "^8.5.2",
     "@capacitor/core": "^6.2.0",
     "@capacitor/ios": "^6.2.0"
   }
