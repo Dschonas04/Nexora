@@ -8,5 +8,8 @@
     "@capacitor/cli": "^6.2.0",
     "@capacitor/core": "^6.2.0",
     "@capacitor/ios": "^6.2.0"
+  },
+  "overrides": {
+    "tar": "^7.5.22"
   }
 }
