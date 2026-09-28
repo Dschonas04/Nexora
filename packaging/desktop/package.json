@@ -13,7 +13,7 @@
     "bauen:linux": "electron-packager . Nexora --platform=linux --arch=x64 --out=../fertig --overwrite --app-version=1.0.0"
   },
   "devDependencies": {
-    "electron": "^33.0.0",
+    "electron": "^39.8.10",
     "electron-packager": "^17.1.2"
   }
 }
