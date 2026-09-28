@@ -8,12 +8,10 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "bauen:windows": "electron-packager . Nexora --platform=win32 --arch=x64 --out=../fertig --overwrite --app-version=1.0.0",
-    "bauen:macos": "electron-packager . Nexora --platform=darwin --arch=arm64,x64 --out=../fertig --overwrite --app-version=1.0.0",
-    "bauen:linux": "electron-packager . Nexora --platform=linux --arch=x64 --out=../fertig --overwrite --app-version=1.0.0"
+    "bauen": "node bauen.mjs"
   },
   "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-packager": "^17.1.2"
+    "@electron/get": "^5.1.0",
+    "electron": "^44.4.5"
   }
 }
