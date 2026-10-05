@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 # npm ci and the lock file, exactly as in CI. npm install from package.json alone
 # resolved a different tree on the Docker host than in CI, and with two
