@@ -173,10 +173,18 @@ func (s *Server) AttachTag(w http.ResponseWriter, r *http.Request) {
 }
 
 // DetachTag removes a tag from a page.
+//
+// The same rule as AttachTag: only the owner of both the page and the tag may
+// take it off. Without it any signed-in account could strip tags from pages it
+// cannot even read.
 func (s *Server) DetachTag(w http.ResponseWriter, r *http.Request) {
+	uid := middleware.UserID(r)
 	_, err := s.Pool.Exec(r.Context(),
-		`DELETE FROM page_tags WHERE page_id=$1 AND tag_id=$2`,
-		chi.URLParam(r, "id"), chi.URLParam(r, "tagId"))
+		`DELETE FROM page_tags pt
+		  WHERE pt.page_id=$2 AND pt.tag_id=$3
+		    AND EXISTS (SELECT 1 FROM pages WHERE id=$2 AND owner_id=$1)
+		    AND EXISTS (SELECT 1 FROM tags  WHERE id=$3 AND owner_id=$1)`,
+		uid, chi.URLParam(r, "id"), chi.URLParam(r, "tagId"))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "detach failed")
 		return
