@@ -6,7 +6,7 @@ COPY go.mod ./
 COPY . .
 RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -trimpath -o /nexora ./
 
-FROM alpine:3.19
+FROM alpine:3.24
 # Two tools the service invokes as separate processes.
 #
 # poppler-utils supplies pdftotext for the full text out of PDF attachments.
