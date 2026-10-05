@@ -42,7 +42,7 @@ jobs:
 
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # The registry takes lower case only, while the account name has capitals
       # in it: Dschonas04. So it is lowercased once here instead of being typed
