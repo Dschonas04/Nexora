@@ -55,7 +55,7 @@ jobs:
       # Two architectures: amd64 for the servers, arm64 for the Raspberry Pis
       # and the Macs. Without QEMU the runner only builds its own.
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Buildx
         uses: docker/setup-buildx-action@v3
