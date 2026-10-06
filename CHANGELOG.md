@@ -24,6 +24,10 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
   account settings or taken from the browser. The editor's own menus follow.
   Notification mails for French accounts go out in English. The text probe in
   CI fails on any pair without a French entry.
+- **Kubernetes manifests.** `deploy/kubernetes/` brings Nexora up with
+  `kubectl apply -k` against an existing PostgreSQL: deployments, services,
+  ingress, a volume for the attachments and a secret. See the operations
+  document.
 - **Unraid templates.** `templates/unraid/` holds container templates for the
   backend and the frontend, for an Unraid server with its own PostgreSQL.
 - **Release notes from this file.** Every tag's release on GitHub carries its

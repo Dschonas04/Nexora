@@ -55,6 +55,50 @@ Nexora would mean operating a second copy of each.
 - **Do not turn `registration_open` off before the first account exists**, or
   nobody can create it and the instance has no administrator.
 
+### Kubernetes
+
+[`deploy/kubernetes/`](../deploy/kubernetes) holds plain manifests for k3s or
+any other cluster, applied with kustomize. They run the backend and the
+frontend against a PostgreSQL you already have; the bundled database and the
+internal certificate authority of the Compose stack are left out. Inside the
+cluster the frontend talks plain HTTP to the backend, and TLS ends at the
+ingress.
+
+```bash
+cd deploy/kubernetes
+cp secret.env.example secret.env      # DATABASE_URL and JWT_SECRET
+$EDITOR ingress.yaml                  # the host name
+kubectl apply -k .
+kubectl -n nexora get pods            # both Running and Ready
+```
+
+What gets created, in the namespace `nexora`:
+
+| Object | What it is for |
+| --- | --- |
+| Secret `nexora-…` | `DATABASE_URL` and `JWT_SECRET` from `secret.env` |
+| PVC `nexora-attachments` | 10 GiB for the attachments, ReadWriteOnce |
+| Deployment and Service `backend` | The Go service on 8080; the frontend looks for it under exactly this name |
+| Deployment and Service `frontend` | The interface on 80 |
+| Ingress `nexora` | The way in from outside |
+
+- **The database has to exist**, with a user that owns it. The backend creates
+  its schema on the first start. Without `sslmode=disable` in the URL it
+  expects TLS from PostgreSQL.
+- **One backend replica.** The attachments volume is ReadWriteOnce and the
+  backend runs with the Recreate strategy. With attachments in an S3 bucket
+  (see [configuration](configuration.md)) the PVC can go and the backend can
+  scale; the frontend can scale either way.
+- **Readiness and liveness** both ask `/healthz`. The backend's answer includes
+  a ping of the database, so a pod without a database takes no traffic.
+- **The images** default to `latest`. Pin a version in the `images:` block of
+  `kustomization.yaml`; they are multi-arch, so a Raspberry Pi cluster works.
+  These manifests need 2.2.0 or newer: earlier frontends do not start without
+  the certificate authority.
+- **Further settings** (SMTP, OIDC, S3, `NEXORA_PUBLIC_URL`) are environment
+  variables, see [configuration](configuration.md). Secrets go into
+  `secret.env`, the rest into the `env:` lists of the deployments.
+
 ---
 
 ## Where the data is
