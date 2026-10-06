@@ -64,8 +64,8 @@ services:
     ports:
       - '3000:80'
     environment:
-      NEXORA_DIENST_SCHEMA: https
-      NEXORA_DIENST_PORT: '8443'
+      NEXORA_SERVICE_SCHEME: https
+      NEXORA_SERVICE_PORT: '8443'
     volumes:
       - /DATA/AppData/nexora/tls:/etc/nginx/tls
       - /DATA/AppData/nexora/pki:/pki:ro

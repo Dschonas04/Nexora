@@ -7,12 +7,12 @@
 # built yourself.
 FROM alpine:3.24
 RUN apk add --no-cache openssl
-COPY erzeuge.sh /usr/local/bin/erzeuge.sh
-RUN chmod +x /usr/local/bin/erzeuge.sh
+COPY create.sh /usr/local/bin/create.sh
+RUN chmod +x /usr/local/bin/create.sh
 
 LABEL org.opencontainers.image.title="Nexora PKI" \
       org.opencontainers.image.source="https://github.com/Dschonas04/Nexora" \
       org.opencontainers.image.licenses="BUSL-1.1" \
       org.nexora.gpl-quellen="https://gitlab.alpinelinux.org/alpine/aports"
 
-ENTRYPOINT ["/usr/local/bin/erzeuge.sh"]
+ENTRYPOINT ["/usr/local/bin/create.sh"]

@@ -1028,7 +1028,7 @@ echo "== Verschlüsselt sprechen"
 # The service can do HTTPS itself. It is checked with a second start using a
 # purpose-made certificate: that it accepts the file, that it really answers
 # encrypted, and that a counterpart which knows the authority trusts it. That is
-# exactly what the interface does inside the compound, see pki/erzeuge.sh.
+# exactly what the interface does inside the compound, see pki/create.sh.
 halte_dienst_an
 
 openssl req -x509 -newkey rsa:2048 -sha256 -days 2 -nodes \

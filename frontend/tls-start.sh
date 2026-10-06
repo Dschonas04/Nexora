@@ -42,20 +42,22 @@ fi
 # $request_uri), and an envsubst without a list would mow them all down.
 #
 # The default is encrypted. Whoever runs the service without a certificate sets
-# NEXORA_DIENST_SCHEMA=http and NEXORA_DIENST_PORT=8080.
-export NEXORA_DIENST_SCHEMA="${NEXORA_DIENST_SCHEMA:-https}"
-export NEXORA_DIENST_PORT="${NEXORA_DIENST_PORT:-8443}"
+# NEXORA_SERVICE_SCHEME=http and NEXORA_SERVICE_PORT=8080.
+# NEXORA_DIENST_SCHEMA and NEXORA_DIENST_PORT were the earlier names and are
+# still read, for images started without the compose file.
+export NEXORA_SERVICE_SCHEME="${NEXORA_SERVICE_SCHEME:-${NEXORA_DIENST_SCHEMA:-https}}"
+export NEXORA_SERVICE_PORT="${NEXORA_SERVICE_PORT:-${NEXORA_DIENST_PORT:-8443}}"
 
 if [ -f /etc/nginx/vorlage.conf ]; then
-    envsubst '${NEXORA_DIENST_SCHEMA} ${NEXORA_DIENST_PORT}' \
+    envsubst '${NEXORA_SERVICE_SCHEME} ${NEXORA_SERVICE_PORT}' \
         < /etc/nginx/vorlage.conf > /etc/nginx/conf.d/default.conf
-    echo "Dienst: $NEXORA_DIENST_SCHEMA://backend:$NEXORA_DIENST_PORT"
+    echo "Dienst: $NEXORA_SERVICE_SCHEME://backend:$NEXORA_SERVICE_PORT"
 fi
 
 # Without the compound's authority nginx would not reach the service, and the
 # message about it would only appear in the log on the first request. Better to
 # say here what the matter is.
-if [ "$NEXORA_DIENST_SCHEMA" = "https" ] && [ ! -f /pki/ca.crt ]; then
+if [ "$NEXORA_SERVICE_SCHEME" = "https" ] && [ ! -f /pki/ca.crt ]; then
     echo "ACHTUNG: /pki/ca.crt fehlt. Der Dienst ist verschlüsselt eingestellt," >&2
     echo "         aber ohne die Stelle lässt sich sein Zertifikat nicht prüfen." >&2
 fi

@@ -1,31 +1,33 @@
-# Eine Datei, die fuer sich steht: Nexora samt Datenbank, aus fertigen
-# Abbildern, ohne .env und ohne Quellbaum.
+# One file that stands on its own: Nexora together with its database, from
+# published images, without .env and without a source tree.
 #
-# Gedacht fuer die Oberflaechen, in die man einen Verbund einfuegt und auf
-# "Ausrollen" drueckt -- Portainer, Coolify, Dokploy, Komodo -- und fuer den
-# schnellen Versuch auf einer leeren Maschine:
+# Meant for the interfaces where a stack is pasted in and "deploy" is pressed --
+# Portainer, Coolify, Dokploy, Komodo -- and for a quick try on an empty
+# machine:
 #
 #     curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker-compose.stack.yml
 #     docker compose -f docker-compose.stack.yml up -d
 #
-# ZWEI WERTE AENDERN, bevor das irgendwo echt laeuft: POSTGRES_PASSWORD und
-# JWT_SECRET. Der zweite ist der Schluessel, mit dem Sitzungen unterschrieben
-# werden; bleibt er der Beispielwert, kann jeder, der ihn kennt, sich als jeder
-# ausgeben. Ein langer Zufallswert:
+# CHANGE TWO VALUES before this runs anywhere for real: POSTGRES_PASSWORD and
+# JWT_SECRET. The second one signs the sessions; if it stays at the example
+# value, anyone who knows it can pass for anyone. A long random value:
 #
 #     openssl rand -hex 32
 #
-# Die Abbilder kommen aus der GitHub-Registrierung (ghcr.io/dschonas04). Wer
-# lieber Docker Hub nimmt, setzt NEXORA_REGISTRY=dschohnas -- dieselben
-# Abbilder, dieselben Marken, amd64 und arm64. NEXORA_FASSUNG legt die Fassung
-# fest (Standard: latest).
+# The images come from the GitHub registry (ghcr.io/dschonas04). Whoever
+# prefers Docker Hub sets NEXORA_REGISTRY=dschohnas -- the same images, the same
+# tags, amd64 and arm64. NEXORA_VERSION fixes the version (default: latest).
 #
-# Wer die Datenbank schon hat, nimmt diesen Verbund nicht, sondern die
-# Hauptdatei mit docker-compose.abbild.yml und setzt DATABASE_URL.
+# Whoever already has a database does not take this stack but the main file
+# together with docker-compose.image.yml, and sets DATABASE_URL.
 #
-# Alles Weitere -- Anhaenge in einen S3-Eimer, Redis davor, Post per SMTP,
-# eigene Zertifikate -- steht in docs/configuration.md und laeuft hier ueber
-# dieselben Umgebungsvariablen.
+# Everything beyond that -- attachments in an S3 bucket, Redis in front, mail
+# over SMTP, certificates of one's own -- is in docs/configuration.md and works
+# here through the same environment variables.
+#
+# NEXORA_FASSUNG and NEXORA_OEFFENTLICHE_ADRESSE were the earlier names of
+# NEXORA_VERSION and NEXORA_PUBLIC_URL; both are still read, so an existing
+# setup keeps working.
 services:
   db:
     image: postgres:16-alpine
@@ -42,16 +44,16 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # Laeuft einmal, legt eine kleine eigene Zertifizierungsstelle an und ist dann
-  # fertig. Damit ist auch der Verkehr zwischen den Containern verschluesselt.
+  # Runs once, sets up a small certificate authority of its own and is then
+  # done. That way the traffic between the containers is encrypted as well.
   pki:
-    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-pki:${NEXORA_FASSUNG:-latest}
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-pki:${NEXORA_VERSION:-${NEXORA_FASSUNG:-latest}}
     volumes:
       - nexora_pki:/pki
     restart: 'no'
 
   backend:
-    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-backend:${NEXORA_FASSUNG:-latest}
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-backend:${NEXORA_VERSION:-${NEXORA_FASSUNG:-latest}}
     depends_on:
       db:
         condition: service_healthy
@@ -71,7 +73,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-frontend:${NEXORA_FASSUNG:-latest}
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-frontend:${NEXORA_VERSION:-${NEXORA_FASSUNG:-latest}}
     depends_on:
       pki:
         condition: service_completed_successfully
@@ -81,12 +83,12 @@ services:
       - '${PORT:-3000}:80'
       - '${PORT_TLS:-3443}:443'
     environment:
-      NEXORA_DIENST_SCHEMA: https
-      NEXORA_DIENST_PORT: '8443'
-      # Die Adresse, unter der die Instanz von aussen erreichbar ist. Nur damit
-      # darf eine Suchmaschine die Anmeldeseite aufnehmen; ohne sie haelt
-      # robots.txt jeden Sammler heraus. Siehe docs/seo.md.
-      NEXORA_OEFFENTLICHE_ADRESSE: ${NEXORA_OEFFENTLICHE_ADRESSE:-}
+      NEXORA_SERVICE_SCHEME: https
+      NEXORA_SERVICE_PORT: '8443'
+      # The address the instance can be reached at from outside. Only with it
+      # may a search engine take in the login page; without it robots.txt keeps
+      # every crawler out. See docs/seo.md.
+      NEXORA_PUBLIC_URL: ${NEXORA_PUBLIC_URL:-${NEXORA_OEFFENTLICHE_ADRESSE:-}}
     volumes:
       - nexora_tls:/etc/nginx/tls
       - nexora_pki:/pki:ro

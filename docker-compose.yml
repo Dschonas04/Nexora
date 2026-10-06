@@ -20,7 +20,7 @@ services:
   # minio and redis, and is then done. All the others wait for it to end.
   #
   # Repeatable: whatever already lies in the volume stays there. See
-  # pki/erzeuge.sh.
+  # pki/create.sh.
   pki:
     build: ./pki
     volumes:
@@ -53,7 +53,7 @@ services:
       NEXORA_TLS_ROOT: ${NEXORA_TLS_ROOT:-/pki/ca.crt}
       NEXORA_DATA_DIR: /data/attachments
       # Where the attachment bytes lie. Two halves belong together: this path is
-      # the one INSIDE the container, NEXORA_ANHANG_ORT below is what is mounted
+      # the one INSIDE the container, NEXORA_ATTACHMENT_DIR below is what is mounted
       # onto it: a named volume by default, a directory of the host or a share
       # if that is set. Anybody moving the attachments changes the ort, not this
       # path.
@@ -86,7 +86,8 @@ services:
       # scattering the attachments over two places.
       NEXORA_S3_FALLBACK: ${NEXORA_S3_FALLBACK:-}
     volumes:
-      - ${NEXORA_ANHANG_ORT:-nexora_files}:${NEXORA_ATTACHMENT_PATH:-/data/attachments}
+      # NEXORA_ANHANG_ORT was the earlier name and is still read.
+      - ${NEXORA_ATTACHMENT_DIR:-${NEXORA_ANHANG_ORT:-nexora_files}}:${NEXORA_ATTACHMENT_PATH:-/data/attachments}
       # This file does NOT lie in the directory, it is copied once from the
       # template:
       #
@@ -132,8 +133,10 @@ services:
       # and with a check of the certificate. Whoever runs the service without a
       # certificate -- an image of their own without the PKI container, say --
       # sets http and 8080 here.
-      NEXORA_DIENST_SCHEMA: ${NEXORA_DIENST_SCHEMA:-https}
-      NEXORA_DIENST_PORT: ${NEXORA_DIENST_PORT:-8443}
+      # NEXORA_DIENST_SCHEMA and NEXORA_DIENST_PORT were the earlier names and
+      # are still read.
+      NEXORA_SERVICE_SCHEME: ${NEXORA_SERVICE_SCHEME:-${NEXORA_DIENST_SCHEMA:-https}}
+      NEXORA_SERVICE_PORT: ${NEXORA_SERVICE_PORT:-${NEXORA_DIENST_PORT:-8443}}
       # The address the instance is reachable under from outside, e.g.
       # https://wiki.example.org. Only with it may search engines index the
       # login page (canonical, sitemap, Open Graph); without it robots.txt keeps
@@ -157,7 +160,7 @@ volumes:
   # survive a rebuild of the images: an authority changing on every start-up
   # would be none.
   nexora_pki:
-  # Only the attachments on disk, and only as long as NEXORA_ANHANG_ORT is not
+  # Only the attachments on disk, and only as long as NEXORA_ATTACHMENT_DIR is not
   # set: with a path in there the bytes go to that directory and this volume
   # stays empty. The database's volume belongs to the side file that brings it
   # along.

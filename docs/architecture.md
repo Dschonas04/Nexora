@@ -691,7 +691,7 @@ graph TB
 |---|---|
 | Published ports | `PORT` (3000) → 80, `PORT_TLS` (3443) → 443. The backend is **not** published; it is reachable only through the frontend container |
 | `nexora_tls` | Holds the certificate. Generated self-signed on first start, 825 days. Drop a real `zertifikat.pem` / `schluessel.pem` in and nothing is generated |
-| `nexora_files` | Attachment bytes, only while they are on disk. `NEXORA_ANHANG_ORT` replaces it with a host directory or a share, which then has to belong to uid/gid 10001 |
+| `nexora_files` | Attachment bytes, only while they are on disk. `NEXORA_ATTACHMENT_DIR` replaces it with a host directory or a share, which then has to belong to uid/gid 10001 |
 | `config.conf` | Not tracked in git: it holds credentials and is edited from the maintenance page, so a tracked copy would be overwritten on every rollout. Mounted writable, and the file has to belong to gid 10001 for the maintenance page to save it |
 | `nexora_pki` | The stack's own authority and one certificate per service, ten years. Written once by the `pki` container, read-only everywhere else, and left alone on later starts, an authority that changed on every boot would be none |
 

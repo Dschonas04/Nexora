@@ -226,7 +226,7 @@ git clone https://github.com/Dschonas04/Nexora.git && cd Nexora
 cp .env.example .env
 cp config.example.conf config.conf
 # edit .env: set POSTGRES_PASSWORD and a long random JWT_SECRET
-echo 'COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.abbild.yml' >> .env
+echo 'COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.image.yml' >> .env
 docker compose up -d
 ```
 
@@ -253,7 +253,7 @@ identical content. Pull from whichever you prefer, nothing else differs.
 Two settings in the `.env` choose what is pulled:
 
 ```bash
-NEXORA_FASSUNG=2.1.0            # which version (default: latest)
+NEXORA_VERSION=2.1.0            # which version (default: latest)
 NEXORA_REGISTRY=dschohnas       # Docker Hub instead of the default ghcr.io/dschonas04
 ```
 
@@ -318,7 +318,7 @@ settings move them:
 
 ```bash
 # a directory of the host, a disk of its own, a mount of the file server
-NEXORA_ANHANG_ORT=/srv/nexora/anhaenge     # .env: what gets mounted
+NEXORA_ATTACHMENT_DIR=/srv/nexora/anhaenge     # .env: what gets mounted
 attachment_directory = /data/attachments     # config.conf: the path inside
 
 # or not on any disk at all: into a bucket
@@ -757,7 +757,7 @@ frontend/                      React SPA (Vite + TypeScript)
                                GruppenView, EinstellungenView,
                                PruefspurView (shown as "Protokoll")
 pki/                           the stack's own certificate authority
-  erzeuge.sh                   runs once at start-up, issues one certificate per
+  create.sh                   runs once at start-up, issues one certificate per
                                service, and leaves alone what is already there
 docker-compose.yml             pki + backend + frontend
 docker-compose.db.yml          optional: bundled PostgreSQL

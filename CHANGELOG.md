@@ -60,7 +60,7 @@ it meant building it; from here on there are images and a tag.
 ### Added
 
 - **Published images** for amd64 and arm64, tagged `2.0.0`, `2.0` and `latest`,
-  no account needed to pull them. `docker-compose.abbild.yml` pulls instead of
+  no account needed to pull them. `docker-compose.image.yml` pulls instead of
   building, `docker-compose.stack.yml` carries Nexora and its database in one
   file for Portainer, Coolify, Dokploy or a bare machine.
 - **[Comparison](docs/comparison.md)** against Notion, Outline, Docmost,

@@ -4,7 +4,7 @@
 // those connections are encrypted. Encrypted alone is worth little, though:
 // whoever does not check who they are talking to may well be talking
 // encrypted to the wrong party. The check runs against the compound's own
-// small authority, see pki/erzeuge.sh.
+// small authority, see pki/create.sh.
 //
 // That authority is ADDED to the public ones and does not replace them.
 // Otherwise the service would lose its trust in every identity provider on the

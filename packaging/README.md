@@ -24,10 +24,10 @@ again.
 
 ```
 cd desktop && npm install
-node bauen.mjs
+node build.mjs
 ```
 
-`bauen.mjs` fetches the prebuilt Electron release per platform, puts the
+`build.mjs` fetches the prebuilt Electron release per platform, puts the
 application into `resources/app` and renames the binary. A packer does the
 same three things — but `electron-packager` demands Wine on Linux as soon as a
 Windows target is to carry metadata, and metadata already comes from

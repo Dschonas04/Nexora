@@ -19,13 +19,13 @@
 #
 # 2. The ports listen on 127.0.0.1, not on every address. The store is there for
 #    Nexora, not for the network; whoever needs it from outside sets
-#    MINIO_ADRESSE to 0.0.0.0 explicitly and puts TLS in front of it.
+#    MINIO_ADDRESS to 0.0.0.0 explicitly and puts TLS in front of it.
 services:
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     # With a certificate from the PKI container: MinIO looks in the named
     # directory for public.crt and private.key and for the foreign authorities
-    # under CAs, which is exactly how erzeuge.sh puts them there. Without it the
+    # under CAs, which is exactly how create.sh puts them there. Without it the
     # attachments ran in the clear between the containers.
     command: server /data --console-address ":9001" --certs-dir /pki/minio
     depends_on:
@@ -39,8 +39,8 @@ services:
       - nexora_pki:/pki:ro
     ports:
       # First number: the S3 interface. Second: the web interface.
-      - "${MINIO_ADRESSE:-127.0.0.1}:${MINIO_PORT:-9010}:9000"
-      - "${MINIO_ADRESSE:-127.0.0.1}:${MINIO_KONSOLE_PORT:-9011}:9001"
+      - "${MINIO_ADDRESS:-127.0.0.1}:${MINIO_PORT:-9010}:9000"
+      - "${MINIO_ADDRESS:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9011}:9001"
     healthcheck:
       # With curl and not with "mc ready local": mc looks for the foreign
       # authorities in its own directory and not in the store's, and therefore

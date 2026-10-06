@@ -1,0 +1,35 @@
+# Published images instead of building them yourself.
+#
+# The same services as in docker-compose.yml, only pulled rather than built. An
+# installation is one command that way, with no build tools, no Go and no Node
+# on the machine:
+#
+#     docker compose -f docker-compose.yml -f docker-compose.db.yml \
+#                    -f docker-compose.image.yml up -d
+#
+# Written into .env once, the list is no longer needed on every call:
+#
+#     COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.image.yml
+#
+# NEXORA_VERSION picks what gets pulled: "latest" is the newest release, "2.1"
+# stays on that minor line, "2.1.0" is fixed, and "edge" is the state of main --
+# good for trying things out, not for running a service.
+#
+# NEXORA_REGISTRY picks where from: empty means the GitHub registry
+# (ghcr.io/dschonas04), "dschohnas" means Docker Hub. Both carry the same images
+# under the same tags, for amd64 and arm64.
+#
+# NEXORA_FASSUNG was the earlier name of NEXORA_VERSION and is still read, so an
+# existing .env keeps working.
+services:
+  pki:
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-pki:${NEXORA_VERSION:-${NEXORA_FASSUNG:-latest}}
+    build: !reset null
+
+  backend:
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-backend:${NEXORA_VERSION:-${NEXORA_FASSUNG:-latest}}
+    build: !reset null
+
+  frontend:
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-frontend:${NEXORA_VERSION:-${NEXORA_FASSUNG:-latest}}
+    build: !reset null

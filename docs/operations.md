@@ -69,7 +69,7 @@ Nexora would mean operating a second copy of each.
 ### Moving attachments
 
 ```bash
-NEXORA_ANHANG_ORT=/srv/nexora/anhaenge     # .env: what gets mounted
+NEXORA_ATTACHMENT_DIR=/srv/nexora/anhaenge     # .env: what gets mounted
 attachment_directory = /data/attachments     # config.conf: the path inside
 ```
 
@@ -464,7 +464,7 @@ removed that service's directory from the volume so it gets a fresh one.
 If the interface answers 502 and its log says `SSL_do_handshake() failed`, the
 service behind it is speaking plain HTTP while the interface expects TLS. That
 is the case when the service runs without `tls_certificate`; then
-`NEXORA_DIENST_SCHEMA=http` and `NEXORA_DIENST_PORT=8080` belong in the `.env`.
+`NEXORA_SERVICE_SCHEME=http` and `NEXORA_SERVICE_PORT=8080` belong in the `.env`.
 
 ### Search finds nothing for older pages
 

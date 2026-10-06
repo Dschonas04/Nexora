@@ -299,15 +299,15 @@ Compose reads `.env` for the values it needs before the backend starts.
 | `DATABASE_URL` | Set this instead when you run your own database |
 | `JWT_SECRET` | Overrides `jwt_secret` |
 | `NEXORA_LICENSE` | Overrides `license` |
-| `NEXORA_ANHANG_ORT` | **What gets mounted** onto the attachment path, a named volume by default, or a host directory / share |
+| `NEXORA_ATTACHMENT_DIR` | **What gets mounted** onto the attachment path, a named volume by default, or a host directory / share |
 | `NEXORA_ATTACHMENT_PATH` | The path **inside** the container. Moving attachments changes the *Ort*, not this |
 | `NEXORA_TLS_NAME` | Name in the self-signed certificate. Without it the container's hostname is used, which produces a second browser warning |
 | `NEXORA_TLS_IP` | An IP for the certificate's SAN |
-| `NEXORA_DIENST_SCHEMA` | How the interface addresses the service behind it, `https` by default. Only needed when running the service without a certificate, then `http` |
-| `NEXORA_DIENST_PORT` | The port it listens on, `8443` by default (`8080` unencrypted) |
+| `NEXORA_SERVICE_SCHEME` | How the interface addresses the service behind it, `https` by default. Only needed when running the service without a certificate, then `http` |
+| `NEXORA_SERVICE_PORT` | The port it listens on, `8443` by default (`8080` unencrypted) |
 | `NEXORA_S3_*` | Wire up an existing object store without the MinIO side file |
 
-A directory given as `NEXORA_ANHANG_ORT` has to belong to **uid/gid 10001**, the
+A directory given as `NEXORA_ATTACHMENT_DIR` has to belong to **uid/gid 10001**, the
 account the service runs under in the container. Changing the setting does not
 move files that are already there, carry them over first, then restart.
 

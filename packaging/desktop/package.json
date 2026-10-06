@@ -8,7 +8,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "bauen": "node bauen.mjs"
+    "bauen": "node build.mjs"
   },
   "devDependencies": {
     "@electron/get": "^5.1.0",
