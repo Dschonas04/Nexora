@@ -128,6 +128,26 @@ function datei(p) {
   }
 })(SRC);
 
+// --- French: one entry per English side, with the same placeholders ----------
+const franzoesisch = new Map();
+for (const m of fs.readFileSync(path.join(SRC, "sprache/franzoesisch.ts"), "utf8")
+  .matchAll(/^\s*("(?:[^"\\]|\\.)*"): ("(?:[^"\\]|\\.)*"),$/gm)) {
+  franzoesisch.set(JSON.parse(m[1]), JSON.parse(m[2]));
+}
+const platzhalter = (s) => (s.match(/\{\d\}/g) || []).sort().join();
+const ohneFranzoesisch = [];
+for (const m of quelle.matchAll(/^\s*\[("(?:[^"\\]|\\.)*"), ("(?:[^"\\]|\\.)*")\],$/gm)) {
+  const en = JSON.parse(m[2]);
+  const fr = franzoesisch.get(en);
+  if (fr === undefined) ohneFranzoesisch.push(`${JSON.stringify(en)}: missing`);
+  else if (platzhalter(fr) !== platzhalter(en)) ohneFranzoesisch.push(`${JSON.stringify(en)}: placeholders differ`);
+}
+if (ohneFranzoesisch.length && !process.argv.includes("--liste")) {
+  console.error(`text probe: ${ohneFranzoesisch.length} pair(s) without a French entry in src/sprache/franzoesisch.ts:\n`);
+  for (const z of ohneFranzoesisch) console.error(`  ${z}`);
+  process.exit(1);
+}
+
 // --- compare ------------------------------------------------------------------
 const passt = (t) => bekannt.has(t) || ausnahmen.has(t) || muster.some((re) => re.test(t));
 const fehlend = [...funde].filter(([t]) => !passt(t));
@@ -142,4 +162,4 @@ if (fehlend.length) {
   for (const [t, wo] of fehlend) console.error(`  ${wo}\n    ${JSON.stringify(t)}`);
   process.exit(1);
 }
-console.log(`text probe: ${funde.size} interface texts, all have a pair or an exception`);
+console.log(`text probe: ${funde.size} interface texts, all have a pair or an exception; ${franzoesisch.size} French entries`);

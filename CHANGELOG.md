@@ -20,6 +20,10 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
   asks its nginx. `docker compose ps`, Portainer and Coolify show "healthy"
   instead of "running", and the frontend starts once the backend is healthy.
   The backend binary has a `nexora healthcheck` subcommand for that.
+- **French.** The interface speaks French as a third language, picked in the
+  account settings or taken from the browser. The editor's own menus follow.
+  Notification mails for French accounts go out in English. The text probe in
+  CI fails on any pair without a French entry.
 - **Unraid templates.** `templates/unraid/` holds container templates for the
   backend and the frontend, for an Unraid server with its own PostgreSQL.
 - **Release notes from this file.** Every tag's release on GitHub carries its

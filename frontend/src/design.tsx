@@ -130,7 +130,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
         // The language lives on the account: on every device it follows the
         // person. An account without a choice takes over the one this browser
         // already shows, so it is bound to the account from now on.
-        if (d.sprache === "de" || d.sprache === "en") setzeSprache(d.sprache);
+        if (d.sprache === "de" || d.sprache === "en" || d.sprache === "fr") setzeSprache(d.sprache);
         else api.spracheSpeichern(sprache()).catch(() => {});
       })
       // If the request fails, the default from the stylesheet stays. An

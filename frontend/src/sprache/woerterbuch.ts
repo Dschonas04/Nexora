@@ -4,7 +4,7 @@
 export const PAARE: [string, string][] = [
   ["Konten, Zugang, System", "Accounts, access, system"],
   ["[[Seitentitel]]", "[[page title]]"],
-  ["Deutsch oder Englisch", "German or English"],
+  ["Deutsch, Englisch oder Französisch", "German, English or French"],
   // German needs the dative after "vor"; these come before the general "{0} {1} ago".
   ["vor {0} Tagen", "{0} days ago"],
   ["vor {0} Stunden", "{0} hours ago"],
@@ -65,7 +65,7 @@ export const PAARE: [string, string][] = [
   ["{0} gesamt · {1} mit Verwaltungsrecht · {2} mit zweitem Faktor", "{0} in total · {1} with administrative rights · {2} with a second factor"],
   ["Sprache", "Language"],
   ["Wird an deinem Konto gespeichert und gilt auf jedem Gerät. Die Menüs des Editors folgen ab der nächsten geöffneten Seite.", "Stored on your account and applies on every device. The editor's menus follow on the next page opened."],
-  ["erwartet de oder en", "expected de or en"],
+  ["erwartet de, en oder fr", "expected de, en or fr"],
   ["Lädt…", "Loading…"],
   ["Fehler {0}", "Error {0}"],
   ["Antwort war kein JSON", "The answer was not JSON"],

@@ -27,13 +27,13 @@ const (
 type aussehenAntwort struct {
 	Grundton string `json:"grundton"`
 	Akzent   string `json:"akzent"`
-	// Sprache is the interface language, "de" or "en". Empty: nothing chosen,
+	// Sprache is the interface language, "de", "en" or "fr". Empty: nothing chosen,
 	// the browser decides.
 	Sprache string `json:"sprache"`
 }
 
 // sprachen are the interface languages there is a word list for.
-var sprachen = map[string]bool{"de": true, "en": true}
+var sprachen = map[string]bool{"de": true, "en": true, "fr": true}
 
 // aussehenLesen fetches the account's choice and fills missing values from the
 // default. A read error is not one that may hold up the interface: the account
@@ -113,7 +113,7 @@ func (s *Server) SpracheSpeichern(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Sprache = strings.TrimSpace(req.Sprache)
 	if req.Sprache != "" && !sprachen[req.Sprache] {
-		writeErr(w, http.StatusBadRequest, "erwartet de oder en")
+		writeErr(w, http.StatusBadRequest, "erwartet de, en oder fr")
 		return
 	}
 	if _, err := s.Pool.Exec(r.Context(),

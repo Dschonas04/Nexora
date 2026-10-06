@@ -147,7 +147,8 @@ func je(en bool, de, eng string) string {
 // nachrichtMail phrases subject and text in the account's language. Without a
 // choice German, the language the instance speaks first.
 func nachrichtMail(sprache, art, pageID, wer, titel, auszug, adresse string) (string, string) {
-	en := sprache == "en"
+	// The mails exist in German and English; French readers get English.
+	en := sprache == "en" || sprache == "fr"
 	if strings.TrimSpace(wer) == "" {
 		wer = je(en, "Jemand", "Somebody")
 	}
@@ -190,7 +191,8 @@ func nachrichtMail(sprache, art, pageID, wer, titel, auszug, adresse string) (st
 }
 
 func testMail(sprache, adresse string) (string, string) {
-	en := sprache == "en"
+	// The mails exist in German and English; French readers get English.
+	en := sprache == "en" || sprache == "fr"
 	text := je(en,
 		"Wenn diese Mail angekommen ist, ist der Versand richtig eingerichtet.\n",
 		"If this mail arrived, sending is set up correctly.\n")

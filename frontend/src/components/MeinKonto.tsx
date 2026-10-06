@@ -43,7 +43,7 @@ type Teil = "profil" | "aussehen" | "sprache" | "benachrichtigung" | "passwort" 
 const TEILE: { id: Teil; titel: string; unter: string }[] = [
   { id: "profil", titel: "Profile", unter: "Name and picture" },
   { id: "aussehen", titel: "Appearance", unter: "Base tone and accent" },
-  { id: "sprache", titel: "Language", unter: "German or English" },
+  { id: "sprache", titel: "Language", unter: "German, English or French" },
   { id: "benachrichtigung", titel: "Notifications", unter: "Inbox by e-mail" },
   { id: "passwort", titel: "Password", unter: "Change it" },
   { id: "zweitfaktor", titel: "Second factor", unter: "App and recovery codes" },

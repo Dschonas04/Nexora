@@ -1,4 +1,5 @@
-// German and English for the whole interface, without touching the components.
+// German, English and French for the whole interface, without touching the
+// components.
 //
 // The components keep their texts as they are, some in English, some in German.
 // This module sits between React and the screen: a MutationObserver sees every
@@ -14,9 +15,10 @@
 //
 // The choice lives in localStorage; without one the browser's language decides.
 import { useSyncExternalStore } from "react";
+import { FRANZOESISCH } from "./franzoesisch";
 import { PAARE } from "./woerterbuch";
 
-export type Sprache = "de" | "en";
+export type Sprache = "de" | "en" | "fr";
 
 const SCHLUESSEL = "nexora.sprache";
 const ATTRIBUTE = ["title", "placeholder", "aria-label", "alt"];
@@ -26,7 +28,7 @@ const AUSGENOMMEN =
 function gespeichert(): Sprache | null {
   try {
     const w = localStorage.getItem(SCHLUESSEL);
-    return w === "de" || w === "en" ? w : null;
+    return w === "de" || w === "en" || w === "fr" ? w : null;
   } catch {
     return null;
   }
@@ -34,7 +36,11 @@ function gespeichert(): Sprache | null {
 
 function ausDemBrowser(): Sprache {
   const liste = navigator.languages?.length ? navigator.languages : [navigator.language];
-  return liste.some((l) => l?.toLowerCase().startsWith("de")) ? "de" : "en";
+  const kurz = liste.map((l) => l?.toLowerCase().slice(0, 2));
+  // German anywhere in the list wins, as before French existed; otherwise the
+  // first of English and French.
+  if (kurz.includes("de")) return "de";
+  return kurz.find((k): k is Sprache => k === "en" || k === "fr") ?? "en";
 }
 
 let aktiv: Sprache = gespeichert() ?? ausDemBrowser();
@@ -43,8 +49,8 @@ let aktiv: Sprache = gespeichert() ?? ausDemBrowser();
 // The lookup: one map per target language, plus patterns for texts with {0}.
 
 type Muster = { re: RegExp; ziel: string };
-const tabellen: Record<Sprache, Map<string, string>> = { de: new Map(), en: new Map() };
-const muster: Record<Sprache, Muster[]> = { de: [], en: [] };
+const tabellen: Record<Sprache, Map<string, string>> = { de: new Map(), en: new Map(), fr: new Map() };
+const muster: Record<Sprache, Muster[]> = { de: [], en: [], fr: [] };
 
 const normal = (s: string) => s.replace(/\s+/g, " ").trim();
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -65,13 +71,21 @@ function musterAus(quelle: string, ziel: string): Muster {
   return { re: new RegExp(`^${re}$`, "s"), ziel: umgestellt };
 }
 
+// French has no pair of its own: it hangs off the English side, and both the
+// German and the English text a component writes lead to it.
 for (const [de, en] of PAARE) {
+  const fr = FRANZOESISCH[en];
   if (/\{\d\}/.test(de)) {
     muster.de.push(musterAus(en, de));
     muster.en.push(musterAus(de, en));
+    if (fr !== undefined) muster.fr.push(musterAus(de, fr), musterAus(en, fr));
   } else {
     tabellen.de.set(normal(en), de);
     tabellen.en.set(normal(de), en);
+    if (fr !== undefined) {
+      tabellen.fr.set(normal(de), fr);
+      tabellen.fr.set(normal(en), fr);
+    }
   }
 }
 

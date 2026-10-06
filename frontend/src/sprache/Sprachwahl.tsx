@@ -1,4 +1,4 @@
-// The switch between German and English. translate="no", because the two names
+// The switch between German, English and French. translate="no", because the names
 // are always written in their own language.
 import { api } from "../api/client";
 import { useAuth } from "../auth";
@@ -7,6 +7,7 @@ import { setzeSprache, useSprache, type Sprache } from "./index";
 const WAHL: { wert: Sprache; name: string }[] = [
   { wert: "de", name: "Deutsch" },
   { wert: "en", name: "English" },
+  { wert: "fr", name: "Français" },
 ];
 
 export default function Sprachwahl() {

@@ -11,7 +11,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 // Seit 0.5x liegen die Sprachdateien in einem eigenen Einstieg, und jede
 // Sprache steht einzeln da statt in einem Sammelobjekt.
-import { de as deutsch, en as englisch } from "@blocknote/core/locales";
+import { de as deutsch, en as englisch, fr as franzoesisch } from "@blocknote/core/locales";
 import { withCollaboration } from "@blocknote/core/yjs";
 import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
 import type { XmlFragment } from "yjs";
@@ -270,7 +270,7 @@ export default function Editor({
   const grundeinstellungen = {
     initialContent: content,
     // The editor's own menus follow the chosen language from the next page opened on.
-    dictionary: sprache() === "de" ? deutsch : englisch,
+    dictionary: { de: deutsch, en: englisch, fr: franzoesisch }[sprache()],
     // The image, video and file blocks get their own upload from this. It is
     // the same path an attachment takes, so a picture in the text lies where
     // every other file of this page lies: on the disk or in the bucket, and

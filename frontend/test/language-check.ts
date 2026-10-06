@@ -7,7 +7,7 @@
 import { uebersetze } from "../src/sprache/index";
 import { PAARE } from "../src/sprache/woerterbuch";
 
-const faelle: [string, "de" | "en", string | null][] = [
+const faelle: [string, "de" | "en" | "fr", string | null][] = [
   // plain lookups, whitespace around the text is kept
   ["Save", "de", "Speichern"],
   ["Speichern", "en", "Save"],
@@ -25,6 +25,15 @@ const faelle: [string, "de" | "en", string | null][] = [
   // "{0} auf {1}" must not swallow a sentence that happens to contain "auf"
   ["Firefox auf Linux", "en", "Firefox on Linux"],
   ["Wirkt auf die Selbstregistrierung, nicht auf Konten, die ein Administrator anlegt.", "en", null],
+  // French, reached from the German and the English text alike
+  ["Save", "fr", "Enregistrer"],
+  ["Speichern", "fr", "Enregistrer"],
+  ["3 people added.", "fr", "3 personnes ajoutées."],
+  ["Create 3 accounts", "fr", "Créer 3 comptes"],
+  ["Gruppe „Vertrieb“ angelegt.", "fr", "Groupe « Vertrieb » créé."],
+  ["vor 3 Stunden", "fr", "il y a 3 heures"],
+  ["2 days ago", "fr", "il y a 2 jours"],
+  ["Firefox auf Linux", "fr", "Firefox sur Linux"],
   // unknown text and bare values stay untouched
   ["MeinText", "de", null],
   ["{0}", "de", null],
