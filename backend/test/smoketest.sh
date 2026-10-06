@@ -503,6 +503,8 @@ pruefe "Sprache wird angenommen" "200" \
        "$(code -X PUT "$BASIS/api/design/sprache" -H 'Content-Type: application/json' -d '{"sprache":"en"}')"
 pruefe "und steht beim naechsten Abruf da" "en" "$(hole "$BASIS/api/design" | feld "['sprache']")"
 pruefe "eine unbekannte Sprache wird abgewiesen" "400" \
+       "$(code -X PUT "$BASIS/api/design/sprache" -H 'Content-Type: application/json' -d '{"sprache":"xx"}')"
+pruefe "Franzoesisch wird angenommen" "200" \
        "$(code -X PUT "$BASIS/api/design/sprache" -H 'Content-Type: application/json' -d '{"sprache":"fr"}')"
 pruefe "der Grundton bleibt davon unberuehrt" "grau" "$(hole "$BASIS/api/design" | feld "['grundton']")"
 # The appearance no longer appears among the administration's settings.
