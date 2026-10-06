@@ -12,6 +12,6 @@
   },
   "devDependencies": {
     "@electron/get": "^5.1.0",
-    "electron": "^44.4.5"
+    "electron": "^44.5.1"
   }
 }

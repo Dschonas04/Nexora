@@ -37,7 +37,7 @@ jobs:
         working-directory: backend
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Print versions
         run: go version
@@ -78,7 +78,7 @@ jobs:
         working-directory: frontend
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Print versions
         run: node --version && npm --version

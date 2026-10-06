@@ -235,8 +235,8 @@ larger than the feature.
 |---|---|---|
 | **PostgreSQL 16** | The store of record | `tsvector` with a generated column and a GIN index is a real search. `jsonb` holds the block document without a schema for it. `gen_random_uuid()` from `pgcrypto` makes ids the database's job. |
 | **Docker Compose** | Delivery | Two services in the main file; database, object store and cache in side files, because most installations already run those and chaining them here would mean operating them twice. |
-| **nginx 1.27 alpine** | Serves the SPA, proxies `/api`, terminates TLS | One origin for interface and API, so no CORS. Issues a self-signed certificate on first start and keeps it in a volume, so a rebuild does not produce a fresh browser warning. |
-| **Alpine 3.19** | Runtime image | The binary is static; the image exists for `poppler-utils`, a non-root user and a data directory. |
+| **nginx 1.31 alpine** | Serves the SPA, proxies `/api`, terminates TLS | One origin for interface and API, so no CORS. Issues a self-signed certificate on first start and keeps it in a volume, so a rebuild does not produce a fresh browser warning. |
+| **Alpine 3.24** | Runtime image | The binary is static; the image exists for `poppler-utils`, a non-root user and a data directory. |
 
 ---
 
@@ -656,7 +656,7 @@ graph TB
         pki["pki container<br/>runs once, then exits<br/>issues the stack's certificates"]
         pkiv[("volume nexora_pki<br/>authority + one cert per service")]
         subgraph fe["frontend container"]
-            nginx["nginx 1.27 alpine<br/>:80 :443<br/>SPA + proxy /api"]
+            nginx["nginx 1.31 alpine<br/>:80 :443<br/>SPA + proxy /api"]
             tlsv[("volume nexora_tls<br/>certificate and key")]
         end
         subgraph be["backend container"]

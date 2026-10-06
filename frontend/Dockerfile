@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /app
 # npm ci and the lock file, exactly as in CI. npm install from package.json alone
 # resolved a different tree on the Docker host than in CI, and with two
@@ -9,7 +9,7 @@ RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build
 
-FROM nginx:1.27-alpine
+FROM nginx:1.31-alpine
 # openssl for the self-signed certificate facing outwards, gettext for envsubst:
 # the template carries two placeholders, see tls-start.sh.
 RUN apk add --no-cache openssl gettext

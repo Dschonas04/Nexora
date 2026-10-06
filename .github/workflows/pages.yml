@@ -25,8 +25,8 @@ jobs:
       name: github-pages
       url: ${{ steps.ausrollen.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/configure-pages@v5
+      - uses: actions/checkout@v7
+      - uses: actions/configure-pages@v6
       # The pictures live once, in docs/images, and are copied into the artifact
       # rather than kept a second time under site/.
       - run: cp -r docs/images site/images
@@ -34,4 +34,4 @@ jobs:
         with:
           path: site
       - id: ausrollen
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
