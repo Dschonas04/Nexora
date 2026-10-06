@@ -30,7 +30,7 @@ jobs:
       # The pictures live once, in docs/images, and are copied into the artifact
       # rather than kept a second time under site/.
       - run: cp -r docs/images site/images
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
       - id: ausrollen
