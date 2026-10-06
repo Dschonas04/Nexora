@@ -48,8 +48,18 @@ fi
 export NEXORA_SERVICE_SCHEME="${NEXORA_SERVICE_SCHEME:-${NEXORA_DIENST_SCHEMA:-https}}"
 export NEXORA_SERVICE_PORT="${NEXORA_SERVICE_PORT:-${NEXORA_DIENST_PORT:-8443}}"
 
+export NEXORA_SERVICE_HOST="${NEXORA_SERVICE_HOST:-backend}"
+# The DNS server the container was given: 127.0.0.11 in a Docker network, the
+# cluster's DNS on Kubernetes. nginx wants an IPv6 address in brackets.
+if [ -z "${NEXORA_RESOLVER:-}" ]; then
+    NEXORA_RESOLVER=$(awk '$1 == "nameserver" { print $2; exit }' /etc/resolv.conf 2>/dev/null)
+    NEXORA_RESOLVER="${NEXORA_RESOLVER:-127.0.0.11}"
+    case "$NEXORA_RESOLVER" in *:*) NEXORA_RESOLVER="[$NEXORA_RESOLVER]" ;; esac
+fi
+export NEXORA_RESOLVER
+
 if [ -f /etc/nginx/vorlage.conf ]; then
-    envsubst '${NEXORA_SERVICE_SCHEME} ${NEXORA_SERVICE_PORT}' \
+    envsubst '${NEXORA_SERVICE_SCHEME} ${NEXORA_SERVICE_PORT} ${NEXORA_SERVICE_HOST} ${NEXORA_RESOLVER}' \
         < /etc/nginx/vorlage.conf > /etc/nginx/conf.d/default.conf
     # Without the compound's authority there is nothing to check a certificate
     # against, and nginx refuses to start over the missing file. Over plain
@@ -59,7 +69,7 @@ if [ -f /etc/nginx/vorlage.conf ]; then
         sed -i '/proxy_ssl_trusted_certificate/d; /proxy_ssl_verify /d; /proxy_ssl_verify_depth/d' \
             /etc/nginx/conf.d/default.conf
     fi
-    echo "Dienst: $NEXORA_SERVICE_SCHEME://backend:$NEXORA_SERVICE_PORT"
+    echo "Dienst: $NEXORA_SERVICE_SCHEME://$NEXORA_SERVICE_HOST:$NEXORA_SERVICE_PORT (DNS $NEXORA_RESOLVER)"
 fi
 
 # Without the compound's authority nginx would not reach the service, and the

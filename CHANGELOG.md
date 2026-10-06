@@ -46,6 +46,10 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
   theory: with `NEXORA_SERVICE_SCHEME=http` and no `/pki/ca.crt`, nginx
   refused to start over the missing file. It now drops the certificate check
   when there is no certificate to check.
+- The frontend's nginx asked Docker's DNS at 127.0.0.11 for the service, fixed
+  in the configuration. It now takes the container's own DNS server from
+  `/etc/resolv.conf`, and the service's host name from `NEXORA_SERVICE_HOST`
+  (default `backend`), so it also runs on Kubernetes.
 
 ## [2.1.0]: 2026-09-18
 

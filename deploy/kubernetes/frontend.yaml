@@ -26,6 +26,15 @@ spec:
               value: http
             - name: NEXORA_SERVICE_PORT
               value: "8080"
+            # nginx resolves the service itself and knows no search domains, so
+            # it needs the full name. Change cluster.local if your cluster
+            # uses another domain.
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: NEXORA_SERVICE_HOST
+              value: backend.$(POD_NAMESPACE).svc.cluster.local
             # The address the instance is reached under, for links in mails
             # and for search engines. Keep it in line with ingress.yaml.
             # - name: NEXORA_PUBLIC_URL

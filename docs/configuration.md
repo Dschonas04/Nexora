@@ -305,6 +305,8 @@ Compose reads `.env` for the values it needs before the backend starts.
 | `NEXORA_TLS_IP` | An IP for the certificate's SAN |
 | `NEXORA_SERVICE_SCHEME` | How the interface addresses the service behind it, `https` by default. Only needed when running the service without a certificate, then `http` |
 | `NEXORA_SERVICE_PORT` | The port it listens on, `8443` by default (`8080` unencrypted) |
+| `NEXORA_SERVICE_HOST` | The service's host name, `backend` by default. On Kubernetes the full name, e.g. `backend.nexora.svc.cluster.local`: nginx knows no search domains |
+| `NEXORA_RESOLVER` | The DNS server nginx asks for that name. Default: the first `nameserver` in the container's `/etc/resolv.conf` |
 | `NEXORA_S3_*` | Wire up an existing object store without the MinIO side file |
 
 A directory given as `NEXORA_ATTACHMENT_DIR` has to belong to **uid/gid 10001**, the
