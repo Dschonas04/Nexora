@@ -11,6 +11,25 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 `dschohnas/nexora-{backend,frontend,pki}` on Docker Hub. See
 [Where the images are](README.md#where-the-images-are).
 
+## [Unreleased]
+
+### Added
+
+- **Health checks.** The backend and frontend containers report their state:
+  the backend asks its own `/healthz`, which pings the database, the frontend
+  asks its nginx. `docker compose ps`, Portainer and Coolify show "healthy"
+  instead of "running", and the frontend starts once the backend is healthy.
+  The backend binary has a `nexora healthcheck` subcommand for that.
+- **Release notes from this file.** Every tag's release on GitHub carries its
+  section of this changelog.
+
+### Changed
+
+- The remaining German names of files and environment variables are English
+  now (`NEXORA_ATTACHMENT_DIR`, `NEXORA_SERVICE_SCHEME`, `NEXORA_SERVICE_PORT`,
+  `PKI_DIR`, `PKI_DAYS`, `PKI_SERVICES`). The old names are still read, so an
+  existing `.env` keeps working.
+
 ## [2.1.0]: 2026-09-18
 
 ### Changed
@@ -92,6 +111,7 @@ this release; see 2.1.0 for what became free since. Markdown import and export
 are free regardless, because the way out of a system must never sit behind a
 key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
+[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v2.1.0...main
 [2.1.0]: https://github.com/Dschonas04/Nexora/releases/tag/v2.1.0
 [2.0.1]: https://github.com/Dschonas04/Nexora/releases/tag/v2.0.1
 [2.0.0]: https://github.com/Dschonas04/Nexora/releases/tag/v2.0.0
