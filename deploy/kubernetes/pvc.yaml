@@ -1,0 +1,12 @@
+# The attachments. ReadWriteOnce, which is why the backend runs as a single
+# replica with the Recreate strategy. Attachments in an S3 bucket instead (see
+# docs/configuration.md) make this volume unnecessary.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nexora-attachments
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi

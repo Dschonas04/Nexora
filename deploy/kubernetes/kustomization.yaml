@@ -1,0 +1,36 @@
+# Nexora on Kubernetes, against a PostgreSQL that already runs somewhere.
+#
+#     cp secret.env.example secret.env    # and fill it in
+#     kubectl apply -k deploy/kubernetes
+#
+# Change the host name in ingress.yaml, or delete the ingress from the list
+# below and reach the frontend service some other way. See
+# docs/operations.md, "Kubernetes".
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: nexora
+
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - backend.yaml
+  - frontend.yaml
+  - ingress.yaml
+
+secretGenerator:
+  - name: nexora
+    envs:
+      - secret.env
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: nexora
+
+# The tag to run. "latest" is the newest release; a fixed version such as
+# 2.2.0 is the better choice for anything that should not change on a restart.
+images:
+  - name: ghcr.io/dschonas04/nexora-backend
+    newTag: latest
+  - name: ghcr.io/dschonas04/nexora-frontend
+    newTag: latest

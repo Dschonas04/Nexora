@@ -1,0 +1,25 @@
+# The way in from outside. Replace the host name; for TLS, uncomment the block
+# below and point it at a certificate secret, by hand or through cert-manager.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nexora
+  annotations:
+    # Attachments up to the backend's limit (25 MB by default) must pass. The
+    # annotation is for ingress-nginx; Traefik has no such limit by default.
+    nginx.ingress.kubernetes.io/proxy-body-size: 64m
+spec:
+  rules:
+    - host: nexora.example.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  name: http
+  # tls:
+  #   - hosts: [nexora.example.org]
+  #     secretName: nexora-tls
