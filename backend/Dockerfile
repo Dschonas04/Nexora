@@ -40,4 +40,8 @@ COPY --from=build /nexora /usr/local/bin/nexora
 VOLUME ["/data/attachments"]
 USER nexora
 EXPOSE 8080
+# The binary checks itself: it asks /healthz on its own port, which also pings
+# the database. See healthcheck.go.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD ["/usr/local/bin/nexora", "healthcheck"]
 ENTRYPOINT ["/usr/local/bin/nexora"]

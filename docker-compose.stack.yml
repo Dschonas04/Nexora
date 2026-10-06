@@ -54,6 +54,15 @@ services:
 
   backend:
     image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-backend:${NEXORA_VERSION:-${NEXORA_FASSUNG:-latest}}
+    # Asks /healthz, which also pings the database. Written with the shell and
+    # wget so it works on every image, including those from before the binary
+    # learnt "nexora healthcheck".
+    healthcheck:
+      test: ["CMD-SHELL", "[ -n \"$$NEXORA_TLS_CERTIFICATE\" ] && s=https || s=http; wget -q -O /dev/null --no-check-certificate $$s://127.0.0.1:$${PORT:-8080}/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       db:
         condition: service_healthy
@@ -74,11 +83,19 @@ services:
 
   frontend:
     image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-frontend:${NEXORA_VERSION:-${NEXORA_FASSUNG:-latest}}
+    # Only that nginx answers; whether the service behind it does is the
+    # backend's own check.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     depends_on:
       pki:
         condition: service_completed_successfully
       backend:
-        condition: service_started
+        condition: service_healthy
     ports:
       - '${PORT:-3000}:80'
       - '${PORT_TLS:-3443}:443'

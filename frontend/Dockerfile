@@ -20,6 +20,8 @@ COPY tls-start.sh /usr/local/bin/tls-start.sh
 RUN chmod +x /usr/local/bin/tls-start.sh
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80 443
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1/healthz || exit 1
 CMD ["/usr/local/bin/tls-start.sh"]
 
 # What is in this image, the image says itself. Poppler does not lie here, that

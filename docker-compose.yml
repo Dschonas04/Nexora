@@ -29,6 +29,15 @@ services:
 
   backend:
     build: ./backend
+    # Asks /healthz, which also pings the database. Written with the shell and
+    # wget so it works on every image, including those from before the binary
+    # learnt "nexora healthcheck".
+    healthcheck:
+      test: ["CMD-SHELL", "[ -n \"$$NEXORA_TLS_CERTIFICATE\" ] && s=https || s=http; wget -q -O /dev/null --no-check-certificate $$s://127.0.0.1:$${PORT:-8080}/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     depends_on:
       pki:
         condition: service_completed_successfully
@@ -117,6 +126,14 @@ services:
 
   frontend:
     build: ./frontend
+    # Only that nginx answers; whether the service behind it does is the
+    # backend's own check.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     ports:
       - "${PORT:-3000}:80"
       # The same service, encrypted. The container issues the certificate itself
@@ -151,7 +168,7 @@ services:
       pki:
         condition: service_completed_successfully
       backend:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

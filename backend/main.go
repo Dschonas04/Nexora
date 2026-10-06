@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -24,6 +25,12 @@ import (
 )
 
 func main() {
+	// "nexora healthcheck" is what the container runtime calls, see
+	// healthcheck.go and the HEALTHCHECK in the Dockerfile.
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		os.Exit(healthcheck())
+	}
+
 	// Settings come from config.conf, overridden by environment variables,
 	// overridden by nothing. See internal/config and config.conf; every value
 	// has a default so the server starts without any configuration at all.
