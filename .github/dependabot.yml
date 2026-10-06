@@ -15,6 +15,10 @@ updates:
     groups:
       npm:
         patterns: ["*"]
+    ignore:
+      # Capacitor 8 needs the Android and iOS projects migrated first.
+      - dependency-name: "@capacitor/*"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker
     directories: [/backend, /frontend, /pki]
     schedule:

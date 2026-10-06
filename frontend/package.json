@@ -20,7 +20,7 @@
     "@tiptap/pm": "^3.31.4",
     "lib0": "^0.2.119",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^6.3.289",
+    "pdfjs-dist": "^6.4.299",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router": "^8.4.0",
