@@ -20,6 +20,8 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
   asks its nginx. `docker compose ps`, Portainer and Coolify show "healthy"
   instead of "running", and the frontend starts once the backend is healthy.
   The backend binary has a `nexora healthcheck` subcommand for that.
+- **Unraid templates.** `templates/unraid/` holds container templates for the
+  backend and the frontend, for an Unraid server with its own PostgreSQL.
 - **Release notes from this file.** Every tag's release on GitHub carries its
   section of this changelog.
 
@@ -29,6 +31,13 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
   now (`NEXORA_ATTACHMENT_DIR`, `NEXORA_SERVICE_SCHEME`, `NEXORA_SERVICE_PORT`,
   `PKI_DIR`, `PKI_DAYS`, `PKI_SERVICES`). The old names are still read, so an
   existing `.env` keeps working.
+
+### Fixed
+
+- The frontend started without the stack's certificate authority only in
+  theory: with `NEXORA_SERVICE_SCHEME=http` and no `/pki/ca.crt`, nginx
+  refused to start over the missing file. It now drops the certificate check
+  when there is no certificate to check.
 
 ## [2.1.0]: 2026-09-18
 

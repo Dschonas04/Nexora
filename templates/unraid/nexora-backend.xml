@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!--
+  Nexora's API service for Unraid. Install nexora-frontend.xml next to it; both
+  have to sit in the same custom Docker network, see templates/README.md.
+-->
+<Container version="2">
+  <Name>nexora-backend</Name>
+  <Repository>ghcr.io/dschonas04/nexora-backend:latest</Repository>
+  <Registry>https://github.com/Dschonas04/Nexora/pkgs/container/nexora-backend</Registry>
+  <Network>nexora</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/Dschonas04/Nexora/issues</Support>
+  <Project>https://github.com/Dschonas04/Nexora</Project>
+  <Overview>The API service of Nexora, a self-hosted wiki with nested pages, backlinks, full text search and versions. Needs a PostgreSQL database (16 or newer) and the nexora-frontend container in the same Docker network. Has no web interface of its own.</Overview>
+  <Category>Productivity: Tools:</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/Dschonas04/Nexora/main/templates/unraid/nexora-backend.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/logo/nexora-zeichen-512.png</Icon>
+  <ExtraParams>--network-alias backend</ExtraParams>
+  <PostArgs/>
+  <Config Name="Database URL" Target="DATABASE_URL" Default="" Mode="" Description="Connection string of your PostgreSQL database, e.g. postgres://nexora:PASSWORD@192.168.1.10:5432/nexora?sslmode=disable" Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="JWT secret" Target="JWT_SECRET" Default="" Mode="" Description="Signs the sessions. A long random value: openssl rand -hex 32" Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Port" Target="PORT" Default="8080" Mode="" Description="Port inside the network. Leave at 8080; the frontend expects it there." Type="Variable" Display="advanced" Required="true" Mask="false">8080</Config>
+  <Config Name="Attachments" Target="/data/attachments" Default="/mnt/user/appdata/nexora/attachments" Mode="rw" Description="Where uploaded files are kept. The directory must be writable for uid 10001." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/nexora/attachments</Config>
+</Container>

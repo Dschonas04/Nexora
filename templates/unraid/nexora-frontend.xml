@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+  Nexora's web interface for Unraid. Needs nexora-backend.xml running in the
+  same custom Docker network, see templates/README.md.
+-->
+<Container version="2">
+  <Name>nexora</Name>
+  <Repository>ghcr.io/dschonas04/nexora-frontend:latest</Repository>
+  <Registry>https://github.com/Dschonas04/Nexora/pkgs/container/nexora-frontend</Registry>
+  <Network>nexora</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/Dschonas04/Nexora/issues</Support>
+  <Project>https://github.com/Dschonas04/Nexora</Project>
+  <Overview>Nexora, a self-hosted wiki with nested pages, backlinks and a knowledge graph. Full text search, versions, comments and attachments; import from Obsidian, Notion and Confluence. This is the web interface; it needs the nexora-backend container in the same Docker network. The first account that registers becomes the administrator.</Overview>
+  <Category>Productivity: Tools:</Category>
+  <WebUI>http://[IP]:[PORT:80]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/Dschonas04/Nexora/main/templates/unraid/nexora-frontend.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/Dschonas04/Nexora/main/docs/logo/nexora-zeichen-512.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <Config Name="Web interface" Target="80" Default="3000" Mode="tcp" Description="Port for the interface over HTTP." Type="Port" Display="always" Required="true" Mask="false">3000</Config>
+  <Config Name="Web interface (TLS)" Target="443" Default="3443" Mode="tcp" Description="The same interface, encrypted with a certificate the container issues itself." Type="Port" Display="always" Required="false" Mask="false">3443</Config>
+  <Config Name="Service scheme" Target="NEXORA_SERVICE_SCHEME" Default="http" Mode="" Description="How the interface reaches the backend. http, because this setup has no certificate authority of its own." Type="Variable" Display="advanced" Required="true" Mask="false">http</Config>
+  <Config Name="Service port" Target="NEXORA_SERVICE_PORT" Default="8080" Mode="" Description="The backend's port inside the network." Type="Variable" Display="advanced" Required="true" Mask="false">8080</Config>
+  <Config Name="Certificate name" Target="NEXORA_TLS_NAME" Default="nexora" Mode="" Description="Name written into the self-issued certificate." Type="Variable" Display="advanced" Required="false" Mask="false">nexora</Config>
+  <Config Name="Certificate" Target="/etc/nginx/tls" Default="/mnt/user/appdata/nexora/tls" Mode="rw" Description="Keeps the self-issued certificate across updates." Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/nexora/tls</Config>
+</Container>

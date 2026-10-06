@@ -51,6 +51,14 @@ export NEXORA_SERVICE_PORT="${NEXORA_SERVICE_PORT:-${NEXORA_DIENST_PORT:-8443}}"
 if [ -f /etc/nginx/vorlage.conf ]; then
     envsubst '${NEXORA_SERVICE_SCHEME} ${NEXORA_SERVICE_PORT}' \
         < /etc/nginx/vorlage.conf > /etc/nginx/conf.d/default.conf
+    # Without the compound's authority there is nothing to check a certificate
+    # against, and nginx refuses to start over the missing file. Over plain
+    # http no certificate is checked anyway, so the lines go. Over https they
+    # stay, and nginx stops loudly instead of talking unverified.
+    if [ "$NEXORA_SERVICE_SCHEME" = "http" ] && [ ! -f /pki/ca.crt ]; then
+        sed -i '/proxy_ssl_trusted_certificate/d; /proxy_ssl_verify /d; /proxy_ssl_verify_depth/d' \
+            /etc/nginx/conf.d/default.conf
+    fi
     echo "Dienst: $NEXORA_SERVICE_SCHEME://backend:$NEXORA_SERVICE_PORT"
 fi
 

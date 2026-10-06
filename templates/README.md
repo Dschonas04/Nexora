@@ -31,9 +31,35 @@ deploy. The interface answers on port 3000 unless `PORT` says otherwise.
 
 ## Unraid
 
+Two ways, depending on whether a PostgreSQL already runs on the server.
+
+### Container templates, with your own PostgreSQL
+
+[`unraid/`](unraid) holds one XML template per container:
+`nexora-backend.xml` for the service and `nexora-frontend.xml` for the
+interface. They leave the internal certificate authority out and talk plain
+HTTP inside a Docker network of their own, which is why both have to sit in
+the same one:
+
+1. Create the network once, in the Unraid terminal:
+   `docker network create nexora`.
+2. Create a database and a user for Nexora in your PostgreSQL (16 or newer).
+3. Copy both XML files to `/boot/config/plugins/dockerMan/templates-user/`,
+   then *Docker → Add Container* and pick `nexora-backend`. Fill in the
+   database URL and a JWT secret (`openssl rand -hex 32`), apply.
+4. Add the second container from `nexora` the same way. The interface answers
+   on port 3000; the first account that registers is the administrator.
+
+The backend needs the network alias `backend`, which the template sets in
+*Extra Parameters*; the interface looks for the service under that name.
+These templates need images from 2.2.0 on: earlier frontends refuse to start
+without the certificate authority.
+
+### Compose Manager, with the bundled database
+
 Unraid's Community Applications are built around one container per template,
-which does not fit a stack of four. The way that does fit is the **Compose
-Manager** plugin (Apps → Compose Manager):
+so the whole stack goes through the **Compose Manager** plugin
+(Apps → Compose Manager):
 
 1. Add a new stack, name it `nexora`.
 2. Paste [`docker-compose.stack.yml`](../docker-compose.stack.yml) as the

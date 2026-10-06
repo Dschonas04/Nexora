@@ -262,7 +262,8 @@ certificates, `nexora-backend` is the Go service, `nexora-frontend` the web
 interface. None of them is meant to run alone.
 
 Templates for the home-server platforms are in
-[`templates/`](templates/README.md): CasaOS, Umbrel, and Unraid with the Compose
+[`templates/`](templates/README.md): CasaOS, Umbrel, and Unraid, either as two
+container templates against your own PostgreSQL or as a stack with the Compose
 Manager.
 
 One file, nothing else, for Portainer, Coolify, Dokploy or a bare machine.
