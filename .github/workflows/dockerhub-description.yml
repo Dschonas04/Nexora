@@ -1,0 +1,43 @@
+# Keeps the pages on Docker Hub in step with dockerhub/*.md: the short line in
+# the list and the long description on each image's page. Docker Hub does not
+# read the README from the repository by itself.
+name: Docker Hub descriptions
+
+on:
+  push:
+    branches: [main]
+    paths: ['dockerhub/**', '.github/workflows/dockerhub-description.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  describe:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: single
+            short: Self-hosted wiki with backlinks and a knowledge graph, database included, in one container.
+          - image: backend
+            short: Nexora self-hosted wiki, Go API service. Runs with nexora-frontend, nexora-pki and PostgreSQL.
+          - image: frontend
+            short: Nexora self-hosted wiki, web interface (nginx + React). Runs with nexora-backend.
+          - image: pki
+            short: Nexora self-hosted wiki, one-shot container that issues the internal TLS certificates.
+    steps:
+      - uses: actions/checkout@v7
+      - name: Lowercase the account
+        run: echo "HUB_USER=${DOCKERHUB_USERNAME,,}" >> "$GITHUB_ENV"
+      - uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ env.HUB_USER }}/nexora-${{ matrix.image }}
+          short-description: ${{ matrix.short }}
+          readme-filepath: dockerhub/${{ matrix.image }}.md
