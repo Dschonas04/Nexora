@@ -1,0 +1,41 @@
+# Takes a published tag off Docker Hub, for the rare case that an image must not
+# stay available, as with nexora-single 2.2.0 (database without a password).
+# On ghcr.io the same is done under the package's settings or through the API.
+# Started by hand only: Actions, "Remove a Docker Hub tag", Run workflow.
+name: Remove a Docker Hub tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: 'Image without the account, e.g. nexora-single'
+        required: true
+      tag:
+        description: 'Tag to remove, e.g. 2.2.0'
+        required: true
+
+permissions: {}
+
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove the tag
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          IMAGE: ${{ inputs.image }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -eu
+          case "$IMAGE$TAG" in *[!A-Za-z0-9._-]*) echo "invalid input" >&2; exit 1 ;; esac
+          user="${DOCKERHUB_USERNAME,,}"
+          jwt=$(curl -fsS -X POST https://hub.docker.com/v2/users/login \
+                -H 'Content-Type: application/json' \
+                -d "{\"username\":\"$user\",\"password\":\"$DOCKERHUB_TOKEN\"}" | jq -r .token)
+          code=$(curl -s -o /tmp/out -w '%{http_code}' -X DELETE \
+                 -H "Authorization: JWT $jwt" \
+                 "https://hub.docker.com/v2/repositories/$user/$IMAGE/tags/$TAG/")
+          cat /tmp/out; echo
+          echo "HTTP $code"
+          [ "$code" = 204 ] || [ "$code" = 404 ]
