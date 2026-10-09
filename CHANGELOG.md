@@ -27,6 +27,10 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ## [2.2.0]: 2026-10-09
 
+> The `nexora-single` image of this version has been withdrawn from both
+> registries: its database accepted local connections without a password. Use
+> 2.2.1 or later. The other three images are unaffected.
+
 ### Added
 
 - **Single container.** `nexora-single` holds PostgreSQL, the service and nginx
