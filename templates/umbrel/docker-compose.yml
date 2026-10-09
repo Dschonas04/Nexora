@@ -27,13 +27,13 @@ services:
     restart: on-failure
 
   pki:
-    image: ghcr.io/dschonas04/nexora-pki:2.1.0
+    image: ghcr.io/dschonas04/nexora-pki:2.2.0
     volumes:
       - ${APP_DATA_DIR}/data/pki:/pki
     restart: "no"
 
   backend:
-    image: ghcr.io/dschonas04/nexora-backend:2.1.0
+    image: ghcr.io/dschonas04/nexora-backend:2.2.0
     # Asks /healthz, which also pings the database. Written with the shell and
     # wget so it works on every image, including those from before the binary
     # learnt "nexora healthcheck".
@@ -62,7 +62,7 @@ services:
     restart: on-failure
 
   frontend:
-    image: ghcr.io/dschonas04/nexora-frontend:2.1.0
+    image: ghcr.io/dschonas04/nexora-frontend:2.2.0
     # Only that nginx answers; whether the service behind it does is the
     # backend's own check.
     healthcheck:

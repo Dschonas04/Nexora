@@ -233,6 +233,26 @@ docker compose up -d
 Then open `http://localhost:3000`. The first account that registers becomes the
 administrator.
 
+### Single container
+
+Everything in one image, database included, for a first try or a small team on
+a small machine:
+
+```bash
+docker run -d --name nexora -p 3000:80 -v nexora_data:/data --restart unless-stopped \
+  ghcr.io/dschonas04/nexora-single:latest
+```
+
+or with [`docker-compose.single.yml`](docker-compose.single.yml). One volume
+holds the database, the attachments, the session secret it generates on the
+first start and the self-signed certificate for port 443.
+
+It runs the free **Standard** scope only and reads no licence key. It is not
+built for load: PostgreSQL, the service and nginx share one container, and
+there is no splitting them later without a backup and a restore (both are in
+the settings, under System). For Pro or Business, or more than a handful of
+people writing at once, take the stack with separate containers.
+
 ### Where the images are
 
 Every release is published to **two registries**, with identical tags and
@@ -240,26 +260,28 @@ identical content. Pull from whichever you prefer, nothing else differs.
 
 | Registry | Images | Page |
 |---|---|---|
-| **GitHub Container Registry** (default) | `ghcr.io/dschonas04/nexora-backend`<br>`ghcr.io/dschonas04/nexora-frontend`<br>`ghcr.io/dschonas04/nexora-pki` | [packages](https://github.com/Dschonas04?tab=packages&repo_name=Nexora) |
-| **Docker Hub** | `dschohnas/nexora-backend`<br>`dschohnas/nexora-frontend`<br>`dschohnas/nexora-pki` | [hub.docker.com/u/dschohnas](https://hub.docker.com/u/dschohnas) |
+| **GitHub Container Registry** (default) | `ghcr.io/dschonas04/nexora-backend`<br>`ghcr.io/dschonas04/nexora-frontend`<br>`ghcr.io/dschonas04/nexora-pki`<br>`ghcr.io/dschonas04/nexora-single` | [packages](https://github.com/Dschonas04?tab=packages&repo_name=Nexora) |
+| **Docker Hub** | `dschohnas/nexora-backend`<br>`dschohnas/nexora-frontend`<br>`dschohnas/nexora-pki`<br>`dschohnas/nexora-single` | [hub.docker.com/u/dschohnas](https://hub.docker.com/u/dschohnas) |
 
 | | |
 |---|---|
 | **Architectures** | `linux/amd64` (x86-64 PCs and servers) and `linux/arm64` (Raspberry Pi 4/5 on a 64-bit system, Apple Silicon, ARM servers). Docker picks the right one by itself |
-| **Tags** | `latest` for the newest release · `2.1` stays on a minor line · `2.1.0` is pinned exactly · `edge` is the current state of `main`, for trying, not for running |
+| **Tags** | `latest` for the newest release · `2.2` stays on a minor line · `2.2.0` is pinned exactly · `edge` is the current state of `main`, for trying, not for running |
 | **Built by** | [`.github/workflows/release.yml`](.github/workflows/release.yml) on GitHub's runners, on every tag `v*` |
 | **Pull without an account** | yes, on both |
 
 Two settings in the `.env` choose what is pulled:
 
 ```bash
-NEXORA_VERSION=2.1.0            # which version (default: latest)
+NEXORA_VERSION=2.2.0            # which version (default: latest)
 NEXORA_REGISTRY=dschohnas       # Docker Hub instead of the default ghcr.io/dschonas04
 ```
 
 The three images belong together: `nexora-pki` issues the internal
 certificates, `nexora-backend` is the Go service, `nexora-frontend` the web
-interface. None of them is meant to run alone.
+interface. None of them is meant to run alone. `nexora-single` is the
+exception: all of Nexora Standard in one image, see
+[Single container](#single-container).
 
 Templates for the home-server platforms are in
 [`templates/`](templates/README.md): CasaOS, Umbrel, and Unraid, either as two

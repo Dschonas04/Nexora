@@ -1,0 +1,9 @@
+# Only what the build reads. Above all not the frontend's node_modules and dist
+# from a local build: they would end up in the context and, worse, in the image.
+*
+!backend/
+!frontend/
+!single/
+frontend/node_modules
+frontend/dist
+**/.git

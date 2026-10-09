@@ -1,0 +1,31 @@
+# Nexora in a single container: database, service and web server in one image,
+# one volume, nothing else to set. The quickest way to try Nexora, and enough
+# for a small team on a small machine.
+#
+#     curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker-compose.single.yml
+#     docker compose -f docker-compose.single.yml up -d
+#
+# Then open http://localhost:3000. The first account that registers becomes the
+# administrator.
+#
+# What it is and what it is not: the free Standard scope only, no licence key is
+# read. Everything runs in one process tree, so it scales no further than the
+# machine and cannot be split up later without a backup and a restore. For Pro
+# or Business, or for more than a handful of people writing at once, take
+# docker-compose.stack.yml.
+#
+# The session secret is generated on the first start and kept in the volume.
+# Whoever wants to set it, sets JWT_SECRET. NEXORA_REGISTRY=dschohnas pulls from
+# Docker Hub instead, NEXORA_VERSION pins a version (default: latest).
+services:
+  nexora:
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-single:${NEXORA_VERSION:-latest}
+    ports:
+      - '3000:80'
+      # - '3443:443'   # https with a self-signed certificate
+    volumes:
+      - nexora_data:/data
+    restart: unless-stopped
+
+volumes:
+  nexora_data:

@@ -38,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [backend, frontend, pki]
+        service: [backend, frontend, pki, single]
 
     steps:
       - name: Check out
@@ -103,7 +103,10 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
-          context: ./${{ matrix.service }}
+          # single is the whole of Nexora in one container and reads backend/
+          # and frontend/, so it builds from the root with its own Dockerfile.
+          context: ${{ matrix.service == 'single' && '.' || format('./{0}', matrix.service) }}
+          file: ${{ matrix.service == 'single' && 'single/Dockerfile' || format('./{0}/Dockerfile', matrix.service) }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

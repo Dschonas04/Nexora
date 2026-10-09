@@ -13,8 +13,16 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [2.2.0]: 2026-10-09
+
 ### Added
 
+- **Single container.** `nexora-single` holds PostgreSQL, the service and nginx
+  in one image with one volume: `docker run -p 3000:80 -v nexora_data:/data
+  ghcr.io/dschonas04/nexora-single`. It runs the free Standard scope only,
+  generates its session secret on the first start and is meant for a first
+  try or a small team, not for load. `docker-compose.single.yml` does the same
+  with Compose.
 - **Health checks.** The backend and frontend containers report their state:
   the backend asks its own `/healthz`, which pings the database, the frontend
   asks its nginx. `docker compose ps`, Portainer and Coolify show "healthy"
@@ -132,7 +140,8 @@ this release; see 2.1.0 for what became free since. Markdown import and export
 are free regardless, because the way out of a system must never sit behind a
 key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
-[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v2.1.0...main
+[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v2.2.0...main
+[2.2.0]: https://github.com/Dschonas04/Nexora/releases/tag/v2.2.0
 [2.1.0]: https://github.com/Dschonas04/Nexora/releases/tag/v2.1.0
 [2.0.1]: https://github.com/Dschonas04/Nexora/releases/tag/v2.0.1
 [2.0.0]: https://github.com/Dschonas04/Nexora/releases/tag/v2.0.0
