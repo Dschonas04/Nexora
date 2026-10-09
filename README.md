@@ -244,8 +244,8 @@ docker run -d --name nexora -p 3000:80 -v nexora_data:/data --restart unless-sto
 ```
 
 or with [`docker-compose.single.yml`](docker-compose.single.yml). One volume
-holds the database, the attachments, the session secret it generates on the
-first start and the self-signed certificate for port 443.
+holds the database, the attachments, the session secret and database password
+it generates on the first start, and the self-signed certificate for port 443.
 
 It runs the free **Standard** scope only and reads no licence key. It is not
 built for load: PostgreSQL, the service and nginx share one container, and
@@ -266,14 +266,14 @@ identical content. Pull from whichever you prefer, nothing else differs.
 | | |
 |---|---|
 | **Architectures** | `linux/amd64` (x86-64 PCs and servers) and `linux/arm64` (Raspberry Pi 4/5 on a 64-bit system, Apple Silicon, ARM servers). Docker picks the right one by itself |
-| **Tags** | `latest` for the newest release · `2.2` stays on a minor line · `2.2.0` is pinned exactly · `edge` is the current state of `main`, for trying, not for running |
+| **Tags** | `latest` for the newest release · `2.2` stays on a minor line · `2.2.1` is pinned exactly · `edge` is the current state of `main`, for trying, not for running |
 | **Built by** | [`.github/workflows/release.yml`](.github/workflows/release.yml) on GitHub's runners, on every tag `v*` |
 | **Pull without an account** | yes, on both |
 
 Two settings in the `.env` choose what is pulled:
 
 ```bash
-NEXORA_VERSION=2.2.0            # which version (default: latest)
+NEXORA_VERSION=2.2.1            # which version (default: latest)
 NEXORA_REGISTRY=dschohnas       # Docker Hub instead of the default ghcr.io/dschonas04
 ```
 

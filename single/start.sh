@@ -29,23 +29,43 @@ if [ -z "${JWT_SECRET:-}" ]; then
 fi
 export JWT_SECRET
 
-# PostgreSQL listens on 127.0.0.1 only and lets local connections in without a
-# password: nothing outside the container can reach it.
-PGOPTS="-c listen_addresses=127.0.0.1 -c shared_buffers=64MB -c max_connections=30"
+# PostgreSQL listens on 127.0.0.1 only. The service signs in with a password of
+# its own, generated once and kept in the volume; the superuser can only be
+# reached as the system user postgres over the socket. Without that, any
+# process in the container could act as superuser, and a hole in the service
+# would be a hole in the whole database.
+if [ ! -s "$DATA/db_password" ]; then
+    (umask 077; openssl rand -hex 24 > "$DATA/db_password")
+fi
+DB_PASSWORD=$(cat "$DATA/db_password")
+PGOPTS="-c listen_addresses=127.0.0.1 -c shared_buffers=64MB -c max_connections=30 -c password_encryption=scram-sha-256"
 if [ ! -s "$PG/PG_VERSION" ]; then
     echo "Datenbank wird angelegt"
     mkdir -p "$PG"
     chown postgres:postgres "$PG"
     chmod 700 "$PG"
-    su-exec postgres initdb -D "$PG" -U postgres -E UTF8 --auth-local=trust --auth-host=trust >/dev/null
-    su-exec postgres pg_ctl -D "$PG" -o "$PGOPTS" -l "$DATA/log/postgres.log" -w start >/dev/null
+    su-exec postgres initdb -D "$PG" -U postgres -E UTF8 --auth-local=peer --auth-host=scram-sha-256 >/dev/null
+    NEU=1
+fi
+# Written on every start, so that an installation from 2.2.0, which trusted
+# every local connection, is tightened on its next start.
+cat > "$PG/pg_hba.conf" <<HBA
+local   all   postgres                 peer
+local   all   all                      scram-sha-256
+host    all   all   127.0.0.1/32       scram-sha-256
+HBA
+chown postgres:postgres "$PG/pg_hba.conf"
+chmod 600 "$PG/pg_hba.conf"
+rm -f "$PG/postmaster.pid"
+su-exec postgres pg_ctl -D "$PG" -o "$PGOPTS" -l "$DATA/log/postgres.log" -w start >/dev/null
+if [ -n "${NEU:-}" ]; then
     su-exec postgres psql -q -v ON_ERROR_STOP=1 \
         -c "CREATE ROLE nexora LOGIN" -c "CREATE DATABASE nexora OWNER nexora"
     su-exec postgres psql -q -v ON_ERROR_STOP=1 -d nexora -c "CREATE EXTENSION IF NOT EXISTS pgcrypto"
-else
-    rm -f "$PG/postmaster.pid"
-    su-exec postgres pg_ctl -D "$PG" -o "$PGOPTS" -l "$DATA/log/postgres.log" -w start >/dev/null
 fi
+# Over stdin, so the password shows up in no process list.
+printf "ALTER ROLE nexora WITH LOGIN NOSUPERUSER PASSWORD '%s';\n" "$DB_PASSWORD" \
+    | su-exec postgres psql -q -v ON_ERROR_STOP=1 >/dev/null
 echo "Datenbank läuft"
 
 stop() {
@@ -59,7 +79,7 @@ stop() {
 trap stop TERM INT
 
 su-exec nexora env \
-    DATABASE_URL="postgres://nexora@127.0.0.1:5432/nexora?sslmode=disable" \
+    DATABASE_URL="postgres://nexora:$DB_PASSWORD@127.0.0.1:5432/nexora?sslmode=disable" \
     PORT=8080 \
     NEXORA_ATTACHMENT_PATH="$DATA/attachments" \
     /usr/local/bin/nexora &
