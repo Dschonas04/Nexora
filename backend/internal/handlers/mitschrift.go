@@ -171,8 +171,8 @@ func (s *Server) Mitschreibende(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"anzahl":   ImRaum(id),
-		"moeglich": s.echtzeitAn(),
+		"count":    ImRaum(id),
+		"possible": s.echtzeitAn(),
 	})
 }
 
@@ -268,21 +268,21 @@ func (s *Server) MitschriftZustand(w http.ResponseWriter, r *http.Request) {
 			t = "Ohne Titel"
 		}
 		art = append(art, map[string]interface{}{
-			"seite":  seite,
-			"titel":  t,
-			"anzahl": len(konten),
-			"wer":    wer,
+			"page":  seite,
+			"title": t,
+			"count": len(konten),
+			"who":   wer,
 		})
 	}
 	sort.Slice(art, func(i, j int) bool {
-		return art[i]["titel"].(string) < art[j]["titel"].(string)
+		return art[i]["title"].(string) < art[j]["title"].(string)
 	})
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"an":         s.echtzeitAn(),
-		"lizenziert": lizenz.Frei(lizenz.Echtzeit),
-		"hoechstens": hoechstensImRaum,
-		"raeume":     art,
+		"enabled":  s.echtzeitAn(),
+		"licensed": lizenz.Frei(lizenz.Echtzeit),
+		"limit":    hoechstensImRaum,
+		"rooms":    art,
 	})
 }
 

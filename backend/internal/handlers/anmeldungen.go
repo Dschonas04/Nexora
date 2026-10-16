@@ -104,14 +104,14 @@ func browserKurz(r *http.Request) string {
 // Anmeldeversuch is one attempt as the interface receives it. Flat, because
 // every field is shown in its own column and nothing here needs nesting.
 type Anmeldeversuch struct {
-	Zeitpunkt time.Time `json:"zeitpunkt"`
-	Erfolg    bool      `json:"erfolg"`
-	Kennung   string    `json:"kennung"`
+	Zeitpunkt time.Time `json:"timestamp"`
+	Erfolg    bool      `json:"success"`
+	Kennung   string    `json:"login"`
 	Name      string    `json:"name"`
-	KontoID   string    `json:"kontoId"`
+	KontoID   string    `json:"accountId"`
 	IP        string    `json:"ip"`
-	Weg       string    `json:"weg"`
-	Grund     string    `json:"grund"`
+	Weg       string    `json:"method"`
+	Grund     string    `json:"reason"`
 	Browser   string    `json:"browser"`
 }
 
@@ -120,10 +120,10 @@ type Anmeldeversuch struct {
 // failures from one address" does not.
 type Herkunft struct {
 	IP       string    `json:"ip"`
-	Versuche int       `json:"versuche"`
-	Fehl     int       `json:"fehl"`
-	Konten   int       `json:"konten"`
-	Letzter  time.Time `json:"letzter"`
+	Versuche int       `json:"attempts"`
+	Fehl     int       `json:"failed"`
+	Konten   int       `json:"accounts"`
+	Letzter  time.Time `json:"last"`
 }
 
 // ListAnmeldungen returns the attempts, newest first, plus a summary.
@@ -202,10 +202,10 @@ func (s *Server) ListAnmeldungen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"versuche":        versuche,
-		"zusammenfassung": s.anmeldeZahlen(ctx),
-		"herkunft":        s.anmeldeHerkunft(ctx),
-		"tage":            tage,
+		"attempts": versuche,
+		"summary":  s.anmeldeZahlen(ctx),
+		"sources":  s.anmeldeHerkunft(ctx),
+		"days":     tage,
 	})
 }
 
@@ -228,13 +228,13 @@ func (s *Server) anmeldeZahlen(ctx context.Context) map[string]interface{} {
 		Scan(&e24, &f24, &e7, &f7, &ips24, &letzteA, &letzterF)
 
 	return map[string]interface{}{
-		"erfolge24h":         e24,
-		"fehl24h":            f24,
-		"erfolge7t":          e7,
-		"fehl7t":             f7,
-		"adressen24h":        ips24,
-		"letzteAnmeldung":    letzteA,
-		"letzterFehlversuch": letzterF,
+		"successes24h":      e24,
+		"failures24h":       f24,
+		"successes7d":       e7,
+		"failures7d":        f7,
+		"addresses24h":      ips24,
+		"lastSignIn":        letzteA,
+		"lastFailedAttempt": letzterF,
 	}
 }
 

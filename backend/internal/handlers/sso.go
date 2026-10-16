@@ -61,11 +61,11 @@ func (s *Server) SSOZustand(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		// Both only when configured AND licensed. Showing a button that then
 		// answers with 402 would be a promise without cover.
-		"oidc":     k.OIDCAktiv && k.OIDCAussteller != "" && lizenz.Frei(lizenz.SSO),
-		"oidcText": k.OIDCKnopfText,
-		"ldap":     k.LDAPAktiv && k.LDAPServer != "" && lizenz.Frei(lizenz.LDAP),
-		"passwort": true,
-		"anbieter": kurzerAussteller(k.OIDCAussteller),
+		"oidc":           k.OIDCAktiv && k.OIDCAussteller != "" && lizenz.Frei(lizenz.SSO),
+		"oidcButtonText": k.OIDCKnopfText,
+		"ldap":           k.LDAPAktiv && k.LDAPServer != "" && lizenz.Frei(lizenz.LDAP),
+		"password":       true,
+		"provider":       kurzerAussteller(k.OIDCAussteller),
 	})
 }
 

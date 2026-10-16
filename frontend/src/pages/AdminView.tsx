@@ -88,7 +88,7 @@ export default function AdminView() {
   const suche = filter.trim().toLowerCase();
   const sichtbar = suche
     ? users.filter((u) =>
-        [u.name, u.email, u.benutzername].some((f) => (f ?? "").toLowerCase().includes(suche)),
+        [u.name, u.email, u.username].some((f) => (f ?? "").toLowerCase().includes(suche)),
       )
     : users;
 
@@ -103,7 +103,7 @@ export default function AdminView() {
         titel="Users and roles"
         zahl={
           `${users.length} gesamt · ${users.filter((u) => u.role === "admin").length} mit ` +
-          `Verwaltungsrecht · ${users.filter((u) => u.zweitfaktor).length} mit zweitem Faktor`
+          `Verwaltungsrecht · ${users.filter((u) => u.twoFactor).length} mit zweitem Faktor`
         }
         filter={filter}
         setFilter={setFilter}
@@ -145,11 +145,11 @@ export default function AdminView() {
                 </td>
                 <td className="muted">{u.email}</td>
                 <td className="muted">
-                  {u.benutzername || <span className="muted">not set</span>}
+                  {u.username || <span className="muted">not set</span>}
                 </td>
                 <td className="muted">{u.role === "admin" ? "Admin" : "User"}</td>
-                <td className={u.zweitfaktor ? undefined : "muted"}>
-                  {u.zweitfaktor ? "steht" : "keiner"}
+                <td className={u.twoFactor ? undefined : "muted"}>
+                  {u.twoFactor ? "steht" : "keiner"}
                 </td>
                 <td className="muted einzeilig">
                   {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ""}
@@ -436,7 +436,7 @@ function KontoFenster({
   schliessen: () => void;
 }) {
   const [rolle, setRolle] = useState(konto.role);
-  const [benutzername, setBenutzername] = useState(konto.benutzername ?? "");
+  const [benutzername, setBenutzername] = useState(konto.username ?? "");
   const [neu, setNeu] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -446,7 +446,7 @@ function KontoFenster({
     setBusy(true);
     try {
       if (rolle !== konto.role) await api.setUserRole(konto.id, rolle);
-      if (benutzername.trim() !== (konto.benutzername ?? ""))
+      if (benutzername.trim() !== (konto.username ?? ""))
         await api.benutzernameSetzen(konto.id, benutzername.trim());
       nachladen();
       schliessen();
@@ -463,7 +463,7 @@ function KontoFenster({
     setErr("");
     setBusy(true);
     try {
-      const { beendet } = await api.passwortSetzen(konto.id, neu);
+      const { ended: beendet } = await api.passwortSetzen(konto.id, neu);
       setNeu("");
       melden(
         `Password set for ${konto.name}` +
@@ -522,7 +522,7 @@ function KontoFenster({
   };
 
   const geaendert =
-    rolle !== konto.role || benutzername.trim() !== (konto.benutzername ?? "");
+    rolle !== konto.role || benutzername.trim() !== (konto.username ?? "");
 
   return (
     <Fenster
@@ -593,7 +593,7 @@ function KontoFenster({
 
       <div className="fenster-abschnitt">
         <div className="modal-label">Second factor</div>
-        {konto.zweitfaktor ? (
+        {konto.twoFactor ? (
           <div className="fenster-zeile">
             <span className="muted small">
               In place. The account is asked for a code at every sign-in.

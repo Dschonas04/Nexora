@@ -23,7 +23,7 @@ export default function Login() {
   // What this instance offers. Asked of the server rather than guessed: an SSO
   // button with nothing set up behind it leads into an error message instead of
   // a sign in.
-  const [wege, setWege] = useState<{ oidc: boolean; oidcText: string; ldap: boolean; anbieter: string } | null>(null);
+  const [wege, setWege] = useState<{ oidc: boolean; oidcButtonText: string; ldap: boolean; provider: string } | null>(null);
   const [ueberVerzeichnis, setUeberVerzeichnis] = useState(false);
   const [suche] = useSearchParams();
 
@@ -178,7 +178,7 @@ export default function Login() {
                 redirect to its own page, and the browser has to go there
                 itself. */}
             <a className="btn-primary anmelde-sso" href="/api/auth/oidc/start">
-              {wege.oidcText || `Sign in with ${wege.anbieter || "SSO"}`}
+              {wege.oidcButtonText || `Sign in with ${wege.provider || "SSO"}`}
             </a>
           </>
         )}

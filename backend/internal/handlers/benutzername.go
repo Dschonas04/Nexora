@@ -115,7 +115,7 @@ func leerAlsNull(name string) any {
 }
 
 type benutzernameReq struct {
-	Benutzername string `json:"benutzername"`
+	Benutzername string `json:"username"`
 }
 
 // BenutzernameSetzen changes an account's login name.
@@ -161,5 +161,5 @@ func (s *Server) BenutzernameSetzen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.spurAusRequest(r, AktNameGeaendert, "konto", ziel, name, nil)
-	writeJSON(w, http.StatusOK, map[string]string{"benutzername": name})
+	writeJSON(w, http.StatusOK, map[string]string{"username": name})
 }

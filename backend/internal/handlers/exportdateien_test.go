@@ -103,7 +103,7 @@ func TestAdressenOeffnenSchreibtAufDenOeffentlichenWeg(t *testing.T) {
 	seite := "aaaa1111-0000-0000-0000-000000000001"
 	inhalt := json.RawMessage(`[{"type":"image","props":{"url":"/api/pages/` + seite + `/attachments/b1"}}]`)
 	got := string(adressenOeffnen(inhalt, seite, "zeichen"))
-	if !strings.Contains(got, "/api/public/zeichen/dateien/b1") {
+	if !strings.Contains(got, "/api/public/zeichen/files/b1") {
 		t.Fatalf("nicht umgeschrieben: %s", got)
 	}
 	if strings.Contains(got, seite) {

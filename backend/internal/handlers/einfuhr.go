@@ -54,22 +54,22 @@ type einfuhrSeite struct {
 
 // einfuhrVorschau is the same plan, only without consequences.
 type einfuhrVorschau struct {
-	Seiten    int          `json:"seiten"`
-	Beilagen  int          `json:"beilagen"`
-	Baum      []einfuhrAst `json:"baum"`
-	Warnungen []string     `json:"warnungen"`
+	Seiten    int          `json:"pages"`
+	Beilagen  int          `json:"files"`
+	Baum      []einfuhrAst `json:"tree"`
+	Warnungen []string     `json:"warnings"`
 	// Set when the import will create a space of its own. In the preview this
 	// only carries the name; nothing has been created at that point.
-	Ablage string `json:"ablage,omitempty"`
+	Ablage string `json:"space,omitempty"`
 }
 
 // einfuhrAst is one node of the preview. The source file stands next to the
 // title because a title alone does not reveal which file it came from, and that
 // is exactly the question when a page turns up somewhere unexpected.
 type einfuhrAst struct {
-	Titel  string       `json:"titel"`
-	Quelle string       `json:"quelle"`
-	Kinder []einfuhrAst `json:"kinder,omitempty"`
+	Titel  string       `json:"title"`
+	Quelle string       `json:"source"`
+	Kinder []einfuhrAst `json:"children,omitempty"`
 }
 
 // baumAusPlan turns the flat plan into the shape the preview expects: a tree
@@ -100,14 +100,14 @@ func baumAusPlan(plan []*einfuhrSeite) []einfuhrAst {
 }
 
 type einfuhrBericht struct {
-	Seiten    int      `json:"seiten"`
-	Anhaenge  int      `json:"anhaenge"`
-	Wurzeln   []string `json:"wurzeln"`
-	Warnungen []string `json:"warnungen"`
+	Seiten    int      `json:"pages"`
+	Anhaenge  int      `json:"attachments"`
+	Wurzeln   []string `json:"roots"`
+	Warnungen []string `json:"warnings"`
 	// The space that was created, if the import brought one along. The
 	// interface jumps into it afterwards: an import you have to go looking for
 	// is half lost.
-	Ablage *einfuhrAblage `json:"ablage,omitempty"`
+	Ablage *einfuhrAblage `json:"space,omitempty"`
 }
 
 type einfuhrAblage struct {

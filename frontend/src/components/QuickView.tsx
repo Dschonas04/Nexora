@@ -112,15 +112,15 @@ export default function QuickView({ dateien, start, onClose }: Props) {
 
   // Word: content as editor blocks, plus the title and the editing state.
   const [word, setWord] = useState<{
-    titel: string;
-    bloecke: unknown[];
+    title: string;
+    blocks: unknown[];
   } | null>(null);
   const [wordFehler, setWordFehler] = useState<string | null>(null);
   const [bearbeiten, setBearbeiten] = useState(false);
   const [gespeichert, setGespeichert] = useState<string | null>(null);
   // The latest state from the editor. Held in a reference so that every
   // keystroke does not redraw the whole view.
-  const wordStand = useRef<{ titel: string; bloecke: unknown } | null>(null);
+  const wordStand = useRef<{ title: string; blocks: unknown } | null>(null);
 
   const box = useRef<HTMLDivElement>(null);
   // Remembered so focus can go back where it was when the viewer closes. Without
@@ -170,7 +170,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
       .then((w) => {
         if (weg) return;
         setWord(w);
-        wordStand.current = { titel: w.titel, bloecke: w.bloecke };
+        wordStand.current = { title: w.title, blocks: w.blocks };
       })
       .catch((e: Error) => !weg && setWordFehler(e.message));
     return () => {
@@ -432,7 +432,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
               ) : (
                 <div className="qv-word-blatt">
                   <div className="qv-word-kopf">
-                    <strong>{word.titel}</strong>
+                    <strong>{word.title}</strong>
                     {datei.darfSchreiben && !bearbeiten && (
                       <button
                         className="btn"
@@ -451,8 +451,8 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                             await api.wordSchreiben(
                               datei.seiteId,
                               datei.id,
-                              wordStand.current.titel,
-                              wordStand.current.bloecke,
+                              wordStand.current.title,
+                              wordStand.current.blocks,
                             );
                             setGespeichert("gespeichert");
                             setBearbeiten(false);
@@ -493,10 +493,10 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                     >
                       <Editor
                         key={datei.id + (bearbeiten ? ":schreiben" : ":lesen")}
-                        initialContent={word.bloecke}
+                        initialContent={word.blocks}
                         editable={!!bearbeiten}
                         onChange={(bloecke) => {
-                          wordStand.current = { titel: word.titel, bloecke };
+                          wordStand.current = { title: word.title, blocks: bloecke };
                         }}
                       />
                     </Suspense>

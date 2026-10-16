@@ -30,7 +30,7 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
   const [suche, setSuche] = useState("");
   // How many people are currently on this page. When changing shares the user
   // wants to know if someone is active before revoking rights.
-  const [dabei, setDabei] = useState<{ anzahl: number; moeglich: boolean } | null>(null);
+  const [dabei, setDabei] = useState<{ count: number; possible: boolean } | null>(null);
   const { frei } = useLizenz();
 
   const refresh = () => api.listShares(pageId).then(setShares).catch(() => setShares([]));
@@ -237,14 +237,14 @@ export default function ShareDialog({ pageId, isPublic, publicToken, onPublicCha
               Whoever may <strong>edit</strong> writes at the same time as everyone else:
               all of them see the others’ changes at once, cursor and name included.
               Whoever may only view, reads.
-              {dabei && dabei.moeglich && dabei.anzahl > 0 && (
+              {dabei && dabei.possible && dabei.count > 0 && (
                 <>
                   {" "}
-                  {dabei.anzahl === 1 ? "One person is" : `${dabei.anzahl} people are`}{" "}
+                  {dabei.count === 1 ? "One person is" : `${dabei.count} people are`}{" "}
                   on this page right now.
                 </>
               )}
-              {dabei && !dabei.moeglich && (
+              {dabei && !dabei.possible && (
                 <> Editing together is switched off in the settings.</>
               )}
             </p>

@@ -29,8 +29,8 @@ import (
 )
 
 type ldapAnmeldeReq struct {
-	Benutzer string `json:"benutzer"`
-	Passwort string `json:"passwort"`
+	Benutzer string `json:"user"`
+	Passwort string `json:"password"`
 }
 
 // LDAPAnmeldung signs in through the directory.
@@ -80,7 +80,7 @@ func (s *Server) LDAPAnmeldung(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, http.StatusInternalServerError, "ticket failed")
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{"zweiterSchritt": true, "ticket": ticket})
+		writeJSON(w, http.StatusOK, map[string]interface{}{"secondStep": true, "ticket": ticket})
 		return
 	}
 	s.issueSession(w, r, u.ID)
@@ -99,8 +99,8 @@ type ldapBefund struct {
 	Name             string   `json:"name"`
 	Email            string   `json:"email"`
 	Admin            bool     `json:"admin"`
-	Gruppen          []string `json:"gruppen"`
-	PasswortGeprueft bool     `json:"passwortGeprueft"`
+	Gruppen          []string `json:"groups"`
+	PasswortGeprueft bool     `json:"passwordChecked"`
 }
 
 // `ldapAbfragen` connects, searches for the entry and optionally verifies the

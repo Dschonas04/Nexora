@@ -97,7 +97,7 @@ export function LizenzProvider({ children }: { children: ReactNode }) {
   // The server decides, including for the free tier: versions, attachments,
   // comments and conflict detection run without a key, so "no valid licence"
   // does not mean "nothing unlocked". The list already says which is which.
-  const frei = (extra: Extra) => !!lizenz?.freigeschaltet.includes(extra);
+  const frei = (extra: Extra) => !!lizenz?.unlocked.includes(extra);
 
   return (
     <LizenzCtx.Provider value={{ lizenz, geladen, frei, neuLaden: () => setRunde((r) => r + 1) }}>

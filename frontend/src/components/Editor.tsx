@@ -237,7 +237,7 @@ export default function Editor({
   };
 }) {
   const { design } = useDesign();
-  const grundton = design.grundton;
+  const grundton = design.baseColor;
 
   // BlockNote rejects an empty array as initialContent, use undefined instead.
   // Everything that does arrive is straightened out first: documents written by

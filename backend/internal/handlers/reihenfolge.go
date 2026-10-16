@@ -28,11 +28,11 @@ import (
 type seiteVerschiebenReq struct {
 	// Absent means unchanged, null means the top level or no space. The same
 	// convention as UpdatePage, so a caller that knows one knows the other.
-	ElternID json.RawMessage `json:"elternId"`
+	ElternID json.RawMessage `json:"parentId"`
 	SpaceID  json.RawMessage `json:"spaceId"`
 	// VorID places the page directly in front of this sibling. Empty or absent
 	// means: at the end.
-	VorID *string `json:"vorId"`
+	VorID *string `json:"beforeId"`
 }
 
 // SeiteVerschieben hangs a page somewhere else and puts it at a place among its

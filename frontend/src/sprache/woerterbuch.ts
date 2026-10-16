@@ -1277,6 +1277,7 @@ export const PAARE: [string, string][] = [
   ["Für eine erreichbare Instanz aus, sonst genügt die Adresse zum Anlegen eines Kontos.", "Off for a reachable instance, otherwise the address is enough to create an account."],
   ["An: jedes Konto wird nach dem Anmelden zur Einrichtung geführt und kann den zweiten Faktor nicht mehr selbst abschalten. Aus: jeder entscheidet für sich. Konten aus SSO bringen ihren zweiten Faktor vom Anbieter mit und sind davon nicht betroffen.", "On: every account is led to the setup after signing in and can no longer switch the second factor off itself. Off: everyone decides for themselves. Accounts from SSO bring their second factor along from the provider and are not affected."],
   ["Vor dem Einschalten selbst einrichten. Wer keinen zweiten Faktor hat, kommt sonst nur noch über die Einrichtung weiter.", "Set it up yourself before switching it on. Whoever has no second factor otherwise only gets further through the setup."],
+  ["Zweiter Faktor vorgeschrieben", "Second factor required"],
   ["Name in der Authenticator-App", "Name in the authenticator app"],
   ["Steht als Aussteller im QR-Code und damit über dem Code in der App. Leer: Nexora. Sinnvoll, wenn jemand mehrere Instanzen im selben Telefon hat.", "Stands as the issuer in the QR code and thus above the code in the app. Empty: Nexora. Useful when somebody has several instances on the same phone."],
   ["Erlaubte E-Mail-Domänen", "Permitted email domains"],

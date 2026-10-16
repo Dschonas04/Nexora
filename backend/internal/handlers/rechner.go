@@ -52,29 +52,29 @@ const (
 type Rechner struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
-	Ziel  string `json:"ziel"`
-	Notiz string `json:"notiz,omitempty"`
+	Ziel  string `json:"target"`
+	Notiz string `json:"comment,omitempty"`
 
 	// Measured state: "antwortet" (responding), "still" (silent) or
 	// "unbekannt" (unknown) while not yet probed. The strings are German as
 	// they are shown in the UI.
-	Zustand string `json:"zustand"`
-	Antwort string `json:"antwort,omitempty"`
-	Hinweis string `json:"hinweis,omitempty"`
+	Zustand string `json:"state"`
+	Antwort string `json:"response,omitempty"`
+	Hinweis string `json:"note,omitempty"`
 
 	// What the host announced when probed: the service identifier and, for a
 	// TLS connection, how long its certificate remains valid.
-	Fassung    string `json:"fassung,omitempty"`
-	Zertifikat string `json:"zertifikat,omitempty"`
+	Fassung    string `json:"version,omitempty"`
+	Zertifikat string `json:"certificate,omitempty"`
 	// `TageBisAblauf` provides the same information as a number so the UI can
 	// colour a row without parsing text. Negative means expired.
-	TageBisAblauf *int `json:"tageBisAblauf,omitempty"`
+	TageBisAblauf *int `json:"daysUntilExpiry,omitempty"`
 }
 
 // `RechnerListe` is the response: the rows and when they were last measured.
 type RechnerListe struct {
-	Rechner    []Rechner `json:"rechner"`
-	GeprueftUm string    `json:"geprueftUm,omitempty"`
+	Rechner    []Rechner `json:"hosts"`
+	GeprueftUm string    `json:"checkedAt,omitempty"`
 }
 
 // rechnerSpeicher keeps the last measurement. Stored in memory not in the
@@ -356,8 +356,8 @@ func (s *Server) rechnerMessen(ctx context.Context, eintraege []Rechner) []Rechn
 
 type rechnerReq struct {
 	Name  string `json:"name"`
-	Ziel  string `json:"ziel"`
-	Notiz string `json:"notiz"`
+	Ziel  string `json:"target"`
+	Notiz string `json:"comment"`
 }
 
 // `RechnerAnlegen` inserts a host into the list.

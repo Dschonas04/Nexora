@@ -155,7 +155,7 @@ type updatePageReq struct {
 	//
 	// Absent means "do not check", which keeps older clients working and lets a
 	// caller deliberately overwrite after being told about the conflict.
-	Basis *time.Time `json:"basis"`
+	Basis *time.Time `json:"baseVersion"`
 }
 
 // UpdatePage applies a patch to a page. The frontend autosaves, so this runs
@@ -207,10 +207,10 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 				 ORDER BY p.zeitpunkt DESC LIMIT 1`, id, AktSeiteGeaendert).Scan(&wer)
 
 			writeJSON(w, http.StatusConflict, map[string]interface{}{
-				"error":     "Die Seite wurde inzwischen geändert.",
-				"konflikt":  true,
-				"stand":     cur.UpdatedAt,
-				"geaendert": wer,
+				"error":    "Die Seite wurde inzwischen geändert.",
+				"conflict": true,
+				"state":    cur.UpdatedAt,
+				"changed":  wer,
 			})
 			return
 		}

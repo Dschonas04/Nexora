@@ -208,12 +208,12 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 		geschrieben, misslungen, filepath.Base(rettung))
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":         true,
-		"anhaenge":   geschrieben,
-		"misslungen": misslungen,
-		"rueckweg":   filepath.Base(rettung),
-		"neustartIn": 1,
-		"hinweis":    "Der Dienst startet neu. Die Anmeldung stammt jetzt aus der Sicherung, du wirst dich neu anmelden müssen.",
+		"ok":          true,
+		"attachments": geschrieben,
+		"failed":      misslungen,
+		"rollback":    filepath.Base(rettung),
+		"restartIn":   1,
+		"note":        "Der Dienst startet neu. Die Anmeldung stammt jetzt aus der Sicherung, du wirst dich neu anmelden müssen.",
 	})
 
 	// ── Neu starten ─────────────────────────────────────────────────────

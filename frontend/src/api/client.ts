@@ -10,7 +10,7 @@ export interface User {
   name: string;
   // The sign-in name. May be empty: accounts from SSO and from older versions
   // have none, and signing in then goes on through the address.
-  benutzername: string;
+  username: string;
   role: string;
   createdAt: string;
   /**
@@ -18,9 +18,9 @@ export interface User {
    * Answers both at once: WHETHER a picture is there, and WHICH -- the
    * timestamp hangs on the address so a new one appears at once.
    */
-  bildStand?: string;
+  imageVersion?: string;
   /** Whether a second factor is set up on this account. */
-  zweitfaktor?: boolean;
+  twoFactor?: boolean;
 }
 
 /**
@@ -29,20 +29,20 @@ export interface User {
  * Both in one type, because the server decides it in one place and the
  * interface has to make the distinction anyway.
  */
-export type Anmeldung = User | { zweiterSchritt: true; ticket: string };
+export type Anmeldung = User | { secondStep: true; ticket: string };
 
 export const brauchtZweitenSchritt = (
   a: Anmeldung,
-): a is { zweiterSchritt: true; ticket: string } => "zweiterSchritt" in a;
+): a is { secondStep: true; ticket: string } => "secondStep" in a;
 
 /** Der Stand des zweiten Faktors am eigenen Konto. */
 export interface ZweitfaktorStand {
-  aktiv: boolean;
-  seit?: string;
+  active: boolean;
+  since?: string;
   /** Recovery codes not yet used up. */
-  offen: number;
+  remaining: number;
   /** Ob die Instanz ihn von jedem Konto verlangt. */
-  pflicht: boolean;
+  required: boolean;
 }
 
 export interface Tag {
@@ -50,21 +50,21 @@ export interface Tag {
   name: string;
   color: string;
   /** How many pages carry this tag. Zero means it is orphaned. */
-  anzahl: number;
+  count: number;
 }
 
 /** The configuration file as the maintenance page sees it. */
 export interface KonfigDatei {
-  pfad: string;
+  path: string;
   /** Inhalt mit unkenntlich gemachten Zugangsdaten. */
-  inhalt: string;
-  gefunden: boolean;
-  schreibbar: boolean;
-  hinweise: string[];
+  content: string;
+  found: boolean;
+  writable: boolean;
+  notes: string[];
   /** All keys this version evaluates. */
-  schluessel: string[];
+  key: string[];
   /** Keys whose values are hidden. */
-  geheimnisse: string[];
+  secrets: string[];
 }
 
 export interface Space {
@@ -73,18 +73,18 @@ export interface Space {
   name: string;
   createdAt: string;
   /** True when the space belongs to someone else and is visible through a right. */
-  fremd: boolean;
+  foreign: boolean;
   /**
    * Visibility of the space to the remaining logged in accounts of the
    * instance. "nein" means: only the owner and those explicitly entitled. This
    * has nothing to do with the share link of a single page; public here means
    * the instance, not the internet.
    */
-  oeffentlich: "nein" | "lesen" | "schreiben";
+  publicAccess: "nein" | "lesen" | "schreiben";
   /** Whether this account may administer the space (visibility, permissions). */
-  darfVerwalten: boolean;
+  canManage: boolean;
   /** Colour in the graph as #rrggbb. Empty/missing: the interface hands out one. */
-  farbe?: string;
+  color?: string;
 }
 
 // PageMeta is the light shape used for the sidebar, search results and lists.
@@ -120,9 +120,9 @@ export interface Page {
    * More than one account may write on this page, and the service permits
    * editing together. Only then does the browser open the wire for it.
    */
-  gemeinsam: boolean;
+  collaborative: boolean;
   /** Measure: "normal", "breit" or "voll". Belongs to the page, not to the reader. */
-  breite: Seitenbreite;
+  width: Seitenbreite;
   createdAt: string;
   updatedAt: string;
 }
@@ -133,7 +133,7 @@ export interface PublicPage {
   title: string;
   content: unknown;
   icon: string;
-  breite: Seitenbreite;
+  width: Seitenbreite;
   updatedAt: string;
 }
 
@@ -226,30 +226,30 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
 // match the constants in the backend's internal/lizenz package; the browser
 // deliberately keeps no list of its own, it renders whatever the server sends.
 export interface Lizenz {
-  gueltig: boolean;
-  inhaber: string;
+  valid: boolean;
+  holder: string;
   /** The tier that was sold, if the key names one. */
-  stufe?: string;
-  laeuft_ab: string;
-  grund: string;
-  alle_extras: string[];
-  freigeschaltet: string[];
+  tier?: string;
+  expiresAt: string;
+  reason: string;
+  allExtras: string[];
+  unlocked: string[];
   /** What each tier contains, so the interface keeps no second table. */
-  stufen?: { name: string; funktionen: string[] }[];
+  tiers?: { name: string; features: string[] }[];
   /** True only at the issuer: that is where the private signing key lies. */
-  ausstellbar?: boolean;
+  canIssue?: boolean;
 }
 
 // Sitzung is a stored sign-in. "diese" marks the one currently being worked
 // with; without it one easily ends one's own.
 export interface Sitzung {
   id: string;
-  angelegtAm: string;
-  zuletztAm: string;
-  laeuftAb: string;
+  createdAt: string;
+  lastSeenAt: string;
+  expiresAt: string;
   ip: string;
   browser: string;
-  diese: boolean;
+  current: boolean;
 }
 
 // Spureintrag is one row of the audit trail. Names and titles are frozen copies
@@ -257,14 +257,14 @@ export interface Sitzung {
 // or page it refers to is gone.
 export interface Spureintrag {
   id: number;
-  zeitpunkt: string;
-  akteurId: string;
-  akteurName: string;
-  akteurEmail: string;
-  aktion: string;
-  objektArt: string;
-  objektId: string;
-  objektTitel: string;
+  timestamp: string;
+  actorId: string;
+  actorName: string;
+  actorEmail: string;
+  action: string;
+  objectType: string;
+  objectId: string;
+  objectTitle: string;
   details: Record<string, unknown>;
   ip: string;
 }
@@ -279,35 +279,35 @@ export interface Person {
 
 export interface Kommentar {
   id: string;
-  elternId: string | null;
-  autorId: string;
-  autorName: string;
+  parentId: string | null;
+  authorId: string;
+  authorName: string;
   text: string;
-  erledigt: boolean;
-  erstelltAm: string;
-  geaendertAm: string | null;
-  geloescht: boolean;
+  resolved: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+  deleted: boolean;
   /** Whether the signed-in account may edit or delete this one. */
-  darf: boolean;
+  canEdit: boolean;
 }
 
 // Einstellung is one runtime setting, with the description the backend supplies.
 // The page renders whatever it gets rather than keeping its own list, which
 // would drift from the server's.
 export interface Einstellung {
-  schluessel: string;
-  wert: string;
-  art: "janein" | "zahl" | "text" | "liste";
-  titel: string;
-  erklaerung: string;
-  warnung?: string;
-  vorgabe: string;
+  key: string;
+  value: string;
+  type: "janein" | "zahl" | "text" | "liste";
+  title: string;
+  description: string;
+  warning?: string;
+  default: string;
   /** Environment variable that overrides this key at start; absent when none does. */
-  umgebung?: string;
+  fromEnv?: string;
   /** true while the value still comes from config.conf, untouched here. */
-  ausDatei: boolean;
-  geaendertVon?: string;
-  geaendertAm?: string;
+  fromFile: boolean;
+  updatedBy?: string;
+  updatedAt?: string;
 }
 
 // Dienst is one part of the compound: the services the backend talks to. The
@@ -315,108 +315,108 @@ export interface Einstellung {
 // the control channel, and the application is not worth that.
 export interface Dienst {
   name: string;
-  rolle: string;
-  adresse: string;
-  zustand: string;
-  fassung?: string;
-  antwort?: string;
-  hinweis?: string;
-  notwendig: boolean;
+  role: string;
+  address: string;
+  state: string;
+  version?: string;
+  response?: string;
+  note?: string;
+  required: boolean;
 }
 
 // SystemZustand is the read-only half of the settings page.
 export interface SystemZustand {
-  verbund?: Dienst[];
-  lizenz: {
-    gueltig: boolean;
-    inhaber: string;
-    laeuftAb: string;
-    grund: string;
-    freigeschaltet: string[];
-    alle: number;
+  services?: Dienst[];
+  license: {
+    valid: boolean;
+    holder: string;
+    expiresAt: string;
+    reason: string;
+    unlocked: string[];
+    all: number;
   };
-  zahlen: Record<string, number>;
-  datenbank: {
-    groesse: string;
+  counts: Record<string, number>;
+  database: {
+    size: string;
     version: string;
-    tabellen: { name: string; zeilen: number; platz: string }[];
+    tables: { name: string; rows: number; bytes: string }[];
   };
-  anhaengeBytes: number;
-  sicherheit: {
+  attachmentBytes: number;
+  security: {
     admins: { name: string; email: string }[];
-    letzteAnmeldung: string;
-    letzterFehlversuch: string;
-    fehlversuche24h: number;
-    registrierungOffen: boolean;
-    erlaubteDomaenen: string[] | null;
-    sitzungStunden: number;
+    lastSignIn: string;
+    lastFailedAttempt: string;
+    failedAttempts24h: number;
+    registrationOpen: boolean;
+    allowedDomains: string[] | null;
+    sessionHours: number;
   };
-  nurInDerDatei: {
+  fileOnly: {
     port: string;
-    datenVerzeichnis: string;
-    oeffentlicheUrl: string;
-    ldapAktiv: boolean;
+    dataDirectory: string;
+    publicUrl: string;
+    ldapEnabled: boolean;
     ldapServer: string;
-    oidcAktiv: boolean;
-    oidcAussteller: string;
+    oidcEnabled: boolean;
+    oidcIssuer: string;
   };
-  warnungen: string[];
+  warnings: string[];
 }
 
 // Anmeldeversuch is one attempt to sign in, successful or not. Every way in
 // writes one: the password form, the directory, the identity provider.
 export interface Anmeldeversuch {
-  zeitpunkt: string;
-  erfolg: boolean;
-  kennung: string;
+  timestamp: string;
+  success: boolean;
+  login: string;
   name: string;
-  kontoId: string;
+  accountId: string;
   ip: string;
-  weg: string;
-  grund: string;
+  method: string;
+  reason: string;
   browser: string;
 }
 
 // Herkunft is one address with its attempts summed up over the last week.
 export interface Herkunft {
   ip: string;
-  versuche: number;
-  fehl: number;
-  konten: number;
-  letzter: string;
+  attempts: number;
+  failed: number;
+  accounts: number;
+  last: string;
 }
 
 export interface Anmeldungen {
-  versuche: Anmeldeversuch[];
-  herkunft: Herkunft[];
-  tage: number;
-  zusammenfassung: {
-    erfolge24h: number;
-    fehl24h: number;
-    erfolge7t: number;
-    fehl7t: number;
-    adressen24h: number;
-    letzteAnmeldung: string | null;
-    letzterFehlversuch: string | null;
+  attempts: Anmeldeversuch[];
+  sources: Herkunft[];
+  days: number;
+  summary: {
+    successes24h: number;
+    failures24h: number;
+    successes7d: number;
+    failures7d: number;
+    addresses24h: number;
+    lastSignIn: string | null;
+    lastFailedAttempt: string | null;
   };
 }
 
 // LDAPEinrichtung is how the directory is set up in config.conf. The service
 // account's password is not part of it, only whether one is set.
 export interface LDAPEinrichtung {
-  aktiv: boolean;
-  lizenziert: boolean;
+  active: boolean;
+  licensed: boolean;
   server: string;
   startTLS: boolean;
-  tlsPruefen: boolean;
+  tlsVerify: boolean;
   bindDN: string;
-  bindPasswortDa: boolean;
-  basisDN: string;
-  benutzerFilter: string;
-  feldName: string;
-  feldEmail: string;
-  gruppeAdmin: string;
-  verschluesselt: boolean;
+  bindPasswordSet: boolean;
+  baseDN: string;
+  userFilter: string;
+  fieldName: string;
+  fieldEmail: string;
+  adminGroup: string;
+  encrypted: boolean;
 }
 
 export interface LDAPBefund {
@@ -424,15 +424,15 @@ export interface LDAPBefund {
   name: string;
   email: string;
   admin: boolean;
-  gruppen: string[];
-  passwortGeprueft: boolean;
+  groups: string[];
+  passwordChecked: boolean;
 }
 
 export interface LDAPTestErgebnis {
   ok: boolean;
-  fehler?: string;
-  hinweis?: string;
-  befund?: LDAPBefund;
+  errors?: string;
+  note?: string;
+  result?: LDAPBefund;
 }
 
 // Puls is the live state: the last minute in per-second slots, plus the
@@ -446,78 +446,78 @@ export interface LDAPTestErgebnis {
 export interface Rechner {
   id: string;
   name: string;
-  ziel: string;
-  notiz?: string;
-  zustand: string;
-  antwort?: string;
-  hinweis?: string;
+  target: string;
+  comment?: string;
+  state: string;
+  response?: string;
+  note?: string;
   // What the machine itself said when knocked on.
-  fassung?: string;
-  zertifikat?: string;
-  tageBisAblauf?: number;
+  version?: string;
+  certificate?: string;
+  daysUntilExpiry?: number;
 }
 
 export interface RechnerEingabe {
   name: string;
-  ziel: string;
-  notiz?: string;
+  target: string;
+  comment?: string;
 }
 
 export interface RechnerListe {
-  rechner: Rechner[];
-  geprueftUm?: string;
+  hosts: Rechner[];
+  checkedAt?: string;
 }
 
 export interface MitschriftZustand {
-  an: boolean;
-  lizenziert: boolean;
-  hoechstens: number;
-  raeume: { seite: string; titel: string; anzahl: number; wer: string[] }[];
+  enabled: boolean;
+  licensed: boolean;
+  limit: number;
+  rooms: { page: string; title: string; count: number; who: string[] }[];
 }
 
 export interface PulsSekunde {
-  vorSekunden: number;
-  anfragen: number;
-  fehler: number;
-  abgelehnt: number;
-  mittelMs: number;
+  secondsAgo: number;
+  requests: number;
+  errors: number;
+  rejected: number;
+  avgMs: number;
   maxMs: number;
 }
 
 export interface Puls {
-  gemessenUm: string;
-  anfragen?: {
-    laufend: number;
-    gesamt: number;
-    laufzeitSek: number;
+  measuredAt: string;
+  requests?: {
+    inFlight: number;
+    total: number;
+    uptimeSec: number;
     minute: PulsSekunde[];
-    proSekunde: number;
-    mittelMs: number;
-    spitzeMs: number;
-    fehler: number;
-    abgelehnt: number;
+    perSecond: number;
+    avgMs: number;
+    peakMs: number;
+    errors: number;
+    rejected: number;
   };
-  vorrat: {
-    hoechstens: number;
-    offen: number;
-    inBenutzung: number;
-    frei: number;
-    zugriffe: number;
-    ohneFreie: number;
-    mittelWarteMs: number;
-    imAufbau: number;
+  pool: {
+    limit: number;
+    open: number;
+    inUse: number;
+    idle: number;
+    acquires: number;
+    waitCount: number;
+    avgWaitMs: number;
+    connecting: number;
   };
-  prozess: {
-    aufgaben: number;
-    speicherMB: number;
-    vomSystemMB: number;
-    aufraeumen: number;
-    kerne: number;
+  process: {
+    goroutines: number;
+    memoryMB: number;
+    systemMB: number;
+    gcRuns: number;
+    cores: number;
   };
-  datenbank: {
-    groesse: string;
-    trefferquote: number | null;
-    verbindungen: number;
+  database: {
+    size: string;
+    hitRatio: number | null;
+    connections: number;
   };
 }
 
@@ -525,16 +525,16 @@ export interface Puls {
 // because with a body of several gigabytes nobody should press the button and
 // then guess whether it is stuck or merely taking a while.
 export interface SicherungUmfang {
-  tokenGesetzt: boolean;
+  tokenSet: boolean;
   token: string;
-  skript: string;
-  datenbankBytes: number;
-  anhaenge: number;
-  anhaengeBytes: number;
-  ablage: string;
-  geschaetztBytes: number;
-  bereit: boolean;
-  fehler: string;
+  script: string;
+  databaseBytes: number;
+  attachments: number;
+  attachmentBytes: number;
+  storage: string;
+  estimatedBytes: number;
+  ready: boolean;
+  errors: string;
 }
 
 // Gruppe is a group of accounts. Groups belong to the installation, not to an
@@ -542,63 +542,63 @@ export interface SicherungUmfang {
 export interface Gruppe {
   id: string;
   name: string;
-  beschreibung: string;
-  erstelltAm: string;
-  mitglieder: number;
+  description: string;
+  createdAt: string;
+  members: number;
 }
 
 export interface Mitglied {
   id: string;
   name: string;
   email: string;
-  rolle: string;
+  role: string;
   /** Whether this account is currently in the group. */
-  drin: boolean;
+  isMember: boolean;
 }
 
 // SpaceRecht grants a group or a single account access to a space.
 // recht is a ladder: lesen < schreiben < verwalten.
 export interface SpaceRecht {
-  gruppeId: string | null;
-  gruppeName: string;
+  groupId: string | null;
+  groupName: string;
   userId: string | null;
   userName: string;
-  recht: "lesen" | "schreiben" | "verwalten";
-  erteiltAm: string;
+  permission: "lesen" | "schreiben" | "verwalten";
+  grantedAt: string;
 }
 
 // EinfuhrBericht says what became of an import. The warnings are the most
 // important part: what was skipped has to be visible, otherwise one takes half
 // an import for a whole one.
 export interface EinfuhrBericht {
-  seiten: number;
-  anhaenge: number;
-  wurzeln: string[];
-  warnungen: string[];
+  pages: number;
+  attachments: number;
+  roots: string[];
+  warnings: string[];
   /** Set when the import created a space of its own. */
-  ablage?: { id: string; name: string };
+  space?: { id: string; name: string };
 }
 
 // EinfuhrAst is a node of the preview, the tree as it would come into being.
 // PapierkorbSeite additionally carries the day on which it disappears by itself.
 // null means: the instance deletes nothing by itself.
 export interface PapierkorbSeite extends PageMeta {
-  verfaelltAm: string | null;
+  expiresAt: string | null;
 }
 
 export interface EinfuhrAst {
-  titel: string;
-  quelle: string;
-  kinder?: EinfuhrAst[];
+  title: string;
+  source: string;
+  children?: EinfuhrAst[];
 }
 
 export interface EinfuhrVorschau {
-  seiten: number;
-  beilagen: number;
-  baum: EinfuhrAst[];
-  warnungen: string[];
+  pages: number;
+  files: number;
+  tree: EinfuhrAst[];
+  warnings: string[];
   /** Name of the space that would come into being. */
-  ablage?: string;
+  space?: string;
 }
 
 // SuchFilter narrows a search. All fields are optional; empty means "no
@@ -606,18 +606,18 @@ export interface EinfuhrVorschau {
 // Nachricht is one entry in the inbox.
 export interface Nachricht {
   id: string;
-  art: "kommentar" | "antwort" | "erwaehnung" | "freigabe";
+  type: "kommentar" | "antwort" | "erwaehnung" | "freigabe";
   pageId: string | null;
-  kommentarId: string | null;
+  commentId: string | null;
   /** Who triggered it. Null when the account was deleted. */
-  ausloeserId: string | null;
-  ausloeserName: string;
+  actorId: string | null;
+  actorName: string;
   /** Timestamp of this account's profile picture; missing when it has none. */
-  ausloeserBild?: string;
-  seitenTitel: string;
+  actorImage?: string;
+  pageTitle: string;
   text: string;
-  gelesenAm: string | null;
-  erstelltAm: string;
+  readAt: string | null;
+  createdAt: string;
 }
 
 export interface SuchFilter {
@@ -625,9 +625,9 @@ export interface SuchFilter {
   space?: string;
   tag?: string;
   /** Only pages changed within the last n days. */
-  tage?: number;
+  days?: number;
   /** "ich" restricts to one's own pages. */
-  wer?: string;
+  who?: string;
 }
 
 // SearchHit is one full text result. Unlike PageMeta it carries the snippet the
@@ -642,15 +642,15 @@ export interface SearchHit {
    * escaped by the database, but it is still rendered as text and marked up by
    * the component, never fed to dangerouslySetInnerHTML.
    */
-  ausschnitt: string;
+  snippet: string;
   /** false means the page was reached through a share or as an admin. */
-  eigen: boolean;
+  own: boolean;
   /**
    * Name of the attachment the hit came from, empty when the page text itself
    * matched. Without it a snippet from a PDF would read like page content that
    * is nowhere to be seen on the page.
    */
-  quelle: string;
+  source: string;
   updatedAt: string;
 }
 
@@ -668,7 +668,7 @@ export interface PagePatch {
    * page moved on since, instead of overwriting a colleague's edit in silence.
    * Omit it to force the write through.
    */
-  basis?: string;
+  baseVersion?: string;
 }
 
 // One entry per endpoint. Deliberately a plain object of thin functions rather
@@ -678,11 +678,11 @@ export const api = {
   // kennung ist Adresse oder Benutzername; welches von beidem, entscheidet der
   // Server am @.
   login: (kennung: string, password: string) =>
-    req<Anmeldung>("/auth/login", { method: "POST", body: JSON.stringify({ kennung, password }) }),
+    req<Anmeldung>("/auth/login", { method: "POST", body: JSON.stringify({ login: kennung, password }) }),
   register: (email: string, name: string, password: string, benutzername = "") =>
     req<User>("/auth/register", {
       method: "POST",
-      body: JSON.stringify({ email, name, password, benutzername }),
+      body: JSON.stringify({ email, name, password, username: benutzername }),
     }),
   logout: () => req<void>("/auth/logout", { method: "POST" }),
 
@@ -691,13 +691,13 @@ export const api = {
   ssoZustand: () =>
     req<{
       oidc: boolean;
-      oidcText: string;
+      oidcButtonText: string;
       ldap: boolean;
-      passwort: boolean;
-      anbieter: string;
+      password: boolean;
+      provider: string;
     }>("/auth/sso"),
   ldapAnmelden: (benutzer: string, passwort: string) =>
-    req<Anmeldung>("/auth/ldap", { method: "POST", body: JSON.stringify({ benutzer, passwort }) }),
+    req<Anmeldung>("/auth/ldap", { method: "POST", body: JSON.stringify({ user: benutzer, password: passwort }) }),
 
   // The second factor.
   //
@@ -708,21 +708,21 @@ export const api = {
   // then a closed tab -- locked the account out.
   zweitfaktorStand: () => req<ZweitfaktorStand>("/auth/two-factor"),
   zweitfaktorStart: () =>
-    req<{ geheim: string; uri: string; qr: string }>("/auth/two-factor/start", { method: "POST" }),
+    req<{ secret: string; uri: string; qr: string }>("/auth/two-factor/start", { method: "POST" }),
   zweitfaktorAn: (code: string) =>
-    req<{ ersatzcodes: string[] }>("/auth/two-factor/enable", {
+    req<{ recoveryCodes: string[] }>("/auth/two-factor/enable", {
       method: "POST",
       body: JSON.stringify({ code }),
     }),
   zweitfaktorAus: (passwort: string) =>
     req<{ ok: boolean }>("/auth/two-factor/disable", {
       method: "POST",
-      body: JSON.stringify({ passwort }),
+      body: JSON.stringify({ password: passwort }),
     }),
   zweitfaktorCodesNeu: (passwort: string) =>
-    req<{ ersatzcodes: string[] }>("/auth/two-factor/codes", {
+    req<{ recoveryCodes: string[] }>("/auth/two-factor/codes", {
       method: "POST",
-      body: JSON.stringify({ passwort }),
+      body: JSON.stringify({ password: passwort }),
     }),
   // The second step of signing in. Accepted is the current code from the app or
   // one of the recovery codes.
@@ -734,11 +734,11 @@ export const api = {
 
   // Word attachments: read as editor blocks and write back as .docx.
   wordLesen: (seiteId: string, anhangId: string) =>
-    req<{ titel: string; bloecke: unknown[] }>(`/pages/${seiteId}/attachments/${anhangId}/word`),
+    req<{ title: string; blocks: unknown[] }>(`/pages/${seiteId}/attachments/${anhangId}/word`),
   wordSchreiben: (seiteId: string, anhangId: string, titel: string, bloecke: unknown) =>
     req<{ ok: boolean; bytes: number }>(`/pages/${seiteId}/attachments/${anhangId}/word`, {
       method: "PUT",
-      body: JSON.stringify({ titel, bloecke }),
+      body: JSON.stringify({ title: titel, blocks: bloecke }),
     }),
 
   // Write a PDF marked up in the browser over the old one. Raw and not as JSON:
@@ -788,71 +788,71 @@ export const api = {
       }
       throw new Error(msg);
     }
-    return (await res.json()) as { ok: boolean; bildStand: string };
+    return (await res.json()) as { ok: boolean; imageVersion: string };
   },
   profilbildWeg: () => req<{ ok: boolean }>("/profile/image", { method: "DELETE" }),
 
   sitzungen: () => req<Sitzung[]>("/sessions"),
   sitzungBeenden: (id: string) => req<void>(`/sessions/${id}`, { method: "DELETE" }),
-  sitzungenBeenden: () => req<{ beendet: number }>("/sessions", { method: "DELETE" }),
+  sitzungenBeenden: () => req<{ ended: number }>("/sessions", { method: "DELETE" }),
 
   // Read once after sign-in. Hiding locked features is a courtesy to the
   // reader, not a protection: the backend refuses the same calls with 402
   // regardless of what the interface shows.
   lizenz: () => req<Lizenz>("/license"),
   lizenzEinlesen: (schluessel: string) =>
-    req<Lizenz>("/system/license", { method: "PUT", body: JSON.stringify({ schluessel }) }),
+    req<Lizenz>("/system/license", { method: "PUT", body: JSON.stringify({ key: schluessel }) }),
   lizenzAusstellen: (p: {
-    inhaber: string;
-    stufe: string;
-    funktionen?: string[];
-    ablauf?: string;
-  }) => req<{ schluessel: string }>("/system/license/issue", {
+    holder: string;
+    tier: string;
+    features?: string[];
+    expires?: string;
+  }) => req<{ key: string }>("/system/license/issue", {
     method: "POST",
     body: JSON.stringify(p),
   }),
 
-  pruefspur: (p: { aktion?: string; akteur?: string; objekt?: string; limit?: number } = {}) => {
+  pruefspur: (p: { action?: string; actor?: string; object?: string; limit?: number } = {}) => {
     const q = new URLSearchParams();
-    if (p.aktion) q.set("action", p.aktion);
-    if (p.akteur) q.set("actor", p.akteur);
-    if (p.objekt) q.set("object", p.objekt);
+    if (p.action) q.set("action", p.action);
+    if (p.actor) q.set("actor", p.actor);
+    if (p.object) q.set("object", p.object);
     if (p.limit) q.set("limit", String(p.limit));
     return req<Spureintrag[]>(`/audit-log?${q.toString()}`);
   },
-  pruefspurAktionen: () => req<{ aktion: string; anzahl: number }[]>("/audit-log/actions"),
+  pruefspurAktionen: () => req<{ action: string; count: number }[]>("/audit-log/actions"),
 
-  design: () => req<{ grundton: string; akzent: string; seitenbreite: string; sprache?: string }>("/design"),
+  design: () => req<{ baseColor: string; accent: string; pageWidth: string; language?: string }>("/design"),
   // The interface language on the account. Empty resets to "the browser decides".
   spracheSpeichern: (sprache: string) =>
-    req<unknown>("/design/language", { method: "PUT", body: JSON.stringify({ sprache }) }),
+    req<unknown>("/design/language", { method: "PUT", body: JSON.stringify({ language: sprache }) }),
   /** Base tone and accent of one's own account. Empty resets to the default. */
   benachrichtigung: () => req<Benachrichtigung>("/account/notifications"),
   benachrichtigungSpeichern: (email: boolean) =>
     req<Benachrichtigung>("/account/notifications", { method: "PUT", body: JSON.stringify({ email }) }),
   benachrichtigungTesten: () =>
-    req<{ ok: boolean; an: string }>("/account/notifications/test", { method: "POST" }),
+    req<{ ok: boolean; to: string }>("/account/notifications/test", { method: "POST" }),
   aussehenSpeichern: (grundton: string, akzent: string) =>
-    req<{ grundton: string; akzent: string }>("/design", {
+    req<{ baseColor: string; accent: string }>("/design", {
       method: "PUT",
-      body: JSON.stringify({ grundton, akzent }),
+      body: JSON.stringify({ baseColor: grundton, accent: akzent }),
     }),
 
   einstellungen: () => req<Einstellung[]>("/settings"),
   einstellungSetzen: (schluessel: string, wert: string) =>
-    req<{ wert: string }>("/settings", {
+    req<{ value: string }>("/settings", {
       method: "PUT",
-      body: JSON.stringify({ schluessel, wert }),
+      body: JSON.stringify({ key: schluessel, value: wert }),
     }),
   einstellungZuruecksetzen: (schluessel: string) =>
-    req<{ wert: string }>(`/settings?key=${encodeURIComponent(schluessel)}`, {
+    req<{ value: string }>(`/settings?key=${encodeURIComponent(schluessel)}`, {
       method: "DELETE",
     }),
   systemZustand: () => req<SystemZustand>("/system"),
   puls: () => req<Puls>("/system/pulse"),
   mitschriftZustand: () => req<MitschriftZustand>("/system/collab"),
   mitschreibende: (id: string) =>
-    req<{ anzahl: number; moeglich: boolean }>(`/pages/${id}/collaborators`),
+    req<{ count: number; possible: boolean }>(`/pages/${id}/collaborators`),
   sicherungUmfang: () => req<SicherungUmfang>("/system/backup/scope"),
   // Restoring. No req: the body is multipart and can be gigabytes in size,
   // that does not belong through JSON.stringify.
@@ -869,10 +869,10 @@ export const api = {
     if (!antwort.ok) throw new Error(d.error || `Fehler ${antwort.status}`);
     return d as {
       ok: boolean;
-      anhaenge: number;
-      misslungen: number;
-      rueckweg: string;
-      hinweis: string;
+      attachments: number;
+      failed: number;
+      rollback: string;
+      note: string;
     };
   },
   sicherungTokenNeu: () =>
@@ -886,7 +886,7 @@ export const api = {
   ldapTesten: (benutzer: string, passwort: string) =>
     req<LDAPTestErgebnis>("/system/ldap/test", {
       method: "POST",
-      body: JSON.stringify({ benutzer, passwort }),
+      body: JSON.stringify({ user: benutzer, password: passwort }),
     }),
   // Sends off that many megabytes and reports whether they arrive. Not through
   // req: the body is not JSON, and a severed connection is a result here and
@@ -907,30 +907,30 @@ export const api = {
       return false;
     }
   },
-  anmeldungen: (p: { nur?: string; ip?: string; tage?: number; limit?: number } = {}) => {
+  anmeldungen: (p: { only?: string; ip?: string; days?: number; limit?: number } = {}) => {
     const q = new URLSearchParams();
-    if (p.nur) q.set("only", p.nur);
+    if (p.only) q.set("only", p.only);
     if (p.ip) q.set("ip", p.ip);
-    if (p.tage !== undefined) q.set("days", String(p.tage));
+    if (p.days !== undefined) q.set("days", String(p.days));
     if (p.limit) q.set("limit", String(p.limit));
     return req<Anmeldungen>(`/system/sign-ins?${q.toString()}`);
   },
-  suchindexNeu: () => req<{ ohneSuchtext: number }>("/system/search-index", { method: "POST" }),
+  suchindexNeu: () => req<{ withoutSearchText: number }>("/system/search-index", { method: "POST" }),
   anhangindexNachziehen: () =>
-    req<{ betrachtet: number; gelesen: number; ohneText: number }>("/system/attachment-index", {
+    req<{ checked: number; read: number; withoutText: number }>("/system/attachment-index", {
       method: "POST",
     }),
-  ablageZustand: () => req<{ ablage: string }>("/system/storage"),
+  ablageZustand: () => req<{ storage: string }>("/system/storage"),
   ablageTesten: (p: {
-    endpunkt: string;
+    endpoint: string;
     bucket: string;
-    zugriff: string;
-    geheimnis: string;
+    accessKey: string;
+    secretKey: string;
     region: string;
     tls: boolean;
-    pfadstil: boolean;
+    pathStyle: boolean;
   }) =>
-    req<{ ok: boolean; ablage?: string; schritt?: string; grund?: string; anmerkung?: string }>(
+    req<{ ok: boolean; storage?: string; step?: string; reason?: string; remark?: string }>(
       "/system/storage/test",
       { method: "POST", body: JSON.stringify(p) },
     ),
@@ -942,13 +942,13 @@ export const api = {
   kommentarAnlegen: (pageId: string, text: string, elternId?: string) =>
     req<Kommentar>(`/pages/${pageId}/comments`, {
       method: "POST",
-      body: JSON.stringify({ text, elternId: elternId ?? null }),
+      body: JSON.stringify({ text, parentId: elternId ?? null }),
     }),
   kommentarAendern: (id: string, text: string) =>
     req<void>(`/comments/${id}`, { method: "PUT", body: JSON.stringify({ text }) }),
   kommentarLoeschen: (id: string) => req<void>(`/comments/${id}`, { method: "DELETE" }),
   kommentarErledigt: (id: string) =>
-    req<{ erledigt: boolean }>(`/comments/${id}/resolved`, { method: "POST" }),
+    req<{ resolved: boolean }>(`/comments/${id}/resolved`, { method: "POST" }),
 
   listPages: () => req<PageMeta[]>("/pages"),
   listShared: () => req<PageMeta[]>("/pages/shared"),
@@ -964,38 +964,38 @@ export const api = {
 
   gruppen: () => req<Gruppe[]>("/groups"),
   gruppeAnlegen: (name: string, beschreibung: string) =>
-    req<Gruppe>("/groups", { method: "POST", body: JSON.stringify({ name, beschreibung }) }),
+    req<Gruppe>("/groups", { method: "POST", body: JSON.stringify({ name, description: beschreibung }) }),
   gruppeLoeschen: (id: string) => req<void>(`/groups/${id}`, { method: "DELETE" }),
   gruppenMitglieder: (id: string) => req<Mitglied[]>(`/groups/${id}/members`),
   mitgliedSetzen: (gruppeId: string, userId: string, drin: boolean) =>
-    req<{ drin: boolean }>(`/groups/${gruppeId}/members`, {
+    req<{ isMember: boolean }>(`/groups/${gruppeId}/members`, {
       method: "PUT",
-      body: JSON.stringify({ userId, drin }),
+      body: JSON.stringify({ userId, isMember: drin }),
     }),
 
   // The colour of a space in the graph. Empty resets it to the series.
   spaceFarbe: (id: string, farbe: string) =>
-    req<{ farbe: string }>(`/spaces/${id}/color`, {
+    req<{ color: string }>(`/spaces/${id}/color`, {
       method: "PUT",
-      body: JSON.stringify({ farbe }),
+      body: JSON.stringify({ color: farbe }),
     }),
 
   spaceRechte: (spaceId: string) => req<SpaceRecht[]>(`/spaces/${spaceId}/permissions`),
   spaceRechtSetzen: (
     spaceId: string,
-    ziel: { gruppeId?: string; userId?: string },
+    ziel: { groupId?: string; userId?: string },
     recht: string,
   ) =>
-    req<{ recht: string }>(`/spaces/${spaceId}/permissions`, {
+    req<{ permission: string }>(`/spaces/${spaceId}/permissions`, {
       method: "PUT",
-      body: JSON.stringify({ gruppeId: ziel.gruppeId ?? "", userId: ziel.userId ?? "", recht }),
+      body: JSON.stringify({ groupId: ziel.groupId ?? "", userId: ziel.userId ?? "", permission: recht }),
     }),
   // The measure of a page. Whoever may write may set it: it is a property of
   // the text, not of the sharing.
   seiteBreite: (id: string, breite: Seitenbreite) =>
-    req<{ breite: Seitenbreite }>(`/pages/${id}/width`, {
+    req<{ width: Seitenbreite }>(`/pages/${id}/width`, {
       method: "PUT",
-      body: JSON.stringify({ breite }),
+      body: JSON.stringify({ width: breite }),
     }),
   getPage: (id: string) => req<Page>(`/pages/${id}`),
   backlinks: (id: string) => req<PageMeta[]>(`/pages/${id}/backlinks`),
@@ -1013,7 +1013,7 @@ export const api = {
   // fail. vorId is the sibling it lands in front of; null means the end.
   seiteVerschieben: (
     id: string,
-    ziel: { elternId?: string | null; spaceId?: string | null; vorId?: string | null },
+    ziel: { parentId?: string | null; spaceId?: string | null; beforeId?: string | null },
   ) => req<Page>(`/pages/${id}/order`, { method: "PUT", body: JSON.stringify(ziel) }),
   deletePage: (id: string) => req<void>(`/pages/${id}`, { method: "DELETE" }),
   restorePage: (id: string) => req<void>(`/pages/${id}/restore`, { method: "POST" }),
@@ -1109,10 +1109,10 @@ export const api = {
   // Postfach
   postfach: (nurUngelesen = false) =>
     req<Nachricht[]>(`/postfach${nurUngelesen ? "?ungelesen=1" : ""}`),
-  postfachAnzahl: () => req<{ ungelesen: number }>("/inbox/count"),
+  postfachAnzahl: () => req<{ unread: number }>("/inbox/count"),
   postfachGelesen: (id?: string) =>
     req<{ ok: boolean }>(id ? `/inbox/${id}/read` : "/inbox/read", { method: "POST" }),
-  postfachLeeren: () => req<{ geloescht: number }>("/inbox", { method: "DELETE" }),
+  postfachLeeren: () => req<{ deleted: number }>("/inbox", { method: "DELETE" }),
 
   // Per-user sharing + roles
   listShares: (id: string) => req<ShareEntry[]>(`/pages/${id}/shares`),
@@ -1127,7 +1127,7 @@ export const api = {
   createUser: (email: string, name: string, password: string, role: string, benutzername = "") =>
     req<User>("/users", {
       method: "POST",
-      body: JSON.stringify({ email, name, password, role, benutzername }),
+      body: JSON.stringify({ email, name, password, role, username: benutzername }),
     }),
   deleteUser: (id: string) => req<void>(`/users/${id}`, { method: "DELETE" }),
   // Remove another account's second factor, for the lost phone. The account
@@ -1137,9 +1137,9 @@ export const api = {
   setUserRole: (id: string, role: string) =>
     req<{ role: string }>(`/users/${id}/role`, { method: "PUT", body: JSON.stringify({ role }) }),
   benutzernameSetzen: (id: string, benutzername: string) =>
-    req<{ benutzername: string }>(`/users/${id}/username`, {
+    req<{ username: string }>(`/users/${id}/username`, {
       method: "PUT",
-      body: JSON.stringify({ benutzername }),
+      body: JSON.stringify({ username: benutzername }),
     }),
 
   // One's own machines: the list together with what can currently be seen of
@@ -1156,37 +1156,37 @@ export const api = {
   // the process -- that is the number somebody wants to see who is changing it
   // because another device was involved.
   passwortWechseln: (alt: string, neu: string) =>
-    req<{ ok: boolean; beendet: number }>("/auth/password", {
+    req<{ ok: boolean; ended: number }>("/auth/password", {
       method: "POST",
-      body: JSON.stringify({ alt, neu }),
+      body: JSON.stringify({ old: alt, new: neu }),
     }),
 
   // Reset by an administrator, for a forgotten password.
   passwortSetzen: (id: string, neu: string) =>
-    req<{ ok: boolean; beendet: number }>(`/users/${id}/password`, {
+    req<{ ok: boolean; ended: number }>(`/users/${id}/password`, {
       method: "PUT",
-      body: JSON.stringify({ neu }),
+      body: JSON.stringify({ new: neu }),
     }),
 
   // Wartung: Konfigurationsdatei, Neustart, Papierkorb der Instanz
   konfigLesen: () => req<KonfigDatei>("/system/config"),
   konfigPruefen: (inhalt: string) =>
-    req<{ hinweise: string[] }>("/system/config", {
+    req<{ notes: string[] }>("/system/config", {
       method: "PUT",
-      body: JSON.stringify({ inhalt, nurPruefen: true }),
+      body: JSON.stringify({ content: inhalt, dryRun: true }),
     }),
   konfigSchreiben: (inhalt: string) =>
-    req<{ hinweise: string[]; sicherung: string; neustartNoetig: boolean }>("/system/config", {
+    req<{ notes: string[]; backup: string; restartRequired: boolean }>("/system/config", {
       method: "PUT",
-      body: JSON.stringify({ inhalt }),
+      body: JSON.stringify({ content: inhalt }),
     }),
   neustarten: () =>
     req<{ ok: boolean }>("/system/restart", {
       method: "POST",
-      body: JSON.stringify({ bestaetigung: "neustart" }),
+      body: JSON.stringify({ confirmation: "neustart" }),
     }),
   papierkorbLeeren: () =>
-    req<{ geloescht: number }>("/system/trash", { method: "POST" }),
+    req<{ deleted: number }>("/system/trash", { method: "POST" }),
 
   // Spaces
   listSpaces: () => req<Space[]>("/spaces"),
@@ -1201,9 +1201,9 @@ export const api = {
   spacesOrdnen: (ids: string[]) =>
     req<void>("/spaces/order", { method: "PUT", body: JSON.stringify({ ids }) }),
   spaceOeffentlich: (id: string, oeffentlich: "nein" | "lesen" | "schreiben") =>
-    req<{ oeffentlich: string }>(`/spaces/${id}/public-access`, {
+    req<{ publicAccess: string }>(`/spaces/${id}/public-access`, {
       method: "PUT",
-      body: JSON.stringify({ oeffentlich }),
+      body: JSON.stringify({ publicAccess: oeffentlich }),
     }),
 
   // Knowledge graph
@@ -1226,12 +1226,12 @@ export const api = {
     const p = new URLSearchParams({ q });
     if (filter?.space) p.set("space", filter.space);
     if (filter?.tag) p.set("tag", filter.tag);
-    if (filter?.tage) p.set("days", String(filter.tage));
-    if (filter?.wer) p.set("who", filter.wer === "ich" ? "me" : filter.wer);
+    if (filter?.days) p.set("days", String(filter.days));
+    if (filter?.who) p.set("who", filter.who === "ich" ? "me" : filter.who);
     return req<SearchHit[]>(`/search?${p.toString()}`);
   },
   getPublicPage: (token: string) => req<PublicPage>(`/public/${token}`),
 };
 
 /** Inbox by e-mail: the account's choice and whether the instance can send. */
-export type Benachrichtigung = { email: boolean; verfuegbar: boolean; adresse: string };
+export type Benachrichtigung = { email: boolean; available: boolean; address: string };

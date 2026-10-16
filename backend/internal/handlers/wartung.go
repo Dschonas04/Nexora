@@ -91,13 +91,13 @@ func zurueckSetzen(entwurf, alt string) string {
 }
 
 type konfigAntwort struct {
-	Pfad        string   `json:"pfad"`
-	Inhalt      string   `json:"inhalt"`
-	Gefunden    bool     `json:"gefunden"`
-	Schreibbar  bool     `json:"schreibbar"`
-	Hinweise    []string `json:"hinweise"`
-	Schluessel  []string `json:"schluessel"`
-	Geheimnisse []string `json:"geheimnisse"`
+	Pfad        string   `json:"path"`
+	Inhalt      string   `json:"content"`
+	Gefunden    bool     `json:"found"`
+	Schreibbar  bool     `json:"writable"`
+	Hinweise    []string `json:"notes"`
+	Schluessel  []string `json:"key"`
+	Geheimnisse []string `json:"secrets"`
 }
 
 // KonfigLesen returns the configuration file as it was loaded.
@@ -153,9 +153,9 @@ func schreibbar(pfad string) bool {
 }
 
 type konfigSchreibReq struct {
-	Inhalt string `json:"inhalt"`
+	Inhalt string `json:"content"`
 	// NurPruefen: judge a draft without writing it.
-	NurPruefen bool `json:"nurPruefen"`
+	NurPruefen bool `json:"dryRun"`
 }
 
 // KonfigSchreiben speichert einen Entwurf.
@@ -191,7 +191,7 @@ func (s *Server) KonfigSchreiben(w http.ResponseWriter, r *http.Request) {
 	hinweise := config.Pruefen(entwurf)
 
 	if req.NurPruefen {
-		writeJSON(w, http.StatusOK, map[string]interface{}{"hinweise": hinweise})
+		writeJSON(w, http.StatusOK, map[string]interface{}{"notes": hinweise})
 		return
 	}
 	if strings.TrimSpace(entwurf) == "" {
@@ -218,12 +218,12 @@ func (s *Server) KonfigSchreiben(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Konfiguration geändert, Sicherung: %s", sicherung)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"hinweise":  hinweise,
-		"sicherung": filepath.Base(sicherung),
+		"notes":  hinweise,
+		"backup": filepath.Base(sicherung),
 		// The file is only read at startup. That is not a shortcoming to be
 		// programmed away: the database address and the session secret are
 		// values one must not swap under a running operation.
-		"neustartNoetig": true,
+		"restartRequired": true,
 	})
 }
 
@@ -286,7 +286,7 @@ func ersetzen(pfad, inhalt string) error {
 type neustartReq struct {
 	// Bestaetigung has to be the literal word "neustart". An accidental click
 	// must not switch the service off.
-	Bestaetigung string `json:"bestaetigung"`
+	Bestaetigung string `json:"confirmation"`
 }
 
 // Neustart ends the process.
@@ -343,5 +343,5 @@ func (s *Server) PapierkorbLeeren(w http.ResponseWriter, r *http.Request) {
 	}
 	s.spurAusRequest(r, AktPapierkorbLeer, "system", "", "",
 		map[string]interface{}{"seiten": anzahl})
-	writeJSON(w, http.StatusOK, map[string]int64{"geloescht": anzahl})
+	writeJSON(w, http.StatusOK, map[string]int64{"deleted": anzahl})
 }

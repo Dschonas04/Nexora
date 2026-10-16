@@ -598,7 +598,7 @@ sequenceDiagram
     H->>P: discovery document (cached)
     H-->>B: 302 to the provider + state cookie
     B->>P: sign in there
-    P-->>B: 302 back to public_url + /api/auth/oidc/zurueck?code
+    P-->>B: 302 back to public_url + /api/auth/oidc/callback?code
     B->>H: the callback
     H->>H: state cookie must match
     H->>P: exchange code, verify the ID token against the JWKS
@@ -939,7 +939,7 @@ one panel does not blank the page.
 changes, trash, permanent deletion, shares and public links.
 
 **Sign-in attempts** are the one part of it that is free to read, through
-`/system/anmeldungen` rather than `/pruefspur`. Who is knocking at the door
+`/system/sign-ins` rather than `/audit-log`. Who is knocking at the door
 belongs to running an instance at all, not to reporting on it, so gating it
 behind the `pruefspur` extra would have meant an unlicensed installation cannot
 see that it is being attacked. All three ways in, password form, directory,
@@ -1145,7 +1145,7 @@ graph LR
 | **An issued licence key cannot be revoked** | A leaked key unlocks extras until it expires | Expiry of at most a year. Rotating the public key invalidates *every* key, so it is a last resort |
 | **`RealIP` trusts `X-Forwarded-For`** | Behind no proxy, a client can forge the IP recorded in the audit trail | Correct behind a proxy one controls; do not expose the container directly |
 | **The default JWT secret starts the server** | An instance left on it has forgeable sessions | Warned at every boot; named first in the security checklist |
-| **`pgvector`-free search is `german` by default** | Slightly worse recall on English content | `search_dictionary` is a setting; changing it needs a reindex (`POST /system/suchindex`) |
+| **`pgvector`-free search is `german` by default** | Slightly worse recall on English content | `search_dictionary` is a setting; changing it needs a reindex (`POST /system/search-index`) |
 | **`.docx` round-trip is lossy** | Headers, styles, comments and images do not survive an edit | The interface says so before the edit starts. Deliberate, see ADR-7 |
 | **No `pull_request` CI on a public repository** | External contributions are not built until merged to a branch | Unavoidable with a self-hosted runner; see 7.4 |
 | **Destructive schema changes have no path** | A rename or a table split would need a hand-written step | Accepted cost of ADR-2. None has been needed so far |

@@ -72,11 +72,11 @@ type Teil =
   | "system"
   | "wartung";
 
-const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] = [
-  { id: "uebersicht", titel: "Overview", unter: "Figures and state", teile: ["uebersicht"] },
+const BEREICHE: { id: Bereich; title: string; unter: string; teile: Teil[] }[] = [
+  { id: "uebersicht", title: "Overview", unter: "Figures and state", teile: ["uebersicht"] },
   {
     id: "konten",
-    titel: "Accounts",
+    title: "Accounts",
     unter: "Users, roles, groups",
     teile: ["nutzer", "gruppen"],
   },
@@ -85,36 +85,36 @@ const BEREICHE: { id: Bereich; titel: string; unter: string; teile: Teil[] }[] =
   // it and used to sit in four places.
   {
     id: "zugang",
-    titel: "Access",
+    title: "Access",
     unter: "Second factor, registration, directory, sessions",
     teile: ["zweitfaktor", "sicherheit", "ldap", "anmeldungen", "sitzungen"],
   },
   {
     id: "inhalte",
-    titel: "Content",
+    title: "Content",
     unter: "Collaboration, search, attachments",
     teile: ["zusammen", "suche", "anhaenge"],
   },
   {
     id: "datenbank",
-    titel: "Database",
+    title: "Database",
     unter: "PostgreSQL, tables, usage",
     teile: ["datenbank"],
   },
-  { id: "lizenz", titel: "Licence", unter: "Scope, term", teile: ["lizenz"] },
+  { id: "lizenz", title: "Licence", unter: "Scope, term", teile: ["lizenz"] },
   // The audit trail used to be a page of its own, with its own row in the
   // sidebar -- the one administrative matter that did not sit in the
   // administration. An area of its own and no appendix to System: whoever opens
   // it is not looking for a setting but for an event.
   {
     id: "protokoll",
-    titel: "Audit log",
+    title: "Audit log",
     unter: "Actions and changes",
     teile: ["protokoll"],
   },
   {
     id: "system",
-    titel: "System",
+    title: "System",
     unter: "config.conf, restart, backup",
     teile: ["system", "wartung"],
   },
@@ -177,15 +177,15 @@ const ZUSATZ: Record<string, string> = {
 };
 
 const ZAHL_TITEL: Record<string, string> = {
-  konten: "Accounts",
+  accounts: "Accounts",
   admins: "Administrators",
-  seiten: "Pages",
-  papierkorb: "in the trash",
-  versionen: "Versions",
-  anhaenge: "Attachments",
-  kommentare: "Comments",
-  spureintraege: "Audit entries",
-  ohneSuchtext: "without search text",
+  pages: "Pages",
+  trash: "in the trash",
+  versions: "Versions",
+  attachments: "Attachments",
+  comments: "Comments",
+  auditEntries: "Audit entries",
+  withoutSearchText: "without search text",
 };
 
 // The routes a sign-in comes in through. The backend writes the short names,
@@ -252,20 +252,20 @@ const KURVE_B = 300; // Einheiten im viewBox, nicht Bildpunkte
 const KURVE_H = 64;
 
 function verlauf(p: Puls) {
-  const minute = p.anfragen?.minute ?? [];
+  const minute = p.requests?.minute ?? [];
   // At least two points: with one the x calculation divided by zero, and a NaN
   // in the path does not draw wrongly but not at all. The backend always
   // delivers fifty-nine, but a curve that silently disappears at one point
   // would be the most unpleasant bug of the lot.
   if (minute.length < 2) return null;
 
-  const hoechste = Math.max(1, ...minute.map((s) => s.anfragen));
-  const still = minute.every((s) => s.anfragen === 0);
+  const hoechste = Math.max(1, ...minute.map((s) => s.requests));
+  const still = minute.every((s) => s.requests === 0);
   const x = (i: number) => (i / (minute.length - 1)) * KURVE_B;
   // Two units of air at the top, so the peak does not stick to the edge.
   const y = (v: number) => KURVE_H - 2 - (v / hoechste) * (KURVE_H - 6);
 
-  const punkte = minute.map((sek, i) => `${x(i).toFixed(1)},${y(sek.anfragen).toFixed(1)}`);
+  const punkte = minute.map((sek, i) => `${x(i).toFixed(1)},${y(sek.requests).toFixed(1)}`);
   const linie = "M" + punkte.join(" L");
   const flaeche = `${linie} L${KURVE_B},${KURVE_H} L0,${KURVE_H} Z`;
 
@@ -293,17 +293,17 @@ function verlauf(p: Puls) {
             line they stand where they belong, without disturbing the
             silhouette. */}
         {minute.map((sek, i) =>
-          sek.fehler > 0 || sek.abgelehnt > 0 ? (
+          sek.errors > 0 || sek.rejected > 0 ? (
             <rect
-              key={sek.vorSekunden}
+              key={sek.secondsAgo}
               x={x(i) - 1}
               y={KURVE_H - 3}
               width={2}
               height={3}
-              className={sek.fehler > 0 ? "puls-marke fehler" : "puls-marke abgelehnt"}
+              className={sek.errors > 0 ? "puls-marke fehler" : "puls-marke abgelehnt"}
             >
               <title>
-                {`vor ${sek.vorSekunden} s: ${sek.abgelehnt} abgewiesen, ${sek.fehler} gescheitert`}
+                {`vor ${sek.secondsAgo} s: ${sek.rejected} abgewiesen, ${sek.errors} gescheitert`}
               </title>
             </rect>
           ) : null,
@@ -418,7 +418,7 @@ export default function EinstellungenView() {
   const [liste, setListe] = useState<Einstellung[]>([]);
   const [zustand, setZustand] = useState<SystemZustand | null>(null);
   const [entwurf, setEntwurf] = useState<Record<string, string>>({});
-  const [meldung, setMeldung] = useState<{ text: string; art: "ok" | "fehler" } | null>(null);
+  const [meldung, setMeldung] = useState<{ text: string; type: "ok" | "fehler" } | null>(null);
   const [laeuft, setLaeuft] = useState<string | null>(null);
   const [laedt, setLaedt] = useState(true);
 
@@ -426,13 +426,13 @@ export default function EinstellungenView() {
   // of it is saved; see the note in the section.
   const [ablage, setAblage] = useState<string>("");
   const [s3, setS3] = useState({
-    endpunkt: "",
+    endpoint: "",
     bucket: "nexora",
-    zugriff: "",
-    geheimnis: "",
+    accessKey: "",
+    secretKey: "",
     region: "us-east-1",
     tls: false,
-    pfadstil: true,
+    pathStyle: true,
   });
   const [s3Ergebnis, setS3Ergebnis] = useState<{
     ok: boolean;
@@ -445,12 +445,12 @@ export default function EinstellungenView() {
       .then(([e, z]) => {
         setListe(e);
         setZustand(z);
-        setEntwurf(Object.fromEntries(e.map((x) => [x.schluessel, x.wert])));
+        setEntwurf(Object.fromEntries(e.map((x) => [x.key, x.value])));
       })
       .catch((err: Error & { status?: number }) =>
         setMeldung({
           text: err.status === 403 ? "Nur für Administratoren." : err.message,
-          art: "fehler",
+          type: "fehler",
         }),
       )
       .finally(() => setLaedt(false));
@@ -459,7 +459,7 @@ export default function EinstellungenView() {
   useEffect(laden, [laden]);
 
   useEffect(() => {
-    api.ablageZustand().then((a) => setAblage(a.ablage)).catch(() => setAblage(""));
+    api.ablageZustand().then((a) => setAblage(a.storage)).catch(() => setAblage(""));
   }, []);
 
   // The effective limit for an upload. It is measured and not read: Nexora does
@@ -559,8 +559,8 @@ export default function EinstellungenView() {
     try {
       await api.rechnerAnlegen({
         name: neuerRechner.name.trim(),
-        ziel: neuerRechner.ziel.trim(),
-        notiz: neuerRechner.notiz.trim(),
+        target: neuerRechner.ziel.trim(),
+        comment: neuerRechner.notiz.trim(),
       });
       setNeuerRechner({ name: "", ziel: "", notiz: "" });
       rechnerLaden();
@@ -624,7 +624,7 @@ export default function EinstellungenView() {
       window.setTimeout(() => setKopiert(""), 2000);
     } catch {
       // Without clipboard permission the text stays there to be selected.
-      setMeldung({ text: "Kopieren nicht erlaubt. Der Text lässt sich markieren.", art: "fehler" });
+      setMeldung({ text: "Kopieren nicht erlaubt. Der Text lässt sich markieren.", type: "fehler" });
     }
   };
 
@@ -691,13 +691,13 @@ export default function EinstellungenView() {
     try {
       const e = await api.wiederherstellen(einspielDatei);
       setEinspielErgebnis(
-        `Eingespielt. ${e.anhaenge} Anhänge geschrieben` +
-          (e.misslungen > 0 ? `, ${e.misslungen} misslungen` : "") +
-          `. Rückweg: ${e.rueckweg}. ${e.hinweis}`,
+        `Eingespielt. ${e.attachments} Anhänge geschrieben` +
+          (e.failed > 0 ? `, ${e.failed} misslungen` : "") +
+          `. Rückweg: ${e.rollback}. ${e.note}`,
       );
-      setMeldung({ text: "Eingespielt. Der Dienst startet neu.", art: "ok" });
+      setMeldung({ text: "Eingespielt. Der Dienst startet neu.", type: "ok" });
     } catch (e) {
-      setMeldung({ text: (e as Error).message, art: "fehler" });
+      setMeldung({ text: (e as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -707,9 +707,9 @@ export default function EinstellungenView() {
     setLaeuft("sicherung");
     try {
       setSicherung(await api.sicherungTokenNeu());
-      setMeldung({ text: "Losungswort erzeugt. Das Skript unten enthält es bereits.", art: "ok" });
+      setMeldung({ text: "Losungswort erzeugt. Das Skript unten enthält es bereits.", type: "ok" });
     } catch (e) {
-      setMeldung({ text: (e as Error).message, art: "fehler" });
+      setMeldung({ text: (e as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -728,9 +728,9 @@ export default function EinstellungenView() {
     setLaeuft("sicherung");
     try {
       setSicherung(await api.sicherungTokenWeg());
-      setMeldung({ text: "Losungswort entfernt.", art: "ok" });
+      setMeldung({ text: "Losungswort entfernt.", type: "ok" });
     } catch (e) {
-      setMeldung({ text: (e as Error).message, art: "fehler" });
+      setMeldung({ text: (e as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -742,7 +742,7 @@ export default function EinstellungenView() {
     try {
       setLdapErgebnis(await api.ldapTesten(ldapProbe.benutzer.trim(), ldapProbe.passwort));
     } catch (e) {
-      setLdapErgebnis({ ok: false, fehler: (e as Error).message });
+      setLdapErgebnis({ ok: false, errors: (e as Error).message });
     } finally {
       setLaeuft(null);
     }
@@ -784,10 +784,10 @@ export default function EinstellungenView() {
   // ones", and the list grows long enough that one does not go through it by
   // hand.
   const [anmeldungen, setAnmeldungen] = useState<Anmeldungen | null>(null);
-  const [anmeldeFilter, setAnmeldeFilter] = useState<{ nur: string; ip: string; tage: number }>({
-    nur: "",
+  const [anmeldeFilter, setAnmeldeFilter] = useState<{ only: string; ip: string; days: number }>({
+    only: "",
     ip: "",
-    tage: 30,
+    days: 30,
   });
   const anmeldungenLaden = useCallback(() => {
     api
@@ -805,24 +805,24 @@ export default function EinstellungenView() {
       .konfigLesen()
       .then((k) => {
         setKonfig(k);
-        setKonfigEntwurf(k.inhalt);
-        setKonfigHinweise(k.hinweise);
+        setKonfigEntwurf(k.content);
+        setKonfigHinweise(k.notes);
       })
-      .catch((err: Error) => setMeldung({ text: err.message, art: "fehler" }));
+      .catch((err: Error) => setMeldung({ text: err.message, type: "fehler" }));
   }, [bereich, konfig]);
 
   const konfigPruefen = async () => {
     setLaeuft("konfig-pruefen");
     try {
       const r = await api.konfigPruefen(konfigEntwurf);
-      setKonfigHinweise(r.hinweise);
+      setKonfigHinweise(r.notes);
       setMeldung(
-        r.hinweise.length === 0
-          ? { text: "Der Entwurf ist in Ordnung.", art: "ok" }
-          : { text: `${r.hinweise.length} Auffälligkeit(en). Sie stehen unten.`, art: "fehler" },
+        r.notes.length === 0
+          ? { text: "Der Entwurf ist in Ordnung.", type: "ok" }
+          : { text: `${r.notes.length} Auffälligkeit(en). Sie stehen unten.`, type: "fehler" },
       );
     } catch (e) {
-      setMeldung({ text: (e as Error).message, art: "fehler" });
+      setMeldung({ text: (e as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -832,17 +832,17 @@ export default function EinstellungenView() {
     setLaeuft("konfig-speichern");
     try {
       const r = await api.konfigSchreiben(konfigEntwurf);
-      setKonfigHinweise(r.hinweise);
+      setKonfigHinweise(r.notes);
       setMeldung({
-        text: `Gespeichert. Sicherung: ${r.sicherung}. Wirksam wird die Änderung erst nach einem Neustart.`,
-        art: "ok",
+        text: `Gespeichert. Sicherung: ${r.backup}. Wirksam wird die Änderung erst nach einem Neustart.`,
+        type: "ok",
       });
       // Fetch anew: the answer does not contain the written state, and the draft
       // in the field would otherwise keep showing the asterisks that are real
       // values again by now.
       setKonfig(null);
     } catch (e) {
-      setMeldung({ text: (e as Error).message, art: "fehler" });
+      setMeldung({ text: (e as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -856,13 +856,13 @@ export default function EinstellungenView() {
       laden();
       setSchluesselFeld("");
       setMeldung({
-        text: z.gueltig
-          ? `Lizenz für ${z.inhaber} übernommen${z.stufe ? ` (Stufe ${z.stufe})` : ""}.`
+        text: z.valid
+          ? `Lizenz für ${z.holder} übernommen${z.tier ? ` (Stufe ${z.tier})` : ""}.`
           : "Lizenz entfernt. Es gilt wieder der freie Umfang.",
-        art: "ok",
+        type: "ok",
       });
     } catch (e) {
-      setMeldung({ text: (e as Error).message, art: "fehler" });
+      setMeldung({ text: (e as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -873,14 +873,14 @@ export default function EinstellungenView() {
     setAusgestellt("");
     try {
       const r = await api.lizenzAusstellen({
-        inhaber: ausstellen.inhaber.trim(),
-        stufe: ausstellen.stufe,
-        ablauf: ausstellen.ablauf || undefined,
+        holder: ausstellen.inhaber.trim(),
+        tier: ausstellen.stufe,
+        expires: ausstellen.ablauf || undefined,
       });
-      setAusgestellt(r.schluessel);
-      setMeldung({ text: "Schlüssel ausgestellt.", art: "ok" });
+      setAusgestellt(r.key);
+      setMeldung({ text: "Schlüssel ausgestellt.", type: "ok" });
     } catch (e) {
-      setMeldung({ text: (e as Error).message, art: "fehler" });
+      setMeldung({ text: (e as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -892,11 +892,11 @@ export default function EinstellungenView() {
       await api.neustarten();
       setMeldung({
         text: "Der Dienst wird beendet. Kommt er nicht von selbst wieder, startet ihn nichts neu. Dann hilft nur der Container-Verwalter.",
-        art: "ok",
+        type: "ok",
       });
       setNeustartWort("");
     } catch (e) {
-      setMeldung({ text: (e as Error).message, art: "fehler" });
+      setMeldung({ text: (e as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -916,9 +916,9 @@ export default function EinstellungenView() {
     setLaeuft("papierkorb");
     try {
       const r = await api.papierkorbLeeren();
-      setMeldung({ text: `${r.geloescht} Seite(n) endgültig gelöscht.`, art: "ok" });
+      setMeldung({ text: `${r.deleted} Seite(n) endgültig gelöscht.`, type: "ok" });
     } catch (e) {
-      setMeldung({ text: (e as Error).message, art: "fehler" });
+      setMeldung({ text: (e as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -931,8 +931,8 @@ export default function EinstellungenView() {
       const r = await api.ablageTesten(s3);
       setS3Ergebnis(
         r.ok
-          ? { ok: true, text: `Verbindung steht: ${r.ablage}${r.anmerkung ? ` (${r.anmerkung})` : ""}` }
-          : { ok: false, text: `Fehlgeschlagen beim ${r.schritt}: ${r.grund}` },
+          ? { ok: true, text: `Verbindung steht: ${r.storage}${r.remark ? ` (${r.remark})` : ""}` }
+          : { ok: false, text: `Fehlgeschlagen beim ${r.step}: ${r.reason}` },
       );
     } catch (err) {
       setS3Ergebnis({ ok: false, text: (err as Error).message });
@@ -941,35 +941,35 @@ export default function EinstellungenView() {
     }
   };
 
-  const holen = (schluessel: string) => liste.find((e) => e.schluessel === schluessel);
+  const holen = (schluessel: string) => liste.find((e) => e.key === schluessel);
 
   const speichern = async (e: Einstellung, wert: string) => {
-    setLaeuft(e.schluessel);
+    setLaeuft(e.key);
     setMeldung(null);
     try {
-      await api.einstellungSetzen(e.schluessel, wert);
-      setMeldung({ text: `„${e.titel}“ gespeichert.`, art: "ok" });
+      await api.einstellungSetzen(e.key, wert);
+      setMeldung({ text: `„${e.title}“ gespeichert.`, type: "ok" });
       // The page width comes from the same request as the appearance. Without
       // reloading it the workspace showed the old width until a page reload.
-      if (e.schluessel === "seitenbreite") designNeuLaden();
+      if (e.key === "seitenbreite") designNeuLaden();
       laden();
     } catch (err) {
-      setMeldung({ text: (err as Error).message, art: "fehler" });
-      setEntwurf((v) => ({ ...v, [e.schluessel]: e.wert }));
+      setMeldung({ text: (err as Error).message, type: "fehler" });
+      setEntwurf((v) => ({ ...v, [e.key]: e.value }));
     } finally {
       setLaeuft(null);
     }
   };
 
   const zuruecksetzen = async (e: Einstellung) => {
-    setLaeuft(e.schluessel);
+    setLaeuft(e.key);
     try {
-      await api.einstellungZuruecksetzen(e.schluessel);
-      setMeldung({ text: `„${e.titel}“ folgt wieder der config.conf.`, art: "ok" });
-      if (e.schluessel === "seitenbreite") designNeuLaden();
+      await api.einstellungZuruecksetzen(e.key);
+      setMeldung({ text: `„${e.title}“ folgt wieder der config.conf.`, type: "ok" });
+      if (e.key === "seitenbreite") designNeuLaden();
       laden();
     } catch (err) {
-      setMeldung({ text: (err as Error).message, art: "fehler" });
+      setMeldung({ text: (err as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -982,15 +982,15 @@ export default function EinstellungenView() {
       const r = await api.anhangindexNachziehen();
       setMeldung({
         text:
-          r.betrachtet === 0
+          r.checked === 0
             ? "Alle Anhänge haben bereits einen Suchtext."
-            : `${r.betrachtet} Anhänge betrachtet, ${r.gelesen} mit Text, ${r.ohneText} ohne: ` +
+            : `${r.checked} Anhänge betrachtet, ${r.read} mit Text, ${r.withoutText} ohne: ` +
               `das sind Bilder, Archive oder gescannte PDF ohne Textebene.`,
-        art: "ok",
+        type: "ok",
       });
       laden();
     } catch (err) {
-      setMeldung({ text: (err as Error).message, art: "fehler" });
+      setMeldung({ text: (err as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -1003,14 +1003,14 @@ export default function EinstellungenView() {
       const r = await api.suchindexNeu();
       setMeldung({
         text:
-          r.ohneSuchtext === 0
+          r.withoutSearchText === 0
             ? "Suchindex neu aufgebaut, alle Seiten erfasst."
-            : `Suchindex neu aufgebaut. ${r.ohneSuchtext} Seiten ohne Text, das sind in aller Regel leere Seiten.`,
-        art: "ok",
+            : `Suchindex neu aufgebaut. ${r.withoutSearchText} Seiten ohne Text, das sind in aller Regel leere Seiten.`,
+        type: "ok",
       });
       laden();
     } catch (err) {
-      setMeldung({ text: (err as Error).message, art: "fehler" });
+      setMeldung({ text: (err as Error).message, type: "fehler" });
     } finally {
       setLaeuft(null);
     }
@@ -1031,33 +1031,33 @@ export default function EinstellungenView() {
   const feld = (schluessel: string) => {
     const e = holen(schluessel);
     if (!e) return null;
-    const w = entwurf[e.schluessel] ?? e.wert;
-    const geaendert = w !== e.wert;
+    const w = entwurf[e.key] ?? e.value;
+    const geaendert = w !== e.value;
 
     return (
-      <div className="einstellung" key={e.schluessel}>
+      <div className="einstellung" key={e.key}>
         <div className="einstellung-kopf">
           <div>
             <div className="einstellung-titel">
-              {e.titel}
-              <code className="einstellung-schluessel">{e.schluessel}</code>
-              {e.umgebung && (
+              {e.title}
+              <code className="einstellung-schluessel">{e.key}</code>
+              {e.fromEnv && (
                 <code className="einstellung-schluessel umgebung" title="Umgebungsvariable, gelesen beim Start">
-                  {e.umgebung}
+                  {e.fromEnv}
                 </code>
               )}
             </div>
-            <div className="einstellung-erklaerung">{e.erklaerung}</div>
-            {e.warnung && <div className="einstellung-warnung">{e.warnung}</div>}
+            <div className="einstellung-erklaerung">{e.description}</div>
+            {e.warning && <div className="einstellung-warnung">{e.warning}</div>}
           </div>
 
           <div className="einstellung-feld">
-            {e.art === "janein" ? (
+            {e.type === "janein" ? (
               <label className="schalter">
                 <input
                   type="checkbox"
                   checked={w === "ja"}
-                  disabled={laeuft === e.schluessel}
+                  disabled={laeuft === e.key}
                   onChange={(ev) => speichern(e, ev.target.checked ? "ja" : "nein")}
                 />
                 <span>{w === "ja" ? "an" : "aus"}</span>
@@ -1065,11 +1065,11 @@ export default function EinstellungenView() {
             ) : (
               <>
                 <input
-                  type={e.art === "zahl" ? "number" : "text"}
+                  type={e.type === "zahl" ? "number" : "text"}
                   value={w}
-                  disabled={laeuft === e.schluessel}
-                  placeholder={e.art === "liste" ? "leer = keine Einschränkung" : undefined}
-                  onChange={(ev) => setEntwurf((v) => ({ ...v, [e.schluessel]: ev.target.value }))}
+                  disabled={laeuft === e.key}
+                  placeholder={e.type === "liste" ? "leer = keine Einschränkung" : undefined}
+                  onChange={(ev) => setEntwurf((v) => ({ ...v, [e.key]: ev.target.value }))}
                   onKeyDown={(ev) => {
                     if (ev.key === "Enter" && geaendert) speichern(e, w);
                   }}
@@ -1090,18 +1090,18 @@ export default function EinstellungenView() {
 
   const herkunft = (e: Einstellung) => (
     <div className="einstellung-fuss muted small">
-      {e.ausDatei ? (
+      {e.fromFile ? (
         <>
           Wert stammt aus <code>config.conf</code>
         </>
       ) : (
         <>
           hier gesetzt
-          {e.geaendertVon && <> von {e.geaendertVon}</>}
-          {e.geaendertAm && <> am {e.geaendertAm}</>}
+          {e.updatedBy && <> von {e.updatedBy}</>}
+          {e.updatedAt && <> am {e.updatedAt}</>}
           {" · "}
           <button className="link-btn" onClick={() => zuruecksetzen(e)}>
-            zurücksetzen auf {e.vorgabe || "leer"}
+            zurücksetzen auf {e.default || "leer"}
           </button>
         </>
       )}
@@ -1116,7 +1116,7 @@ export default function EinstellungenView() {
   );
 
   const z = zustand!;
-  const sich = z.sicherheit;
+  const sich = z.security;
 
   // ── Bereiche ────────────────────────────────────────────────────────────
 
@@ -1156,7 +1156,7 @@ export default function EinstellungenView() {
                     )
                       return;
                     const r = await api.sitzungenBeenden().catch(() => null);
-                    if (r) setMeldung({ text: `${r.beendet} Sitzung(en) beendet.`, art: "ok" });
+                    if (r) setMeldung({ text: `${r.ended} Sitzung(en) beendet.`, type: "ok" });
                     sitzungenLaden();
                   }}
                 >
@@ -1187,32 +1187,32 @@ export default function EinstellungenView() {
                     <tr key={si.id}>
                       <td>
                         {si.browser}
-                        {si.diese && (
+                        {si.current && (
                           <span className="pill frei" style={{ marginLeft: 8 }}>
                             dieses Gerät
                           </span>
                         )}
                       </td>
                       <td className="muted small">{si.ip || "—"}</td>
-                      <td className="muted small">{zeitpunkt(si.zuletztAm)}</td>
-                      <td className="muted small">{zeitpunkt(si.laeuftAb)}</td>
+                      <td className="muted small">{zeitpunkt(si.lastSeenAt)}</td>
+                      <td className="muted small">{zeitpunkt(si.expiresAt)}</td>
                       <td className="zeilen-aktionen">
                         <button
                           className="btn-schlicht gefaehrlich"
                           onClick={async () => {
                             if (
                               !(await frage({
-                                titel: si.diese ? "Hier abmelden" : "Sitzung beenden",
-                                text: si.diese
+                                titel: si.current ? "Hier abmelden" : "Sitzung beenden",
+                                text: si.current
                                   ? "Diese Sitzung ist die, mit der du gerade arbeitest. Nach dem Beenden musst du dich neu anmelden."
                                   : `Die Sitzung auf ${si.browser} wird sofort ungültig. Wer sie benutzt, landet auf der Anmeldeseite.`,
                                 bestaetigen: "Beenden",
-                                gefaehrlich: !si.diese,
+                                gefaehrlich: !si.current,
                               }))
                             )
                               return;
                             await api.sitzungBeenden(si.id).catch(() => {});
-                            if (si.diese) window.location.href = "/login";
+                            if (si.current) window.location.href = "/login";
                             else sitzungenLaden();
                           }}
                         >
@@ -1252,34 +1252,34 @@ export default function EinstellungenView() {
         // one searches it for the number one wanted to know. One below the
         // other with the label on the left reads in a single pass.
         const bestand: [string, React.ReactNode, string][] = [
-          ...Object.entries(z.zahlen ?? {}).map(
+          ...Object.entries(z.counts ?? {}).map(
             ([k, v]) => [ZAHL_TITEL[k] ?? k, v, k] as [string, React.ReactNode, string],
           ),
-          ["Datenbank", z.datenbank?.groesse || "unbekannt", "db"],
-          ["Anhänge auf Platte", bytes(z.anhaengeBytes ?? 0), "anh"],
+          ["Datenbank", z.database?.size || "unbekannt", "db"],
+          ["Anhänge auf Platte", bytes(z.attachmentBytes ?? 0), "anh"],
         ];
 
         const zustaende: [string, React.ReactNode, string][] = [
           [
             "Lizenz",
-            z.lizenz.gueltig ? (
-              `${z.lizenz.inhaber}, ${(z.lizenz.freigeschaltet ?? []).length} von ${z.lizenz.alle} Zusätzen frei`
+            z.license.valid ? (
+              `${z.license.holder}, ${(z.license.unlocked ?? []).length} von ${z.license.all} Zusätzen frei`
             ) : (
               <span className="muted">keine gültige Lizenz, freier Umfang</span>
             ),
             "lizenz",
           ],
-          ["Selbstregistrierung", sich?.registrierungOffen ? "offen" : "geschlossen", "reg"],
+          ["Selbstregistrierung", sich?.registrationOpen ? "offen" : "geschlossen", "reg"],
           [
             "Letzte Anmeldung",
-            sich?.letzteAnmeldung || <span className="muted">keine verzeichnet</span>,
+            sich?.lastSignIn || <span className="muted">keine verzeichnet</span>,
             "anm",
           ],
           [
             "Fehlversuche in 24 Stunden",
-            sich?.fehlversuche24h ? (
+            sich?.failedAttempts24h ? (
               <>
-                {sich.fehlversuche24h}{" "}
+                {sich.failedAttempts24h}{" "}
                 <button className="btn-schlicht" onClick={() => zuTeil("anmeldungen")}>
                   ansehen
                 </button>
@@ -1289,15 +1289,15 @@ export default function EinstellungenView() {
             ),
             "fehl",
           ],
-          ["PostgreSQL", z.datenbank?.version || "unbekannt", "pg"],
+          ["PostgreSQL", z.database?.version || "unbekannt", "pg"],
           ["Ablage", ablage || <span className="muted">wird geladen</span>, "ablage"],
           [
             "Beim Start bemängelt",
-            (z.warnungen ?? []).length === 0 ? (
+            (z.warnings ?? []).length === 0 ? (
               "nichts"
             ) : (
               <>
-                {(z.warnungen ?? []).length} Punkt(e){" "}
+                {(z.warnings ?? []).length} Punkt(e){" "}
                 <button className="btn-schlicht" onClick={() => setBereich("system")}>
                   ansehen
                 </button>
@@ -1331,13 +1331,13 @@ export default function EinstellungenView() {
       }
 
       case "zusammen": {
-        const raeume = zusammen?.raeume ?? [];
-        const leute = raeume.reduce((summe, r) => summe + r.anzahl, 0);
+        const raeume = zusammen?.rooms ?? [];
+        const leute = raeume.reduce((summe, r) => summe + r.count, 0);
         return (
           <>
             <h3>Einstellung</h3>
             {feld("echtzeit")}
-            {zusammen && !zusammen.lizenziert && (
+            {zusammen && !zusammen.licensed && (
               <p className="muted small">
                 Die eingespielte Lizenz enthält echtzeit nicht. Der Schalter bleibt wirkungslos,
                 bis ein Schlüssel die Funktion freischaltet.
@@ -1348,7 +1348,7 @@ export default function EinstellungenView() {
             <div className="kennzahlreihe">
               {kennzahl("Seiten", raeume.length)}
               {kennzahl("Personen", leute)}
-              {kennzahl("Höchstens je Seite", zusammen?.hoechstens ?? "—")}
+              {kennzahl("Höchstens je Seite", zusammen?.limit ?? "—")}
             </div>
             {raeume.length === 0 ? (
               <p className="muted small">
@@ -1366,10 +1366,10 @@ export default function EinstellungenView() {
                 </thead>
                 <tbody>
                   {raeume.map((r) => (
-                    <tr key={r.seite}>
-                      <td>{r.titel}</td>
-                      <td className="muted">{r.wer.join(", ")}</td>
-                      <td className="zahl">{r.anzahl}</td>
+                    <tr key={r.page}>
+                      <td>{r.title}</td>
+                      <td className="muted">{r.who.join(", ")}</td>
+                      <td className="zahl">{r.count}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1391,7 +1391,7 @@ export default function EinstellungenView() {
             {zweitStand === null ? (
               <p className="muted small">Wird geladen…</p>
             ) : (
-              <Zweitfaktor stand={zweitStand} neuLaden={zweitLaden} />
+              <Zweitfaktor state={zweitStand} neuLaden={zweitLaden} />
             )}
             <p className="muted small">
               Dieselbe Einrichtung erreicht jedes Konto über das Zahnrad neben dem Namen
@@ -1458,18 +1458,18 @@ export default function EinstellungenView() {
               <tbody>
                 <tr>
                   <td>Fehlversuche in 24 Stunden</td>
-                  <td className="zahl">{sich?.fehlversuche24h ?? 0}</td>
+                  <td className="zahl">{sich?.failedAttempts24h ?? 0}</td>
                 </tr>
                 <tr>
                   <td>Letzte Anmeldung</td>
                   <td className="zahl">
-                    {sich?.letzteAnmeldung || <span className="muted">keine verzeichnet</span>}
+                    {sich?.lastSignIn || <span className="muted">keine verzeichnet</span>}
                   </td>
                 </tr>
                 <tr>
                   <td>Letzter Fehlversuch</td>
                   <td className="zahl">
-                    {sich?.letzterFehlversuch || <span className="muted">keiner verzeichnet</span>}
+                    {sich?.lastFailedAttempt || <span className="muted">keiner verzeichnet</span>}
                   </td>
                 </tr>
               </tbody>
@@ -1486,7 +1486,7 @@ export default function EinstellungenView() {
 
       case "anmeldungen": {
         const a = anmeldungen;
-        const zs = a?.zusammenfassung;
+        const zs = a?.summary;
         return (
           <>
             <h3>Letzte Woche</h3>
@@ -1494,31 +1494,31 @@ export default function EinstellungenView() {
               <tbody>
                 <tr>
                   <td>Angemeldet, 24 Stunden</td>
-                  <td className="zahl">{zs?.erfolge24h ?? 0}</td>
+                  <td className="zahl">{zs?.successes24h ?? 0}</td>
                 </tr>
                 <tr>
                   <td>Fehlgeschlagen, 24 Stunden</td>
-                  <td className="zahl">{zs?.fehl24h ?? 0}</td>
+                  <td className="zahl">{zs?.failures24h ?? 0}</td>
                 </tr>
                 <tr>
                   <td>Angemeldet, 7 Tage</td>
-                  <td className="zahl">{zs?.erfolge7t ?? 0}</td>
+                  <td className="zahl">{zs?.successes7d ?? 0}</td>
                 </tr>
                 <tr>
                   <td>Fehlgeschlagen, 7 Tage</td>
-                  <td className="zahl">{zs?.fehl7t ?? 0}</td>
+                  <td className="zahl">{zs?.failures7d ?? 0}</td>
                 </tr>
                 <tr>
                   <td>Verschiedene Adressen, 24 Stunden</td>
-                  <td className="zahl">{zs?.adressen24h ?? 0}</td>
+                  <td className="zahl">{zs?.addresses24h ?? 0}</td>
                 </tr>
               </tbody>
             </table>
 
             <Listenkopf
               titel="Herkunft"
-              zahl={`${(a?.herkunft ?? []).length} ${
-                (a?.herkunft ?? []).length === 1 ? "Adresse" : "Adressen"
+              zahl={`${(a?.sources ?? []).length} ${
+                (a?.sources ?? []).length === 1 ? "Adresse" : "Adressen"
               }`}
             />
             <p className="muted small">
@@ -1539,17 +1539,17 @@ export default function EinstellungenView() {
                 </thead>
                 <tbody>
                   <KurzeZeilen
-                    alle={a?.herkunft ?? []}
+                    alle={a?.sources ?? []}
                     spalten={6}
                     zeile={(h) => (
-                    <tr key={h.ip} className={h.fehl >= 10 ? "auffaellig" : undefined}>
+                    <tr key={h.ip} className={h.failed >= 10 ? "auffaellig" : undefined}>
                       <td>
                         <code>{h.ip}</code>
                       </td>
-                      <td className="zahl">{h.versuche}</td>
-                      <td className="zahl">{h.fehl}</td>
-                      <td className="zahl">{h.konten}</td>
-                      <td className="einzeilig">{zeitpunkt(h.letzter)}</td>
+                      <td className="zahl">{h.attempts}</td>
+                      <td className="zahl">{h.failed}</td>
+                      <td className="zahl">{h.accounts}</td>
+                      <td className="einzeilig">{zeitpunkt(h.last)}</td>
                       <td>
                         <button
                           className="btn-schlicht"
@@ -1561,7 +1561,7 @@ export default function EinstellungenView() {
                     </tr>
                     )}
                   />
-                  {(a?.herkunft ?? []).length === 0 && (
+                  {(a?.sources ?? []).length === 0 && (
                     <tr>
                       <td colSpan={6} className="muted">
                         Kein Versuch in den letzten sieben Tagen.
@@ -1578,23 +1578,23 @@ export default function EinstellungenView() {
                 That is why it stands below the head and not inside it. */}
             <Listenkopf
               titel="Einzelne Versuche"
-              zahl={`${(a?.versuche ?? []).length} angezeigt${
-                (a?.versuche ?? []).length >= 300 ? ", auf 300 begrenzt" : ""
+              zahl={`${(a?.attempts ?? []).length} angezeigt${
+                (a?.attempts ?? []).length >= 300 ? ", auf 300 begrenzt" : ""
               }`}
             />
             <div className="pruefspur-filter">
               <select
-                value={anmeldeFilter.nur}
-                onChange={(e) => setAnmeldeFilter({ ...anmeldeFilter, nur: e.target.value })}
+                value={anmeldeFilter.only}
+                onChange={(e) => setAnmeldeFilter({ ...anmeldeFilter, only: e.target.value })}
               >
                 <option value="">Alle Versuche</option>
                 <option value="fehl">Nur fehlgeschlagene</option>
                 <option value="erfolg">Nur gelungene</option>
               </select>
               <select
-                value={anmeldeFilter.tage}
+                value={anmeldeFilter.days}
                 onChange={(e) =>
-                  setAnmeldeFilter({ ...anmeldeFilter, tage: Number(e.target.value) })
+                  setAnmeldeFilter({ ...anmeldeFilter, days: Number(e.target.value) })
                 }
               >
                 <option value={1}>Letzte 24 Stunden</option>
@@ -1628,30 +1628,30 @@ export default function EinstellungenView() {
                 </thead>
                 <tbody>
                   <KurzeZeilen
-                    alle={a?.versuche ?? []}
+                    alle={a?.attempts ?? []}
                     spalten={7}
                     zeile={(v, i) => (
-                    <tr key={i} className={v.erfolg ? undefined : "fehl"}>
-                      <td className="einzeilig">{zeitpunkt(v.zeitpunkt)}</td>
-                      <td className="einzeilig">{v.erfolg ? "angemeldet" : "abgewiesen"}</td>
+                    <tr key={i} className={v.success ? undefined : "fehl"}>
+                      <td className="einzeilig">{zeitpunkt(v.timestamp)}</td>
+                      <td className="einzeilig">{v.success ? "angemeldet" : "abgewiesen"}</td>
                       <td>
-                        {v.kennung || <span className="muted">ohne Angabe</span>}
-                        {v.name && v.name !== v.kennung && (
+                        {v.login || <span className="muted">ohne Angabe</span>}
+                        {v.name && v.name !== v.login && (
                           <div className="muted small">{v.name}</div>
                         )}
                       </td>
                       <td>
                         <code>{v.ip || "?"}</code>
                       </td>
-                      <td className="muted">{WEG_TITEL[v.weg] ?? v.weg ?? ""}</td>
-                      <td className="muted">{v.grund}</td>
+                      <td className="muted">{WEG_TITEL[v.method] ?? v.method ?? ""}</td>
+                      <td className="muted">{v.reason}</td>
                       <td className="muted small" title={v.browser}>
                         {geraet(v.browser)}
                       </td>
                     </tr>
                     )}
                   />
-                  {(a?.versuche ?? []).length === 0 && (
+                  {(a?.attempts ?? []).length === 0 && (
                     <tr>
                       <td colSpan={7} className="muted">
                         {a ? "Kein Versuch im gewählten Zeitraum." : "Wird geladen…"}
@@ -1692,15 +1692,15 @@ export default function EinstellungenView() {
             </p>
             <table className="tabelle uebersicht-tabelle">
               <tbody>
-                {zeile("Eingeschaltet", l.aktiv ? "ja" : <span className="muted">nein</span>)}
+                {zeile("Eingeschaltet", l.active ? "ja" : <span className="muted">nein</span>)}
                 {zeile(
                   "In der Lizenz enthalten",
-                  l.lizenziert ? "ja" : <span className="muted">nein</span>,
+                  l.licensed ? "ja" : <span className="muted">nein</span>,
                 )}
                 {zeile("Server", oderNichts(l.server))}
                 {zeile(
                   "Verbindung verschlüsselt",
-                  l.verschluesselt ? (
+                  l.encrypted ? (
                     l.startTLS ? "ja, StartTLS" : "ja, ldaps"
                   ) : (
                     <span className="fehler-text">nein</span>
@@ -1708,22 +1708,22 @@ export default function EinstellungenView() {
                 )}
                 {zeile(
                   "Zertifikat wird geprüft",
-                  l.tlsPruefen ? "ja" : <span className="fehler-text">nein</span>,
+                  l.tlsVerify ? "ja" : <span className="fehler-text">nein</span>,
                 )}
                 {zeile("Dienstkonto", oderNichts(l.bindDN))}
                 {zeile(
                   "Passwort dazu",
-                  l.bindPasswortDa ? "hinterlegt" : <span className="muted">keins</span>,
+                  l.bindPasswordSet ? "hinterlegt" : <span className="muted">keins</span>,
                 )}
-                {zeile("Suchwurzel", oderNichts(l.basisDN))}
-                {zeile("Filter", <code>{l.benutzerFilter}</code>)}
-                {zeile("Feld für den Namen", oderNichts(l.feldName))}
-                {zeile("Feld für die Adresse", oderNichts(l.feldEmail))}
-                {zeile("Gruppe für Administratoren", oderNichts(l.gruppeAdmin))}
+                {zeile("Suchwurzel", oderNichts(l.baseDN))}
+                {zeile("Filter", <code>{l.userFilter}</code>)}
+                {zeile("Feld für den Namen", oderNichts(l.fieldName))}
+                {zeile("Feld für die Adresse", oderNichts(l.fieldEmail))}
+                {zeile("Gruppe für Administratoren", oderNichts(l.adminGroup))}
               </tbody>
             </table>
 
-            {l.aktiv && !l.verschluesselt && (
+            {l.active && !l.encrypted && (
               <div className="warnkasten">
                 <strong>Die Verbindung ist unverschlüsselt</strong>
                 <div className="muted small">
@@ -1732,7 +1732,7 @@ export default function EinstellungenView() {
                 </div>
               </div>
             )}
-            {l.aktiv && !l.lizenziert && (
+            {l.active && !l.licensed && (
               <div className="warnkasten">
                 <strong>Eingeschaltet, aber nicht freigeschaltet</strong>
                 <div className="muted small">
@@ -1749,11 +1749,11 @@ export default function EinstellungenView() {
               angelegt.
             </p>
             <div className="knopfreihe">
-              <button className="btn" disabled={!l.aktiv} onClick={() => setLdapOffen(true)}>
+              <button className="btn" disabled={!l.active} onClick={() => setLdapOffen(true)}>
                 Verzeichnis fragen
               </button>
             </div>
-            {!l.aktiv && (
+            {!l.active && (
               <p className="muted small">
                 Solange <code>ldap_aktiv</code> aus ist, gibt es nichts zu fragen.
               </p>
@@ -1771,7 +1771,7 @@ export default function EinstellungenView() {
                   </button>
                   <button
                     className="btn btn-primary"
-                    disabled={laeuft === "ldap" || !ldapProbe.benutzer.trim() || !l.aktiv}
+                    disabled={laeuft === "ldap" || !ldapProbe.benutzer.trim() || !l.active}
                     onClick={ldapTesten}
                   >
                     {laeuft === "ldap" ? "Fragt…" : "Fragen"}
@@ -1800,38 +1800,38 @@ export default function EinstellungenView() {
               </div>
 
               {ldapErgebnis && !ldapErgebnis.ok && (
-                <div className="fehler">{ldapErgebnis.fehler || ldapErgebnis.hinweis}</div>
+                <div className="fehler">{ldapErgebnis.errors || ldapErgebnis.note}</div>
               )}
               {ldapErgebnis?.ok && (
                 <div className="hinweis-ok">
-                  {ldapErgebnis.befund?.passwortGeprueft
+                  {ldapErgebnis.result?.passwordChecked
                     ? "Gefunden, und das Passwort wurde angenommen."
                     : "Gefunden. Das Passwort wurde nicht geprüft."}
                 </div>
               )}
-              {ldapErgebnis?.befund?.dn && (
+              {ldapErgebnis?.result?.dn && (
                 <table className="tabelle uebersicht-tabelle">
                   <tbody>
-                    {zeile("Eintrag", <code>{ldapErgebnis.befund.dn}</code>)}
+                    {zeile("Eintrag", <code>{ldapErgebnis.result.dn}</code>)}
                     {zeile(
                       "Name",
-                      ldapErgebnis.befund.name || <span className="muted">leer</span>,
+                      ldapErgebnis.result.name || <span className="muted">leer</span>,
                     )}
                     {zeile(
                       "Adresse",
-                      ldapErgebnis.befund.email || <span className="muted">leer</span>,
+                      ldapErgebnis.result.email || <span className="muted">leer</span>,
                     )}
                     {zeile(
                       "Würde Administrator",
-                      ldapErgebnis.befund.admin ? "ja" : <span className="muted">nein</span>,
+                      ldapErgebnis.result.admin ? "ja" : <span className="muted">nein</span>,
                     )}
                     {zeile(
                       "Gruppen",
-                      ldapErgebnis.befund.gruppen.length === 0 ? (
+                      ldapErgebnis.result.groups.length === 0 ? (
                         <span className="muted">keine</span>
                       ) : (
                         <span className="ldap-gruppen">
-                          {ldapErgebnis.befund.gruppen.join(", ")}
+                          {ldapErgebnis.result.groups.join(", ")}
                         </span>
                       ),
                     )}
@@ -1849,9 +1849,9 @@ export default function EinstellungenView() {
           <>
             <h3>Datenbank</h3>
             <div className="kachelreihe">
-              {kachel(z.datenbank?.groesse ?? "—", "Gesamtgröße")}
-              {kachel(z.datenbank?.version || "—", "PostgreSQL")}
-              {kachel(bytes(z.anhaengeBytes ?? 0), "Anhänge (auf Platte)")}
+              {kachel(z.database?.size ?? "—", "Gesamtgröße")}
+              {kachel(z.database?.version || "—", "PostgreSQL")}
+              {kachel(bytes(z.attachmentBytes ?? 0), "Anhänge (auf Platte)")}
             </div>
             <p className="muted small">
               Anhänge liegen als Dateien im Datenverzeichnis, nicht in der Datenbank.
@@ -1860,7 +1860,7 @@ export default function EinstellungenView() {
 
             <Listenkopf
               titel="Größte Tabellen"
-              zahl={`${(z.datenbank?.tabellen ?? []).length}`}
+              zahl={`${(z.database?.tables ?? []).length}`}
               filter={tabellenFilter}
               setFilter={setTabellenFilter}
               platzhalter="Filtern nach Name"
@@ -1874,15 +1874,15 @@ export default function EinstellungenView() {
                 </tr>
               </thead>
               <tbody>
-                {(z.datenbank?.tabellen ?? [])
+                {(z.database?.tables ?? [])
                   .filter((t) => t.name.includes(tabellenFilter.trim().toLowerCase()))
                   .map((t) => (
                     <tr key={t.name}>
                       <td>
                         <code>{t.name}</code>
                       </td>
-                      <td>{t.zeilen}</td>
-                      <td>{t.platz}</td>
+                      <td>{t.rows}</td>
+                      <td>{t.bytes}</td>
                     </tr>
                   ))}
               </tbody>
@@ -1945,8 +1945,8 @@ export default function EinstellungenView() {
             </div>
 
             <div className="kachelreihe">
-              {kachel(z.zahlen?.seiten ?? 0, "Seiten im Index")}
-              {kachel(z.zahlen?.ohneSuchtext ?? 0, "ohne Suchtext")}
+              {kachel(z.counts?.seiten ?? 0, "Seiten im Index")}
+              {kachel(z.counts?.ohneSuchtext ?? 0, "ohne Suchtext")}
             </div>
             <p className="muted small">
               Seiten ohne Suchtext sind meist leer. Bleibt die Zahl nach einem Neuaufbau
@@ -1961,8 +1961,8 @@ export default function EinstellungenView() {
             <h3>Anhänge</h3>
             {feld("max_attachment_mb")}
             <div className="kachelreihe">
-              {kachel(z.zahlen?.anhaenge ?? 0, "Dateien")}
-              {kachel(bytes(z.anhaengeBytes ?? 0), "Belegt")}
+              {kachel(z.counts?.anhaenge ?? 0, "Dateien")}
+              {kachel(bytes(z.attachmentBytes ?? 0), "Belegt")}
             </div>
             <div className="einstellung">
               <div className="einstellung-kopf">
@@ -2029,7 +2029,7 @@ export default function EinstellungenView() {
                   </button>
                   <button
                     className="btn btn-primary"
-                    disabled={laeuft === "ablage" || !s3.endpunkt}
+                    disabled={laeuft === "ablage" || !s3.endpoint}
                     onClick={ablageTesten}
                   >
                     {laeuft === "ablage" ? "Prüft…" : "Verbindung prüfen"}
@@ -2047,8 +2047,8 @@ export default function EinstellungenView() {
                   <span>Endpunkt</span>
                   <input
                     placeholder="10.0.2.43:9010"
-                    value={s3.endpunkt}
-                    onChange={(e) => setS3({ ...s3, endpunkt: e.target.value })}
+                    value={s3.endpoint}
+                    onChange={(e) => setS3({ ...s3, endpoint: e.target.value })}
                   />
                 </label>
                 <label>
@@ -2057,14 +2057,14 @@ export default function EinstellungenView() {
                 </label>
                 <label>
                   <span>Zugriffsschlüssel</span>
-                  <input value={s3.zugriff} onChange={(e) => setS3({ ...s3, zugriff: e.target.value })} />
+                  <input value={s3.accessKey} onChange={(e) => setS3({ ...s3, accessKey: e.target.value })} />
                 </label>
                 <label>
                   <span>Geheimnis</span>
                   <input
                     type="password"
-                    value={s3.geheimnis}
-                    onChange={(e) => setS3({ ...s3, geheimnis: e.target.value })}
+                    value={s3.secretKey}
+                    onChange={(e) => setS3({ ...s3, secretKey: e.target.value })}
                   />
                 </label>
                 <label>
@@ -2082,8 +2082,8 @@ export default function EinstellungenView() {
                 <label className="schalter">
                   <input
                     type="checkbox"
-                    checked={s3.pfadstil}
-                    onChange={(e) => setS3({ ...s3, pfadstil: e.target.checked })}
+                    checked={s3.pathStyle}
+                    onChange={(e) => setS3({ ...s3, pathStyle: e.target.checked })}
                   />
                   <span>Pfadstil (MinIO, Garage)</span>
                 </label>
@@ -2114,25 +2114,25 @@ export default function EinstellungenView() {
                 <div>
                   <span className="lizenz-feldname">Zustand</span>
                   <span className="lizenz-feldwert">
-                    {z.lizenz.gueltig ? "Aktiv" : "Keine gültige Lizenz"}
+                    {z.license.valid ? "Aktiv" : "Keine gültige Lizenz"}
                   </span>
                 </div>
                 <div>
                   <span className="lizenz-feldname">Inhaber</span>
-                  <span className="lizenz-feldwert">{z.lizenz.inhaber || "—"}</span>
+                  <span className="lizenz-feldwert">{z.license.holder || "—"}</span>
                 </div>
                 <div>
                   <span className="lizenz-feldname">Stufe</span>
-                  <span className="lizenz-feldwert">{lizenzJetzt?.stufe || "Standard"}</span>
+                  <span className="lizenz-feldwert">{lizenzJetzt?.tier || "Standard"}</span>
                 </div>
                 <div>
                   <span className="lizenz-feldname">Laufzeit</span>
                   <span className="lizenz-feldwert">
-                    {z.lizenz.laeuftAb || "unbefristet"}
-                    {restlaufzeit(z.lizenz.laeuftAb) !== null && (
+                    {z.license.expiresAt || "unbefristet"}
+                    {restlaufzeit(z.license.expiresAt) !== null && (
                       <span className="muted small">
                         {" "}
-                        · noch {restlaufzeit(z.lizenz.laeuftAb)} Tage
+                        · noch {restlaufzeit(z.license.expiresAt)} Tage
                       </span>
                     )}
                   </span>
@@ -2140,14 +2140,14 @@ export default function EinstellungenView() {
                 <div>
                   <span className="lizenz-feldname">Umfang</span>
                   <span className="lizenz-feldwert">
-                    {(z.lizenz.freigeschaltet ?? []).length} von {z.lizenz.alle} Funktionen
+                    {(z.license.unlocked ?? []).length} von {z.license.all} Funktionen
                   </span>
                 </div>
               </div>
             </div>
-            {!z.lizenz.gueltig && (
+            {!z.license.valid && (
               <div className="warnkasten">
-                <strong>{z.lizenz.grund || "Kein Schlüssel hinterlegt."}</strong>
+                <strong>{z.license.reason || "Kein Schlüssel hinterlegt."}</strong>
                 <div className="muted small">
                   Nexora läuft im Standard-Umfang, mit Versionen, Anhängen, Kommentaren
                   und Konflikterkennung. Pro- und Business-Funktionen antworten mit 402.
@@ -2161,7 +2161,7 @@ export default function EinstellungenView() {
                 this page: what is running right now and what is not. */}
             <Listenkopf
               titel="Funktionsumfang"
-              zahl={`${(z.lizenz.freigeschaltet ?? []).length} von ${
+              zahl={`${(z.license.unlocked ?? []).length} von ${
                 Object.keys(ZUSATZ).length
               } frei`}
               filter={funktionFilter}
@@ -2190,7 +2190,7 @@ export default function EinstellungenView() {
                         .includes(funktionFilter.trim().toLowerCase()),
                   )
                   .map(([k, titel]) => {
-                  const frei = (z.lizenz.freigeschaltet ?? []).includes(k);
+                  const frei = (z.license.unlocked ?? []).includes(k);
                   return (
                     <tr key={k}>
                       <td>{titel}</td>
@@ -2222,7 +2222,7 @@ export default function EinstellungenView() {
               </button>
             </div>
 
-            {lizenzJetzt?.ausstellbar ? (
+            {lizenzJetzt?.canIssue ? (
               <>
                 <h3>Schlüssel ausstellen</h3>
                 <p className="muted small">
@@ -2239,7 +2239,7 @@ export default function EinstellungenView() {
                     value={ausstellen.stufe}
                     onChange={(e) => setAusstellen({ ...ausstellen, stufe: e.target.value })}
                   >
-                    {(lizenzJetzt?.stufen ?? []).map((st) => (
+                    {(lizenzJetzt?.tiers ?? []).map((st) => (
                       <option key={st.name} value={st.name}>
                         {st.name}
                       </option>
@@ -2298,31 +2298,31 @@ export default function EinstellungenView() {
                 <div className="kennzahlreihe">
                   {kennzahl(
                     "Anfragen je Sekunde",
-                    (puls.anfragen?.proSekunde ?? 0).toFixed(1),
-                    `${(puls.anfragen?.gesamt ?? 0).toLocaleString()} seit dem Start`,
+                    (puls.requests?.perSecond ?? 0).toFixed(1),
+                    `${(puls.requests?.total ?? 0).toLocaleString()} seit dem Start`,
                   )}
                   {kennzahl(
                     "Antwortzeit",
                     <>
-                      {(puls.anfragen?.mittelMs ?? 0).toFixed(0)}
+                      {(puls.requests?.avgMs ?? 0).toFixed(0)}
                       <span className="kennzahl-einheit">ms</span>
                     </>,
-                    `längste ${(puls.anfragen?.spitzeMs ?? 0).toFixed(0)} ms`,
+                    `längste ${(puls.requests?.peakMs ?? 0).toFixed(0)} ms`,
                   )}
                   {kennzahl(
                     "Gleichzeitig",
-                    puls.anfragen?.laufend ?? 0,
+                    puls.requests?.inFlight ?? 0,
                     "gerade in Bearbeitung",
                   )}
                   {kennzahl(
                     "Verbindungen",
                     <>
-                      {puls.vorrat.inBenutzung}
-                      <span className="kennzahl-einheit">von {puls.vorrat.hoechstens}</span>
+                      {puls.pool.inUse}
+                      <span className="kennzahl-einheit">von {puls.pool.limit}</span>
                     </>,
                     fuellstand(
-                      puls.vorrat.hoechstens > 0
-                        ? puls.vorrat.inBenutzung / puls.vorrat.hoechstens
+                      puls.pool.limit > 0
+                        ? puls.pool.inUse / puls.pool.limit
                         : 0,
                     ),
                   )}
@@ -2337,10 +2337,10 @@ export default function EinstellungenView() {
                   gescheiterte (rot) Aufrufe.
                 </p>
 
-                {(puls.anfragen?.fehler ?? 0) > 0 && (
+                {(puls.requests?.errors ?? 0) > 0 && (
                   <div className="warnkasten">
                     <strong>
-                      {puls.anfragen?.fehler} gescheiterte Anfragen in der letzten Minute
+                      {puls.requests?.errors} gescheiterte Anfragen in der letzten Minute
                     </strong>
                     <div className="muted small">
                       Antwortstatus ab 500, also nicht abgewiesen, sondern kaputt. Im Protokoll
@@ -2355,72 +2355,72 @@ export default function EinstellungenView() {
                     <tr>
                       <td>Abgewiesen / gescheitert, letzte Minute</td>
                       <td className="zahl">
-                        {puls.anfragen?.abgelehnt ?? 0} /{" "}
+                        {puls.requests?.rejected ?? 0} /{" "}
                         <span
-                          className={(puls.anfragen?.fehler ?? 0) > 0 ? "fehler-text" : undefined}
+                          className={(puls.requests?.errors ?? 0) > 0 ? "fehler-text" : undefined}
                         >
-                          {puls.anfragen?.fehler ?? 0}
+                          {puls.requests?.errors ?? 0}
                         </span>
                       </td>
                     </tr>
                     <tr>
                       <td>Läuft seit</td>
-                      <td className="zahl">{laufzeit(puls.anfragen?.laufzeitSek ?? 0)}</td>
+                      <td className="zahl">{laufzeit(puls.requests?.uptimeSec ?? 0)}</td>
                     </tr>
                     <tr>
                       <td>Wartezeit auf eine Verbindung</td>
                       <td className="zahl">
                         <span
-                          className={puls.vorrat.mittelWarteMs > 1 ? "fehler-text" : undefined}
+                          className={puls.pool.avgWaitMs > 1 ? "fehler-text" : undefined}
                         >
-                          {puls.vorrat.mittelWarteMs < 0.01
+                          {puls.pool.avgWaitMs < 0.01
                             ? "unter 0,01 ms"
-                            : `${puls.vorrat.mittelWarteMs.toFixed(2)} ms`}
+                            : `${puls.pool.avgWaitMs.toFixed(2)} ms`}
                         </span>
                         <span className="muted">
                           {" "}
-                          im Mittel über {puls.vorrat.zugriffe.toLocaleString()} Zugriffe
+                          im Mittel über {puls.pool.acquires.toLocaleString()} Zugriffe
                         </span>
                       </td>
                     </tr>
                     <tr>
                       <td>Datenbank</td>
                       <td className="zahl">
-                        {puls.datenbank.groesse || "unbekannt"}
+                        {puls.database.size || "unbekannt"}
                         <span className="muted">
                           {" "}
-                          {puls.datenbank.trefferquote === null
+                          {puls.database.hitRatio === null
                             ? ""
-                            : `· ${puls.datenbank.trefferquote} % aus dem Speicher`}
+                            : `· ${puls.database.hitRatio} % aus dem Speicher`}
                         </span>
                       </td>
                     </tr>
                     <tr>
                       <td>Speicher des Dienstes</td>
                       <td className="zahl">
-                        {puls.prozess.speicherMB.toFixed(1)} MB
+                        {puls.process.memoryMB.toFixed(1)} MB
                         <span className="muted">
                           {" "}
-                          · {puls.prozess.aufgaben} Aufgaben auf {puls.prozess.kerne} Kernen
+                          · {puls.process.goroutines} Aufgaben auf {puls.process.cores} Kernen
                         </span>
                       </td>
                     </tr>
                   </tbody>
                 </table>
 
-                {puls.vorrat.mittelWarteMs > 1 && (
+                {puls.pool.avgWaitMs > 1 && (
                   <div className="warnkasten">
                     <strong>Anfragen warten auf eine Verbindung</strong>
                     <div className="muted small">
-                      Im Mittel {puls.vorrat.mittelWarteMs.toFixed(1)} ms, bevor eine Anfrage
+                      Im Mittel {puls.pool.avgWaitMs.toFixed(1)} ms, bevor eine Anfrage
                       überhaupt mit der Datenbank sprechen darf. Der Vorrat steht auf{" "}
-                      {puls.vorrat.hoechstens}; ohne Angabe nimmt pgx eine Verbindung je Kern.
+                      {puls.pool.limit}; ohne Angabe nimmt pgx eine Verbindung je Kern.
                       Höher setzen mit <code>pool_max_conns</code> in <code>DATABASE_URL</code>
                       , dabei unter <code>max_connections</code> von PostgreSQL bleiben.
                     </div>
                   </div>
                 )}
-                {puls.datenbank.trefferquote !== null && puls.datenbank.trefferquote < 95 && (
+                {puls.database.hitRatio !== null && puls.database.hitRatio < 95 && (
                   <div className="warnkasten">
                     <strong>PostgreSQL liest von der Platte</strong>
                     <div className="muted small">
@@ -2433,11 +2433,11 @@ export default function EinstellungenView() {
               </>
             )}
 
-            {(z.warnungen ?? []).length > 0 && (
+            {(z.warnings ?? []).length > 0 && (
               <div className="warnkasten">
                 <strong>Beim Start bemängelt</strong>
                 <ul>
-                  {(z.warnungen ?? []).map((w) => (
+                  {(z.warnings ?? []).map((w) => (
                     <li key={w}>{w}</li>
                   ))}
                 </ul>
@@ -2463,35 +2463,35 @@ export default function EinstellungenView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(z.verbund ?? []).map((d) => (
+                  {(z.services ?? []).map((d) => (
                     <Fragment key={d.name}>
                       <tr
                         className={
-                          d.zustand === "läuft" ? "laeuft" : d.zustand === "fehlt" ? "fehlt" : "aus"
+                          d.state === "läuft" ? "laeuft" : d.state === "fehlt" ? "fehlt" : "aus"
                         }
                       >
                         <td>{d.name}</td>
-                        <td className="muted">{d.rolle}</td>
+                        <td className="muted">{d.role}</td>
                         <td>
-                          {d.adresse ? <code>{d.adresse}</code> : <span className="muted">keine</span>}
+                          {d.address ? <code>{d.address}</code> : <span className="muted">keine</span>}
                         </td>
                         <td className="verbund-zustand einzeilig">
-                          {d.zustand}
-                          {d.zustand === "fehlt" && !d.notwendig && (
+                          {d.state}
+                          {d.state === "fehlt" && !d.required && (
                             <span className="muted"> (nicht schlimm)</span>
                           )}
                         </td>
-                        <td className="muted">{d.fassung || "—"}</td>
-                        <td className="muted einzeilig">{d.antwort || "—"}</td>
+                        <td className="muted">{d.version || "—"}</td>
+                        <td className="muted einzeilig">{d.response || "—"}</td>
                       </tr>
-                      {d.hinweis && (
+                      {d.note && (
                         <tr className="verbund-hinweis">
-                          <td colSpan={6}>{d.hinweis}</td>
+                          <td colSpan={6}>{d.note}</td>
                         </tr>
                       )}
                     </Fragment>
                   ))}
-                  {(z.verbund ?? []).length === 0 && (
+                  {(z.services ?? []).length === 0 && (
                     <tr>
                       <td colSpan={6} className="muted">
                         Kein Dienst gemeldet.
@@ -2507,8 +2507,8 @@ export default function EinstellungenView() {
               zahl={
                 rechner === null
                   ? "wird geladen"
-                  : `${rechner.rechner.length} eingetragen · ` +
-                    `${rechner.rechner.filter((r) => r.zustand === "antwortet").length} antworten`
+                  : `${rechner.hosts.length} eingetragen · ` +
+                    `${rechner.hosts.filter((r) => r.state === "antwortet").length} antworten`
               }
               filter={rechnerFilter}
               setFilter={setRechnerFilter}
@@ -2537,11 +2537,11 @@ export default function EinstellungenView() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(rechner?.rechner ?? [])
+                  {(rechner?.hosts ?? [])
                     .filter(
                       (r) =>
                         !rechnerFilter.trim() ||
-                        (r.name + " " + r.ziel + " " + (r.notiz ?? ""))
+                        (r.name + " " + r.target + " " + (r.comment ?? ""))
                           .toLowerCase()
                           .includes(rechnerFilter.trim().toLowerCase()),
                     )
@@ -2549,18 +2549,18 @@ export default function EinstellungenView() {
                     <Fragment key={r.id}>
                       <tr
                         className={
-                          r.zustand === "antwortet"
+                          r.state === "antwortet"
                             ? "laeuft"
-                            : r.zustand === "still"
+                            : r.state === "still"
                               ? "fehlt"
                               : "aus"
                         }
                       >
                         <td>{r.name}</td>
-                        <td className="muted einzeilig">{r.ziel}</td>
-                        <td>{r.zustand}</td>
-                        <td className="muted einzeilig">{r.antwort || "—"}</td>
-                        <td className="muted">{r.fassung || "—"}</td>
+                        <td className="muted einzeilig">{r.target}</td>
+                        <td>{r.state}</td>
+                        <td className="muted einzeilig">{r.response || "—"}</td>
+                        <td className="muted">{r.version || "—"}</td>
                         {/* Below thirty days the cell turns red: an expired
                             certificate is the most frequent reason a service in
                             one's own house suddenly stops being reachable, and
@@ -2568,12 +2568,12 @@ export default function EinstellungenView() {
                             advance. */}
                         <td
                           className={
-                            r.tageBisAblauf !== undefined && r.tageBisAblauf < 30
+                            r.daysUntilExpiry !== undefined && r.daysUntilExpiry < 30
                               ? "fehler-text einzeilig"
                               : "muted einzeilig"
                           }
                         >
-                          {r.zertifikat || "—"}
+                          {r.certificate || "—"}
                         </td>
                         <td className="zeilen-aktionen">
                           <button
@@ -2584,25 +2584,25 @@ export default function EinstellungenView() {
                           </button>
                         </td>
                       </tr>
-                      {(r.hinweis || r.notiz) && (
+                      {(r.note || r.comment) && (
                         <tr className="verbund-hinweis">
-                          <td colSpan={7}>{r.notiz ? `${r.notiz}${r.hinweis ? " · " : ""}` : ""}
-                            {r.hinweis}
+                          <td colSpan={7}>{r.comment ? `${r.comment}${r.note ? " · " : ""}` : ""}
+                            {r.note}
                           </td>
                         </tr>
                       )}
                     </Fragment>
                   ))}
-                  {(rechner?.rechner ?? []).filter(
+                  {(rechner?.hosts ?? []).filter(
                     (r) =>
                       !rechnerFilter.trim() ||
-                      (r.name + " " + r.ziel + " " + (r.notiz ?? ""))
+                      (r.name + " " + r.target + " " + (r.comment ?? ""))
                         .toLowerCase()
                         .includes(rechnerFilter.trim().toLowerCase()),
                   ).length === 0 && (
                     <tr>
                       <td colSpan={7} className="muted">
-                        {(rechner?.rechner ?? []).length === 0
+                        {(rechner?.hosts ?? []).length === 0
                           ? "Noch kein Rechner eingetragen."
                           : "Kein Rechner passt auf den Filter."}
                       </td>
@@ -2680,26 +2680,26 @@ export default function EinstellungenView() {
               <tbody>
                 <tr>
                   <td>Port</td>
-                  <td>{z.nurInDerDatei.port}</td>
+                  <td>{z.fileOnly.port}</td>
                 </tr>
                 <tr>
                   <td>Datenverzeichnis</td>
                   <td>
-                    <code>{z.nurInDerDatei.datenVerzeichnis}</code>
+                    <code>{z.fileOnly.dataDirectory}</code>
                   </td>
                 </tr>
                 <tr>
                   <td>Öffentliche Adresse</td>
                   <td>
-                    {z.nurInDerDatei.oeffentlicheUrl || <span className="muted">nicht gesetzt</span>}
+                    {z.fileOnly.publicUrl || <span className="muted">nicht gesetzt</span>}
                   </td>
                 </tr>
                 <tr>
                   <td>LDAP</td>
                   <td>
-                    {z.nurInDerDatei.ldapAktiv ? (
+                    {z.fileOnly.ldapEnabled ? (
                       <>
-                        an, <code>{z.nurInDerDatei.ldapServer || "kein Server angegeben"}</code>
+                        an, <code>{z.fileOnly.ldapServer || "kein Server angegeben"}</code>
                       </>
                     ) : (
                       <span className="muted">aus</span>
@@ -2709,9 +2709,9 @@ export default function EinstellungenView() {
                 <tr>
                   <td>SSO über OIDC</td>
                   <td>
-                    {z.nurInDerDatei.oidcAktiv ? (
+                    {z.fileOnly.oidcEnabled ? (
                       <>
-                        an, <code>{z.nurInDerDatei.oidcAussteller || "kein Aussteller angegeben"}</code>
+                        an, <code>{z.fileOnly.oidcIssuer || "kein Aussteller angegeben"}</code>
                       </>
                     ) : (
                       <span className="muted">aus</span>
@@ -2737,23 +2737,23 @@ export default function EinstellungenView() {
                   <tbody>
                     <tr>
                       <td>Datenbank</td>
-                      <td className="zahl">{bytes(sicherung.datenbankBytes)}</td>
+                      <td className="zahl">{bytes(sicherung.databaseBytes)}</td>
                     </tr>
                     <tr>
                       <td>Anhänge</td>
                       <td className="zahl">
-                        {sicherung.anhaenge} Dateien, {bytes(sicherung.anhaengeBytes)}{" "}
-                        <span className="muted">aus {sicherung.ablage}</span>
+                        {sicherung.attachments} Dateien, {bytes(sicherung.attachmentBytes)}{" "}
+                        <span className="muted">aus {sicherung.storage}</span>
                       </td>
                     </tr>
                     <tr>
                       <td>Archiv, geschätzt</td>
-                      <td className="zahl">{bytes(sicherung.geschaetztBytes)}</td>
+                      <td className="zahl">{bytes(sicherung.estimatedBytes)}</td>
                     </tr>
                   </tbody>
                 </table>
 
-                {sicherung.bereit ? (
+                {sicherung.ready ? (
                   <div className="knopfreihe">
                     <a className="btn" href={api.sicherungAdresse}>
                       Sicherung herunterladen
@@ -2762,7 +2762,7 @@ export default function EinstellungenView() {
                 ) : (
                   <div className="warnkasten">
                     <strong>Sicherung nicht möglich</strong>
-                    <div className="muted small">{sicherung.fehler}</div>
+                    <div className="muted small">{sicherung.errors}</div>
                   </div>
                 )}
 
@@ -2846,9 +2846,9 @@ export default function EinstellungenView() {
                     disabled={laeuft === "sicherung"}
                     onClick={sicherungTokenNeu}
                   >
-                    {sicherung.tokenGesetzt ? "Neues Losungswort" : "Losungswort erzeugen"}
+                    {sicherung.tokenSet ? "Neues Losungswort" : "Losungswort erzeugen"}
                   </button>
-                  {sicherung.tokenGesetzt && (
+                  {sicherung.tokenSet && (
                     <button
                       className="btn"
                       disabled={laeuft === "sicherung"}
@@ -2859,16 +2859,16 @@ export default function EinstellungenView() {
                   )}
                 </div>
 
-                {sicherung.tokenGesetzt && (
+                {sicherung.tokenSet && (
                   <>
                     <p className="muted small">
                       Fertiges Skript mit Wort und Adresse. Prüft die Marke <code>FERTIG</code> und löscht Archive nach 14 Tagen.
                     </p>
-                    <textarea className="konfig-feld" rows={14} readOnly value={sicherung.skript} />
+                    <textarea className="konfig-feld" rows={14} readOnly value={sicherung.script} />
                     <div className="knopfreihe">
                       <button
                         className="btn"
-                        onClick={() => kopieren(sicherung.skript, "skript")}
+                        onClick={() => kopieren(sicherung.script, "skript")}
                       >
                         {kopiert === "skript" ? "Kopiert" : "Skript kopieren"}
                       </button>
@@ -2884,7 +2884,7 @@ export default function EinstellungenView() {
             <h3>Konfigurationsdatei</h3>
             {konfig === null ? (
               <p className="muted">Wird geladen…</p>
-            ) : !konfig.gefunden ? (
+            ) : !konfig.found ? (
               <p className="muted">
                 Diese Instanz läuft ohne <code>config.conf</code>, also aus Umgebungsvariablen und
                 Vorgaben. Es gibt hier nichts zu bearbeiten.
@@ -2892,8 +2892,8 @@ export default function EinstellungenView() {
             ) : (
               <>
                 <p className="muted small">
-                  <code>{konfig.pfad}</code>
-                  {!konfig.schreibbar && " (für den Dienst nur lesbar)"}
+                  <code>{konfig.path}</code>
+                  {!konfig.writable && " (für den Dienst nur lesbar)"}
                 </p>
                 {/* The sentence stands here and not in the small print: whoever
                     looks for credentials and finds asterisks otherwise takes
@@ -2907,7 +2907,7 @@ export default function EinstellungenView() {
                   className="konfig-feld"
                   spellCheck={false}
                   value={konfigEntwurf}
-                  disabled={!konfig.schreibbar}
+                  disabled={!konfig.writable}
                   onChange={(e) => setKonfigEntwurf(e.target.value)}
                 />
                 <div className="knopfreihe">
@@ -2916,17 +2916,17 @@ export default function EinstellungenView() {
                   </button>
                   <button
                     className="btn btn-primary"
-                    disabled={laeuft !== null || !konfig.schreibbar || konfigEntwurf === konfig.inhalt}
+                    disabled={laeuft !== null || !konfig.writable || konfigEntwurf === konfig.content}
                     onClick={konfigSpeichern}
                   >
                     {laeuft === "konfig-speichern" ? "Speichert…" : "Speichern"}
                   </button>
                   <button
                     className="btn"
-                    disabled={konfigEntwurf === konfig.inhalt}
+                    disabled={konfigEntwurf === konfig.content}
                     onClick={() => {
-                      setKonfigEntwurf(konfig.inhalt);
-                      setKonfigHinweise(konfig.hinweise);
+                      setKonfigEntwurf(konfig.content);
+                      setKonfigHinweise(konfig.notes);
                     }}
                   >
                     Änderungen verwerfen
@@ -2944,14 +2944,14 @@ export default function EinstellungenView() {
                 )}
                 <details className="konfig-schluessel">
                   <summary>
-                    Bekannte Schlüssel ({konfig.schluessel.length})
+                    Bekannte Schlüssel ({konfig.key.length})
                   </summary>
                   <p className="muted small">
                     Alles, was diese Fassung auswertet. Unbekannte Schlüssel werden beim
                     Start übergangen.
                   </p>
                   <div className="schluesselliste">
-                    {konfig.schluessel.map((k) => (
+                    {konfig.key.map((k) => (
                       <code key={k}>{k}</code>
                     ))}
                   </div>
@@ -3012,7 +3012,7 @@ export default function EinstellungenView() {
             className={"einstellungen-nav-eintrag" + (bereich === b.id ? " aktiv" : "")}
             onClick={() => setBereich(b.id)}
           >
-            {b.titel}
+            {b.title}
           </button>
         ))}
       </nav>
@@ -3024,11 +3024,11 @@ export default function EinstellungenView() {
             at. The short sentence below it explains the area once and therefore
             no longer has to be repeated beside every entry of the sidebar. */}
         <header className="einstellungen-kopf">
-          <h1>{BEREICHE.find((b) => b.id === bereich)?.titel}</h1>
+          <h1>{BEREICHE.find((b) => b.id === bereich)?.title}</h1>
           <p>{BEREICHE.find((b) => b.id === bereich)?.unter}</p>
         </header>
         {meldung && (
-          <div className={meldung.art === "ok" ? "hinweis-ok" : "fehler"}>{meldung.text}</div>
+          <div className={meldung.type === "ok" ? "hinweis-ok" : "fehler"}>{meldung.text}</div>
         )}
         {teile.map((t) => (
           <Fragment key={t}>

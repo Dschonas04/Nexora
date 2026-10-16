@@ -25,16 +25,16 @@ export default function GraphView() {
   }, []);
 
   const eigeneFarben: Record<string, string> = {};
-  for (const a of ablagen) if (a.farbe) eigeneFarben[a.id] = a.farbe;
+  for (const a of ablagen) if (a.color) eigeneFarben[a.id] = a.color;
   // Per-space, not blanket: managing one space does not imply managing every
   // space that appears in the graph, foreign spaces appear when a page from
   // them is shared.
-  const faerbbar = new Set(ablagen.filter((a) => a.darfVerwalten).map((a) => a.id));
+  const faerbbar = new Set(ablagen.filter((a) => a.canManage).map((a) => a.id));
 
   // Apply color immediately in the UI and then persist it to the database:
   // a color that toggles a fraction of a second later feels like a glitch.
   const farbeSetzen = (spaceId: string, farbe: string) => {
-    setAblagen((vorher) => vorher.map((a) => (a.id === spaceId ? { ...a, farbe } : a)));
+    setAblagen((vorher) => vorher.map((a) => (a.id === spaceId ? { ...a, color: farbe } : a)));
     api.spaceFarbe(spaceId, farbe).catch(() => {
       api.listSpaces().then(setAblagen).catch(() => undefined);
     });

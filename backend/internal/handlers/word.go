@@ -80,14 +80,14 @@ func (s *Server) WordLesen(w http.ResponseWriter, r *http.Request) {
 		titel = strings.TrimSuffix(name, ".docx")
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"titel":   titel,
-		"bloecke": dok.NachBloecken(d),
+		"title":  titel,
+		"blocks": dok.NachBloecken(d),
 	})
 }
 
 type wordSchreibenReq struct {
-	Titel   string          `json:"titel"`
-	Bloecke json.RawMessage `json:"bloecke"`
+	Titel   string          `json:"title"`
+	Bloecke json.RawMessage `json:"blocks"`
 }
 
 // WordSchreiben stores the edited blocks as a .docx again.

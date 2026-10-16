@@ -244,22 +244,22 @@ export default function Kommentare({ pageId }: { pageId: string }) {
     laden();
   };
 
-  const faeden = alle.filter((k) => !k.elternId);
-  const antwortenZu = (id: string) => alle.filter((k) => k.elternId === id);
+  const faeden = alle.filter((k) => !k.parentId);
+  const antwortenZu = (id: string) => alle.filter((k) => k.parentId === id);
 
-  const sichtbareFaeden = erledigteZeigen ? faeden : faeden.filter((k) => !k.erledigt);
-  const erledigteAnzahl = faeden.filter((k) => k.erledigt).length;
+  const sichtbareFaeden = erledigteZeigen ? faeden : faeden.filter((k) => !k.resolved);
+  const erledigteAnzahl = faeden.filter((k) => k.resolved).length;
 
   const zeile = (k: Kommentar, istAntwort: boolean) => (
-    <div key={k.id} className={"kommentar" + (istAntwort ? " antwort" : "") + (k.erledigt ? " erledigt" : "")}>
+    <div key={k.id} className={"kommentar" + (istAntwort ? " antwort" : "") + (k.resolved ? " erledigt" : "")}>
       <div className="kommentar-kopf">
-        <span className="kommentar-autor">{k.autorName || "Unknown"}</span>
-        <span className="muted small">{zeit(k.erstelltAm)}</span>
-        {k.geaendertAm && <span className="muted small">edited</span>}
-        {k.erledigt && !istAntwort && <span className="pill klein">resolved</span>}
+        <span className="kommentar-autor">{k.authorName || "Unknown"}</span>
+        <span className="muted small">{zeit(k.createdAt)}</span>
+        {k.updatedAt && <span className="muted small">edited</span>}
+        {k.resolved && !istAntwort && <span className="pill klein">resolved</span>}
       </div>
 
-      {k.geloescht ? (
+      {k.deleted ? (
         <div className="kommentar-text muted">
           <em>Comment deleted</em>
         </div>
@@ -279,14 +279,14 @@ export default function Kommentare({ pageId }: { pageId: string }) {
         <div className="kommentar-text">{mitErwaehnungen(k.text, personen)}</div>
       )}
 
-      {!k.geloescht && bearbeitet !== k.id && (
+      {!k.deleted && bearbeitet !== k.id && (
         <div className="kommentar-aktionen">
           {!istAntwort && (
             <button className="link-btn" onClick={() => { setAntwortAuf(k.id); setAntwortText(""); }}>
               Antworten
             </button>
           )}
-          {k.darf && (
+          {k.canEdit && (
             <>
               <button className="link-btn" onClick={() => { setBearbeitet(k.id); setBearbeitText(k.text); }}>
                 Bearbeiten
@@ -296,12 +296,12 @@ export default function Kommentare({ pageId }: { pageId: string }) {
               </button>
             </>
           )}
-          {!istAntwort && k.darf && (
+          {!istAntwort && k.canEdit && (
             <button
               className="link-btn"
               onClick={() => api.kommentarErledigt(k.id).then(laden).catch(() => {})}
             >
-              {k.erledigt ? "Reopen" : "Resolve"}
+              {k.resolved ? "Reopen" : "Resolve"}
             </button>
           )}
         </div>
@@ -312,7 +312,7 @@ export default function Kommentare({ pageId }: { pageId: string }) {
           <Erwaehnfeld
             autoFocus
             zeilen={2}
-            platzhalter={"Reply to " + (k.autorName || "…")}
+            platzhalter={"Reply to " + (k.authorName || "…")}
             wert={antwortText}
             setzen={setAntwortText}
             personen={personen}

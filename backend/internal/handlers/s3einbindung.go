@@ -20,13 +20,13 @@ import (
 )
 
 type s3TestReq struct {
-	Endpunkt  string `json:"endpunkt"`
+	Endpunkt  string `json:"endpoint"`
 	Bucket    string `json:"bucket"`
-	Zugriff   string `json:"zugriff"`
-	Geheimnis string `json:"geheimnis"`
+	Zugriff   string `json:"accessKey"`
+	Geheimnis string `json:"secretKey"`
 	Region    string `json:"region"`
 	TLS       bool   `json:"tls"`
-	Pfadstil  bool   `json:"pfadstil"`
+	Pfadstil  bool   `json:"pathStyle"`
 }
 
 // S3Testen tries a connection and writes a tiny object as a test.
@@ -73,9 +73,9 @@ func (s *Server) S3Testen(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		writeJSON(w, http.StatusOK, map[string]any{
-			"ok":      false,
-			"schritt": "verbinden",
-			"grund":   err.Error(),
+			"ok":     false,
+			"step":   "verbinden",
+			"reason": err.Error(),
 		})
 		return
 	}
@@ -84,17 +84,17 @@ func (s *Server) S3Testen(w http.ResponseWriter, r *http.Request) {
 	inhalt := "Verbindungstest von Nexora. Dieses Objekt darf gelöscht werden."
 	if _, err := a.Schreiben(ctx, schluessel, stringLeser(inhalt), int64(len(inhalt)), "text/plain"); err != nil {
 		writeJSON(w, http.StatusOK, map[string]any{
-			"ok":      false,
-			"schritt": "schreiben",
-			"grund":   err.Error(),
+			"ok":     false,
+			"step":   "schreiben",
+			"reason": err.Error(),
 		})
 		return
 	}
 	if _, err := a.Lesen(ctx, schluessel); err != nil {
 		writeJSON(w, http.StatusOK, map[string]any{
-			"ok":      false,
-			"schritt": "lesen",
-			"grund":   err.Error(),
+			"ok":     false,
+			"step":   "lesen",
+			"reason": err.Error(),
 		})
 		return
 	}
@@ -102,15 +102,15 @@ func (s *Server) S3Testen(w http.ResponseWriter, r *http.Request) {
 		// Writing and reading worked, that is enough to run on. That the cleanup
 		// fails is a note, not a failure.
 		writeJSON(w, http.StatusOK, map[string]any{
-			"ok":        true,
-			"ablage":    a.Name(),
-			"anmerkung": "Testobjekt konnte nicht gelöscht werden: " + err.Error(),
+			"ok":      true,
+			"storage": a.Name(),
+			"remark":  "Testobjekt konnte nicht gelöscht werden: " + err.Error(),
 		})
 		return
 	}
 
 	s.spurAusRequest(r, AktS3Test, "system", "objektspeicher", req.Endpunkt, nil)
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "ablage": a.Name()})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "storage": a.Name()})
 }
 
 // AblageZustand says where attachments currently live.
@@ -119,5 +119,5 @@ func (s *Server) AblageZustand(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"ablage": s.Ablage.Name()})
+	writeJSON(w, http.StatusOK, map[string]string{"storage": s.Ablage.Name()})
 }

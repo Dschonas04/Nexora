@@ -27,7 +27,7 @@ func (s *Server) PulsAnsicht(w http.ResponseWriter, r *http.Request) {
 	antwort := map[string]interface{}{}
 
 	if s.Puls != nil {
-		antwort["anfragen"] = s.Puls.Lies()
+		antwort["requests"] = s.Puls.Lies()
 	}
 
 	// Der Vorrat an Datenbankverbindungen.
@@ -48,25 +48,25 @@ func (s *Server) PulsAnsicht(w http.ResponseWriter, r *http.Request) {
 		mittelWarteMS = float64(st.AcquireDuration().Microseconds()) /
 			float64(st.AcquireCount()) / 1000
 	}
-	antwort["vorrat"] = map[string]interface{}{
-		"hoechstens":    st.MaxConns(),
-		"offen":         st.TotalConns(),
-		"inBenutzung":   st.AcquiredConns(),
-		"frei":          st.IdleConns(),
-		"zugriffe":      st.AcquireCount(),
-		"ohneFreie":     st.EmptyAcquireCount(),
-		"mittelWarteMs": mittelWarteMS,
-		"imAufbau":      st.ConstructingConns(),
+	antwort["pool"] = map[string]interface{}{
+		"limit":      st.MaxConns(),
+		"open":       st.TotalConns(),
+		"inUse":      st.AcquiredConns(),
+		"idle":       st.IdleConns(),
+		"acquires":   st.AcquireCount(),
+		"waitCount":  st.EmptyAcquireCount(),
+		"avgWaitMs":  mittelWarteMS,
+		"connecting": st.ConstructingConns(),
 	}
 
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	antwort["prozess"] = map[string]interface{}{
-		"aufgaben":    runtime.NumGoroutine(),
-		"speicherMB":  float64(m.HeapAlloc) / 1024 / 1024,
-		"vomSystemMB": float64(m.Sys) / 1024 / 1024,
-		"aufraeumen":  m.NumGC,
-		"kerne":       runtime.NumCPU(),
+	antwort["process"] = map[string]interface{}{
+		"goroutines": runtime.NumGoroutine(),
+		"memoryMB":   float64(m.HeapAlloc) / 1024 / 1024,
+		"systemMB":   float64(m.Sys) / 1024 / 1024,
+		"gcRuns":     m.NumGC,
+		"cores":      runtime.NumCPU(),
 	}
 
 	// Database statistics about itself. Two numbers that together indicate
@@ -84,12 +84,12 @@ func (s *Server) PulsAnsicht(w http.ResponseWriter, r *http.Request) {
 	_ = s.Pool.QueryRow(ctx,
 		`SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()`).Scan(&verbindungen)
 
-	antwort["datenbank"] = map[string]interface{}{
-		"groesse":      groesse,
-		"trefferquote": quote,
-		"verbindungen": verbindungen,
+	antwort["database"] = map[string]interface{}{
+		"size":        groesse,
+		"hitRatio":    quote,
+		"connections": verbindungen,
 	}
-	antwort["gemessenUm"] = time.Now()
+	antwort["measuredAt"] = time.Now()
 
 	writeJSON(w, http.StatusOK, antwort)
 }

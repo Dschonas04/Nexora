@@ -22,16 +22,16 @@ import (
 // empty text, so the replies hanging off it do not lose their context.
 type Kommentar struct {
 	ID          string     `json:"id"`
-	ElternID    *string    `json:"elternId"`
-	AutorID     string     `json:"autorId"`
-	AutorName   string     `json:"autorName"`
+	ElternID    *string    `json:"parentId"`
+	AutorID     string     `json:"authorId"`
+	AutorName   string     `json:"authorName"`
 	Text        string     `json:"text"`
-	Erledigt    bool       `json:"erledigt"`
-	ErstelltAm  time.Time  `json:"erstelltAm"`
-	GeaendertAm *time.Time `json:"geaendertAm"`
-	Geloescht   bool       `json:"geloescht"`
+	Erledigt    bool       `json:"resolved"`
+	ErstelltAm  time.Time  `json:"createdAt"`
+	GeaendertAm *time.Time `json:"updatedAt"`
+	Geloescht   bool       `json:"deleted"`
 	/** True when the caller may edit or delete this one. Computed per request. */
-	Darf bool `json:"darf"`
+	Darf bool `json:"canEdit"`
 }
 
 const maxKommentarLaenge = 10_000
@@ -84,7 +84,7 @@ func (s *Server) ListKommentare(w http.ResponseWriter, r *http.Request) {
 
 type kommentarReq struct {
 	Text     string  `json:"text"`
-	ElternID *string `json:"elternId"`
+	ElternID *string `json:"parentId"`
 }
 
 // CreateKommentar adds a comment, or a reply to one.
@@ -279,5 +279,5 @@ func (s *Server) ToggleErledigt(w http.ResponseWriter, r *http.Request) {
 	}
 	s.spurAusRequest(r, AktKommentarErledigt, "seite", seite, "",
 		map[string]interface{}{"erledigt": erledigt})
-	writeJSON(w, http.StatusOK, map[string]bool{"erledigt": erledigt})
+	writeJSON(w, http.StatusOK, map[string]bool{"resolved": erledigt})
 }

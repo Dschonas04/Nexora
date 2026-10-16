@@ -81,7 +81,7 @@ func (s *Server) ProfilbildSetzen(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "das Bild ließ sich nicht speichern")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "bildStand": jetzt})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "imageVersion": jetzt})
 }
 
 // ProfilbildWeg removes the profile image. The UI will revert to showing

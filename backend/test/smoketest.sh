@@ -147,7 +147,7 @@ echo "== Suche"
 pruefe "Volltext findet die Seite" "Rauchprobe" \
        "$(hole "$BASIS/api/search?q=Ofen" | feld "[0]['title']")"
 pruefe "Filter nach Alter" "1" \
-       "$(hole "$BASIS/api/search?q=Ofen&tage=7" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+       "$(hole "$BASIS/api/search?q=Ofen&days=7" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
 pruefe "Filter nach Ablage ohne" "1" \
        "$(hole "$BASIS/api/search?q=Ofen&space=ohne" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
 pruefe "kaputte Kennung wird abgewiesen" "400" "$(code "$BASIS/api/search?q=Ofen&space=keine-uuid")"
@@ -155,22 +155,22 @@ pruefe "kaputte Kennung wird abgewiesen" "400" "$(code "$BASIS/api/search?q=Ofen
 echo "== Einfuhr"
 printf '# Eingefuehrt\n\nEin Absatz.\n' > "$ARBEIT/probe.md"
 EIN=$(curl -s -b "$KEKSE" -X POST "$BASIS/api/import" -F "file=@$ARBEIT/probe.md")
-pruefe "eine Seite eingeführt" "1" "$(printf '%s' "$EIN" | feld "['seiten']")"
+pruefe "eine Seite eingeführt" "1" "$(printf '%s' "$EIN" | feld "['pages']")"
 pruefe "Vorschau legt nichts an" "1" \
-       "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/import" -F "file=@$ARBEIT/probe.md" -F "vorschau=1" | feld "['seiten']")"
+       "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/import" -F "file=@$ARBEIT/probe.md" -F "preview=1" | feld "['pages']")"
 
 echo "== Einfuhr als eigene Ablage"
 printf '# Aus dem Archiv\n\nInhalt.\n' > "$ARBEIT/ablage.md"
 pruefe "Vorschau nennt die Ablage" "Umzug" \
        "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/import" -F "file=@$ARBEIT/ablage.md" \
-          -F "neueAblage=Umzug" -F "vorschau=1" | feld "['ablage']")"
+          -F "newSpace=Umzug" -F "preview=1" | feld "['space']")"
 pruefe "Vorschau legt keine Ablage an" "0" \
        "$(hole "$BASIS/api/spaces" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
-ABL=$(curl -s -b "$KEKSE" -X POST "$BASIS/api/import" -F "file=@$ARBEIT/ablage.md" -F "neueAblage=Umzug")
-pruefe "Ablage angelegt" "Umzug" "$(printf '%s' "$ABL" | feld "['ablage']['name']")"
+ABL=$(curl -s -b "$KEKSE" -X POST "$BASIS/api/import" -F "file=@$ARBEIT/ablage.md" -F "newSpace=Umzug")
+pruefe "Ablage angelegt" "Umzug" "$(printf '%s' "$ABL" | feld "['space']['name']")"
 pruefe "Ablage steht in der Liste" "1" \
        "$(hole "$BASIS/api/spaces" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
-ABL_ID=$(printf '%s' "$ABL" | feld "['ablage']['id']")
+ABL_ID=$(printf '%s' "$ABL" | feld "['space']['id']")
 pruefe "Seite liegt in der Ablage" "1" \
        "$(hole "$BASIS/api/pages" | ABL_ID="$ABL_ID" python3 -c '
 import json, os, sys
@@ -178,33 +178,33 @@ ziel = os.environ["ABL_ID"]
 print(sum(1 for p in json.load(sys.stdin) if p.get("spaceId") == ziel))')"
 pruefe "beides zusammen wird abgewiesen" "400" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X POST "$BASIS/api/import" \
-          -F "file=@$ARBEIT/ablage.md" -F "neueAblage=Zwei" -F "spaceId=$ABL_ID")"
+          -F "file=@$ARBEIT/ablage.md" -F "newSpace=Zwei" -F "spaceId=$ABL_ID")"
 
 # The colour of a space. It sits in the space itself and not in a setting of
 # the viewer: it should apply to everybody who sees it.
 pruefe "anfangs ohne eigene Farbe" "" \
        "$(hole "$BASIS/api/spaces" | python3 -c '
 import json, sys
-print(json.load(sys.stdin)[0].get("farbe", ""))')"
+print(json.load(sys.stdin)[0].get("color", ""))')"
 pruefe "eine Farbe laesst sich setzen" "#2383e2" \
-       "$(hole -X PUT "$BASIS/api/spaces/$ABL_ID/farbe" -H 'Content-Type: application/json' \
-          -d '{"farbe":"#2383e2"}' | feld "['farbe']")"
+       "$(hole -X PUT "$BASIS/api/spaces/$ABL_ID/color" -H 'Content-Type: application/json' \
+          -d '{"color":"#2383e2"}' | feld "['color']")"
 pruefe "und steht in der Liste" "#2383e2" \
        "$(hole "$BASIS/api/spaces" | python3 -c '
 import json, sys
-print(json.load(sys.stdin)[0]["farbe"])')"
+print(json.load(sys.stdin)[0]["color"])')"
 # Not a colour value but some text: reject instead of writing it into the row.
 # Out of the row it would later come back out into a style attribute.
 pruefe "ein erfundener Wert wird abgewiesen" "400" \
-       "$(code -X PUT "$BASIS/api/spaces/$ABL_ID/farbe" -H 'Content-Type: application/json' \
-          -d '{"farbe":"rot; background:url(x)"}')"
+       "$(code -X PUT "$BASIS/api/spaces/$ABL_ID/color" -H 'Content-Type: application/json' \
+          -d '{"color":"rot; background:url(x)"}')"
 pruefe "die alte Farbe steht noch" "#2383e2" \
        "$(hole "$BASIS/api/spaces" | python3 -c '
 import json, sys
-print(json.load(sys.stdin)[0]["farbe"])')"
+print(json.load(sys.stdin)[0]["color"])')"
 pruefe "leer setzt zurueck" "" \
-       "$(hole -X PUT "$BASIS/api/spaces/$ABL_ID/farbe" -H 'Content-Type: application/json' \
-          -d '{"farbe":""}' | feld "['farbe']")"
+       "$(hole -X PUT "$BASIS/api/spaces/$ABL_ID/color" -H 'Content-Type: application/json' \
+          -d '{"color":""}' | feld "['color']")"
 
 echo "== Ablage löschen legt ihre Seiten in den Papierkorb"
 # Deleting a space trashes its pages, subpages included, in one transaction.
@@ -222,7 +222,7 @@ print(len(ids & {os.environ["OBEN"], os.environ["UNTEN"]}))'; }
 pruefe "fremde Ablage bleibt stehen" "404" \
        "$(code -X DELETE "$BASIS/api/spaces/00000000-0000-0000-0000-000000000000")"
 pruefe "Ablage gelöscht, zwei Seiten weggelegt" "2" \
-       "$(hole -X DELETE "$BASIS/api/spaces/$WEG" | feld "['papierkorb']")"
+       "$(hole -X DELETE "$BASIS/api/spaces/$WEG" | feld "['trash']")"
 pruefe "beide stehen im Papierkorb" "2" "$(hole "$BASIS/api/pages/trash" | zaehle)"
 pruefe "und nicht mehr im Baum" "0" "$(hole "$BASIS/api/pages" | zaehle)"
 hole -X POST "$BASIS/api/pages/$OBEN/restore" >/dev/null
@@ -240,15 +240,15 @@ echo "== Postfach per E-Mail"
 # Without smtp_server the instance cannot send: the setting says so, and
 # switching it on is refused instead of silently promising mail.
 pruefe "ohne SMTP nicht verfügbar" "False" \
-       "$(hole "$BASIS/api/konto/benachrichtigung" | feld "['verfuegbar']")"
+       "$(hole "$BASIS/api/account/notifications" | feld "['available']")"
 pruefe "anfangs aus" "False" \
-       "$(hole "$BASIS/api/konto/benachrichtigung" | feld "['email']")"
+       "$(hole "$BASIS/api/account/notifications" | feld "['email']")"
 pruefe "einschalten ohne SMTP abgewiesen" "409" \
-       "$(code -X PUT "$BASIS/api/konto/benachrichtigung" -H 'Content-Type: application/json' -d '{"email":true}')"
+       "$(code -X PUT "$BASIS/api/account/notifications" -H 'Content-Type: application/json' -d '{"email":true}')"
 pruefe "Testmail ohne SMTP abgewiesen" "409" \
-       "$(code -X POST "$BASIS/api/konto/benachrichtigung/test")"
+       "$(code -X POST "$BASIS/api/account/notifications/test")"
 pruefe "ausschalten geht immer" "False" \
-       "$(hole -X PUT "$BASIS/api/konto/benachrichtigung" -H 'Content-Type: application/json' -d '{"email":false}' | feld "['email']")"
+       "$(hole -X PUT "$BASIS/api/account/notifications" -H 'Content-Type: application/json' -d '{"email":false}' | feld "['email']")"
 
 echo "== Ausgabe"
 pruefe "Markdown" "200" "$(code "$BASIS/api/pages/$SEITE/markdown")"
@@ -258,7 +258,7 @@ hole -X DELETE "$BASIS/api/pages/$SEITE" >/dev/null
 pruefe "liegt im Papierkorb" "1" \
        "$(hole "$BASIS/api/pages/trash" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
 pruefe "trägt ein Verfallsdatum" "True" \
-       "$(hole "$BASIS/api/pages/trash" | python3 -c 'import json,sys;print(json.load(sys.stdin)[0]["verfaelltAm"] is not None)')"
+       "$(hole "$BASIS/api/pages/trash" | python3 -c 'import json,sys;print(json.load(sys.stdin)[0]["expiresAt"] is not None)')"
 pruefe "zurückgeholt" "200" "$(code -X POST "$BASIS/api/pages/$SEITE/restore")"
 pruefe "Papierkorb wieder leer" "0" \
        "$(hole "$BASIS/api/pages/trash" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
@@ -297,38 +297,38 @@ pruefe "Frist steht in der Prüfspur" "1" \
 
 echo "== Sitzungen"
 pruefe "eine Sitzung steht in der Liste" "1" \
-       "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+       "$(hole "$BASIS/api/sessions" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
 pruefe "sie ist als diese markiert" "True" \
-       "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(json.load(sys.stdin)[0]["diese"])')"
+       "$(hole "$BASIS/api/sessions" | python3 -c 'import json,sys;print(json.load(sys.stdin)[0]["current"])')"
 # Zweite Anmeldung von einem anderen "Geraet", eigene Keksdose.
 curl -s -c "$ARBEIT/kekse2.txt" -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
      -A "Mozilla/5.0 (Windows NT 10.0) Firefox/140.0" \
      -d '{"email":"smoke@test.invalid","password":"smoketest-password"}' >/dev/null
 pruefe "jetzt zwei Sitzungen" "2" \
-       "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+       "$(hole "$BASIS/api/sessions" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
 pruefe "Frist steht in Stunden" "True" \
-       "$(hole "$BASIS/api/sitzungen" | python3 -c '
+       "$(hole "$BASIS/api/sessions" | python3 -c '
 import json, sys, datetime
 s = json.load(sys.stdin)[0]
-ab = datetime.datetime.fromisoformat(s["angelegtAm"].replace("Z", "+00:00"))
-bis = datetime.datetime.fromisoformat(s["laeuftAb"].replace("Z", "+00:00"))
+ab = datetime.datetime.fromisoformat(s["createdAt"].replace("Z", "+00:00"))
+bis = datetime.datetime.fromisoformat(s["expiresAt"].replace("Z", "+00:00"))
 stunden = (bis - ab).total_seconds() / 3600
 # The default is twelve hours. It used to be seven days, that is 168.
 print(11.9 < stunden < 12.1)')"
 pruefe "das Geraet wird benannt" "Firefox auf Windows" \
-       "$(hole "$BASIS/api/sitzungen" | python3 -c '
+       "$(hole "$BASIS/api/sessions" | python3 -c '
 import json,sys
-print(next(s["browser"] for s in json.load(sys.stdin) if not s["diese"]))')"
-FREMD=$(hole "$BASIS/api/sitzungen" | python3 -c '
+print(next(s["browser"] for s in json.load(sys.stdin) if not s["current"]))')"
+FREMD=$(hole "$BASIS/api/sessions" | python3 -c '
 import json,sys
-print(next(s["id"] for s in json.load(sys.stdin) if not s["diese"]))')
-pruefe "fremde Sitzung beenden" "200" "$(code -X DELETE "$BASIS/api/sitzungen/$FREMD")"
+print(next(s["id"] for s in json.load(sys.stdin) if not s["current"]))')
+pruefe "fremde Sitzung beenden" "200" "$(code -X DELETE "$BASIS/api/sessions/$FREMD")"
 # The token of the second sign-in has to be worthless at once, which is exactly
 # what the old, purely computed session could not do.
 pruefe "beendetes Token gilt nicht mehr" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$ARBEIT/kekse2.txt" "$BASIS/api/auth/me")"
 pruefe "wieder nur eine Sitzung" "1" \
-       "$(hole "$BASIS/api/sitzungen" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
+       "$(hole "$BASIS/api/sessions" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)))')"
 # Abmelden widerruft ebenfalls, frueher blieb das Token gueltig.
 curl -s -c "$ARBEIT/kekse3.txt" -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
      -d '{"email":"smoke@test.invalid","password":"smoketest-password"}' >/dev/null
@@ -342,11 +342,11 @@ echo "== SSO"
 pruefe "nichts angeboten, weil nichts eingerichtet" "False" \
        "$(hole "$BASIS/api/auth/sso" | python3 -c 'import json,sys;d=json.load(sys.stdin);print(d["oidc"] or d["ldap"])')"
 pruefe "Passwort bleibt moeglich" "True" \
-       "$(hole "$BASIS/api/auth/sso" | feld "['passwort']")"
+       "$(hole "$BASIS/api/auth/sso" | feld "['password']")"
 pruefe "OIDC ohne Lizenz weist ab" "402" "$(code "$BASIS/api/auth/oidc/start")"
 pruefe "LDAP ohne Lizenz weist ab" "402" \
        "$(code -X POST "$BASIS/api/auth/ldap" -H 'Content-Type: application/json' \
-          -d '{"benutzer":"wer","passwort":"was"}')"
+          -d '{"user":"wer","password":"was"}')"
 
 echo "== Lizenz"
 # A key pair of its own for the test: the public half sits fixed in the program,
@@ -354,37 +354,37 @@ echo "== Lizenz"
 # in a repository anyway. What is checked is therefore what MUST happen without a
 # valid signature: rejection.
 pruefe "unsinniger Schlüssel wird abgewiesen" "400" \
-       "$(code -X PUT "$BASIS/api/system/lizenz" -H 'Content-Type: application/json' \
-          -d '{"schluessel":"kein.schluessel"}')"
+       "$(code -X PUT "$BASIS/api/system/license" -H 'Content-Type: application/json' \
+          -d '{"key":"kein.schluessel"}')"
 pruefe "Ausstellen ohne Signierschlüssel geht nicht" "501" \
-       "$(code -X POST "$BASIS/api/system/lizenz/ausstellen" -H 'Content-Type: application/json' \
-          -d '{"inhaber":"Wer auch immer","stufe":"pro"}')"
+       "$(code -X POST "$BASIS/api/system/license/issue" -H 'Content-Type: application/json' \
+          -d '{"holder":"Wer auch immer","tier":"pro"}')"
 pruefe "Stufen stehen im Status" "4" \
-       "$(hole "$BASIS/api/lizenz" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["stufen"]))')"
+       "$(hole "$BASIS/api/license" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["tiers"]))')"
 pruefe "Business enthält alles" "True" \
-       "$(hole "$BASIS/api/lizenz" | python3 -c '
+       "$(hole "$BASIS/api/license" | python3 -c '
 import json,sys
 d = json.load(sys.stdin)
-alle = set(d["alle_extras"])
-business = next(s for s in d["stufen"] if s["name"] == "business")
-print(set(business["funktionen"]) == alle)')"
+alle = set(d["allExtras"])
+business = next(s for s in d["tiers"] if s["name"] == "business")
+print(set(business["features"]) == alle)')"
 # Since 2.1 the free tier -- shown as Standard -- carries four features that
 # run without any key.
 pruefe "Standard enthält Versionen, Anhänge, Kommentare, Konflikte" "anhaenge,kommentare,konflikte,versionen" \
-       "$(hole "$BASIS/api/lizenz" | python3 -c '
+       "$(hole "$BASIS/api/license" | python3 -c '
 import json,sys
 d = json.load(sys.stdin)
-print(",".join(sorted(next(s for s in d["stufen"] if s["name"] == "free")["funktionen"])))')"
+print(",".join(sorted(next(s for s in d["tiers"] if s["name"] == "free")["features"])))')"
 pruefe "ohne Schlüssel sind genau diese vier frei" "anhaenge,kommentare,konflikte,versionen" \
-       "$(hole "$BASIS/api/lizenz" | python3 -c '
+       "$(hole "$BASIS/api/license" | python3 -c '
 import json,sys
-print(",".join(sorted(json.load(sys.stdin)["freigeschaltet"])))')"
+print(",".join(sorted(json.load(sys.stdin)["unlocked"])))')"
 pruefe "leerer Schlüssel nimmt die Lizenz zurück" "200" \
-       "$(code -X PUT "$BASIS/api/system/lizenz" -H 'Content-Type: application/json' -d '{"schluessel":""}')"
+       "$(code -X PUT "$BASIS/api/system/license" -H 'Content-Type: application/json' -d '{"key":""}')"
 
 echo "== Postfach"
-pruefe "Postfach antwortet" "200" "$(code "$BASIS/api/postfach")"
-pruefe "Zähler antwortet" "0" "$(hole "$BASIS/api/postfach/anzahl" | feld "['ungelesen']")"
+pruefe "Postfach antwortet" "200" "$(code "$BASIS/api/inbox")"
+pruefe "Zähler antwortet" "0" "$(hole "$BASIS/api/inbox/count" | feld "['unread']")"
 
 echo "== Umhängen und Reihenfolge"
 # Three pages at the top level, in a known order. titel() reads the sidebar
@@ -406,20 +406,20 @@ DREI=$(neue_seite Drei)
 pruefe "Ausgangsfolge" "Eins,Zwei,Drei" "$(titel)"
 
 pruefe "Drei vor Eins" "200" \
-       "$(code -X PUT "$BASIS/api/pages/$DREI/reihenfolge" -H 'Content-Type: application/json' \
-          -d "{\"vorId\":\"$EINS\"}")"
+       "$(code -X PUT "$BASIS/api/pages/$DREI/order" -H 'Content-Type: application/json' \
+          -d "{\"beforeId\":\"$EINS\"}")"
 pruefe "steht jetzt vorn" "Drei,Eins,Zwei" "$(titel)"
 
 pruefe "Eins ans Ende" "200" \
-       "$(code -X PUT "$BASIS/api/pages/$EINS/reihenfolge" -H 'Content-Type: application/json' \
-          -d '{"vorId":null}')"
+       "$(code -X PUT "$BASIS/api/pages/$EINS/order" -H 'Content-Type: application/json' \
+          -d '{"beforeId":null}')"
 pruefe "steht jetzt hinten" "Drei,Zwei,Eins" "$(titel)"
 
 # Hanging one page under another: it has to leave the top level and turn up as a
 # child, and the order of what stays behind must survive it.
 pruefe "Zwei unter Drei" "200" \
-       "$(code -X PUT "$BASIS/api/pages/$ZWEI/reihenfolge" -H 'Content-Type: application/json' \
-          -d "{\"elternId\":\"$DREI\"}")"
+       "$(code -X PUT "$BASIS/api/pages/$ZWEI/order" -H 'Content-Type: application/json' \
+          -d "{\"parentId\":\"$DREI\"}")"
 pruefe "oben nur noch zwei" "Drei,Eins" "$(titel)"
 pruefe "hängt unter Drei" "$DREI" \
        "$(hole "$BASIS/api/pages/$ZWEI" | feld "['parentId']")"
@@ -427,17 +427,17 @@ pruefe "hängt unter Drei" "$DREI" \
 # The guard against a page landing inside its own subtree. Without it the branch
 # would hang below itself and be reachable from nowhere.
 pruefe "Drei unter die eigene Unterseite wird abgewiesen" "400" \
-       "$(code -X PUT "$BASIS/api/pages/$DREI/reihenfolge" -H 'Content-Type: application/json' \
-          -d "{\"elternId\":\"$ZWEI\"}")"
+       "$(code -X PUT "$BASIS/api/pages/$DREI/order" -H 'Content-Type: application/json' \
+          -d "{\"parentId\":\"$ZWEI\"}")"
 pruefe "unter sich selbst wird abgewiesen" "400" \
-       "$(code -X PUT "$BASIS/api/pages/$DREI/reihenfolge" -H 'Content-Type: application/json' \
-          -d "{\"elternId\":\"$DREI\"}")"
+       "$(code -X PUT "$BASIS/api/pages/$DREI/order" -H 'Content-Type: application/json' \
+          -d "{\"parentId\":\"$DREI\"}")"
 
 # A subpage follows its parent into the parent's space, so the two cannot drift
 # into different sections of the sidebar.
 pruefe "Drei in die Ablage" "200" \
-       "$(code -X PUT "$BASIS/api/pages/$DREI/reihenfolge" -H 'Content-Type: application/json' \
-          -d "{\"elternId\":null,\"spaceId\":\"$ABL_ID\"}")"
+       "$(code -X PUT "$BASIS/api/pages/$DREI/order" -H 'Content-Type: application/json' \
+          -d "{\"parentId\":null,\"spaceId\":\"$ABL_ID\"}")"
 pruefe "die Unterseite zieht mit" "$ABL_ID" \
        "$(hole "$BASIS/api/pages/$ZWEI" | feld "['spaceId']")"
 
@@ -449,67 +449,67 @@ import json, sys
 print(",".join(a["name"] for a in json.load(sys.stdin)))'; }
 pruefe "nach Namen sortiert" "Umzug,Zweite Ablage" "$(ablagen)"
 pruefe "Reihenfolge gesetzt" "204" \
-       "$(code -X PUT "$BASIS/api/spaces/reihenfolge" -H 'Content-Type: application/json' \
+       "$(code -X PUT "$BASIS/api/spaces/order" -H 'Content-Type: application/json' \
           -d "{\"ids\":[\"$ZWEITE\",\"$ABL_ID\"]}")"
 pruefe "steht jetzt so da" "Zweite Ablage,Umzug" "$(ablagen)"
 pruefe "leere Liste wird abgewiesen" "400" \
-       "$(code -X PUT "$BASIS/api/spaces/reihenfolge" -H 'Content-Type: application/json' \
+       "$(code -X PUT "$BASIS/api/spaces/order" -H 'Content-Type: application/json' \
           -d '{"ids":[]}')"
 
 echo "== Satzspiegel einer Seite"
 BREIT=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
         -d '{"title":"Breite Seite"}' | feld "['id']")
 # Empty means: no choice of its own, the instance default applies.
-pruefe "steht anfangs auf der Vorgabe" "" "$(hole "$BASIS/api/pages/$BREIT" | feld "['breite']")"
+pruefe "steht anfangs auf der Vorgabe" "" "$(hole "$BASIS/api/pages/$BREIT" | feld "['width']")"
 pruefe "und die ist volle Breite" "voll" \
-       "$(hole "$BASIS/api/design" | feld "['seitenbreite']")"
+       "$(hole "$BASIS/api/design" | feld "['pageWidth']")"
 pruefe "auf breit gesetzt" "200" \
-       "$(code -X PUT "$BASIS/api/pages/$BREIT/breite" -H 'Content-Type: application/json' \
-          -d '{"breite":"breit"}')"
-pruefe "steht jetzt auf breit" "breit" "$(hole "$BASIS/api/pages/$BREIT" | feld "['breite']")"
+       "$(code -X PUT "$BASIS/api/pages/$BREIT/width" -H 'Content-Type: application/json' \
+          -d '{"width":"breit"}')"
+pruefe "steht jetzt auf breit" "breit" "$(hole "$BASIS/api/pages/$BREIT" | feld "['width']")"
 pruefe "Unsinn wird abgewiesen" "400" \
-       "$(code -X PUT "$BASIS/api/pages/$BREIT/breite" -H 'Content-Type: application/json' \
-          -d '{"breite":"riesig"}')"
+       "$(code -X PUT "$BASIS/api/pages/$BREIT/width" -H 'Content-Type: application/json' \
+          -d '{"width":"riesig"}')"
 pruefe "zurueck auf die Vorgabe geht auch" "" \
-       "$(hole -X PUT "$BASIS/api/pages/$BREIT/breite" -H 'Content-Type: application/json' \
-          -d '{"breite":""}' | feld "['breite']")"
+       "$(hole -X PUT "$BASIS/api/pages/$BREIT/width" -H 'Content-Type: application/json' \
+          -d '{"width":""}' | feld "['width']")"
 
 echo "== Aussehen am eigenen Konto"
 # Since the move, base tone and accent lie in the account's row and no longer
 # in the settings table. That can only be checked against a real database:
 # whether the columns are there, whether the value survives a reload and whether
 # nonsense is rejected instead of landing in a CSS variable.
-pruefe "Vorgabe ist grau" "grau" "$(hole "$BASIS/api/design" | feld "['grundton']")"
-pruefe "Vorgabe ist Blau" "#1b6ec2" "$(hole "$BASIS/api/design" | feld "['akzent']")"
+pruefe "Vorgabe ist grau" "grau" "$(hole "$BASIS/api/design" | feld "['baseColor']")"
+pruefe "Vorgabe ist Blau" "#1b6ec2" "$(hole "$BASIS/api/design" | feld "['accent']")"
 pruefe "eigene Wahl wird angenommen" "200" \
        "$(code -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
-          -d '{"grundton":"dunkel","akzent":"#8250df"}')"
+          -d '{"baseColor":"dunkel","accent":"#8250df"}')"
 pruefe "und steht beim naechsten Abruf da" "dunkel" \
-       "$(hole "$BASIS/api/design" | feld "['grundton']")"
-pruefe "samt Akzent" "#8250df" "$(hole "$BASIS/api/design" | feld "['akzent']")"
+       "$(hole "$BASIS/api/design" | feld "['baseColor']")"
+pruefe "samt Akzent" "#8250df" "$(hole "$BASIS/api/design" | feld "['accent']")"
 pruefe "ein unbekannter Ton wird abgewiesen" "400" \
        "$(code -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
-          -d '{"grundton":"neon","akzent":"#8250df"}')"
+          -d '{"baseColor":"neon","accent":"#8250df"}')"
 pruefe "und eine Farbe, die keine ist, auch" "400" \
        "$(code -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
-          -d '{"grundton":"dunkel","akzent":"rot; background:url(x)"}')"
+          -d '{"baseColor":"dunkel","accent":"rot; background:url(x)"}')"
 pruefe "leer setzt auf die Vorgabe zurueck" "grau" \
        "$(hole -X PUT "$BASIS/api/design" -H 'Content-Type: application/json' \
-          -d '{"grundton":"","akzent":""}' | feld "['grundton']")"
+          -d '{"baseColor":"","accent":""}' | feld "['baseColor']")"
 # The interface language sits on the account as well, with a route of its own so
 # that switching it does not send base tone and accent along.
-pruefe "ohne Wahl ist die Sprache leer" "" "$(hole "$BASIS/api/design" | feld "['sprache']")"
+pruefe "ohne Wahl ist die Sprache leer" "" "$(hole "$BASIS/api/design" | feld "['language']")"
 pruefe "Sprache wird angenommen" "200" \
-       "$(code -X PUT "$BASIS/api/design/sprache" -H 'Content-Type: application/json' -d '{"sprache":"en"}')"
-pruefe "und steht beim naechsten Abruf da" "en" "$(hole "$BASIS/api/design" | feld "['sprache']")"
+       "$(code -X PUT "$BASIS/api/design/language" -H 'Content-Type: application/json' -d '{"language":"en"}')"
+pruefe "und steht beim naechsten Abruf da" "en" "$(hole "$BASIS/api/design" | feld "['language']")"
 pruefe "eine unbekannte Sprache wird abgewiesen" "400" \
-       "$(code -X PUT "$BASIS/api/design/sprache" -H 'Content-Type: application/json' -d '{"sprache":"xx"}')"
+       "$(code -X PUT "$BASIS/api/design/language" -H 'Content-Type: application/json' -d '{"language":"xx"}')"
 pruefe "Franzoesisch wird angenommen" "200" \
-       "$(code -X PUT "$BASIS/api/design/sprache" -H 'Content-Type: application/json' -d '{"sprache":"fr"}')"
-pruefe "der Grundton bleibt davon unberuehrt" "grau" "$(hole "$BASIS/api/design" | feld "['grundton']")"
+       "$(code -X PUT "$BASIS/api/design/language" -H 'Content-Type: application/json' -d '{"language":"fr"}')"
+pruefe "der Grundton bleibt davon unberuehrt" "grau" "$(hole "$BASIS/api/design" | feld "['baseColor']")"
 # The appearance no longer appears among the administration's settings.
 pruefe "keine Design-Einstellung mehr in der Verwaltung" "0" \
-       "$(hole "$BASIS/api/einstellungen" | python3 -c 'import json,sys;print(sum(1 for e in json.load(sys.stdin) if e["schluessel"].startswith("design_")))')"
+       "$(hole "$BASIS/api/settings" | python3 -c 'import json,sys;print(sum(1 for e in json.load(sys.stdin) if e["key"].startswith("design_")))')"
 
 echo "== Anmeldeversuche"
 # The evaluation computes with intervals out of a number and with FILTER
@@ -517,112 +517,112 @@ echo "== Anmeldeversuche"
 # of this file. A failed attempt is therefore triggered here by hand.
 curl -s -o /dev/null -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
      -A "Mozilla/5.0 (X11; Linux x86_64) Firefox/141.0" \
-     -d '{"kennung":"smoke@test.invalid","password":"falsch"}'
+     -d '{"login":"smoke@test.invalid","password":"falsch"}'
 curl -s -o /dev/null -X POST "$BASIS/api/auth/login" -H 'Content-Type: application/json' \
-     -d '{"kennung":"gibtesnicht@test.invalid","password":"egal"}'
-pruefe "Auswertung antwortet" "200" "$(code "$BASIS/api/system/anmeldungen")"
+     -d '{"login":"gibtesnicht@test.invalid","password":"egal"}'
+pruefe "Auswertung antwortet" "200" "$(code "$BASIS/api/system/sign-ins")"
 pruefe "beide Fehlversuche stehen da" "2" \
-       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["versuche"]))')"
+       "$(hole "$BASIS/api/system/sign-ins?only=fehl" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["attempts"]))')"
 pruefe "falsches Passwort wird als solches vermerkt" "Passwort falsch" \
-       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | python3 -c '
+       "$(hole "$BASIS/api/system/sign-ins?only=fehl" | python3 -c '
 import json, sys
-d = json.load(sys.stdin)["versuche"]
-print(next(v["grund"] for v in d if v["kennung"] == "smoke@test.invalid"))')"
+d = json.load(sys.stdin)["attempts"]
+print(next(v["reason"] for v in d if v["login"] == "smoke@test.invalid"))')"
 pruefe "unbekannte Kennung ebenso" "Kennung unbekannt" \
-       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | python3 -c '
+       "$(hole "$BASIS/api/system/sign-ins?only=fehl" | python3 -c '
 import json, sys
-d = json.load(sys.stdin)["versuche"]
-print(next(v["grund"] for v in d if v["kennung"] == "gibtesnicht@test.invalid"))')"
+d = json.load(sys.stdin)["attempts"]
+print(next(v["reason"] for v in d if v["login"] == "gibtesnicht@test.invalid"))')"
 pruefe "der Weg steht dabei" "passwort" \
-       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | feld "['versuche'][0]['weg']")"
+       "$(hole "$BASIS/api/system/sign-ins?only=fehl" | feld "['attempts'][0]['method']")"
 pruefe "die Adresse steht dabei" "127.0.0.1" \
-       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | feld "['versuche'][0]['ip']")"
+       "$(hole "$BASIS/api/system/sign-ins?only=fehl" | feld "['attempts'][0]['ip']")"
 pruefe "der Browser steht dabei" "True" \
-       "$(hole "$BASIS/api/system/anmeldungen?nur=fehl" | python3 -c '
+       "$(hole "$BASIS/api/system/sign-ins?only=fehl" | python3 -c '
 import json, sys
-d = json.load(sys.stdin)["versuche"]
+d = json.load(sys.stdin)["attempts"]
 print(any("Firefox" in v["browser"] for v in d))')"
 pruefe "gelungene Anmeldungen sind auch verzeichnet" "True" \
-       "$(hole "$BASIS/api/system/anmeldungen?nur=erfolg" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["versuche"]) > 0)')"
+       "$(hole "$BASIS/api/system/sign-ins?only=erfolg" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["attempts"]) > 0)')"
 pruefe "Herkunft fasst die Adresse zusammen" "127.0.0.1" \
-       "$(hole "$BASIS/api/system/anmeldungen" | feld "['herkunft'][0]['ip']")"
+       "$(hole "$BASIS/api/system/sign-ins" | feld "['sources'][0]['ip']")"
 pruefe "die Zusammenfassung zählt die Fehlversuche" "2" \
-       "$(hole "$BASIS/api/system/anmeldungen" | feld "['zusammenfassung']['fehl24h']")"
+       "$(hole "$BASIS/api/system/sign-ins" | feld "['summary']['failures24h']")"
 # tage=0 means "everything" and becomes a very large number internally. That is
 # exactly what the interval arithmetic has failed on once before.
-pruefe "tage=0 liefert alles" "200" "$(code "$BASIS/api/system/anmeldungen?tage=0")"
+pruefe "tage=0 liefert alles" "200" "$(code "$BASIS/api/system/sign-ins?days=0")"
 pruefe "Filter nach Adresse greift" "0" \
-       "$(hole "$BASIS/api/system/anmeldungen?ip=10.9.9.9" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["versuche"]))')"
+       "$(hole "$BASIS/api/system/sign-ins?ip=10.9.9.9" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["attempts"]))')"
 
 echo "== Puls"
 # Counting happens without a lock on the hot path, and the slots are switched by
 # the clock. Whether that really fits together in the running service only shows
 # up here: the unit tests see only the package, not the chain.
-pruefe "Puls antwortet" "200" "$(code "$BASIS/api/system/puls")"
+pruefe "Puls antwortet" "200" "$(code "$BASIS/api/system/pulse")"
 pruefe "der Vorrat nennt seine Obergrenze" "True" \
-       "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(json.load(sys.stdin)["vorrat"]["hoechstens"] > 0)')"
+       "$(hole "$BASIS/api/system/pulse" | python3 -c 'import json,sys;print(json.load(sys.stdin)["pool"]["limit"] > 0)')"
 # Not the number of accesses without a free connection: that stands above zero
 # even on an unloaded instance, because the pool is empty at start-up and the
 # first accesses have their connection opened first. What is telling is the mean
 # wait time, and that has to be vanishing here.
 pruefe "kaum Wartezeit auf eine Verbindung" "True" \
-       "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(json.load(sys.stdin)["vorrat"]["mittelWarteMs"] < 1.0)')"
+       "$(hole "$BASIS/api/system/pulse" | python3 -c 'import json,sys;print(json.load(sys.stdin)["pool"]["avgWaitMs"] < 1.0)')"
 pruefe "die Minute hat 59 Faecher" "59" \
-       "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["anfragen"]["minute"]))')"
+       "$(hole "$BASIS/api/system/pulse" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["requests"]["minute"]))')"
 # The many calls of the sections above must have left their mark.
 pruefe "es wurde etwas gezaehlt" "True" \
-       "$(hole "$BASIS/api/system/puls" | python3 -c 'import json,sys;print(json.load(sys.stdin)["anfragen"]["gesamt"] > 50)')"
+       "$(hole "$BASIS/api/system/pulse" | python3 -c 'import json,sys;print(json.load(sys.stdin)["requests"]["total"] > 50)')"
 # The query route does not count itself along, otherwise it would stand as
 # background noise in every measurement it is meant to display.
-VORHER=$(hole "$BASIS/api/system/puls" | feld "['anfragen']['gesamt']")
-hole "$BASIS/api/system/puls" >/dev/null
-hole "$BASIS/api/system/puls" >/dev/null
+VORHER=$(hole "$BASIS/api/system/pulse" | feld "['requests']['total']")
+hole "$BASIS/api/system/pulse" >/dev/null
+hole "$BASIS/api/system/pulse" >/dev/null
 pruefe "der Puls zaehlt sich nicht selbst" "$VORHER" \
-       "$(hole "$BASIS/api/system/puls" | feld "['anfragen']['gesamt']")"
+       "$(hole "$BASIS/api/system/pulse" | feld "['requests']['total']")"
 pruefe "ohne Anmeldung verschlossen" "401" \
-       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/puls")"
+       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/pulse")"
 
 echo "== Gemeinsames Bearbeiten"
 # Without a licence the wire stays shut, but the administration's view of it
 # stays open: the switch in the panel should show something even when the add-on
 # is not enabled, otherwise the page looks broken instead of closed.
-pruefe "der Zustand ist abrufbar" "200" "$(code "$BASIS/api/system/mitschrift")"
+pruefe "der Zustand ist abrufbar" "200" "$(code "$BASIS/api/system/collab")"
 pruefe "er sagt, dass die Lizenz fehlt" "False" \
-       "$(hole "$BASIS/api/system/mitschrift" | feld "['lizenziert']")"
+       "$(hole "$BASIS/api/system/collab" | feld "['licensed']")"
 pruefe "eingeschaltet ist es trotzdem" "True" \
-       "$(hole "$BASIS/api/system/mitschrift" | feld "['an']")"
+       "$(hole "$BASIS/api/system/collab" | feld "['enabled']")"
 pruefe "es sitzt niemand in einem Raum" "0" \
-       "$(hole "$BASIS/api/system/mitschrift" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["raeume"]))')"
+       "$(hole "$BASIS/api/system/collab" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["rooms"]))')"
 pruefe "ohne Anmeldung verschlossen" "401" \
-       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/mitschrift")"
+       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/collab")"
 # The wire itself and the number of people writing along hang on the add-on.
-pruefe "die Leitung ist ohne Lizenz zu" "402" "$(code "$BASIS/api/echtzeit/$BREIT")"
+pruefe "die Leitung ist ohne Lizenz zu" "402" "$(code "$BASIS/api/realtime/$BREIT")"
 pruefe "die Zahl der Mitschreibenden ist zu" "402" \
-       "$(code "$BASIS/api/pages/$BREIT/mitschreibende")"
+       "$(code "$BASIS/api/pages/$BREIT/collaborators")"
 # And the page says so to the browser: without a licence there is no writing
 # together, so it does not open a session for it either.
 pruefe "die Seite meldet sich als nicht gemeinsam" "False" \
-       "$(hole "$BASIS/api/pages/$BREIT" | feld "['gemeinsam']")"
+       "$(hole "$BASIS/api/pages/$BREIT" | feld "['collaborative']")"
 # The switch is an ordinary setting and can be set.
 pruefe "die Einstellung steht in der Liste" "1" \
-       "$(hole "$BASIS/api/einstellungen" | python3 -c '
+       "$(hole "$BASIS/api/settings" | python3 -c '
 import json, sys
-print(len([e for e in json.load(sys.stdin) if e["schluessel"] == "echtzeit"]))')"
-hole -X PUT "$BASIS/api/einstellungen" -H 'Content-Type: application/json' \
-     -d '{"schluessel":"echtzeit","wert":"nein"}' >/dev/null
+print(len([e for e in json.load(sys.stdin) if e["key"] == "echtzeit"]))')"
+hole -X PUT "$BASIS/api/settings" -H 'Content-Type: application/json' \
+     -d '{"key":"echtzeit","value":"nein"}' >/dev/null
 pruefe "ausgeschaltet meldet der Zustand es auch" "False" \
-       "$(hole "$BASIS/api/system/mitschrift" | feld "['an']")"
-hole -X PUT "$BASIS/api/einstellungen" -H 'Content-Type: application/json' \
-     -d '{"schluessel":"echtzeit","wert":"ja"}' >/dev/null
+       "$(hole "$BASIS/api/system/collab" | feld "['enabled']")"
+hole -X PUT "$BASIS/api/settings" -H 'Content-Type: application/json' \
+     -d '{"key":"echtzeit","value":"ja"}' >/dev/null
 pruefe "wieder eingeschaltet" "True" \
-       "$(hole "$BASIS/api/system/mitschrift" | feld "['an']")"
+       "$(hole "$BASIS/api/system/collab" | feld "['enabled']")"
 
 echo "== Sicherung"
 # The actual proof is not that an archive comes out but that the result can be
 # restored. Everything else is a claim.
-pruefe "Umfang ist lesbar" "200" "$(code "$BASIS/api/system/sicherung/umfang")"
+pruefe "Umfang ist lesbar" "200" "$(code "$BASIS/api/system/backup/scope")"
 pruefe "die Instanz haelt sich fuer bereit" "True" \
-       "$(hole "$BASIS/api/system/sicherung/umfang" | feld "['bereit']")"
+       "$(hole "$BASIS/api/system/backup/scope" | feld "['ready']")"
 # The state BEFORE the backup. Creating one records itself in the audit trail,
 # namely after the dump has been pulled; a comparison afterwards would be off by
 # exactly that one entry and would look like data loss.
@@ -630,7 +630,7 @@ declare -A VORHER
 for T in pages users pruefspur attachments einstellungen; do
     VORHER[$T]=$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc "SELECT count(*) FROM $T")
 done
-curl -s -b "$KEKSE" "$BASIS/api/system/sicherung" -o "$ARBEIT/sicherung.zip"
+curl -s -b "$KEKSE" "$BASIS/api/system/backup" -o "$ARBEIT/sicherung.zip"
 pruefe "ein Archiv kam an" "True" \
        "$(python3 -c "import os;print(os.path.getsize('$ARBEIT/sicherung.zip')>1000)")"
 pruefe "es ist ein gueltiges ZIP" "True" \
@@ -674,13 +674,13 @@ echo "== Sicherung fuer ein Skript"
 # The route for automation. A script has no cookie; without a password it must
 # therefore get NOTHING, and with the right one everything.
 pruefe "ohne Anmeldung und ohne Wort verschlossen" "401" \
-       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/sicherung")"
-SWORT=$(hole -X POST "$BASIS/api/system/sicherung/token" | feld "['token']")
+       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/system/backup")"
+SWORT=$(hole -X POST "$BASIS/api/system/backup/token" | feld "['token']")
 pruefe "ein Losungswort wurde erzeugt" "64" "$(printf '%s' "$SWORT" | wc -c | tr -d ' ')"
 pruefe "damit geht es ohne Keks" "200" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SWORT" "$BASIS/api/system/sicherung")"
+       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SWORT" "$BASIS/api/system/backup")"
 pruefe "mit falschem Wort nicht" "401" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer falsch' "$BASIS/api/system/sicherung")"
+       "$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer falsch' "$BASIS/api/system/backup")"
 # The archive from the script route has to be the same as from the panel, and
 # the request has to leave a trail. What is counted is the DIFFERENCE: the lines
 # above have already fetched once, and a fixed total would depend on how often
@@ -690,7 +690,7 @@ spurZahl() {
         "SELECT count(*) FROM pruefspur WHERE aktion='sicherung.erstellt' AND akteur_name='Skript mit Losungswort'"
 }
 SPUR_VOR=$(spurZahl)
-curl -s -H "Authorization: Bearer $SWORT" "$BASIS/api/system/sicherung" -o "$ARBEIT/skript.zip"
+curl -s -H "Authorization: Bearer $SWORT" "$BASIS/api/system/backup" -o "$ARBEIT/skript.zip"
 SPUR_NACH=$(spurZahl)
 pruefe "auch dieses Archiv ist vollstaendig" "True" \
        "$(python3 -c "
@@ -701,9 +701,9 @@ pruefe "genau ein neuer Eintrag in der Pruefspur" "1" "$((SPUR_NACH - SPUR_VOR))
 pruefe "und er traegt die Adresse" "127.0.0.1" \
        "$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc \
           "SELECT ip FROM pruefspur WHERE akteur_name='Skript mit Losungswort' ORDER BY zeitpunkt DESC LIMIT 1")"
-pruefe "entfernt" "200" "$(code -X DELETE "$BASIS/api/system/sicherung/token")"
+pruefe "entfernt" "200" "$(code -X DELETE "$BASIS/api/system/backup/token")"
 pruefe "danach ist der Weg wieder zu" "401" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SWORT" "$BASIS/api/system/sicherung")"
+       "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $SWORT" "$BASIS/api/system/backup")"
 
 echo "== Sicherung laesst sich zurueckspielen"
 # A second database beside it, the dump into it, and count. Without this step a
@@ -738,7 +738,7 @@ dropdb -h 127.0.0.1 -p "$PGPORT" -U nexora rueck
 echo "== Sicherung wieder einspielen"
 # The actual proof: back up, change something, restore, and the change has to
 # be gone. Everything below -- marker, way back, restart -- hangs on that.
-curl -s -b "$KEKSE" "$BASIS/api/system/sicherung" -o "$ARBEIT/stand.zip"
+curl -s -b "$KEKSE" "$BASIS/api/system/backup" -o "$ARBEIT/stand.zip"
 SEITEN_VORHER=$(psql -h 127.0.0.1 -p "$PGPORT" -U nexora -d nexora -tAc "SELECT count(*) FROM pages")
 # A page that does NOT exist in the backup.
 DANACH=$(hole -X POST "$BASIS/api/pages" -H 'Content-Type: application/json' \
@@ -758,18 +758,18 @@ for n in alt.namelist():
         neu.writestr(n, alt.read(n))
 neu.close()"
 pruefe "ein Archiv ohne FERTIG wird abgelehnt" "400" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X POST "$BASIS/api/system/wiederherstellung" \
-          -F "datei=@$ARBEIT/halb.zip" -F "bestaetigung=wiederherstellen")"
+       "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X POST "$BASIS/api/system/restore" \
+          -F "file=@$ARBEIT/halb.zip" -F "confirmation=restore")"
 pruefe "ohne Bestaetigung ebenfalls" "400" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X POST "$BASIS/api/system/wiederherstellung" \
-          -F "datei=@$ARBEIT/stand.zip")"
+       "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X POST "$BASIS/api/system/restore" \
+          -F "file=@$ARBEIT/stand.zip")"
 pruefe "die neue Seite steht immer noch" "200" "$(code "$BASIS/api/pages/$DANACH")"
 
 # Jetzt richtig.
-EINSPIEL=$(curl -s -b "$KEKSE" -X POST "$BASIS/api/system/wiederherstellung" \
-           -F "datei=@$ARBEIT/stand.zip" -F "bestaetigung=wiederherstellen")
+EINSPIEL=$(curl -s -b "$KEKSE" -X POST "$BASIS/api/system/restore" \
+           -F "file=@$ARBEIT/stand.zip" -F "confirmation=restore")
 pruefe "eingespielt" "True" "$(printf '%s' "$EINSPIEL" | feld "['ok']")"
-RUECKWEG=$(printf '%s' "$EINSPIEL" | feld "['rueckweg']")
+RUECKWEG=$(printf '%s' "$EINSPIEL" | feld "['rollback']")
 pruefe "ein Rueckweg wurde abgelegt" "True" \
        "$(python3 -c "
 import os
@@ -796,19 +796,19 @@ echo "== Verzeichnis-Verwaltung"
 # instance would not even see that something is set up there which is not
 # running.
 pruefe "Einrichtung ist lesbar" "200" "$(code "$BASIS/api/system/ldap")"
-pruefe "hier ist nichts eingerichtet" "False" "$(hole "$BASIS/api/system/ldap" | feld "['aktiv']")"
-pruefe "und nichts freigeschaltet" "False" "$(hole "$BASIS/api/system/ldap" | feld "['lizenziert']")"
+pruefe "hier ist nichts eingerichtet" "False" "$(hole "$BASIS/api/system/ldap" | feld "['active']")"
+pruefe "und nichts freigeschaltet" "False" "$(hole "$BASIS/api/system/ldap" | feld "['licensed']")"
 # The filter is empty in the configuration and must not come out empty all the
 # same: the same default applies as when signing in.
 pruefe "der Filter zeigt die Vorgabe" "True" \
-       "$(hole "$BASIS/api/system/ldap" | python3 -c 'import json,sys;print("objectClass=person" in json.load(sys.stdin)["benutzerFilter"])')"
+       "$(hole "$BASIS/api/system/ldap" | python3 -c 'import json,sys;print("objectClass=person" in json.load(sys.stdin)["userFilter"])')"
 pruefe "das Dienstkonto-Passwort steht nicht drin" "True" \
        "$(hole "$BASIS/api/system/ldap" | python3 -c '
 import json, sys
 print("bindPasswort" not in json.load(sys.stdin))')"
 pruefe "Probieren ohne Lizenz weist ab" "402" \
        "$(code -X POST "$BASIS/api/system/ldap/test" -H 'Content-Type: application/json' \
-          -d '{"benutzer":"wer"}')"
+          -d '{"user":"wer"}')"
 
 echo "== Grenzprobe"
 # The route accepts a body and throws it away. What is checked is that it really
@@ -816,14 +816,14 @@ echo "== Grenzprobe"
 # a guessed number would be worse than none.
 head -c 1048576 /dev/zero > "$ARBEIT/ein-mb"
 pruefe "ein Megabyte kommt an" "1048576" \
-       "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/system/grenzprobe" \
+       "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/system/size-probe" \
           -H 'Content-Type: application/octet-stream' \
           --data-binary "@$ARBEIT/ein-mb" | feld "['bytes']")"
 pruefe "ein leerer Rumpf ist kein Fehler" "0" \
-       "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/system/grenzprobe" \
+       "$(curl -s -b "$KEKSE" -X POST "$BASIS/api/system/size-probe" \
           -H 'Content-Type: application/octet-stream' --data-binary '' | feld "['bytes']")"
 pruefe "ohne Anmeldung verschlossen" "401" \
-       "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/system/grenzprobe" \
+       "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/system/size-probe" \
           -H 'Content-Type: application/octet-stream' --data-binary '')"
 
 echo "== Was ohne Lizenz offen ist"
@@ -832,8 +832,8 @@ echo "== Was ohne Lizenz offen ist"
 pruefe "Anhänge sind offen" "200" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" "$BASIS/api/pages/$BREIT/attachments")"
 pruefe "Versionen sind offen" "200" "$(code "$BASIS/api/pages/$BREIT/versions")"
-pruefe "Kommentare sind offen" "200" "$(code "$BASIS/api/pages/$BREIT/kommentare")"
-pruefe "die @-Liste ist offen" "200" "$(code "$BASIS/api/pages/$BREIT/erwaehnbare")"
+pruefe "Kommentare sind offen" "200" "$(code "$BASIS/api/pages/$BREIT/comments")"
+pruefe "die @-Liste ist offen" "200" "$(code "$BASIS/api/pages/$BREIT/mentionable")"
 # The gate lets the call through now; the attachment "egal" does not exist, so
 # the handler itself answers 404 with its own JSON body. A missing route would
 # answer 404 too, but as plain text -- the body tells the two apart.
@@ -851,20 +851,20 @@ echo "== Was ohne Lizenz zu bleibt"
 pruefe "Freigabe ist zu" "402" "$(code -X POST "$BASIS/api/pages/$BREIT/share")"
 pruefe "die Ausgabe einer Ablage ist zu" "402" "$(code "$BASIS/api/spaces/$ABL_ID/export")"
 pruefe "der öffentliche Weg zu einer Datei ist zu" "402" \
-       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/public/egal/dateien/egal")"
+       "$(curl -s -o /dev/null -w '%{http_code}' "$BASIS/api/public/egal/files/egal")"
 
 echo "== Eigenes Profil"
 SELBST_ID=$(hole "$BASIS/api/auth/me" | feld "['id']")
 # Name and picture belong to the account itself, not to the administration. And
 # the picture is checked by its CONTENT: what the browser claims as the type says
 # nothing about what really arrives.
-pruefe "anfangs kein Bild" "404" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
+pruefe "anfangs kein Bild" "404" "$(code "$BASIS/api/users/$SELBST_ID/image")"
 pruefe "der Name laesst sich aendern" "Rauch Umbenannt" \
-       "$(hole -X PUT "$BASIS/api/profil" -H 'Content-Type: application/json' \
+       "$(hole -X PUT "$BASIS/api/profile" -H 'Content-Type: application/json' \
           -d '{"name":"Rauch Umbenannt"}' | feld "['name']")"
 pruefe "und steht sofort am Konto" "Rauch Umbenannt" "$(hole "$BASIS/api/auth/me" | feld "['name']")"
 pruefe "ein leerer Name wird abgewiesen" "400" \
-       "$(code -X PUT "$BASIS/api/profil" -H 'Content-Type: application/json' -d '{"name":"  "}')"
+       "$(code -X PUT "$BASIS/api/profile" -H 'Content-Type: application/json' -d '{"name":"  "}')"
 
 # A tiny real PNG, built by hand: one pixel is enough to check that detection
 # goes by the content. It weighs 69 bytes -- and that is exactly what a
@@ -880,57 +880,57 @@ png = b"\x89PNG\r\n\x1a\n" + stueck(b"IHDR", kopf) + stueck(b"IDAT", daten) + st
 open(sys.argv[1] + "/bild.png", "wb").write(png)
 PYTHON
 pruefe "ein Bild laesst sich setzen" "True" \
-       "$(hole -X PUT "$BASIS/api/profil/bild" -H 'Content-Type: image/png' \
+       "$(hole -X PUT "$BASIS/api/profile/image" -H 'Content-Type: image/png' \
           --data-binary "@$ARBEIT/bild.png" | feld "['ok']")"
-pruefe "danach ist es abrufbar" "200" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
+pruefe "danach ist es abrufbar" "200" "$(code "$BASIS/api/users/$SELBST_ID/image")"
 pruefe "und kommt als PNG heraus" "image/png" \
-       "$(curl -s -o /dev/null -w '%{content_type}' -b "$KEKSE" "$BASIS/api/users/$SELBST_ID/bild")"
+       "$(curl -s -o /dev/null -w '%{content_type}' -b "$KEKSE" "$BASIS/api/users/$SELBST_ID/image")"
 pruefe "das Konto weiss jetzt von einem Bild" "True" \
-       "$(hole "$BASIS/api/auth/me" | python3 -c 'import json,sys;print(bool(json.load(sys.stdin).get("bildStand")))')"
+       "$(hole "$BASIS/api/auth/me" | python3 -c 'import json,sys;print(bool(json.load(sys.stdin).get("imageVersion")))')"
 # A renamed executable with an image's type must NOT get through: otherwise it
 # would later lie in the row as image/png and would come back out that way
 # too.
 printf '\177ELF\002\001\001\000und noch etwas mehr Fuellung als hundert Zeichen, damit es nicht schon an der Mindestlaenge scheitert.' > "$ARBEIT/kein-bild.png"
 pruefe "eine leere Anfrage wird abgewiesen" "400" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X PUT \
-          -H 'Content-Type: image/png' --data-binary '' "$BASIS/api/profil/bild")"
+          -H 'Content-Type: image/png' --data-binary '' "$BASIS/api/profile/image")"
 pruefe "ein Programm mit Bildnamen nicht" "400" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" -X PUT \
           -H 'Content-Type: image/png' --data-binary "@$ARBEIT/kein-bild.png" \
-          "$BASIS/api/profil/bild")"
-pruefe "das alte Bild steht noch" "200" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
-pruefe "es laesst sich entfernen" "True" "$(hole -X DELETE "$BASIS/api/profil/bild" | feld "['ok']")"
-pruefe "danach gibt es keines mehr" "404" "$(code "$BASIS/api/users/$SELBST_ID/bild")"
+          "$BASIS/api/profile/image")"
+pruefe "das alte Bild steht noch" "200" "$(code "$BASIS/api/users/$SELBST_ID/image")"
+pruefe "es laesst sich entfernen" "True" "$(hole -X DELETE "$BASIS/api/profile/image" | feld "['ok']")"
+pruefe "danach gibt es keines mehr" "404" "$(code "$BASIS/api/users/$SELBST_ID/image")"
 # Back to the old name, so the following sections find it again.
-hole -X PUT "$BASIS/api/profil" -H 'Content-Type: application/json' \
+hole -X PUT "$BASIS/api/profile" -H 'Content-Type: application/json' \
      -d '{"name":"Smoke Test"}' >/dev/null
 
 echo "== Passwort wechseln"
 # The previous password is mandatory, even with an open session: otherwise an
 # unattended browser would be enough to take over the account.
 pruefe "falsches altes Passwort wird abgewiesen" "403" \
-       "$(code -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
-          -d '{"alt":"stimmt-nicht","neu":"neues-passwort"}')"
+       "$(code -X POST "$BASIS/api/auth/password" -H 'Content-Type: application/json' \
+          -d '{"old":"stimmt-nicht","new":"neues-passwort"}')"
 pruefe "ein zu kurzes neues auch" "400" \
-       "$(code -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
-          -d '{"alt":"smoketest-password","neu":"kurz"}')"
+       "$(code -X POST "$BASIS/api/auth/password" -H 'Content-Type: application/json' \
+          -d '{"old":"smoketest-password","new":"kurz"}')"
 pruefe "dasselbe noch einmal ist kein Wechsel" "400" \
-       "$(code -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
-          -d '{"alt":"smoketest-password","neu":"smoketest-password"}')"
+       "$(code -X POST "$BASIS/api/auth/password" -H 'Content-Type: application/json' \
+          -d '{"old":"smoketest-password","new":"smoketest-password"}')"
 pruefe "der Wechsel geht durch" "True" \
-       "$(hole -X POST "$BASIS/api/auth/passwort" -H 'Content-Type: application/json' \
-          -d '{"alt":"smoketest-password","neu":"second-password"}' | feld "['ok']")"
+       "$(hole -X POST "$BASIS/api/auth/password" -H 'Content-Type: application/json' \
+          -d '{"old":"smoketest-password","new":"second-password"}' | feld "['ok']")"
 # One's own device stays signed in, everything else falls. Without this line the
 # change would be a sign-out.
 pruefe "dieses Gerät bleibt angemeldet" "200" "$(code "$BASIS/api/auth/me")"
 pruefe "das alte Passwort öffnet nicht mehr" "401" \
        "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/auth/login" \
           -H 'Content-Type: application/json' \
-          -d '{"kennung":"smoke@test.invalid","password":"smoketest-password"}')"
+          -d '{"login":"smoke@test.invalid","password":"smoketest-password"}')"
 pruefe "das neue öffnet" "200" \
        "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/auth/login" \
           -H 'Content-Type: application/json' \
-          -d '{"kennung":"smoke@test.invalid","password":"second-password"}')"
+          -d '{"login":"smoke@test.invalid","password":"second-password"}')"
 # The audit trail is an add-on and not READABLE without a licence; it is
 # written all the same, see main.go. The check therefore happens in the
 # database.
@@ -944,59 +944,59 @@ ZWEITER=$(hole -X POST "$BASIS/api/users" -H 'Content-Type: application/json' \
           | feld "['id']")
 pruefe "das eigene Konto weist dieser Weg ab" "400" \
        "$(code -X PUT "$BASIS/api/users/$(hole "$BASIS/api/auth/me" | feld "['id']")/passwort" \
-          -H 'Content-Type: application/json' -d '{"neu":"anderes-passwort"}')"
+          -H 'Content-Type: application/json' -d '{"new":"anderes-passwort"}')"
 pruefe "ein fremdes Konto lässt sich zurücksetzen" "True" \
-       "$(hole -X PUT "$BASIS/api/users/$ZWEITER/passwort" -H 'Content-Type: application/json' \
-          -d '{"neu":"gesetztes-passwort"}' | feld "['ok']")"
+       "$(hole -X PUT "$BASIS/api/users/$ZWEITER/password" -H 'Content-Type: application/json' \
+          -d '{"new":"gesetztes-passwort"}' | feld "['ok']")"
 pruefe "das gesetzte Passwort öffnet" "200" \
        "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASIS/api/auth/login" \
           -H 'Content-Type: application/json' \
-          -d '{"kennung":"zweiter@test.invalid","password":"gesetztes-passwort"}')"
+          -d '{"login":"zweiter@test.invalid","password":"gesetztes-passwort"}')"
 
 echo "== Eigene Rechner"
 pruefe "die Liste ist zunächst leer" "0" \
-       "$(hole "$BASIS/api/system/rechner" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["rechner"]))')"
+       "$(hole "$BASIS/api/system/hosts" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["hosts"]))')"
 pruefe "ohne Port wird abgewiesen" "400" \
-       "$(code -X POST "$BASIS/api/system/rechner" -H 'Content-Type: application/json' \
-          -d '{"name":"ohne","ziel":"10.0.0.5"}')"
+       "$(code -X POST "$BASIS/api/system/hosts" -H 'Content-Type: application/json' \
+          -d '{"name":"ohne","target":"10.0.0.5"}')"
 pruefe "ein fremdes Schema auch" "400" \
-       "$(code -X POST "$BASIS/api/system/rechner" -H 'Content-Type: application/json' \
-          -d '{"name":"ssh","ziel":"ssh://10.0.0.5:22"}')"
+       "$(code -X POST "$BASIS/api/system/hosts" -H 'Content-Type: application/json' \
+          -d '{"name":"ssh","target":"ssh://10.0.0.5:22"}')"
 # The service knocks on itself: an address that answers reliably in the smoke
 # test without a second machine being involved.
-SELBST=$(hole -X POST "$BASIS/api/system/rechner" -H 'Content-Type: application/json' \
-         -d "{\"name\":\"ich selbst\",\"ziel\":\"127.0.0.1:$APIPORT\"}" | feld "['id']")
+SELBST=$(hole -X POST "$BASIS/api/system/hosts" -H 'Content-Type: application/json' \
+         -d "{\"name\":\"ich selbst\",\"target\":\"127.0.0.1:$APIPORT\"}" | feld "['id']")
 pruefe "der eigene Port antwortet" "antwortet" \
-       "$(hole "$BASIS/api/system/rechner" | python3 -c '
+       "$(hole "$BASIS/api/system/hosts" | python3 -c '
 import json, sys
-print(next(r["zustand"] for r in json.load(sys.stdin)["rechner"] if r["name"] == "ich selbst"))')"
+print(next(r["state"] for r in json.load(sys.stdin)["hosts"] if r["name"] == "ich selbst"))')"
 # Port 9 ist discard und in keinem Container belegt.
-hole -X POST "$BASIS/api/system/rechner" -H 'Content-Type: application/json' \
-     -d '{"name":"stiller","ziel":"127.0.0.1:9"}' >/dev/null
+hole -X POST "$BASIS/api/system/hosts" -H 'Content-Type: application/json' \
+     -d '{"name":"stiller","target":"127.0.0.1:9"}' >/dev/null
 pruefe "ein toter Port heißt still" "still" \
-       "$(hole "$BASIS/api/system/rechner" | python3 -c '
+       "$(hole "$BASIS/api/system/hosts" | python3 -c '
 import json, sys
-print(next(r["zustand"] for r in json.load(sys.stdin)["rechner"] if r["name"] == "stiller"))')"
+print(next(r["state"] for r in json.load(sys.stdin)["hosts"] if r["name"] == "stiller"))')"
 # The service does not name itself in a Server header, so the column stays empty
 # here -- nothing is guessed.
 pruefe "ohne Kennung bleibt die Spalte leer" "" \
-       "$(hole "$BASIS/api/system/rechner" | python3 -c '
+       "$(hole "$BASIS/api/system/hosts" | python3 -c '
 import json, sys
-print(next((r.get("fassung", "") for r in json.load(sys.stdin)["rechner"] if r["name"] == "ich selbst"), "FEHLT"))')"
+print(next((r.get("version", "") for r in json.load(sys.stdin)["hosts"] if r["name"] == "ich selbst"), "FEHLT"))')"
 pruefe "die Zeile lässt sich ändern" "anders benannt" \
-       "$(hole -X PUT "$BASIS/api/system/rechner/$SELBST" -H 'Content-Type: application/json' \
-          -d "{\"name\":\"anders benannt\",\"ziel\":\"127.0.0.1:$APIPORT\"}" | feld "['name']")"
+       "$(hole -X PUT "$BASIS/api/system/hosts/$SELBST" -H 'Content-Type: application/json' \
+          -d "{\"name\":\"anders benannt\",\"target\":\"127.0.0.1:$APIPORT\"}" | feld "['name']")"
 pruefe "und entfernen" "True" \
-       "$(hole -X DELETE "$BASIS/api/system/rechner/$SELBST" | feld "['ok']")"
+       "$(hole -X DELETE "$BASIS/api/system/hosts/$SELBST" | feld "['ok']")"
 pruefe "danach steht nur noch der stille da" "1" \
-       "$(hole "$BASIS/api/system/rechner" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["rechner"]))')"
+       "$(hole "$BASIS/api/system/hosts" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["hosts"]))')"
 # And none of all this needs a Prometheus. That one is removed together with
 # Grafana: no setting, no password, no route. It is checked here, because a
 # removal otherwise quietly creeps back in.
 pruefe "keine Prometheus-Einstellung mehr" "0" \
-       "$(hole "$BASIS/api/einstellungen" | python3 -c '
+       "$(hole "$BASIS/api/settings" | python3 -c '
 import json, sys
-schluessel = {e["schluessel"] for e in json.load(sys.stdin)}
+schluessel = {e["key"] for e in json.load(sys.stdin)}
 print(len(schluessel & {"prometheus_adresse", "metriken_token"}))')"
 pruefe "den Weg /metrics gibt es nicht mehr" "404" "$(code "$BASIS/metrics")"
 pruefe "und seine Verwaltung auch nicht" "404" "$(code "$BASIS/api/system/metriken")"
@@ -1015,7 +1015,7 @@ with zipfile.ZipFile(arbeit + "/programm.zip", "w") as z:
     z.write(arbeit + "/programm", "werkzeug")
 PYTHON
 EINFUHR=$(hole -X POST "$BASIS/api/import" -F "file=@$ARBEIT/programm.zip")
-pruefe "die Seite kommt an" "1" "$(printf '%s' "$EINFUHR" | feld "['seiten']")"
+pruefe "die Seite kommt an" "1" "$(printf '%s' "$EINFUHR" | feld "['pages']")"
 # The smoke test gets no further here: attachments are an add-on and are not
 # even touched without a licence, so the executable already drops out one step
 # earlier. That the four bytes at the beginning are recognised is checked by
@@ -1024,7 +1024,16 @@ pruefe "ohne Lizenz kommt keine Beilage mit" "" \
        "$(printf '%s' "$EINFUHR" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
-print(d.get("beilagen", ""))')"
+print(d.get("files", ""))')"
+
+echo "== Alte deutsche Pfade"
+# Up to 2.3 the API spoke German. Scripts written against it keep working: the
+# old paths and query parameters land where the new ones do.
+pruefe "/api/lizenz wie /api/license" "$(code "$BASIS/api/license")" "$(code "$BASIS/api/lizenz")"
+pruefe "/api/sitzungen wie /api/sessions" "$(code "$BASIS/api/sessions")" "$(code "$BASIS/api/sitzungen")"
+pruefe "?tage= wie ?days=" \
+       "$(hole "$BASIS/api/system/sign-ins?days=1" | python3 -c 'import json,sys;print(json.load(sys.stdin)["days"])')" \
+       "$(hole "$BASIS/api/system/anmeldungen?tage=1" | python3 -c 'import json,sys;print(json.load(sys.stdin)["days"])')"
 
 echo "== Verschlüsselt sprechen"
 # The service can do HTTPS itself. It is checked with a second start using a
@@ -1071,7 +1080,7 @@ pruefe "und er sagt auch, warum" "1" \
 pruefe "die Anmeldung geht auch verschlüsselt" "200" \
        "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 --cacert "$ARBEIT/dienst.crt" \
           -X POST "$SICHER/api/auth/login" -H 'Content-Type: application/json' \
-          -d '{"kennung":"smoke@test.invalid","password":"second-password"}')"
+          -d '{"login":"smoke@test.invalid","password":"second-password"}')"
 
 echo
 if [ "$fehler" -gt 0 ]; then

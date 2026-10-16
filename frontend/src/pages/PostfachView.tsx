@@ -14,7 +14,7 @@ import Profilbild from "../components/Profilbild";
 // title joins on to it. Before, both stood in one piece and produced
 // "commented on page name" -- understandable, but not English anybody would
 // write that way.
-const SATZ: Record<Nachricht["art"], { tat: string; vor: string }> = {
+const SATZ: Record<Nachricht["type"], { tat: string; vor: string }> = {
   kommentar: { tat: "commented", vor: "on" },
   antwort: { tat: "replied to your comment", vor: "on" },
   erwaehnung: { tat: "mentioned you", vor: "on" },
@@ -38,14 +38,14 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
   }, [laden]);
 
   const oeffnen = async (n: Nachricht) => {
-    if (!n.gelesenAm) {
+    if (!n.readAt) {
       await api.postfachGelesen(n.id).catch(() => {});
       // Update locally instead of reloading: the row should look read at once,
       // and the list should not jump around behind one's back while doing so --
       // especially not when "Unread only" is on and the row just clicked would
       // otherwise vanish from under one's finger.
       setItems((vorher) =>
-        vorher.map((m) => (m.id === n.id ? { ...m, gelesenAm: new Date().toISOString() } : m)),
+        vorher.map((m) => (m.id === n.id ? { ...m, readAt: new Date().toISOString() } : m)),
       );
       onGelesen();
     }
@@ -63,7 +63,7 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
     laden();
   };
 
-  const ungelesen = items.filter((n) => !n.gelesenAm).length;
+  const ungelesen = items.filter((n) => !n.readAt).length;
   const gelesene = items.length - ungelesen;
 
   return (
@@ -128,7 +128,7 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
                 key={n.id}
                 className={
                   "list-row postfach-zeile" +
-                  (n.gelesenAm ? "" : " ungelesen") +
+                  (n.readAt ? "" : " ungelesen") +
                   (n.pageId ? "" : " ohne-ziel")
                 }
                 role="button"
@@ -138,19 +138,19 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
               >
                 <span className="postfach-punkt" aria-hidden="true" />
                 <Profilbild
-                  id={n.ausloeserId ?? n.id}
-                  name={n.ausloeserName || "Someone"}
-                  stand={n.ausloeserBild}
+                  id={n.actorId ?? n.id}
+                  name={n.actorName || "Someone"}
+                  stand={n.actorImage}
                 />
                 <span className="postfach-inhalt">
                   <span className="postfach-kopf">
-                    <strong>{n.ausloeserName || "Someone"}</strong> {SATZ[n.art].tat}
+                    <strong>{n.actorName || "Someone"}</strong> {SATZ[n.type].tat}
                     {/* Without a title no empty underlined gap: a page that is gone
                         by now is named and not passed over in silence. */}
-                    {n.seitenTitel ? (
+                    {n.pageTitle ? (
                       <>
-                        {SATZ[n.art].vor ? " " + SATZ[n.art].vor : ""}{" "}
-                        <span className="postfach-seite">{n.seitenTitel}</span>
+                        {SATZ[n.type].vor ? " " + SATZ[n.type].vor : ""}{" "}
+                        <span className="postfach-seite">{n.pageTitle}</span>
                       </>
                     ) : (
                       <span className="muted"> , that page no longer exists</span>
@@ -158,7 +158,7 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
                   </span>
                   {n.text && <span className="muted small postfach-auszug">{n.text}</span>}
                 </span>
-                <span className="muted small einzeilig">{wannText(n.erstelltAm)}</span>
+                <span className="muted small einzeilig">{wannText(n.createdAt)}</span>
               </div>
             ))}
           </div>

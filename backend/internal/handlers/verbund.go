@@ -31,15 +31,15 @@ var startZeit = time.Now()
 // Dienst is one part of the stack as the interface shows it.
 type Dienst struct {
 	Name    string `json:"name"`
-	Rolle   string `json:"rolle"`
-	Adresse string `json:"adresse"`
+	Rolle   string `json:"role"`
+	Adresse string `json:"address"`
 	// Possible state values (in German): running, missing, not configured.
 	// The values remain in German because they are displayed verbatim in the UI.
-	Zustand   string `json:"zustand"`
-	Fassung   string `json:"fassung,omitempty"`
-	Antwort   string `json:"antwort,omitempty"` // gemessene Zeit
-	Hinweis   string `json:"hinweis,omitempty"`
-	Notwendig bool   `json:"notwendig"`
+	Zustand   string `json:"state"`
+	Fassung   string `json:"version,omitempty"`
+	Antwort   string `json:"response,omitempty"` // gemessene Zeit
+	Hinweis   string `json:"note,omitempty"`
+	Notwendig bool   `json:"required"`
 }
 
 // verbund assembles the list of services. Every check has a short deadline: the

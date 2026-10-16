@@ -28,7 +28,7 @@ import (
 const lizenzSchluessel = "license"
 
 type lizenzEinlesenReq struct {
-	Schluessel string `json:"schluessel"`
+	Schluessel string `json:"key"`
 }
 
 // LizenzEinlesen takes a key, verifies it and puts it into effect.
@@ -85,10 +85,10 @@ func (s *Server) LizenzEinlesen(w http.ResponseWriter, r *http.Request) {
 }
 
 type lizenzAusstellenReq struct {
-	Inhaber    string   `json:"inhaber"`
-	Stufe      string   `json:"stufe"`
-	Funktionen []string `json:"funktionen"` // single extras on top of the tier
-	Ablauf     string   `json:"ablauf"`     // YYYY-MM-DD, empty means one year
+	Inhaber    string   `json:"holder"`
+	Stufe      string   `json:"tier"`
+	Funktionen []string `json:"features"` // single extras on top of the tier
+	Ablauf     string   `json:"expires"`  // YYYY-MM-DD, empty means one year
 }
 
 // LizenzAusstellen signs a new key.
@@ -151,7 +151,7 @@ func (s *Server) LizenzAusstellen(w http.ResponseWriter, r *http.Request) {
 	s.spurAusRequest(r, AktLizenzAusgestellt, "system", "", req.Inhaber,
 		map[string]any{"stufe": req.Stufe, "ablauf": req.Ablauf})
 
-	writeJSON(w, http.StatusOK, map[string]string{"schluessel": schluessel})
+	writeJSON(w, http.StatusOK, map[string]string{"key": schluessel})
 }
 
 // LizenzAusDatenbank fetches an imported key at startup. It takes precedence

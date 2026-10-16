@@ -41,14 +41,14 @@ const benutztSpanne = 5 * time.Minute
 // Sitzung is one row as the interface shows it.
 type Sitzung struct {
 	ID         string    `json:"id"`
-	AngelegtAm time.Time `json:"angelegtAm"`
-	ZuletztAm  time.Time `json:"zuletztAm"`
-	LaeuftAb   time.Time `json:"laeuftAb"`
+	AngelegtAm time.Time `json:"createdAt"`
+	ZuletztAm  time.Time `json:"lastSeenAt"`
+	LaeuftAb   time.Time `json:"expiresAt"`
 	IP         string    `json:"ip"`
 	Browser    string    `json:"browser"`
 	// True for the session the request came in on, so the list can say "this
 	// device" and nobody ends their own by accident.
-	Diese bool `json:"diese"`
+	Diese bool `json:"current"`
 }
 
 // sitzungAnlegen writes the row and returns its id.
@@ -197,7 +197,7 @@ func (s *Server) SitzungenBeenden(w http.ResponseWriter, r *http.Request) {
 	}
 	s.spurAusRequest(r, AktSitzungBeendet, "konto", uid, "",
 		map[string]any{"beendet": anzahl, "umfang": "alle anderen"})
-	writeJSON(w, http.StatusOK, map[string]int{"beendet": anzahl})
+	writeJSON(w, http.StatusOK, map[string]int{"ended": anzahl})
 }
 
 // SitzungenUhr sweeps away expired and revoked sessions.

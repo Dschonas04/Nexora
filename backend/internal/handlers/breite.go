@@ -27,7 +27,7 @@ import (
 var breiten = map[string]bool{"": true, "normal": true, "breit": true, "voll": true}
 
 type breiteReq struct {
-	Breite string `json:"breite"`
+	Breite string `json:"width"`
 }
 
 // SetzeBreite changes the measure of a page. Whoever may write may do this as
@@ -62,5 +62,5 @@ func (s *Server) SetzeBreite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"breite": req.Breite})
+	writeJSON(w, http.StatusOK, map[string]string{"width": req.Breite})
 }

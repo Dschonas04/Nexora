@@ -30,8 +30,8 @@ type benachrichtigungAntwort struct {
 	Email bool `json:"email"`
 	// Verfuegbar says whether this instance can send mail at all. Without it
 	// the switch stays greyed out.
-	Verfuegbar bool   `json:"verfuegbar"`
-	Adresse    string `json:"adresse"`
+	Verfuegbar bool   `json:"available"`
+	Adresse    string `json:"address"`
 }
 
 func (s *Server) benachrichtigungLesen(ctx context.Context, uid string) (benachrichtigungAntwort, error) {
@@ -107,7 +107,7 @@ func (s *Server) BenachrichtigungTesten(w http.ResponseWriter, r *http.Request) 
 		writeErr(w, http.StatusBadGateway, "Senden gescheitert: "+err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "an": an})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "to": an})
 }
 
 // mailZuNachricht sends an inbox message by e-mail to an account that switched

@@ -112,7 +112,7 @@ then wins over the file; it was set later and on purpose.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `search_dictionary` | `NEXORA_SEARCH_DICTIONARY` | `german` | The PostgreSQL text search configuration. `german` reaches across word forms in German text and costs a little precision in English; `simple` does neither. Changing it needs a reindex: `POST /api/system/suchindex` |
+| `search_dictionary` | `NEXORA_SEARCH_DICTIONARY` | `german` | The PostgreSQL text search configuration. `german` reaches across word forms in German text and costs a little precision in English; `simple` does neither. Changing it needs a reindex: `POST /api/system/search-index` |
 | `seitenbreite` |, | `voll` | How wide a page is set when it says nothing itself. `voll` uses the whole window, `normal` keeps a narrow measure like a book, `breit` sits in between. A page with a width of its own keeps it. Database only, changeable under Settings, and readable by **everybody** through `/design`, without it the browser would not know how to set the text |
 
 ## Attachments
@@ -125,7 +125,7 @@ then wins over the file; it was set later and on purpose.
 
 | Key | Environment | Default | What it does |
 |---|---|---|---|
-| `echtzeit` |, | `ja` | Whether several accounts may write on one page at the same time. Database only, changeable under Settings, Zusammenarbeit. Off means the old behaviour: the page is written whole and the last save wins. Needs the `echtzeit` extra and a reverse proxy that passes WebSocket upgrades through to `/api/echtzeit/` |
+| `echtzeit` |, | `ja` | Whether several accounts may write on one page at the same time. Database only, changeable under Settings, Zusammenarbeit. Off means the old behaviour: the page is written whole and the last save wins. Needs the `echtzeit` extra and a reverse proxy that passes WebSocket upgrades through to `/api/realtime/` |
 
 ## Watching other machines
 
@@ -217,7 +217,7 @@ there is left alone, the generator only fills in what is missing.
 | `s3_fallback` | `NEXORA_S3_FALLBACK` | `nein` | Whether a store that does not answer at startup may be replaced by the local disk. **Off by default on purpose**: the instance would come up, uploads would work, and weeks later half the attachments would be in a directory nobody backs up |
 
 The settings page can bind a store interactively and test it
-(`POST /api/system/ablage/test`). Credentials are deliberately *not* kept in the
+(`POST /api/system/storage/test`). Credentials are deliberately *not* kept in the
 settings table: a secret access key does not belong in a row that a database
 dump carries off.
 
@@ -264,7 +264,7 @@ fatal.
 | `oidc_button_text` | `NEXORA_OIDC_BUTTON_TEXT` | `Mit SSO anmelden` | Label of the button on the sign-in page |
 
 The callback to register with the provider is
-`<public_url>/api/auth/oidc/zurueck`.
+`<public_url>/api/auth/oidc/callback`.
 
 Neither OIDC nor LDAP ever takes over an account that has its own password. Both
 link by verified email address.

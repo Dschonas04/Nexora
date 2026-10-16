@@ -120,7 +120,7 @@ func (s *Server) RenameSpace(w http.ResponseWriter, r *http.Request) {
 }
 
 type spaceFarbeReq struct {
-	Farbe string `json:"farbe"`
+	Farbe string `json:"color"`
 }
 
 // SetSpaceFarbe sets the colour the space appears in inside the graph.
@@ -160,7 +160,7 @@ func (s *Server) SetSpaceFarbe(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusNotFound, "space not found")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"farbe": farbe})
+	writeJSON(w, http.StatusOK, map[string]string{"color": farbe})
 }
 
 // DeleteSpace removes a space and moves its pages, subpages included, to the
@@ -223,11 +223,11 @@ func (s *Server) DeleteSpace(w http.ResponseWriter, r *http.Request) {
 	// afterwards there was no way to tell the space had ever existed.
 	s.spurAusRequest(r, AktSpaceGeloescht, "space", id, name, nil)
 
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "papierkorb": papierkorb.RowsAffected()})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "trash": papierkorb.RowsAffected()})
 }
 
 type spaceOeffentlichReq struct {
-	Oeffentlich string `json:"oeffentlich"` // "nein" | "lesen" | "schreiben"
+	Oeffentlich string `json:"publicAccess"` // "nein" | "lesen" | "schreiben"
 }
 
 // SetSpaceOeffentlich opens a space to the whole instance, or takes that back.
@@ -270,5 +270,5 @@ func (s *Server) SetSpaceOeffentlich(w http.ResponseWriter, r *http.Request) {
 	}
 	s.spurAusRequest(r, AktSpaceOeffentlich, "space", id, "",
 		map[string]interface{}{"sichtbarkeit": wert})
-	writeJSON(w, http.StatusOK, map[string]string{"oeffentlich": wert})
+	writeJSON(w, http.StatusOK, map[string]string{"publicAccess": wert})
 }

@@ -25,17 +25,17 @@ import (
 type Gruppe struct {
 	ID           string    `json:"id"`
 	Name         string    `json:"name"`
-	Beschreibung string    `json:"beschreibung"`
-	ErstelltAm   time.Time `json:"erstelltAm"`
-	Mitglieder   int       `json:"mitglieder"`
+	Beschreibung string    `json:"description"`
+	ErstelltAm   time.Time `json:"createdAt"`
+	Mitglieder   int       `json:"members"`
 }
 
 type Mitglied struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
-	Rolle string `json:"rolle"`
-	Drin  bool   `json:"drin"`
+	Rolle string `json:"role"`
+	Drin  bool   `json:"isMember"`
 }
 
 // ListGruppen returns every group with its member count.
@@ -67,7 +67,7 @@ func (s *Server) ListGruppen(w http.ResponseWriter, r *http.Request) {
 
 type gruppeReq struct {
 	Name         string `json:"name"`
-	Beschreibung string `json:"beschreibung"`
+	Beschreibung string `json:"description"`
 }
 
 // CreateGruppe creates a group. Admins only: a group is a term for the whole
@@ -163,7 +163,7 @@ func (s *Server) ListMitglieder(w http.ResponseWriter, r *http.Request) {
 
 type mitgliedReq struct {
 	UserID string `json:"userId"`
-	Drin   bool   `json:"drin"`
+	Drin   bool   `json:"isMember"`
 }
 
 // SetzeMitglied adds or removes one account.
@@ -203,18 +203,18 @@ func (s *Server) SetzeMitglied(w http.ResponseWriter, r *http.Request) {
 	}
 	s.spurAusRequest(r, aktion, "gruppe", gruppeID, "",
 		map[string]any{"konto": req.UserID})
-	writeJSON(w, http.StatusOK, map[string]bool{"drin": req.Drin})
+	writeJSON(w, http.StatusOK, map[string]bool{"isMember": req.Drin})
 }
 
 // ── Rechte an einem Space ───────────────────────────────────────────────────
 
 type SpaceRecht struct {
-	GruppeID   *string   `json:"gruppeId"`
-	GruppeName string    `json:"gruppeName"`
+	GruppeID   *string   `json:"groupId"`
+	GruppeName string    `json:"groupName"`
 	UserID     *string   `json:"userId"`
 	UserName   string    `json:"userName"`
-	Recht      string    `json:"recht"`
-	ErteiltAm  time.Time `json:"erteiltAm"`
+	Recht      string    `json:"permission"`
+	ErteiltAm  time.Time `json:"grantedAt"`
 }
 
 // ListSpaceRechte returns who may do what in a space.
@@ -253,9 +253,9 @@ func (s *Server) ListSpaceRechte(w http.ResponseWriter, r *http.Request) {
 }
 
 type rechtReq struct {
-	GruppeID string `json:"gruppeId"`
+	GruppeID string `json:"groupId"`
 	UserID   string `json:"userId"`
-	Recht    string `json:"recht"` // leer bedeutet: Recht entziehen
+	Recht    string `json:"permission"` // leer bedeutet: Recht entziehen
 }
 
 // SetzeSpaceRecht grants or revokes one right.
@@ -326,5 +326,5 @@ func (s *Server) SetzeSpaceRecht(w http.ResponseWriter, r *http.Request) {
 
 	s.spurAusRequest(r, AktSpaceRecht, "space", spaceID, "",
 		map[string]any{"gruppe": req.GruppeID, "konto": req.UserID, "recht": req.Recht})
-	writeJSON(w, http.StatusOK, map[string]string{"recht": req.Recht})
+	writeJSON(w, http.StatusOK, map[string]string{"permission": req.Recht})
 }

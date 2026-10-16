@@ -63,7 +63,7 @@ export default function PublicPage() {
         <div
           className={
             "page" +
-            (page.breite && page.breite !== "normal" ? " " + page.breite : "")
+            (page.width && page.width !== "normal" ? " " + page.width : "")
           }
         >
           <h1 className="page-title" style={{ cursor: "default" }}>

@@ -15,14 +15,14 @@ import { useAuth } from "./auth";
 import { ausHex, kontrast, lesbarAuf, schriftAuf } from "./farbe";
 
 export interface Design {
-  grundton: string;
-  akzent: string;
+  baseColor: string;
+  accent: string;
   /** The width a page stands in that says nothing itself. */
-  seitenbreite: string;
+  pageWidth: string;
 }
 
 const Ctx = createContext<{ design: Design; neuLaden: () => void }>({
-  design: { grundton: "grau", akzent: "#1b6ec2", seitenbreite: "voll" },
+  design: { baseColor: "grau", accent: "#1b6ec2", pageWidth: "voll" },
   neuLaden: () => {},
 });
 
@@ -39,10 +39,10 @@ export const GRUND: Record<string, string> = {
 // because that was where the choosing happened; since the appearance belongs to
 // the account and not to the instance, the vocabulary belongs where anwenden
 // sits too.
-export const GRUNDTOENE: { wert: string; titel: string }[] = [
-  { wert: "grau", titel: "Off-white" },
-  { wert: "weiss", titel: "Pure white" },
-  { wert: "dunkel", titel: "Dark" },
+export const GRUNDTOENE: { value: string; title: string }[] = [
+  { value: "grau", title: "Off-white" },
+  { value: "weiss", title: "Pure white" },
+  { value: "dunkel", title: "Dark" },
 ];
 
 // The four load-bearing marks per base tone, in the order --bg, --flaeche,
@@ -100,18 +100,18 @@ export function flaecheLesbar(farbe: string): boolean {
 // applied here either -- it merely comes along in the same request because it
 // has the same origin and everybody needs it. That is why anwenden only takes
 // what it really sets.
-export function anwenden(d: Pick<Design, "grundton" | "akzent">) {
+export function anwenden(d: Pick<Design, "baseColor" | "accent">) {
   const wurzel = document.documentElement;
-  wurzel.setAttribute("data-grundton", d.grundton);
+  wurzel.setAttribute("data-grundton", d.baseColor);
 
-  const grund = GRUND[d.grundton] ?? GRUND.grau;
-  wurzel.style.setProperty("--accent", d.akzent);
-  wurzel.style.setProperty("--accent-text", schriftAuf(d.akzent));
-  wurzel.style.setProperty("--accent-lesbar", lesbarAuf(d.akzent, grund));
+  const grund = GRUND[d.baseColor] ?? GRUND.grau;
+  wurzel.style.setProperty("--accent", d.accent);
+  wurzel.style.setProperty("--accent-text", schriftAuf(d.accent));
+  wurzel.style.setProperty("--accent-lesbar", lesbarAuf(d.accent, grund));
 }
 
 export function DesignProvider({ children }: { children: ReactNode }) {
-  const [design, setDesign] = useState<Design>({ grundton: "grau", akzent: "#1b6ec2", seitenbreite: "voll" });
+  const [design, setDesign] = useState<Design>({ baseColor: "grau", accent: "#1b6ec2", pageWidth: "voll" });
   // Whose look is being asked for. /api/design needs a session, so before the
   // sign-in the call answers 401 -- and it has to be repeated afterwards.
   //
@@ -130,7 +130,7 @@ export function DesignProvider({ children }: { children: ReactNode }) {
         // The language lives on the account: on every device it follows the
         // person. An account without a choice takes over the one this browser
         // already shows, so it is bound to the account from now on.
-        if (d.sprache === "de" || d.sprache === "en" || d.sprache === "fr") setzeSprache(d.sprache);
+        if (d.language === "de" || d.language === "en" || d.language === "fr") setzeSprache(d.language);
         else api.spracheSpeichern(sprache()).catch(() => {});
       })
       // If the request fails, the default from the stylesheet stays. An

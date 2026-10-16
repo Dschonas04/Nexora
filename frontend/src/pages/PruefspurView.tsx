@@ -119,7 +119,7 @@ function zeit(iso: string): string {
 export default function PruefspurView() {
   const { frei, geladen } = useLizenz();
   const [eintraege, setEintraege] = useState<Spureintrag[]>([]);
-  const [aktionen, setAktionen] = useState<{ aktion: string; anzahl: number }[]>([]);
+  const [aktionen, setAktionen] = useState<{ action: string; count: number }[]>([]);
   const [filter, setFilter] = useState("");
   const [suche, setSuche] = useState("");
   const [fehler, setFehler] = useState<string | null>(null);
@@ -129,7 +129,7 @@ export default function PruefspurView() {
     if (!frei("pruefspur")) return;
     setLaedt(true);
     api
-      .pruefspur({ aktion: filter || undefined, limit: 500 })
+      .pruefspur({ action: filter || undefined, limit: 500 })
       .then((e) => {
         setEintraege(e);
         setFehler(null);
@@ -165,7 +165,7 @@ export default function PruefspurView() {
   const begriff = suche.trim().toLowerCase();
   const sichtbar = begriff
     ? eintraege.filter((e) =>
-        [e.akteurName, e.akteurEmail, e.objektTitel, e.objektId, e.ip, e.aktion]
+        [e.actorName, e.actorEmail, e.objectTitle, e.objectId, e.ip, e.action]
           .join(" ")
           .toLowerCase()
           .includes(begriff),
@@ -194,8 +194,8 @@ export default function PruefspurView() {
         <select value={filter} onChange={(e) => setFilter(e.target.value)}>
           <option value="">All actions</option>
           {aktionen.map((a) => (
-            <option key={a.aktion} value={a.aktion}>
-              {beschriften(a.aktion) + ` (${a.anzahl})`}
+            <option key={a.action} value={a.action}>
+              {beschriften(a.action) + ` (${a.count})`}
             </option>
           ))}
         </select>
@@ -229,15 +229,15 @@ export default function PruefspurView() {
               alle={sichtbar}
               spalten={5}
               zeile={(e) => (
-              <tr key={e.id} className={AUFFAELLIG.has(e.aktion) ? "auffaellig" : undefined}>
-                <td className="einzeilig">{zeit(e.zeitpunkt)}</td>
+              <tr key={e.id} className={AUFFAELLIG.has(e.action) ? "auffaellig" : undefined}>
+                <td className="einzeilig">{zeit(e.timestamp)}</td>
                 <td>
-                  {e.akteurName || <span className="muted">unknown</span>}
-                  {e.akteurEmail && <div className="muted small">{e.akteurEmail}</div>}
+                  {e.actorName || <span className="muted">unknown</span>}
+                  {e.actorEmail && <div className="muted small">{e.actorEmail}</div>}
                 </td>
-                <td>{beschriften(e.aktion)}</td>
+                <td>{beschriften(e.action)}</td>
                 <td>
-                  {e.objektTitel || <span className="muted">{e.objektArt || "—"}</span>}
+                  {e.objectTitle || <span className="muted">{e.objectType || "—"}</span>}
                   {/* Details sind je Vorgang verschieden, etwa an wen freigegeben
                       wurde. Roh anzuzeigen ist ehrlicher, als sie zu verbergen. */}
                   {e.details && Object.keys(e.details).length > 0 && (

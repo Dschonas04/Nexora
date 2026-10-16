@@ -13,6 +13,21 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ## [Unreleased]
 
+### Changed
+
+- **The API speaks English.** Paths, query parameters, form fields and JSON
+  field names are English now: `/api/pruefspur?tage=7` is
+  `/api/audit-log?days=7`, `{"inhaber": …}` is `{"holder": …}`, and so on;
+  [docs/api.md](docs/api.md) lists all of them. The old German **paths and
+  query parameters** keep working, they are translated before routing. The
+  **JSON fields** have no fallback: a script that reads or sends German field
+  names has to be adjusted. Untouched: the values (`lesen`, `schreiben`, the
+  feature names in licence keys), the settings keys and the details stored in
+  the audit trail.
+- **OIDC callback:** the redirect URI is now `/api/auth/oidc/callback`. The
+  old `/api/auth/oidc/zurueck` still arrives, but the provider has to allow the
+  new address, since Nexora now sends that one.
+
 ## [2.3.0]: 2026-10-17
 
 ### Changed

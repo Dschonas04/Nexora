@@ -29,17 +29,17 @@ import (
 // browser so the page does not carry its own copy that drifts. Short lines on
 // purpose: the settings page is a switchboard, not a manual.
 type Einstellung struct {
-	Schluessel   string `json:"schluessel"`
-	Wert         string `json:"wert"`
-	Art          string `json:"art"` // "janein", "zahl", "text", "liste"
-	Titel        string `json:"titel"`
-	Erklaerung   string `json:"erklaerung"`
-	Warnung      string `json:"warnung,omitempty"`
-	Vorgabe      string `json:"vorgabe"`
-	Umgebung     string `json:"umgebung,omitempty"` // env var that overrides this key at start
-	AusDatei     bool   `json:"ausDatei"`           // true: value still comes from config.conf
-	GeaendertVon string `json:"geaendertVon,omitempty"`
-	GeaendertAm  string `json:"geaendertAm,omitempty"`
+	Schluessel   string `json:"key"`
+	Wert         string `json:"value"`
+	Art          string `json:"type"` // "janein", "zahl", "text", "liste"
+	Titel        string `json:"title"`
+	Erklaerung   string `json:"description"`
+	Warnung      string `json:"warning,omitempty"`
+	Vorgabe      string `json:"default"`
+	Umgebung     string `json:"fromEnv,omitempty"` // env var that overrides this key at start
+	AusDatei     bool   `json:"fromFile"`          // true: value still comes from config.conf
+	GeaendertVon string `json:"updatedBy,omitempty"`
+	GeaendertAm  string `json:"updatedAt,omitempty"`
 }
 
 // bekannt lists every setting that may be changed at runtime. A key that is not
@@ -328,13 +328,13 @@ func istHexFarbe(s string) bool {
 func (s *Server) Design(w http.ResponseWriter, r *http.Request) {
 	a := s.aussehenLesen(r)
 	writeJSON(w, http.StatusOK, map[string]string{
-		"grundton": a.Grundton,
-		"sprache":  a.Sprache,
-		"akzent":   a.Akzent,
+		"baseColor": a.Grundton,
+		"language":  a.Sprache,
+		"accent":    a.Akzent,
 		// The width sits here and not among the settings: those are reserved
 		// for administrators, and this value is needed by everyone who looks at
 		// a page.
-		"seitenbreite": Seitenbreite(),
+		"pageWidth": Seitenbreite(),
 	})
 }
 
@@ -407,8 +407,8 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 }
 
 type setzenReq struct {
-	Schluessel string `json:"schluessel"`
-	Wert       string `json:"wert"`
+	Schluessel string `json:"key"`
+	Wert       string `json:"value"`
 }
 
 // SetzeEinstellung writes one setting.
@@ -511,7 +511,7 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 
 	s.spurAusRequest(r, AktEinstellung, "einstellung", req.Schluessel, b.Titel,
 		map[string]interface{}{"wert": wertNeu})
-	writeJSON(w, http.StatusOK, map[string]string{"wert": wertNeu})
+	writeJSON(w, http.StatusOK, map[string]string{"value": wertNeu})
 }
 
 // einstellungSchreiben stores a value and brings the cache along with it.
@@ -566,7 +566,7 @@ func (s *Server) LoescheEinstellung(w http.ResponseWriter, r *http.Request) {
 	speicher.Unlock()
 
 	s.spurAusRequest(r, AktEinstellungZurueck, "einstellung", schluessel, "", nil)
-	writeJSON(w, http.StatusOK, map[string]string{"wert": wert(schluessel)})
+	writeJSON(w, http.StatusOK, map[string]string{"value": wert(schluessel)})
 }
 
 // SystemZustand is the read-only half of the settings page: what cannot be
@@ -596,8 +596,8 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 	// "8711 kB" stays a number that says nothing.
 	type tabelle struct {
 		Name   string `json:"name"`
-		Zeilen int64  `json:"zeilen"`
-		Platz  string `json:"platz"`
+		Zeilen int64  `json:"rows"`
+		Platz  string `json:"bytes"`
 	}
 	tabellen := []tabelle{}
 	if rows, err := s.Pool.Query(ctx, `
@@ -664,53 +664,53 @@ func (s *Server) SystemZustand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"lizenz": map[string]interface{}{
-			"gueltig":        z.Gueltig,
-			"inhaber":        z.Inhaber,
-			"laeuftAb":       z.LaeuftAb,
-			"grund":          z.Grund,
-			"freigeschaltet": frei,
-			"alle":           len(lizenz.Alle),
+		"license": map[string]interface{}{
+			"valid":     z.Gueltig,
+			"holder":    z.Inhaber,
+			"expiresAt": z.LaeuftAb,
+			"reason":    z.Grund,
+			"unlocked":  frei,
+			"all":       len(lizenz.Alle),
 		},
-		"zahlen": map[string]int{
-			"konten":        zahl(`SELECT count(*) FROM users`),
-			"admins":        zahl(`SELECT count(*) FROM users WHERE role='admin'`),
-			"seiten":        zahl(`SELECT count(*) FROM pages WHERE deleted_at IS NULL`),
-			"papierkorb":    zahl(`SELECT count(*) FROM pages WHERE deleted_at IS NOT NULL`),
-			"versionen":     zahl(`SELECT count(*) FROM page_versions`),
-			"anhaenge":      zahl(`SELECT count(*) FROM attachments`),
-			"kommentare":    zahl(`SELECT count(*) FROM kommentare WHERE geloescht_am IS NULL`),
-			"spureintraege": zahl(`SELECT count(*) FROM pruefspur`),
-			"ohneSuchtext":  zahl(`SELECT count(*) FROM pages WHERE length(trim(content_text))=0 AND deleted_at IS NULL`),
+		"counts": map[string]int{
+			"accounts":          zahl(`SELECT count(*) FROM users`),
+			"admins":            zahl(`SELECT count(*) FROM users WHERE role='admin'`),
+			"pages":             zahl(`SELECT count(*) FROM pages WHERE deleted_at IS NULL`),
+			"trash":             zahl(`SELECT count(*) FROM pages WHERE deleted_at IS NOT NULL`),
+			"versions":          zahl(`SELECT count(*) FROM page_versions`),
+			"attachments":       zahl(`SELECT count(*) FROM attachments`),
+			"comments":          zahl(`SELECT count(*) FROM kommentare WHERE geloescht_am IS NULL`),
+			"auditEntries":      zahl(`SELECT count(*) FROM pruefspur`),
+			"withoutSearchText": zahl(`SELECT count(*) FROM pages WHERE length(trim(content_text))=0 AND deleted_at IS NULL`),
 		},
-		"nurInDerDatei": map[string]interface{}{
-			"port":             k.Port,
-			"datenVerzeichnis": k.DatenVerzeich,
-			"oeffentlicheUrl":  k.OeffentlicheURL,
-			"ldapAktiv":        k.LDAPAktiv,
-			"ldapServer":       k.LDAPServer,
-			"oidcAktiv":        k.OIDCAktiv,
-			"oidcAussteller":   k.OIDCAussteller,
+		"fileOnly": map[string]interface{}{
+			"port":          k.Port,
+			"dataDirectory": k.DatenVerzeich,
+			"publicUrl":     k.OeffentlicheURL,
+			"ldapEnabled":   k.LDAPAktiv,
+			"ldapServer":    k.LDAPServer,
+			"oidcEnabled":   k.OIDCAktiv,
+			"oidcIssuer":    k.OIDCAussteller,
 		},
-		"datenbank": map[string]interface{}{
-			"groesse":  dbGroesse,
-			"version":  dbVersion,
-			"tabellen": tabellen,
+		"database": map[string]interface{}{
+			"size":    dbGroesse,
+			"version": dbVersion,
+			"tables":  tabellen,
 		},
-		"anhaengeBytes": anhangBytes,
-		"sicherheit": map[string]interface{}{
-			"admins":             admins,
-			"letzteAnmeldung":    letzteAnmeldung,
-			"letzterFehlversuch": letzterFehlversuch,
-			"fehlversuche24h":    fehlversuche24,
-			"registrierungOffen": RegistrierungOffen(),
-			"erlaubteDomaenen":   ErlaubteDomaenen(),
-			"sitzungStunden":     SitzungStunden(),
+		"attachmentBytes": anhangBytes,
+		"security": map[string]interface{}{
+			"admins":            admins,
+			"lastSignIn":        letzteAnmeldung,
+			"lastFailedAttempt": letzterFehlversuch,
+			"failedAttempts24h": fehlversuche24,
+			"registrationOpen":  RegistrierungOffen(),
+			"allowedDomains":    ErlaubteDomaenen(),
+			"sessionHours":      SitzungStunden(),
 		},
-		"warnungen": k.Warnungen(),
+		"warnings": k.Warnungen(),
 		// The services this one talks to. Not the Docker stack itself, which
 		// Nexora does not see, see verbund.go.
-		"verbund": s.verbund(ctx),
+		"services": s.verbund(ctx),
 	})
 }
 
@@ -734,5 +734,5 @@ func (s *Server) IndexNeuAufbauen(w http.ResponseWriter, r *http.Request) {
 		`SELECT count(*) FROM pages WHERE length(trim(content_text))=0 AND deleted_at IS NULL`).Scan(&offen)
 
 	s.spurAusRequest(r, AktIndexNeu, "system", "suchindex", "", nil)
-	writeJSON(w, http.StatusOK, map[string]int{"ohneSuchtext": offen})
+	writeJSON(w, http.StatusOK, map[string]int{"withoutSearchText": offen})
 }

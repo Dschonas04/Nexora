@@ -45,28 +45,28 @@ func (s *Server) LDAPEinrichtung(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"aktiv":          k.LDAPAktiv,
-		"lizenziert":     lizenz.Frei(lizenz.LDAP),
-		"server":         k.LDAPServer,
-		"startTLS":       k.LDAPStartTLS,
-		"tlsPruefen":     k.LDAPTLSPruefen,
-		"bindDN":         k.LDAPBindDN,
-		"bindPasswortDa": k.LDAPBindPasswort != "",
-		"basisDN":        k.LDAPBasisDN,
-		"benutzerFilter": filter,
-		"feldName":       k.LDAPFeldName,
-		"feldEmail":      k.LDAPFeldEmail,
-		"gruppeAdmin":    k.LDAPGruppeAdmin,
+		"active":          k.LDAPAktiv,
+		"licensed":        lizenz.Frei(lizenz.LDAP),
+		"server":          k.LDAPServer,
+		"startTLS":        k.LDAPStartTLS,
+		"tlsVerify":       k.LDAPTLSPruefen,
+		"bindDN":          k.LDAPBindDN,
+		"bindPasswordSet": k.LDAPBindPasswort != "",
+		"baseDN":          k.LDAPBasisDN,
+		"userFilter":      filter,
+		"fieldName":       k.LDAPFeldName,
+		"fieldEmail":      k.LDAPFeldEmail,
+		"adminGroup":      k.LDAPGruppeAdmin,
 		// Is the connection actually encrypted? ldaps:// implies encryption,
 		// ldap:// requires StartTLS. Combine both into a single boolean since
 		// the question is binary, not two separate ones.
-		"verschluesselt": k.LDAPStartTLS || strings.HasPrefix(strings.ToLower(k.LDAPServer), "ldaps://"),
+		"encrypted": k.LDAPStartTLS || strings.HasPrefix(strings.ToLower(k.LDAPServer), "ldaps://"),
 	})
 }
 
 type ldapTestReq struct {
-	Benutzer string `json:"benutzer"`
-	Passwort string `json:"passwort"`
+	Benutzer string `json:"user"`
+	Passwort string `json:"password"`
 }
 
 // LDAPTesten asks the directory about an account.
@@ -121,7 +121,7 @@ func (s *Server) LDAPTesten(w http.ResponseWriter, r *http.Request) {
 		// the test failed or could not be performed.
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"ok":     false,
-			"fehler": err.Error(),
+			"errors": err.Error(),
 		})
 		return
 	}
@@ -135,8 +135,8 @@ func (s *Server) LDAPTesten(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"ok":      befund.Email != "",
-		"hinweis": hinweis,
-		"befund":  befund,
+		"ok":     befund.Email != "",
+		"note":   hinweis,
+		"result": befund,
 	})
 }

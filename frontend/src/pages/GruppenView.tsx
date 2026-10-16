@@ -86,8 +86,8 @@ export default function GruppenView() {
 
   const umschalten = async (m: Mitglied) => {
     if (!offen) return;
-    await api.mitgliedSetzen(offen.id, m.id, !m.drin).catch(() => {});
-    setMitglieder((v) => v.map((x) => (x.id === m.id ? { ...x, drin: !x.drin } : x)));
+    await api.mitgliedSetzen(offen.id, m.id, !m.isMember).catch(() => {});
+    setMitglieder((v) => v.map((x) => (x.id === m.id ? { ...x, isMember: !x.isMember } : x)));
     laden();
   };
 
@@ -115,7 +115,7 @@ export default function GruppenView() {
   const gruppenBegriff = filter.trim().toLowerCase();
   const gruppenSichtbar = gruppenBegriff
     ? gruppen.filter((g) =>
-        (g.name + " " + (g.beschreibung ?? "")).toLowerCase().includes(gruppenBegriff),
+        (g.name + " " + (g.description ?? "")).toLowerCase().includes(gruppenBegriff),
       )
     : gruppen;
 
@@ -167,9 +167,9 @@ export default function GruppenView() {
               <tr key={g.id}>
                 <td>{g.name}</td>
                 <td className="muted">
-                  {g.beschreibung || <span className="muted">no description</span>}
+                  {g.description || <span className="muted">no description</span>}
                 </td>
-                <td className="zahl">{g.mitglieder}</td>
+                <td className="zahl">{g.members}</td>
                 <td className="zeilen-aktionen">
                   <button className="btn-schlicht" onClick={() => oeffnen(g)}>
                     Members
@@ -240,7 +240,7 @@ export default function GruppenView() {
         // nothing to save here and therefore no button for it either.
         <Fenster
           titel={offen.name}
-          unter={`${mitglieder.filter((m) => m.drin).length} von ${mitglieder.length} Konten in der Gruppe`}
+          unter={`${mitglieder.filter((m) => m.isMember).length} von ${mitglieder.length} Konten in der Gruppe`}
           schliessen={() => setOffen(null)}
           fuss={
             <>
@@ -260,10 +260,10 @@ export default function GruppenView() {
           <div className="mitgliederliste">
             {sichtbar.map((m) => (
               <label key={m.id} className="mitglied">
-                <input type="checkbox" checked={m.drin} onChange={() => umschalten(m)} />
+                <input type="checkbox" checked={m.isMember} onChange={() => umschalten(m)} />
                 <span className="mitglied-name">{m.name}</span>
                 <span className="muted small">{m.email}</span>
-                {m.rolle === "admin" && <span className="muted small">Administrator</span>}
+                {m.role === "admin" && <span className="muted small">Administrator</span>}
               </label>
             ))}
             {sichtbar.length === 0 && <div className="muted small">No match.</div>}

@@ -206,19 +206,19 @@ export default function Einfuhr({
           {vorschau && !bericht && (
             <div className="einfuhr-bericht">
               <p className="einfuhr-gross">
-                {vorschau.seiten} {vorschau.seiten === 1 ? "page" : "pages"} would be created
-                {vorschau.beilagen > 0 &&
-                  `, ${vorschau.beilagen} ${vorschau.beilagen === 1 ? "file" : "files"} become attachments`}
-                {vorschau.ablage && ` \u2014 in the new space \u201c${vorschau.ablage}\u201d`}.
+                {vorschau.pages} {vorschau.pages === 1 ? "page" : "pages"} would be created
+                {vorschau.files > 0 &&
+                  `, ${vorschau.files} ${vorschau.files === 1 ? "file" : "files"} become attachments`}
+                {vorschau.space && ` \u2014 in the new space \u201c${vorschau.space}\u201d`}.
               </p>
               <div className="einfuhr-baum">
-                <Aeste knoten={vorschau.baum} />
+                <Aeste knoten={vorschau.tree} />
               </div>
-              {vorschau.warnungen.length > 0 && (
+              {vorschau.warnings.length > 0 && (
                 <>
                   <h4 className="rechte-ueberschrift">Skipped</h4>
                   <ul className="einfuhr-warnungen">
-                    {vorschau.warnungen.map((w, i) => (
+                    {vorschau.warnings.map((w, i) => (
                       <li key={i}>{w}</li>
                     ))}
                   </ul>
@@ -245,16 +245,16 @@ export default function Einfuhr({
           {bericht && (
             <div className="einfuhr-bericht">
               <p className="einfuhr-gross">
-                {bericht.seiten} {bericht.seiten === 1 ? "page" : "pages"} created
-                {bericht.anhaenge > 0 &&
-                  `, ${bericht.anhaenge} ${bericht.anhaenge === 1 ? "attachment" : "attachments"} taken over`}
-                {bericht.ablage && ` in the new space \u201c${bericht.ablage.name}\u201d`}.
+                {bericht.pages} {bericht.pages === 1 ? "page" : "pages"} created
+                {bericht.attachments > 0 &&
+                  `, ${bericht.attachments} ${bericht.attachments === 1 ? "attachment" : "attachments"} taken over`}
+                {bericht.space && ` in the new space \u201c${bericht.space.name}\u201d`}.
               </p>
-              {bericht.warnungen.length > 0 && (
+              {bericht.warnings.length > 0 && (
                 <>
                   <h4 className="rechte-ueberschrift">Skipped</h4>
                   <ul className="einfuhr-warnungen">
-                    {bericht.warnungen.map((w, i) => (
+                    {bericht.warnings.map((w, i) => (
                       <li key={i}>{w}</li>
                     ))}
                   </ul>
@@ -276,9 +276,9 @@ function Aeste({ knoten }: { knoten: EinfuhrAst[] }) {
     <ul className="einfuhr-aeste">
       {knoten.map((k, i) => (
         <li key={i}>
-          <span>{k.titel}</span>
-          {k.quelle && <span className="muted small"> · {k.quelle}</span>}
-          {k.kinder && k.kinder.length > 0 && <Aeste knoten={k.kinder} />}
+          <span>{k.title}</span>
+          {k.source && <span className="muted small"> · {k.source}</span>}
+          {k.children && k.children.length > 0 && <Aeste knoten={k.children} />}
         </li>
       ))}
     </ul>

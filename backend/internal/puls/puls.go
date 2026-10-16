@@ -101,25 +101,25 @@ func (m *Messer) Beginn() func(status int) {
 
 // Sekunde is one bucket as it goes out.
 type Sekunde struct {
-	VorSekunden int     `json:"vorSekunden"`
-	Anfragen    int64   `json:"anfragen"`
-	Fehler      int64   `json:"fehler"`
-	Abgelehnt   int64   `json:"abgelehnt"`
-	MittelMS    float64 `json:"mittelMs"`
+	VorSekunden int     `json:"secondsAgo"`
+	Anfragen    int64   `json:"requests"`
+	Fehler      int64   `json:"errors"`
+	Abgelehnt   int64   `json:"rejected"`
+	MittelMS    float64 `json:"avgMs"`
 	MaxMS       float64 `json:"maxMs"`
 }
 
 // Stand ist die Momentaufnahme.
 type Stand struct {
-	Laufend     int64     `json:"laufend"`
-	Gesamt      int64     `json:"gesamt"`
-	LaufzeitSek int64     `json:"laufzeitSek"`
+	Laufend     int64     `json:"inFlight"`
+	Gesamt      int64     `json:"total"`
+	LaufzeitSek int64     `json:"uptimeSec"`
 	Minute      []Sekunde `json:"minute"`
-	ProSekunde  float64   `json:"proSekunde"`
-	MittelMS    float64   `json:"mittelMs"`
-	SpitzeMS    float64   `json:"spitzeMs"`
-	Fehler      int64     `json:"fehler"`
-	Abgelehnt   int64     `json:"abgelehnt"`
+	ProSekunde  float64   `json:"perSecond"`
+	MittelMS    float64   `json:"avgMs"`
+	SpitzeMS    float64   `json:"peakMs"`
+	Fehler      int64     `json:"errors"`
+	Abgelehnt   int64     `json:"rejected"`
 }
 
 // Lies returns the last minute, oldest first.

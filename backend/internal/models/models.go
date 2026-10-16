@@ -16,7 +16,7 @@ type User struct {
 	Name  string `json:"name"`
 	// Benutzername is the second way in at the sign-in and may be empty:
 	// accounts from SSO and from older versions have none.
-	Benutzername string    `json:"benutzername"`
+	Benutzername string    `json:"username"`
 	Role         string    `json:"role"`
 	CreatedAt    time.Time `json:"createdAt"`
 	// BildStand is the moment the profile picture was last set, and is missing
@@ -24,12 +24,12 @@ type User struct {
 	// (then the interface shows no initials), and WHICH one (the address carries
 	// the timestamp so a new picture appears at once instead of coming from the
 	// cache).
-	BildStand *time.Time `json:"bildStand,omitempty"`
+	BildStand *time.Time `json:"imageVersion,omitempty"`
 	// Zweitfaktor says whether a second factor is set up on this account. It
 	// sits here and not only in its own endpoint because an administrator should
 	// see in the account list who still has none -- that is the question one
 	// asks of such a list.
-	Zweitfaktor bool `json:"zweitfaktor"`
+	Zweitfaktor bool `json:"twoFactor"`
 }
 
 // Space is a top-level container grouping pages beyond simple nesting.
@@ -40,16 +40,16 @@ type Space struct {
 	CreatedAt time.Time `json:"createdAt"`
 	// Fremd marks a space that belongs to somebody else and is visible through a
 	// group right or an account right.
-	Fremd bool `json:"fremd"`
+	Fremd bool `json:"foreign"`
 	// Oeffentlich: 'nein', 'lesen' or 'schreiben'. A public space is open to every
 	// logged in account of the instance, without individual rights.
-	Oeffentlich string `json:"oeffentlich"`
+	Oeffentlich string `json:"publicAccess"`
 	// DarfVerwalten tells the interface whether to show buttons for changing
 	// things at all. The decision itself is made again in the backend.
-	DarfVerwalten bool `json:"darfVerwalten"`
+	DarfVerwalten bool `json:"canManage"`
 	// Farbe is the colour of the space in the graph, as #rrggbb. Empty means:
 	// the interface takes one from its own series.
-	Farbe string `json:"farbe,omitempty"`
+	Farbe string `json:"color,omitempty"`
 }
 
 // Tag is a colored label. Tags belong to one user, so two people can both have
@@ -60,7 +60,7 @@ type Tag struct {
 	Color string `json:"color"`
 	// Number of pages carrying this tag. Only the number turns a word in the
 	// sidebar into a piece of information.
-	Anzahl int `json:"anzahl"`
+	Anzahl int `json:"count"`
 }
 
 // PageMeta is the lightweight shape used for the sidebar tree and lists. It
@@ -81,7 +81,7 @@ type PageMeta struct {
 // a trash with an expiry that nobody can see is a trap.
 type PapierkorbSeite struct {
 	PageMeta
-	VerfaelltAm *time.Time `json:"verfaelltAm"`
+	VerfaelltAm *time.Time `json:"expiresAt"`
 }
 
 // Spureintrag is one row of the audit trail.
@@ -91,14 +91,14 @@ type PapierkorbSeite struct {
 // event an auditor comes looking for.
 type Spureintrag struct {
 	ID          int64           `json:"id"`
-	Zeitpunkt   time.Time       `json:"zeitpunkt"`
-	AkteurID    string          `json:"akteurId"`
-	AkteurName  string          `json:"akteurName"`
-	AkteurEmail string          `json:"akteurEmail"`
-	Aktion      string          `json:"aktion"`
-	ObjektArt   string          `json:"objektArt"`
-	ObjektID    string          `json:"objektId"`
-	ObjektTitel string          `json:"objektTitel"`
+	Zeitpunkt   time.Time       `json:"timestamp"`
+	AkteurID    string          `json:"actorId"`
+	AkteurName  string          `json:"actorName"`
+	AkteurEmail string          `json:"actorEmail"`
+	Aktion      string          `json:"action"`
+	ObjektArt   string          `json:"objectType"`
+	ObjektID    string          `json:"objectId"`
+	ObjektTitel string          `json:"objectTitle"`
 	Details     json.RawMessage `json:"details"`
 	IP          string          `json:"ip"`
 }
@@ -115,12 +115,12 @@ type SearchHit struct {
 	// text: ts_headline does not escape anything. The interface splits on the
 	// markers and renders the pieces as text nodes, which is what makes it
 	// safe, see markiere() in the sidebar.
-	Ausschnitt string `json:"ausschnitt"`
-	Eigen      bool   `json:"eigen"` // false means: reached through a share or as admin
+	Ausschnitt string `json:"snippet"`
+	Eigen      bool   `json:"own"` // false means: reached through a share or as admin
 	// Quelle names the attachment a hit came from, empty when the page text
 	// itself matched. Without it a snippet from a PDF would look like page
 	// content that is nowhere to be found on the page.
-	Quelle    string    `json:"quelle"`
+	Quelle    string    `json:"source"`
 	Rang      float32   `json:"-"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -143,10 +143,10 @@ type Page struct {
 	// Gemeinsam: more than one account may write on this page, and the service
 	// permits writing together. Only then does the browser connect to the wire;
 	// a page only one person sits at anyway does not need it.
-	Gemeinsam bool `json:"gemeinsam"`
+	Gemeinsam bool `json:"collaborative"`
 	// Breite: 'normal', 'breit' or 'voll'. Belongs to the typesetting of the
 	// page and therefore hangs on it, not on the reader.
-	Breite    string    `json:"breite"`
+	Breite    string    `json:"width"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

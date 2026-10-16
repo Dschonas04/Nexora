@@ -242,8 +242,8 @@ func (s *Server) PruefspurAktionen(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type zeile struct {
-		Aktion string `json:"aktion"`
-		Anzahl int    `json:"anzahl"`
+		Aktion string `json:"action"`
+		Anzahl int    `json:"count"`
 	}
 	list := []zeile{}
 	for rows.Next() {

@@ -25,11 +25,11 @@ const (
 )
 
 type aussehenAntwort struct {
-	Grundton string `json:"grundton"`
-	Akzent   string `json:"akzent"`
+	Grundton string `json:"baseColor"`
+	Akzent   string `json:"accent"`
 	// Sprache is the interface language, "de", "en" or "fr". Empty: nothing chosen,
 	// the browser decides.
-	Sprache string `json:"sprache"`
+	Sprache string `json:"language"`
 }
 
 // sprachen are the interface languages there is a word list for.
@@ -69,8 +69,8 @@ func (s *Server) aussehenLesen(r *http.Request) aussehenAntwort {
 // would be a way inside.
 func (s *Server) AussehenSpeichern(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Grundton string `json:"grundton"`
-		Akzent   string `json:"akzent"`
+		Grundton string `json:"baseColor"`
+		Akzent   string `json:"accent"`
 	}
 	if json.NewDecoder(r.Body).Decode(&req) != nil {
 		writeErr(w, http.StatusBadRequest, "ungültige Anfrage")
@@ -105,7 +105,7 @@ func (s *Server) AussehenSpeichern(w http.ResponseWriter, r *http.Request) {
 // choice would write it back.
 func (s *Server) SpracheSpeichern(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Sprache string `json:"sprache"`
+		Sprache string `json:"language"`
 	}
 	if json.NewDecoder(r.Body).Decode(&req) != nil {
 		writeErr(w, http.StatusBadRequest, "ungültige Anfrage")

@@ -378,7 +378,7 @@ type publicPage struct {
 	Title     string          `json:"title"`
 	Content   json.RawMessage `json:"content"`
 	Icon      string          `json:"icon"`
-	Breite    string          `json:"breite"`
+	Breite    string          `json:"width"`
 	UpdatedAt time.Time       `json:"updatedAt"`
 }
 

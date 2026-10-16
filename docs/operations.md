@@ -272,8 +272,8 @@ is an admin-only API route as well ([API reference](api.md#administration)).
 | Empty the whole instance's trash | Settings → Wartung |
 | Import a licence key | Settings → Lizenz |
 | Bind and test an object store | Settings → Ablage |
-| Rebuild the search index | Settings, or `POST /api/system/suchindex` |
-| Fill in attachment text for older uploads | `POST /api/system/anhangindex` |
+| Rebuild the search index | Settings, or `POST /api/system/search-index` |
+| Fill in attachment text for older uploads | `POST /api/system/attachment-index` |
 | See which surrounding services answer, and how fast | Settings → Verbund |
 | See who tried to sign in, from where, and why it failed | Settings → Anmeldungen (free) |
 | Read the audit trail | Protokoll (paid: `pruefspur`) |
@@ -414,7 +414,7 @@ Before an instance is reachable by anyone but you:
 - [ ] `allowed_domains` set if registration stays open
 - [ ] A real TLS certificate in the `nexora_tls` volume, or a reverse proxy that
       terminates TLS, and, if pages are written on together, one that passes
-      WebSocket upgrades through to `/api/echtzeit/`
+      WebSocket upgrades through to `/api/realtime/`
 - [ ] `public_url` set to the address the browser actually uses
 - [ ] `s3_tls` on if an object store is in use, on by default in the bundled
       stack, where the store speaks TLS anyway
@@ -465,11 +465,11 @@ real limit is can be measured under **Settings → Anhänge**.
 
 ### Writing together does not start, or reconnects for ever
 
-The session runs over a WebSocket on `/api/echtzeit/{id}`. Anything in front has
+The session runs over a WebSocket on `/api/realtime/{id}`. Anything in front has
 to pass the upgrade through:
 
 ```nginx
-location /api/echtzeit/ {
+location /api/realtime/ {
     proxy_pass http://nexora-frontend;
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
@@ -539,18 +539,18 @@ is the case when the service runs without `tls_certificate`; then
 ### Search finds nothing for older pages
 
 Pages written before the search index existed have an empty `content_text`. The
-backend fills these in at startup, and `POST /api/system/suchindex` rebuilds the
+backend fills these in at startup, and `POST /api/system/search-index` rebuilds the
 lot. The same call is needed after changing `search_dictionary`.
 
 ### Attachment search finds nothing
 
 Files uploaded before the attachment index existed have no extracted text:
-`POST /api/system/anhangindex`. Note that PDF extraction needs `pdftotext`
+`POST /api/system/attachment-index`. Note that PDF extraction needs `pdftotext`
 (`poppler-utils`), which the official image ships.
 
 ### A page shows broken images to a visitor with a share link
 
-That path is `/api/public/{token}/dateien/{attId}`, and it is part of the
+That path is `/api/public/{token}/files/{attId}`, and it is part of the
 `freigeben` extra. Without the licence the images do not load, because the
 ordinary attachment route requires a session.
 

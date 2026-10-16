@@ -1207,6 +1207,7 @@ export const FRANZOESISCH: Record<string, string> = {
   "Off for a reachable instance, otherwise the address is enough to create an account.": "Désactivé pour une instance joignable, sinon l’adresse suffit pour créer un compte.",
   "On: every account is led to the setup after signing in and can no longer switch the second factor off itself. Off: everyone decides for themselves. Accounts from SSO bring their second factor along from the provider and are not affected.": "Activé : chaque compte est conduit à la configuration après la connexion et ne peut plus désactiver lui-même le second facteur. Désactivé : chacun décide pour soi. Les comptes SSO apportent leur second facteur du fournisseur et ne sont pas concernés.",
   "Set it up yourself before switching it on. Whoever has no second factor otherwise only gets further through the setup.": "Configurez-le vous-même avant de l’activer. Sinon, quiconque n’a pas de second facteur ne peut avancer que par la configuration.",
+  "Second factor required": "Second facteur obligatoire",
   "Name in the authenticator app": "Nom dans l’application d’authentification",
   "Stands as the issuer in the QR code and thus above the code in the app. Empty: Nexora. Useful when somebody has several instances on the same phone.": "Figure comme émetteur dans le code QR et donc au-dessus du code dans l’application. Vide : Nexora. Utile quand quelqu’un a plusieurs instances sur le même téléphone.",
   "Permitted email domains": "Domaines e-mail autorisés",

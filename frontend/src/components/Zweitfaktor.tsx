@@ -16,17 +16,17 @@ import Fenster from "./Fenster";
 import { useEingabe } from "./Rueckfrage";
 
 interface Stand {
-  aktiv: boolean;
-  seit?: string;
-  offen: number;
-  pflicht: boolean;
+  active: boolean;
+  since?: string;
+  remaining: number;
+  required: boolean;
 }
 
 export default function Zweitfaktor({
-  stand,
+  state: stand,
   neuLaden,
 }: {
-  stand: Stand | null;
+  state: Stand | null;
   /** After every change: fetch the state again, so the card shows it. */
   neuLaden: () => void;
 }) {
@@ -67,18 +67,18 @@ export default function Zweitfaktor({
     <>
       {fehler && <div className="fehler">{fehler}</div>}
 
-      {stand.aktiv ? (
+      {stand.active ? (
         <div className="zweit-karte">
           <div className="zweit-lage">
             <strong>The second factor is in place.</strong>
             <span className="muted small">
-              {stand.seit && `Seit ${new Date(stand.seit).toLocaleDateString()}. `}
+              {stand.since && `Seit ${new Date(stand.since).toLocaleDateString()}. `}
               Every sign-in asks for the code from the app.
             </span>
-            <span className={stand.offen === 0 ? "fehlertext small" : "muted small"}>
-              {stand.offen === 0
+            <span className={stand.remaining === 0 ? "fehlertext small" : "muted small"}>
+              {stand.remaining === 0
                 ? "No recovery code left. Without the phone you cannot get in."
-                : `${stand.offen} of 10 recovery codes left.`}
+                : `${stand.remaining} of 10 recovery codes left.`}
             </span>
           </div>
           <div className="zweit-knoepfe">
@@ -89,7 +89,7 @@ export default function Zweitfaktor({
                   "New recovery codes",
                   "The existing recovery codes stop working, unused ones included. The new ones are shown exactly once.",
                   "Create new ones",
-                  async (pw) => setCodes((await api.zweitfaktorCodesNeu(pw)).ersatzcodes),
+                  async (pw) => setCodes((await api.zweitfaktorCodesNeu(pw)).recoveryCodes),
                 )
               }
             >
@@ -97,9 +97,9 @@ export default function Zweitfaktor({
             </button>
             <button
               className="btn"
-              disabled={stand.pflicht}
+              disabled={stand.required}
               title={
-                stand.pflicht
+                stand.required
                   ? "The second factor is mandatory on this instance"
                   : undefined
               }
@@ -127,7 +127,7 @@ export default function Zweitfaktor({
               six-digit number from an authenticator app is added, changing every thirty
               seconds. A stolen password alone is then no longer enough.
             </span>
-            {stand.pflicht && (
+            {stand.required && (
               <span className="fehlertext small">
                 This instance requires it of every account.
               </span>
@@ -164,7 +164,7 @@ function EinrichtenFenster({
   schliessen: () => void;
   fertig: (codes: string[]) => void;
 }) {
-  const [start, setStart] = useState<{ geheim: string; uri: string; qr: string } | null>(null);
+  const [start, setStart] = useState<{ secret: string; uri: string; qr: string } | null>(null);
   const [code, setCode] = useState("");
   const [fehler, setFehler] = useState("");
   const [busy, setBusy] = useState(false);
@@ -183,7 +183,7 @@ function EinrichtenFenster({
     setBusy(true);
     setFehler("");
     try {
-      const { ersatzcodes } = await api.zweitfaktorAn(code);
+      const { recoveryCodes: ersatzcodes } = await api.zweitfaktorAn(code);
       fertig(ersatzcodes);
     } catch (e) {
       setFehler((e as Error).message);
@@ -226,7 +226,7 @@ function EinrichtenFenster({
             Scan this in your authenticator app. If the app runs on this same device,
             enter the key by hand:
           </p>
-          <code className="zweit-geheim">{start.geheim}</code>
+          <code className="zweit-geheim">{start.secret}</code>
           <div className="fenster-abschnitt">
             <div className="modal-label">Code from the app</div>
             <input

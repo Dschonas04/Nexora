@@ -56,8 +56,8 @@ func ssoHerkunft(hash string) (string, bool) {
 }
 
 type passwortWechselReq struct {
-	Alt string `json:"alt"`
-	Neu string `json:"neu"`
+	Alt string `json:"old"`
+	Neu string `json:"new"`
 }
 
 // PasswortWechseln changes the password of the currently authenticated
@@ -118,11 +118,11 @@ func (s *Server) PasswortWechseln(w http.ResponseWriter, r *http.Request) {
 	beendet := s.sitzungenWiderrufen(r.Context(), uid, middleware.SitzungID(r))
 	s.spurAusRequest(r, AktPasswortGeaendert, "konto", uid, "",
 		map[string]any{"sitzungen_beendet": beendet})
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "beendet": beendet})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "ended": beendet})
 }
 
 type passwortSetzenReq struct {
-	Neu string `json:"neu"`
+	Neu string `json:"new"`
 }
 
 // PasswortSetzen is the administrator route: set a new password for another
@@ -187,5 +187,5 @@ func (s *Server) PasswortSetzen(w http.ResponseWriter, r *http.Request) {
 	beendet := s.sitzungenWiderrufen(r.Context(), ziel, "")
 	s.spurAusRequest(r, AktPasswortGesetzt, "konto", ziel, mail,
 		map[string]any{"sitzungen_beendet": beendet})
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "beendet": beendet})
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "ended": beendet})
 }

@@ -41,7 +41,7 @@ export default function TrashView({ onChange }: { onChange: () => void }) {
         <h1 className="view-title">Trash</h1>
         <p className="muted">
           Deleted pages stay here until you restore them or remove them for good.
-          {items.some((p) => p.verfaelltAm)
+          {items.some((p) => p.expiresAt)
             ? " After that the trash empties itself; how long a page still has is shown next to it."
             : ""}
         </p>
@@ -57,12 +57,12 @@ export default function TrashView({ onChange }: { onChange: () => void }) {
                 {/* The remaining time instead of the date: "noch 3 Tage" is the
                     figure one acts on. The day stands in the title, in case
                     somebody wants to know exactly. */}
-                {p.verfaelltAm && (
+                {p.expiresAt && (
                   <span
-                    className={"muted small" + (restTage(p.verfaelltAm) <= 3 ? " bald" : "")}
-                    title={"Expires on " + new Date(p.verfaelltAm).toLocaleDateString()}
+                    className={"muted small" + (restTage(p.expiresAt) <= 3 ? " bald" : "")}
+                    title={"Expires on " + new Date(p.expiresAt).toLocaleDateString()}
                   >
-                    {restText(p.verfaelltAm)}
+                    {restText(p.expiresAt)}
                   </span>
                 )}
                 <span className="row-actions">

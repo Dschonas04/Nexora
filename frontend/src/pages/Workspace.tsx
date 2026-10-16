@@ -52,7 +52,7 @@ export default function Workspace() {
   const refreshTags = useCallback(() => api.listTags().then(setTags).catch(() => {}), []);
   const refreshSpaces = useCallback(() => api.listSpaces().then(setSpaces).catch(() => {}), []);
   const refreshPostfach = useCallback(
-    () => api.postfachAnzahl().then((a) => setUngelesen(a.ungelesen)).catch(() => {}),
+    () => api.postfachAnzahl().then((a) => setUngelesen(a.unread)).catch(() => {}),
     [],
   );
 
@@ -166,9 +166,9 @@ export default function Workspace() {
   // no move at all.
   const ordnePage = async (id: string, ziel: TreeGap) => {
     await api.seiteVerschieben(id, {
-      elternId: ziel.elternId,
+      parentId: ziel.elternId,
       spaceId: ziel.elternId === null ? (ziel.spaceId ?? null) : undefined,
-      vorId: ziel.vorId,
+      beforeId: ziel.vorId,
     });
     await refreshPages();
   };
@@ -288,7 +288,7 @@ function ZweitfaktorMahnung() {
   useEffect(() => {
     api
       .zweitfaktorStand()
-      .then((z) => setNoetig(z.pflicht && !z.aktiv))
+      .then((z) => setNoetig(z.required && !z.active))
       .catch(() => setNoetig(false));
     // Ask again after a change of address: whoever has just set it up in the
     // settings should be rid of the stripe when they leave the page.

@@ -137,12 +137,12 @@ type Pruefer interface {
 // Zustand is what a valid key grants. It is also the shape the browser gets,
 // minus the key itself.
 type Zustand struct {
-	Inhaber    string     `json:"inhaber"`             // who the key was issued to
-	Stufe      Stufe      `json:"stufe,omitempty"`     // the bundle that was sold, when the key names one
-	Funktionen []Funktion `json:"funktionen"`          // what it unlocks
-	LaeuftAb   string     `json:"laeuft_ab,omitempty"` // ISO date, empty means perpetual
-	Gueltig    bool       `json:"gueltig"`
-	Grund      string     `json:"grund,omitempty"` // why an invalid key was rejected
+	Inhaber    string     `json:"holder"`              // who the key was issued to
+	Stufe      Stufe      `json:"tier,omitempty"`      // the bundle that was sold, when the key names one
+	Funktionen []Funktion `json:"features"`            // what it unlocks
+	LaeuftAb   string     `json:"expiresAt,omitempty"` // ISO date, empty means perpetual
+	Gueltig    bool       `json:"valid"`
+	Grund      string     `json:"reason,omitempty"` // why an invalid key was rejected
 }
 
 var (

@@ -36,19 +36,19 @@ const (
 // Nachricht is one entry in the inbox.
 type Nachricht struct {
 	ID            string  `json:"id"`
-	Art           string  `json:"art"`
+	Art           string  `json:"type"`
 	PageID        *string `json:"pageId"`
-	KommentarID   *string `json:"kommentarId"`
-	AusloeserID   *string `json:"ausloeserId"`
-	AusloeserName string  `json:"ausloeserName"`
+	KommentarID   *string `json:"commentId"`
+	AusloeserID   *string `json:"actorId"`
+	AusloeserName string  `json:"actorName"`
 	// The timestamp of the sender's profile picture, so a face can be shown
 	// in the list rather than just a name. Missing if the account has no
 	// picture or was deleted.
-	AusloeserBild *time.Time `json:"ausloeserBild,omitempty"`
-	SeitenTitel   string     `json:"seitenTitel"`
+	AusloeserBild *time.Time `json:"actorImage,omitempty"`
+	SeitenTitel   string     `json:"pageTitle"`
 	Text          string     `json:"text"`
-	GelesenAm     *time.Time `json:"gelesenAm"`
-	ErstelltAm    time.Time  `json:"erstelltAm"`
+	GelesenAm     *time.Time `json:"readAt"`
+	ErstelltAm    time.Time  `json:"createdAt"`
 }
 
 // maxAuszug is the length of the excerpt that is stored along. Enough to see
@@ -135,7 +135,7 @@ func (s *Server) PostfachAnzahl(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "Postfach nicht lesbar")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]int{"ungelesen": n})
+	writeJSON(w, http.StatusOK, map[string]int{"unread": n})
 }
 
 // PostfachGelesen marks one message as read, or all of them.
@@ -173,7 +173,7 @@ func (s *Server) PostfachLeeren(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "nicht gelöscht")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]int64{"geloescht": tag.RowsAffected()})
+	writeJSON(w, http.StatusOK, map[string]int64{"deleted": tag.RowsAffected()})
 }
 
 // erwaehnte finds the accounts named with an @ in a text.

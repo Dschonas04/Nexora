@@ -129,7 +129,7 @@ export default function PageView({
   const { user } = useAuth();
   // The instance default for pages that say nothing themselves.
   const { design } = useDesign();
-  const vorgabe = design.seitenbreite || "voll";
+  const vorgabe = design.pageWidth || "voll";
   const vorgabeName =
     vorgabe === "normal"
       ? "normal"
@@ -185,7 +185,7 @@ export default function PageView({
   // will never sit in.
   const mitschrift = useMitschrift(
     id,
-    !!page?.gemeinsam && !!page?.canEdit,
+    !!page?.collaborative && !!page?.canEdit,
     user,
   );
   // For which page the seed has already been sown. Without that, every render
@@ -308,7 +308,7 @@ export default function PageView({
         // exist.
         const frisch = await api.updatePage(id, {
           ...patch,
-          basis: mitschriftRef.current ? undefined : basisRef.current,
+          baseVersion: mitschriftRef.current ? undefined : basisRef.current,
         });
         // The base moves along: otherwise the next autosave would report a
         // conflict with its own previous save.
@@ -552,7 +552,7 @@ export default function PageView({
     Array.from(e.dataTransfer.types).includes("Files");
 
   // The page's own choice beats the default; empty means: no choice.
-  const breiteWirksam = page.breite || vorgabe;
+  const breiteWirksam = page.width || vorgabe;
 
   return (
     <div
@@ -691,14 +691,14 @@ export default function PageView({
                         key={wert}
                         className={
                           "klappeintrag" +
-                          ((page.breite ?? "") === wert ? " gewaehlt" : "")
+                          ((page.width ?? "") === wert ? " gewaehlt" : "")
                         }
                         onClick={async () => {
                           setBreiteOffen(false);
                           // Show first, save after: the width is one
                           // adjustment of the type, and waiting for the server
                           // to answer felt like a loading time.
-                          setPage({ ...page, breite: wert });
+                          setPage({ ...page, width: wert });
                           await api.seiteBreite(page.id, wert).catch(() => {});
                         }}
                       >

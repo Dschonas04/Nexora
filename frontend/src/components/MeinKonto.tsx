@@ -40,14 +40,14 @@ const KANTE = 256;
 
 type Teil = "profil" | "aussehen" | "sprache" | "benachrichtigung" | "passwort" | "zweitfaktor" | "geraete";
 
-const TEILE: { id: Teil; titel: string; unter: string }[] = [
-  { id: "profil", titel: "Profile", unter: "Name and picture" },
-  { id: "aussehen", titel: "Appearance", unter: "Base tone and accent" },
-  { id: "sprache", titel: "Language", unter: "German, English or French" },
-  { id: "benachrichtigung", titel: "Notifications", unter: "Inbox by e-mail" },
-  { id: "passwort", titel: "Password", unter: "Change it" },
-  { id: "zweitfaktor", titel: "Second factor", unter: "App and recovery codes" },
-  { id: "geraete", titel: "Devices", unter: "Where you are signed in" },
+const TEILE: { id: Teil; title: string; unter: string }[] = [
+  { id: "profil", title: "Profile", unter: "Name and picture" },
+  { id: "aussehen", title: "Appearance", unter: "Base tone and accent" },
+  { id: "sprache", title: "Language", unter: "German, English or French" },
+  { id: "benachrichtigung", title: "Notifications", unter: "Inbox by e-mail" },
+  { id: "passwort", title: "Password", unter: "Change it" },
+  { id: "zweitfaktor", title: "Second factor", unter: "App and recovery codes" },
+  { id: "geraete", title: "Devices", unter: "Where you are signed in" },
 ];
 
 /**
@@ -126,7 +126,7 @@ export default function MeinKonto({ onClose }: { onClose: () => void }) {
               className={"konto-leiste-eintrag" + (teil === t.id ? " aktiv" : "")}
               onClick={() => setTeil(t.id)}
             >
-              <span>{t.titel}</span>
+              <span>{t.title}</span>
               <span className="muted small">{t.unter}</span>
             </button>
           ))}
@@ -195,7 +195,7 @@ function BenachrichtigungTeil() {
     setSendet(true);
     api
       .benachrichtigungTesten()
-      .then((r) => setHinweis(`Test mail sent to ${r.an}.`))
+      .then((r) => setHinweis(`Test mail sent to ${r.to}.`))
       .catch((e) => setFehler(e instanceof Error ? e.message : "Not sent."))
       .finally(() => setSendet(false));
   };
@@ -206,7 +206,7 @@ function BenachrichtigungTeil() {
       <p className="muted small">
         What lands in your inbox – a comment on your page, a reply, a mention, a shared page – can also come by e-mail.
       </p>
-      {stand && !stand.verfuegbar && (
+      {stand && !stand.available && (
         <p className="muted small">
           E-mail is not set up on this instance. An administrator enters an SMTP server in config.conf ([Mail]).
         </p>
@@ -217,14 +217,14 @@ function BenachrichtigungTeil() {
             id="benachrichtigung-email"
             type="checkbox"
             checked={stand.email}
-            disabled={!stand.verfuegbar}
+            disabled={!stand.available}
             onChange={(e) => umschalten(e.target.checked)}
           />
           <span>Send inbox messages by e-mail</span>
         </label>
       )}
-      {stand?.verfuegbar && <p className="muted small">{`Goes to ${stand.adresse}.`}</p>}
-      {stand?.verfuegbar && (
+      {stand?.available && <p className="muted small">{`Goes to ${stand.address}.`}</p>}
+      {stand?.available && (
         <button className="btn" disabled={sendet} onClick={testen}>
           {sendet ? "Sending…" : "Send test mail"}
         </button>
@@ -245,8 +245,8 @@ function BenachrichtigungTeil() {
  */
 function Aussehen() {
   const { design, neuLaden } = useDesign();
-  const [ton, setTon] = useState(design.grundton);
-  const [akzent, setAkzent] = useState(design.akzent.toLowerCase());
+  const [ton, setTon] = useState(design.baseColor);
+  const [akzent, setAkzent] = useState(design.accent.toLowerCase());
   const [fehler, setFehler] = useState("");
 
   const grund = GRUND[ton] ?? GRUND.grau;
@@ -263,13 +263,13 @@ function Aussehen() {
   };
 
   const tonSetzen = (wert: string) => {
-    anwenden({ grundton: wert, akzent });
+    anwenden({ baseColor: wert, accent: akzent });
     setTon(wert);
     sichern(wert, akzent);
   };
 
   const akzentSetzen = (wert: string, speichern: boolean) => {
-    anwenden({ grundton: ton, akzent: wert });
+    anwenden({ baseColor: ton, accent: wert });
     setAkzent(wert);
     if (speichern) sichern(ton, wert);
   };
@@ -282,20 +282,20 @@ function Aussehen() {
       </p>
       <div className="tonwahl">
         {GRUNDTOENE.map((g) => {
-          const marken = TON_MARKEN[g.wert];
+          const marken = TON_MARKEN[g.value];
           return (
             <button
-              key={g.wert}
+              key={g.value}
               type="button"
-              className={"tonkachel" + (ton === g.wert ? " gewaehlt" : "")}
+              className={"tonkachel" + (ton === g.value ? " gewaehlt" : "")}
               style={{ background: marken[0], borderColor: marken[2], color: marken[3] }}
-              onClick={() => tonSetzen(g.wert)}
+              onClick={() => tonSetzen(g.value)}
             >
               <span
                 className="tonkachel-probe"
                 style={{ background: marken[1], borderColor: marken[2] }}
               />
-              <span className="tonkachel-name">{g.titel}</span>
+              <span className="tonkachel-name">{g.title}</span>
             </button>
           );
         })}
@@ -330,15 +330,15 @@ function Aussehen() {
           onChange={(ev) => {
             const w = ev.target.value.trim().toLowerCase();
             setAkzent(w);
-            if (/^#[0-9a-f]{6}$/.test(w)) anwenden({ grundton: ton, akzent: w });
+            if (/^#[0-9a-f]{6}$/.test(w)) anwenden({ baseColor: ton, accent: w });
           }}
           onBlur={() => {
             // A half-typed value must not go into the database.
             if (!/^#[0-9a-f]{6}$/.test(akzent)) {
-              akzentSetzen(design.akzent.toLowerCase(), false);
+              akzentSetzen(design.accent.toLowerCase(), false);
               return;
             }
-            if (akzent !== design.akzent.toLowerCase()) sichern(ton, akzent);
+            if (akzent !== design.accent.toLowerCase()) sichern(ton, akzent);
           }}
         />
         <input
@@ -348,7 +348,7 @@ function Aussehen() {
           value={/^#[0-9a-f]{6}$/.test(akzent) ? akzent : "#2383e2"}
           onChange={(ev) => akzentSetzen(ev.target.value.toLowerCase(), false)}
           onBlur={() => {
-            if (akzent !== design.akzent.toLowerCase()) sichern(ton, akzent);
+            if (akzent !== design.accent.toLowerCase()) sichern(ton, akzent);
           }}
         />
       </div>
@@ -462,7 +462,7 @@ function Profil() {
           id={user.id}
           name={user.name}
           email={user.email}
-          stand={user.bildStand}
+          stand={user.imageVersion}
           groesse={72}
         />
         <div className="profil-kopf-text">
@@ -474,9 +474,9 @@ function Profil() {
               disabled={laeuft !== null}
               onClick={() => dateiFeld.current?.click()}
             >
-              {user.bildStand ? "Change picture" : "Choose a picture"}
+              {user.imageVersion ? "Change picture" : "Choose a picture"}
             </button>
-            {user.bildStand && (
+            {user.imageVersion && (
               <button className="btn" disabled={laeuft !== null} onClick={bildWeg}>
                 Remove
               </button>
@@ -556,7 +556,7 @@ function Passwort() {
     setFehler("");
     setLaeuft(true);
     try {
-      const { beendet } = await api.passwortWechseln(alt, neu);
+      const { ended: beendet } = await api.passwortWechseln(alt, neu);
       setAlt("");
       setNeu("");
       setNochmal("");
@@ -657,7 +657,7 @@ function ZweitfaktorTeil() {
       {stand === null ? (
         <p className="muted small">Loading…</p>
       ) : (
-        <Zweitfaktor stand={stand} neuLaden={laden} />
+        <Zweitfaktor state={stand} neuLaden={laden} />
       )}
     </>
   );
@@ -687,17 +687,17 @@ function Geraete() {
   const beenden = async (s: Sitzung) => {
     if (
       !(await frage({
-        titel: s.diese ? "Sign out here" : "End session",
-        text: s.diese
+        titel: s.current ? "Sign out here" : "End session",
+        text: s.current
           ? "This is the session you are working in right now. After ending it you have to sign in again."
           : `The session on ${s.browser} becomes invalid at once. Whoever uses it lands on the sign-in page.`,
         bestaetigen: "End it",
-        gefaehrlich: !s.diese,
+        gefaehrlich: !s.current,
       }))
     )
       return;
     await api.sitzungBeenden(s.id).catch(() => {});
-    if (s.diese) window.location.href = "/login";
+    if (s.current) window.location.href = "/login";
     else laden();
   };
 
@@ -754,7 +754,7 @@ function Geraete() {
             <tr key={s.id}>
               <td>
                 {s.browser}
-                {s.diese && (
+                {s.current && (
                   <span className="pill frei" style={{ marginLeft: 8 }}>
                     dieses Gerät
                   </span>
@@ -762,7 +762,7 @@ function Geraete() {
               </td>
               <td className="muted small">{s.ip || "—"}</td>
               <td className="muted small">
-                {new Date(s.zuletztAm).toLocaleString(undefined, {
+                {new Date(s.lastSeenAt).toLocaleString(undefined, {
                   day: "2-digit",
                   month: "2-digit",
                   year: "numeric",

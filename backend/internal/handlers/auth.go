@@ -17,7 +17,7 @@ import (
 type registerReq struct {
 	Email        string `json:"email"`
 	Name         string `json:"name"`
-	Benutzername string `json:"benutzername"`
+	Benutzername string `json:"username"`
 	Password     string `json:"password"`
 }
 
@@ -138,7 +138,7 @@ type loginReq struct {
 	// Kennung is either address or user name. The email field stays alongside
 	// it, because older versions of the interface and every script written
 	// against this API send it that way.
-	Kennung  string `json:"kennung"`
+	Kennung  string `json:"login"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
@@ -193,7 +193,7 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, http.StatusInternalServerError, "ticket failed")
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{"zweiterSchritt": true, "ticket": ticket})
+		writeJSON(w, http.StatusOK, map[string]interface{}{"secondStep": true, "ticket": ticket})
 		return
 	}
 

@@ -28,15 +28,15 @@ import (
 const ErsatzcodeAnzahl = 10
 
 type zweitStand struct {
-	Aktiv bool `json:"aktiv"`
+	Aktiv bool `json:"active"`
 	// Seit is a string and not a time because the interface only shows a date,
 	// and an empty field would otherwise appear as 1 January of year one.
-	Seit string `json:"seit,omitempty"`
+	Seit string `json:"since,omitempty"`
 	// Offen is the number of recovery codes not yet spent. It shows in the
 	// interface so that nobody first notices none are left at the moment they
 	// need one.
-	Offen   int  `json:"offen"`
-	Pflicht bool `json:"pflicht"`
+	Offen   int  `json:"remaining"`
+	Pflicht bool `json:"required"`
 }
 
 // zweitfaktorAktiv says whether an account demands the second step.
@@ -79,7 +79,7 @@ func (s *Server) ZweitfaktorStand(w http.ResponseWriter, r *http.Request) {
 }
 
 type zweitStartAntwort struct {
-	Geheim string `json:"geheim"`
+	Geheim string `json:"secret"`
 	URI    string `json:"uri"`
 	// QR is a finished SVG. The server draws it because the frontend would
 	// otherwise have to carry a library around for a single screen, and as SVG
@@ -221,11 +221,11 @@ func (s *Server) ZweitfaktorAn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.spurAusRequest(r, AktZweitfaktorAn, "konto", uid, "", nil)
-	writeJSON(w, http.StatusOK, map[string]interface{}{"ersatzcodes": codes})
+	writeJSON(w, http.StatusOK, map[string]interface{}{"recoveryCodes": codes})
 }
 
 type zweitAusReq struct {
-	Passwort string `json:"passwort"`
+	Passwort string `json:"password"`
 }
 
 // ZweitfaktorAus switches off, against one's own password. Without that
@@ -281,7 +281,7 @@ func (s *Server) ZweitfaktorCodesNeu(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.spurAusRequest(r, AktZweitfaktorCodes, "konto", uid, "", nil)
-	writeJSON(w, http.StatusOK, map[string]interface{}{"ersatzcodes": codes})
+	writeJSON(w, http.StatusOK, map[string]interface{}{"recoveryCodes": codes})
 }
 
 // ZweitfaktorZuruecksetzen is the administrator's route for the case that

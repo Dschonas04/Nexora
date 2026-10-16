@@ -94,7 +94,7 @@ export default function SpaceRechte({
     try {
       await api.spaceRechtSetzen(
         spaceId,
-        ziel.art === "g" ? { gruppeId: ziel.id } : { userId: ziel.id },
+        ziel.art === "g" ? { groupId: ziel.id } : { userId: ziel.id },
         stufe,
       );
       setZiel(null);
@@ -109,7 +109,7 @@ export default function SpaceRechte({
     await api
       .spaceRechtSetzen(
         spaceId,
-        r.gruppeId ? { gruppeId: r.gruppeId } : { userId: r.userId! },
+        r.groupId ? { groupId: r.groupId } : { userId: r.userId! },
         neu,
       )
       .catch((e: Error) => setFehler(e.message));
@@ -119,7 +119,7 @@ export default function SpaceRechte({
   // Do not offer targets that are already granted a second time; changing works
   // in the list above, and two ways for the same thing only confuse.
   const vergeben = useMemo(
-    () => new Set(rechte.map((r) => r.gruppeId ?? r.userId)),
+    () => new Set(rechte.map((r) => r.groupId ?? r.userId)),
     [rechte],
   );
 
@@ -129,7 +129,7 @@ export default function SpaceRechte({
         art: "g",
         id: g.id,
         name: g.name,
-        zusatz: `Gruppe, ${g.mitglieder} ${g.mitglieder === 1 ? "Mitglied" : "Mitglieder"}`,
+        zusatz: `Gruppe, ${g.members} ${g.members === 1 ? "Mitglied" : "Mitglieder"}`,
       })),
       ...konten.map<Kandidat>((k) => ({
         art: "u",
@@ -186,21 +186,21 @@ export default function SpaceRechte({
             </div>
 
             {rechte.map((r) => (
-              <div className="rechte-zeile" key={(r.gruppeId ?? r.userId)!}>
+              <div className="rechte-zeile" key={(r.groupId ?? r.userId)!}>
                 <Zeichen
-                  name={(r.gruppeId ? r.gruppeName : r.userName) ?? ""}
-                  gruppe={!!r.gruppeId}
+                  name={(r.groupId ? r.groupName : r.userName) ?? ""}
+                  gruppe={!!r.groupId}
                 />
                 <div className="rechte-wer">
                   <div className="rechte-name">
-                    {r.gruppeId ? r.gruppeName : r.userName}
+                    {r.groupId ? r.groupName : r.userName}
                   </div>
                   <div className="rechte-meta">
-                    {r.gruppeId ? "Gruppe" : "Konto"}
+                    {r.groupId ? "Gruppe" : "Konto"}
                   </div>
                 </div>
                 <select
-                  value={r.recht}
+                  value={r.permission}
                   onChange={(e) => aendern(r, e.target.value)}
                 >
                   {STUFEN.map((x) => (

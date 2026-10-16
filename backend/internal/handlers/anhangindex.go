@@ -74,9 +74,9 @@ func (s *Server) AnhangIndexNachziehen(w http.ResponseWriter, r *http.Request) {
 	s.spurAusRequest(r, AktAnhangIndex, "system", "anhangindex", "",
 		map[string]any{"gelesen": gelesen, "ohneText": leer})
 	writeJSON(w, http.StatusOK, map[string]int{
-		"betrachtet": len(offen),
-		"gelesen":    gelesen,
-		"ohneText":   leer,
+		"checked":     len(offen),
+		"read":        gelesen,
+		"withoutText": leer,
 	})
 }
 

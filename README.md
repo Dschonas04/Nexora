@@ -527,11 +527,11 @@ marked below.
 
 ```
 POST   /auth/register                     create account (first one becomes admin)
-POST   /auth/login                        sign in ({kennung, password}: email or username)
+POST   /auth/login                        sign in ({login, password}: email or username)
 POST   /auth/logout                       sign out
 GET    /auth/me                           current user
-POST   /auth/passwort                     change your own password ({alt, neu})
-GET    /lizenz                            which extras are unlocked
+POST   /auth/password                     change your own password ({old, new})
+GET    /license                            which extras are unlocked
 ```
 
 ### Pages
@@ -581,9 +581,9 @@ GET    /public/{token}                    read-only public page (no auth)
 ### Writing together
 
 ```
-GET    /echtzeit/{id}                     WebSocket: the session for one page
-GET    /pages/{id}/mitschreibende         how many are sitting at this page
-GET    /system/mitschrift                 which pages are open, and who is in them
+GET    /realtime/{id}                     WebSocket: the session for one page
+GET    /pages/{id}/collaborators         how many are sitting at this page
+GET    /system/collab                 which pages are open, and who is in them
 ```
 
 Whoever may **edit** a page shared with them writes on it at the same time as
@@ -594,16 +594,16 @@ costs nothing and two people in the same sentence both keep what they wrote.
 Saving to the database is done by exactly one of them, the one with the lowest
 client id in the room, and when that browser leaves, the next takes over.
 
-A proxy in front must pass WebSocket upgrades through to `/api/echtzeit/`.
+A proxy in front must pass WebSocket upgrades through to `/api/realtime/`.
 
 ### Watching machines  ·  admin only
 
 ```
 GET    /system                            the services around this one: reachable, version, latency
-GET    /system/rechner                    machines you keep an eye on, freshly probed
-POST   /system/rechner                    add one ({name, ziel}: host:port or http(s)://)
-PUT    /system/rechner/{id}               change one
-DELETE /system/rechner/{id}               remove one
+GET    /system/hosts                    machines you keep an eye on, freshly probed
+POST   /system/hosts                    add one ({name, target}: host:port or http(s)://)
+PUT    /system/hosts/{id}               change one
+DELETE /system/hosts/{id}               remove one
 ```
 
 Two lists in the settings under **System**. The first is what Nexora needs to
@@ -631,14 +631,14 @@ GET    /graph                             nodes and edges of the whole workspace
 
 ```
 GET    /spaces                            list spaces
-PUT    /spaces/{id}/farbe                 the colour the space wears in sidebar and graph
+PUT    /spaces/{id}/color                 the colour the space wears in sidebar and graph
 POST   /spaces                            create
 PUT    /spaces/{id}                       rename
 DELETE /spaces/{id}                       delete (pages keep existing, space_id nulled)
-PUT    /spaces/{id}/oeffentlich           open to the whole instance: nein|lesen|schreiben
+PUT    /spaces/{id}/public-access           open to the whole instance: nein|lesen|schreiben
 GET    /spaces/{id}/export[?format=]      ZIP of Markdown, or format=pdf|word as one document
 
-GET    /search?q=&space=&tag=&tage=&wer=  full text search, optionally narrowed
+GET    /search?q=&space=&tag=&days=&who=  full text search, optionally narrowed
 
 GET    /tags                              list tags
 POST   /tags                              create
@@ -648,44 +648,44 @@ GET    /pages/{id}/attachments/{attId}/word    a .docx as editor blocks
 PUT    /pages/{id}/attachments/{attId}/word    write the blocks back as .docx
 PUT    /pages/{id}/attachments/{attId}/pdf     replace a PDF with a marked-up one
 
-PUT    /profil                            your own display name
-PUT    /profil/bild                       your own profile picture (raw bytes)
-DELETE /profil/bild                       remove it
-GET    /users/{id}/bild                   an account's picture, 404 when none
+PUT    /profile                            your own display name
+PUT    /profile/image                       your own profile picture (raw bytes)
+DELETE /profile/image                       remove it
+GET    /users/{id}/image                   an account's picture, 404 when none
 GET    /auth/sso                         which sign-in methods this instance offers
 GET    /auth/oidc/start                  begin an OIDC sign-in (redirects to the provider)
-GET    /auth/oidc/zurueck                the provider's callback
+GET    /auth/oidc/callback                the provider's callback
 POST   /auth/ldap                        sign in against LDAP / Active Directory
-GET    /sitzungen                        the signed-in account's stored sessions
-DELETE /sitzungen                        end every session but the current one
-DELETE /sitzungen/{id}                   end one session, effective immediately
-PUT    /system/lizenz                    import a license key, effective at once (admin)
-POST   /system/lizenz/ausstellen        issue a key, only where a signing key is present
+GET    /sessions                        the signed-in account's stored sessions
+DELETE /sessions                        end every session but the current one
+DELETE /sessions/{id}                   end one session, effective immediately
+PUT    /system/license                    import a license key, effective at once (admin)
+POST   /system/license/issue        issue a key, only where a signing key is present
 POST   /import                           Markdown/HTML files or a ZIP, multipart; parentId/spaceId
                                          optional, or neueAblage=<name> to create a space for it
 POST   /import  (vorschau=1)              the same, but only reports the tree it would create
 
-GET    /postfach[?ungelesen=1]            inbox entries, newest first
-GET    /postfach/anzahl                   unread count, for the sidebar badge
-POST   /postfach/gelesen                  mark all read
-POST   /postfach/{id}/gelesen             mark one read
-DELETE /postfach                          drop the read ones
+GET    /inbox[?ungelesen=1]            inbox entries, newest first
+GET    /inbox/count                   unread count, for the sidebar badge
+POST   /inbox/read                  mark all read
+POST   /inbox/{id}/read             mark one read
+DELETE /inbox                          drop the read ones
 
 GET    /pages/{id}/markdown               the page as Markdown
 GET    /pages/{id}/pdf                    the page as PDF (extra)
 GET    /pages/{id}/word                   the page as .docx (extra)
 
-GET    /system/konfig                     config.conf, credentials masked (admin only)
-PUT    /system/konfig                     check or write it (admin only)
-POST   /system/neustart                   end the process so its supervisor restarts it
-POST   /system/papierkorb                 purge the whole instance's trash (admin only)
+GET    /system/config                     config.conf, credentials masked (admin only)
+PUT    /system/config                     check or write it (admin only)
+POST   /system/restart                   end the process so its supervisor restarts it
+POST   /system/trash                 purge the whole instance's trash (admin only)
 
 GET    /users                             list accounts (admin only)
 POST   /users                             create an account (admin only)
 DELETE /users/{id}                        delete an account (admin only, not yourself)
 PUT    /users/{id}/role                   change role (admin only)
-PUT    /users/{id}/benutzername           set the login name (the account itself or an admin)
-PUT    /users/{id}/passwort              set a password for a forgotten one (admin only)
+PUT    /users/{id}/username           set the login name (the account itself or an admin)
+PUT    /users/{id}/password              set a password for a forgotten one (admin only)
 
 GET    /favorites                         favorited pages
 GET    /search?q=                         search titles and content
@@ -695,18 +695,18 @@ GET    /healthz                           liveness probe
 ### Comments
 
 ```
-GET    /pages/{id}/kommentare             the whole thread, oldest first
-POST   /pages/{id}/kommentare             comment, or reply via elternId
-PUT    /kommentare/{id}                   edit own comment
-DELETE /kommentare/{id}                   empty the text, keep the shell
-POST   /kommentare/{id}/erledigt          mark thread settled, or reopen it
+GET    /pages/{id}/comments             the whole thread, oldest first
+POST   /pages/{id}/comments             comment, or reply via elternId
+PUT    /comments/{id}                   edit own comment
+DELETE /comments/{id}                   empty the text, keep the shell
+POST   /comments/{id}/resolved          mark thread settled, or reopen it
 ```
 
 ### Audit trail  ·  paid: `pruefspur`  ·  admin only
 
 ```
-GET    /pruefspur                         newest first; filter by aktion, akteur, objekt
-GET    /pruefspur/aktionen                which action names actually occur
+GET    /audit-log                         newest first; filter by aktion, akteur, objekt
+GET    /audit-log/actions                which action names actually occur
 ```
 
 Recording runs on every installation regardless of the license; only reading

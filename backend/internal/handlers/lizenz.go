@@ -22,9 +22,9 @@ func VerlangeFunktion(f lizenz.Funktion) func(http.Handler) http.Handler {
 					grund = "diese Funktion ist in der vorliegenden Lizenz nicht enthalten"
 				}
 				writeJSON(w, http.StatusPaymentRequired, map[string]interface{}{
-					"error":    "Funktion nicht freigeschaltet",
-					"funktion": string(f),
-					"grund":    grund,
+					"error":   "Funktion nicht freigeschaltet",
+					"feature": string(f),
+					"reason":  grund,
 				})
 				return
 			}
@@ -61,20 +61,20 @@ func (s *Server) LizenzStatus(w http.ResponseWriter, r *http.Request) {
 		for _, f := range lizenz.FunktionenDerStufe(st) {
 			namen = append(namen, string(f))
 		}
-		stufen = append(stufen, map[string]any{"name": string(st), "funktionen": namen})
+		stufen = append(stufen, map[string]any{"name": string(st), "features": namen})
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"gueltig":        z.Gueltig,
-		"inhaber":        z.Inhaber,
-		"stufe":          string(z.Stufe),
-		"laeuft_ab":      z.LaeuftAb,
-		"grund":          z.Grund,
-		"alle_extras":    alle,
-		"freigeschaltet": frei,
-		"stufen":         stufen,
+		"valid":     z.Gueltig,
+		"holder":    z.Inhaber,
+		"tier":      string(z.Stufe),
+		"expiresAt": z.LaeuftAb,
+		"reason":    z.Grund,
+		"allExtras": alle,
+		"unlocked":  frei,
+		"tiers":     stufen,
 		// Only true where a private key is stored, meaning at the issuer, not at
 		// the customer.
-		"ausstellbar": lizenz.Ausstellbar(),
+		"canIssue": lizenz.Ausstellbar(),
 	})
 }

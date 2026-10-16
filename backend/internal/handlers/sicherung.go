@@ -107,18 +107,18 @@ fi
 `, wort, ziel)
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"tokenGesetzt":   token != "",
-		"token":          token,
-		"skript":         befehl,
-		"datenbankBytes": dbBytes,
-		"anhaenge":       anhaenge,
-		"anhaengeBytes":  anhangBytes,
-		"ablage":         s.Ablage.Name(),
+		"tokenSet":        token != "",
+		"token":           token,
+		"script":          befehl,
+		"databaseBytes":   dbBytes,
+		"attachments":     anhaenge,
+		"attachmentBytes": anhangBytes,
+		"storage":         s.Ablage.Name(),
 		// The dump is textual and compresses well; attachments are usually
 		// already compressed. This is an estimate and is labelled as such.
-		"geschaetztBytes": dbBytes/4 + anhangBytes,
-		"bereit":          fehler == "",
-		"fehler":          fehler,
+		"estimatedBytes": dbBytes/4 + anhangBytes,
+		"ready":          fehler == "",
+		"errors":         fehler,
 	})
 }
 

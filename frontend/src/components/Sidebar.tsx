@@ -328,7 +328,7 @@ export default function Sidebar(props: Props) {
     setFilterOffen(false);
     suchfeld.current?.focus();
   };
-  const filterAktiv = Boolean(filter.space || filter.tag || filter.tage || filter.wer);
+  const filterAktiv = Boolean(filter.space || filter.tag || filter.days || filter.who);
   const [dragId, setDragId] = useState<string | null>(null);
   // One drop target for three kinds of destination, encoded as a string: a bare
   // page id, "space:<id>" for a space header, or "root" for the ungrouped
@@ -485,16 +485,16 @@ export default function Sidebar(props: Props) {
         <span className="tree-label">{h.title || "Untitled"}</span>
         {/* Says plainly that this page is not the user's own, instead of
             leaving them to wonder why it is not in their tree. */}
-        {!h.eigen && <span className="pill klein">shared</span>}
+        {!h.own && <span className="pill klein">shared</span>}
       </div>
-      {h.quelle && (
+      {h.source && (
         // Where the hit comes from. Without this line an excerpt from a PDF
         // would read like page content that one then looks for on the page in
         // vain.
-        <div className="treffer-quelle muted small">aus Anhang: {h.quelle}</div>
+        <div className="treffer-quelle muted small">aus Anhang: {h.source}</div>
       )}
-      {h.ausschnitt.trim() !== "" && (
-        <div className="treffer-ausschnitt">{markiere(h.ausschnitt)}</div>
+      {h.snippet.trim() !== "" && (
+        <div className="treffer-ausschnitt">{markiere(h.snippet)}</div>
       )}
     </div>
   );
@@ -648,9 +648,9 @@ export default function Sidebar(props: Props) {
             ))}
           </select>
           <select
-            value={filter.tage ? String(filter.tage) : ""}
+            value={filter.days ? String(filter.days) : ""}
             onChange={(e) =>
-              setFilter((f) => ({ ...f, tage: e.target.value ? Number(e.target.value) : undefined }))
+              setFilter((f) => ({ ...f, days: e.target.value ? Number(e.target.value) : undefined }))
             }
           >
             <option value="">Any age</option>
@@ -659,8 +659,8 @@ export default function Sidebar(props: Props) {
             <option value="365">Last year</option>
           </select>
           <select
-            value={filter.wer ?? ""}
-            onChange={(e) => setFilter((f) => ({ ...f, wer: e.target.value || undefined }))}
+            value={filter.who ?? ""}
+            onChange={(e) => setFilter((f) => ({ ...f, who: e.target.value || undefined }))}
           >
             <option value="">By anyone</option>
             <option value="ich">Only mine</option>
@@ -925,16 +925,16 @@ export default function Sidebar(props: Props) {
                     {/* Says without detour that everybody reads along here. The
                         addition stands in the title because "offen" alone does
                         not reveal whether writing is allowed too. */}
-                    {sp.oeffentlich !== "nein" && (
+                    {sp.publicAccess !== "nein" && (
                       <span
                         className="pill klein offen"
                         title={
-                          sp.oeffentlich === "schreiben"
+                          sp.publicAccess === "schreiben"
                             ? "Public space: every signed-in account may read and edit"
                             : "Public space: every signed-in account may read"
                         }
                       >
-                        {sp.oeffentlich === "schreiben" ? "offen" : "public"}
+                        {sp.publicAccess === "schreiben" ? "offen" : "public"}
                       </span>
                     )}
                     {/* The count is shown only while collapsed: when expanded you
@@ -954,7 +954,7 @@ export default function Sidebar(props: Props) {
                           checks it again anyway; the point here is not to put a
                           button in front of somebody that is refused on every
                           press. */}
-                      {sp.darfVerwalten && (
+                      {sp.canManage && (
                         <button
                           className="icon-btn"
                           title="Rename space"
@@ -963,7 +963,7 @@ export default function Sidebar(props: Props) {
                           ✎
                         </button>
                       )}
-                      {sp.darfVerwalten && (
+                      {sp.canManage && (
                         <button
                           className="icon-btn"
                           title="Visibility of this space"
@@ -972,7 +972,7 @@ export default function Sidebar(props: Props) {
                           ◎
                         </button>
                       )}
-                      {frei("gruppen") && sp.darfVerwalten && (
+                      {frei("gruppen") && sp.canManage && (
                         <button
                           className="icon-btn"
                           title="Permissions for this space"
@@ -984,7 +984,7 @@ export default function Sidebar(props: Props) {
                         {/* Import and export used to live here as extra icons on every
                           heading. They now sit in the top-left tool row and
                           ask for the target space there, see the tool section. */}
-                      {sp.darfVerwalten && (
+                      {sp.canManage && (
                         <button className="icon-btn" title="Delete space" onClick={() => onDeleteSpace(sp.id)}>
                           ✕
                         </button>
@@ -1007,10 +1007,10 @@ export default function Sidebar(props: Props) {
                       ).map(([wert, titel, erklaerung]) => (
                         <button
                           key={wert}
-                          className={"sichtbarkeit-eintrag" + (sp.oeffentlich === wert ? " gewaehlt" : "")}
+                          className={"sichtbarkeit-eintrag" + (sp.publicAccess === wert ? " gewaehlt" : "")}
                           onClick={() => {
                             setSichtbarkeitFuer(null);
-                            if (sp.oeffentlich !== wert) onSpaceOeffentlich(sp.id, wert);
+                            if (sp.publicAccess !== wert) onSpaceOeffentlich(sp.id, wert);
                           }}
                         >
                           <span className="sichtbarkeit-text">
@@ -1021,7 +1021,7 @@ export default function Sidebar(props: Props) {
                               entry is read as a state; a coloured row is read as
                               a button one is about to press. */}
                           <span className="sichtbarkeit-haken" aria-hidden="true">
-                            {sp.oeffentlich === wert ? "✓" : ""}
+                            {sp.publicAccess === wert ? "✓" : ""}
                           </span>
                         </button>
                       ))}
@@ -1229,8 +1229,8 @@ export default function Sidebar(props: Props) {
                     >
                       <span className="tag-dot" style={{ background: t.color }} />
                       <span className="tree-label">{t.name}</span>
-                      <span className={"tag-anzahl muted small" + (t.anzahl === 0 ? " leer" : "")}>
-                        {t.anzahl}
+                      <span className={"tag-anzahl muted small" + (t.count === 0 ? " leer" : "")}>
+                        {t.count}
                       </span>
                     </div>
                   ))}
@@ -1351,7 +1351,7 @@ export default function Sidebar(props: Props) {
             id={user?.id ?? ""}
             name={user?.name ?? ""}
             email={user?.email}
-            stand={user?.bildStand}
+            stand={user?.imageVersion}
           />
           <span className="konto-name">{user?.name}</span>
           <span className="konto-pfeil" aria-hidden="true">
@@ -1377,7 +1377,7 @@ export default function Sidebar(props: Props) {
                 id={user?.id ?? ""}
                 name={user?.name ?? ""}
                 email={user?.email}
-                stand={user?.bildStand}
+                stand={user?.imageVersion}
                 groesse={40}
               />
               <div>
