@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // Collaborative editing on the same page.
 //
 // The service does not produce its own text here: it only forwards packets

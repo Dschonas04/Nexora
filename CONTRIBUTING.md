@@ -2,12 +2,12 @@
 
 Thanks for your interest in contributing to Nexora!
 
-**One thing to know before you start:** Nexora is licensed under the
-[Business Source License 1.1](LICENSING.md), not an OSI open-source license.
-The source is open and the core may be run in production commercially, but the
-project is not public domain. By opening a pull request you agree that your
-contribution may be distributed under that license and under the Apache 2.0
-that succeeds it on 2030-08-19.
+**One thing to know before you start:** Nexora is open core. The core is under
+the [GNU AGPL 3.0](LICENSE), the paid extras under the
+[Nexora Enterprise License](LICENSE-ENTERPRISE), see [LICENSING.md](LICENSING.md).
+By opening a pull request you agree that your contribution is licensed under
+the license of the files it changes, and that the maintainer may additionally
+distribute it under other terms, including the Enterprise License.
 
 ## Getting Started
 

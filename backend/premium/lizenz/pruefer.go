@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // Package lizenz verifies Nexora license keys. It is the paid half of the
 // project and carries its own license, see premium/LICENSE.
 //

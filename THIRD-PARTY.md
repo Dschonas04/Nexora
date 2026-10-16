@@ -1,6 +1,6 @@
 # Third-party components
 
-Nexora is licensed under BUSL-1.1 but is not built from its own source alone.
+Nexora (AGPL 3.0 core, Enterprise License for the paid extras) is not built from its own source alone.
 This file states what ships with it and under which terms.
 
 Listed is what is **delivered**, not what the package files name. The
@@ -65,7 +65,7 @@ Two questions have to be kept apart here.
 
 **Does this make Nexora GPL?** No. `pdftotext` is called as a separate process
 over a pipe, none of it is linked in. That is an independent invocation and not
-a derived work; the Go program stays under BUSL-1.1.
+a derived work; the Go program keeps its own license.
 
 **Whoever passes on the image distributes GPL programs along with it** and owes
 the corresponding source for them. The offer for that is in

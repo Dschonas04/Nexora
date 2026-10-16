@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // The audit trail, for admins.
 //
 // It answers one question: who did what, when. Everything here serves reading

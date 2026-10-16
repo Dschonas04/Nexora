@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // Pulling readable text out of an attachment, for the search index.
 //
 // Only what can be read cheaply and reliably: plain text straight from the

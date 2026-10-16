@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // Group administration.
 //
 // Groups exist because per-page sharing does not scale: letting fourteen

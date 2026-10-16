@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // Who may do what in one space.
 //
 // The three levels are a ladder, not a set of switches: lesen < schreiben <

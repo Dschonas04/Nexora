@@ -14,7 +14,7 @@ import react from "@vitejs/plugin-react";
 // header longer than necessary would be forgotten at the next change.
 const kopf = [
   "/*!",
-  " * Nexora. Business Source License 1.1, from 19.08.2030 Apache 2.0.",
+  " * Nexora. AGPL-3.0, paid extras under the Nexora Enterprise License.",
   " *",
   " * This bundle contains third-party components, among them BlockNote",
   " * (@blocknote/core, /react, /mantine) under the Mozilla Public License 2.0.",

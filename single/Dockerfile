@@ -51,8 +51,8 @@ ENV NEXORA_SERVICE_SCHEME=http \
 LABEL org.opencontainers.image.title="Nexora (single container)" \
       org.opencontainers.image.description="Nexora Standard with its database in one container" \
       org.opencontainers.image.source="https://github.com/Dschonas04/Nexora" \
-      org.opencontainers.image.licenses="BUSL-1.1" \
-      org.nexora.fremde-bestandteile="Enthaelt PostgreSQL (PostgreSQL License), GPL-2.0-Programme aus Alpine (poppler-utils, busybox) und MPL-2.0-Code (BlockNote). Nexora ruft sie als eigene Prozesse auf und bleibt unter BUSL-1.1." \
+      org.opencontainers.image.licenses="AGPL-3.0-only AND LicenseRef-Nexora-Enterprise" \
+      org.nexora.fremde-bestandteile="Enthaelt PostgreSQL (PostgreSQL License), GPL-2.0-Programme aus Alpine (poppler-utils, busybox) und MPL-2.0-Code (BlockNote). Nexora ruft sie als eigene Prozesse auf und behaelt seine eigene Lizenz." \
       org.nexora.gpl-quellen="https://gitlab.alpinelinux.org/alpine/aports"
 
 VOLUME ["/data"]

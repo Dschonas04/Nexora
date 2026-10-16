@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // Sharing dialog. It covers the two independent mechanisms: naming individual
 // accounts, and a public link anyone can open. A page can use both at once.
 import { useEffect, useState } from "react";

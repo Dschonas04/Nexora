@@ -1,5 +1,5 @@
 // Package lizenz is the gate between the freely licensed core and the paid
-// extras. It lives on the Apache side on purpose and knows nothing about how a
+// extras. It lives on the AGPL side on purpose and knows nothing about how a
 // key is verified, it only asks whoever registered itself as the verifier.
 //
 // Without a registered verifier every extra stays locked. That is what makes a

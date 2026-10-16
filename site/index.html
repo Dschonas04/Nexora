@@ -25,7 +25,7 @@
   "downloadUrl": "https://github.com/Dschonas04/Nexora",
   "softwareVersion": "2.0.0",
   "license": "https://github.com/Dschonas04/Nexora/blob/main/LICENSING.md",
-  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "EUR"}
+  "offers": [{"@type": "Offer", "name": "Standard", "price": "0", "priceCurrency": "EUR"}, {"@type": "Offer", "name": "Pro", "price": "200", "priceCurrency": "EUR"}]
 }
 </script>
 <style>
@@ -239,6 +239,29 @@ docker compose -f docker-compose.stack.yml up -d</code></pre>
   </div>
 </section>
 
+<section class="band" id="preise">
+  <h2>Prices</h2>
+  <p class="leise">The core is free software under the AGPL 3.0. Larger teams buy a key for the extras, per installation and year, checked offline.</p>
+  <div class="tabelle-rahmen">
+  <table>
+    <thead><tr><th></th><th>Standard</th><th>Pro</th><th>Business</th></tr></thead>
+    <tbody>
+      <tr><td><b>Price</b></td><td class="ja">free</td><td class="ja">200 € / year</td><td class="ja">on request</td></tr>
+      <tr><td>Pages, spaces, search, backlinks, graph</td><td>yes</td><td>yes</td><td>yes</td></tr>
+      <tr><td>Versions, attachments, comments</td><td>yes</td><td>yes</td><td>yes</td></tr>
+      <tr><td>Sharing and public links</td><td>—</td><td>yes</td><td>yes</td></tr>
+      <tr><td>Editing together in real time</td><td>—</td><td>yes</td><td>yes</td></tr>
+      <tr><td>PDF, Word and space export</td><td>—</td><td>yes</td><td>yes</td></tr>
+      <tr><td>Search inside attachments</td><td>—</td><td>yes</td><td>yes</td></tr>
+      <tr><td>Groups and space permissions</td><td>—</td><td>—</td><td>yes</td></tr>
+      <tr><td>Audit trail</td><td>—</td><td>—</td><td>yes</td></tr>
+      <tr><td>SSO (OIDC), LDAP and Active Directory</td><td>—</td><td>—</td><td>yes</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><a class="knopf stark" href="mailto:lizenz@jonasgroll.de?subject=Nexora%20license">Request a key</a></p>
+</section>
+
 <section class="band">
   <h2>What it is not</h2>
   <p class="leise">Better to know now than after the migration.</p>
@@ -246,7 +269,7 @@ docker compose -f docker-compose.stack.yml up -d</code></pre>
     <li><b>No real-time editing.</b> Two people in the same paragraph is not it: the save that would overwrite somebody is refused instead. Docmost and Outline do the real thing.</li>
     <li><b>No Notion databases.</b> No table views, no boards, no formulas. This is a wiki, not a small application platform.</li>
     <li><b>No plugins, no AI.</b> There are settings, not an extension interface and not an assistant writing your text.</li>
-    <li><b>No OSI licence, yet.</b> BUSL 1.1: run it in production, commercially, for free, with versions, attachments and comments included. Eight extras for larger teams need a key, and the whole thing turns Apache 2.0 on 2030-08-19. Some catalogues stop right there, and that is fair.</li>
+    <li><b>Not everything is free.</b> The core is AGPL 3.0 and complete, but sharing, real-time editing, export, groups, audit trail, SSO and LDAP need a paid key. Wiki.js and BookStack ship those for free.</li>
     <li><b>No large community.</b> It is young and mostly one person's work. Outline, Docmost and BookStack have years of issues and people who hit your problem before you.</li>
   </ul>
 </section>
@@ -262,7 +285,7 @@ docker compose -f docker-compose.stack.yml up -d</code></pre>
     <a href="https://github.com/Dschonas04/Nexora/blob/main/docs/comparison.md">Comparison</a> ·
     <a href="https://github.com/Dschonas04/Nexora/discussions">Discussions</a>
   </p>
-  <p>Business Source License 1.1, Apache 2.0 from 2030-08-19. Built by one person in a homelab.</p>
+  <p>AGPL 3.0 core, paid extras under the Nexora Enterprise License. Built by one person in a homelab.</p>
 </footer>
 
 </body>

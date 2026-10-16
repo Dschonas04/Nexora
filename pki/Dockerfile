@@ -12,7 +12,7 @@ RUN chmod +x /usr/local/bin/create.sh
 
 LABEL org.opencontainers.image.title="Nexora PKI" \
       org.opencontainers.image.source="https://github.com/Dschonas04/Nexora" \
-      org.opencontainers.image.licenses="BUSL-1.1" \
+      org.opencontainers.image.licenses="AGPL-3.0-only AND LicenseRef-Nexora-Enterprise" \
       org.nexora.gpl-quellen="https://gitlab.alpinelinux.org/alpine/aports"
 
 ENTRYPOINT ["/usr/local/bin/create.sh"]

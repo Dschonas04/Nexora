@@ -1,31 +1,44 @@
 # Licensing
 
-Nexora is licensed entirely under the **Business Source License 1.1**, see
-[LICENSE](LICENSE).
+Nexora is **open core**:
 
-That is not an open source licence in the OSI sense, but it is not a closed one
-either: the source is open, and the Additional Use Grant expressly permits
-production use, commercial use included, as long as the paid add-ons are not
-used without a key.
+* **The core is free software under the [GNU AGPL 3.0](LICENSE).** Run it,
+  change it, sell services around it, in production, in companies, without
+  asking or paying anybody.
+* **The paid extras are under the [Nexora Enterprise License](LICENSE-ENTERPRISE).**
+  Their source is in the same repository and can be read, built and tested;
+  running them in production needs a license key.
 
-**On 19.08.2030 the restriction falls away.** From then on Apache 2.0 applies.
-That is written into the licence and cannot be revoked.
+Which license a file is under is written in its header: Enterprise files carry
+`SPDX-License-Identifier: LicenseRef-Nexora-Enterprise`, together with
+everything in `backend/premium/`. Everything else is AGPL 3.0.
 
-## What is permitted without a key
+## Prices
 
-The core may run in production, in companies too, commercially too, without
-anybody having to ask or pay:
+| | Standard | Pro | Business |
+|---|---|---|---|
+| Price | **free** | **200 € per installation and year** | **on request** |
+| Editor, nested pages, spaces, tags, trash | ✓ | ✓ | ✓ |
+| Full text search, backlinks, knowledge graph | ✓ | ✓ | ✓ |
+| Accounts, roles, two-factor sign-in | ✓ | ✓ | ✓ |
+| Version history, attachments, comments, conflict detection | ✓ | ✓ | ✓ |
+| Sharing with accounts and public links | | ✓ | ✓ |
+| Editing a page together in real time | | ✓ | ✓ |
+| PDF and Word export, space export | | ✓ | ✓ |
+| Full text search inside attachments | | ✓ | ✓ |
+| Groups and space permissions | | | ✓ |
+| Audit trail | | | ✓ |
+| Single sign-on via OIDC | | | ✓ |
+| LDAP and Active Directory | | | ✓ |
 
-Editor, nested pages, spaces, tags, favourites, trash, full-text search over
-pages, backlinks, knowledge graph, accounts and roles, and, since 2.1, version
-history, attachments, comments and conflict detection. Together that is the
-**Standard** scope: what a wiki needs so that nobody loses text or has to keep
-files somewhere else.
+**To buy a key**, write to **[lizenz@jonasgroll.de](mailto:lizenz@jonasgroll.de)**
+with the name the key should be issued to and the tier. You get an invoice and,
+once paid, the key.
 
-Reading, changing, building and testing is always permitted for the **entire**
-work, commercial evaluation included.
+Keys are entered under *Settings → License* and are checked offline; the
+installation never calls home.
 
-## What needs a key
+## What the tiers mean in the code
 
 | Add-on | Tier | Name in the key | Without a key |
 |---|---|---|---|
@@ -52,7 +65,7 @@ The server rejects locked calls with `402 Payment Required`, and the interface
 hides the matching controls. Hiding them is courtesy; the rejection is the
 protection.
 
-## Where the check sits
+## The core alone
 
 The key check lives in `backend/premium`, the gate itself in
 `backend/internal/lizenz`. The gate knows nothing about signatures; it only
@@ -67,28 +80,29 @@ cd backend && go build -tags nur_kern ./...
 Every Pro and Business add-on then answers `402`; the Standard scope, version
 history and attachments included, runs unchanged.
 
+## Earlier versions
+
+Releases up to and including 2.2.1 were published under the Business Source
+License 1.1 and stay under it; from 19.08.2030 they become Apache 2.0 as that
+license promised. Everything after 2.2.1 is AGPL 3.0 plus the Enterprise
+License as described here.
+
 ## A key cannot be revoked
 
 Keys are checked offline against a built-in Ed25519 key. No licence server, no
 phoning home, works in networks without internet access.
 
 The price for that: an issued key stays valid. An expiry date is the only
-lever, which is why keys for paying customers should carry one.
-
-## And the source is open
+lever, which is why keys for paying customers carry one.
 
 Whoever reads `backend/premium/lizenz/pruefer.go` finds the line that checks the
 signature and can remove it. That is true of every piece of software that runs
-on other people's machines, pfSense, GitLab, Sentry and Elastic all work this
-way.
-
-What protects is not the technology but the licence: such an intervention is a
-breach of the licence, not a trick. And whoever does it would not have paid
-anyway.
+on other people's machines. What protects is not the technology but the
+licence: the Enterprise License forbids exactly that.
 
 ## Third-party components
 
-Nexora is licensed under BUSL-1.1 but is not built from its own source alone.
+Nexora is not built from its own source alone.
 What ships with it and under which licence is listed in full in
 [THIRD-PARTY.md](THIRD-PARTY.md), together with the commands that recount the
 state at any time.
@@ -109,7 +123,7 @@ header really arrives in every bundle.
 `pdftotext` for the full text of PDF attachments, and busybox comes along from
 the Alpine base. Nexora calls them as separate processes over a pipe and links
 none of them; that is an independent invocation and not a derived work, and the
-Go program stays under BUSL-1.1.
+Go program keeps its own license.
 
 Whoever passes on the **image**, however, distributes these programs along with
 it and owes the corresponding source for them. This offer hereby applies:
@@ -135,5 +149,4 @@ files.
 
 ## Obtaining a licence
 
-For commercial licences and other arrangements, contact the licensor, Jonas
-Groll.
+License keys and other arrangements: [lizenz@jonasgroll.de](mailto:lizenz@jonasgroll.de).

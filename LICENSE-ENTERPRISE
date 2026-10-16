@@ -1,0 +1,45 @@
+Nexora Enterprise License
+
+Copyright (c) 2026 Jonas Groll
+
+This license applies to the Enterprise files of Nexora: every file in
+backend/premium/ and every other file whose header carries the line
+
+    SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+
+Every other file of Nexora is licensed under the GNU Affero General Public
+License, version 3 (see LICENSE). This license does not apply to them.
+
+1. Production use with a key. You may use the Enterprise files in production
+   only together with a valid Nexora license key issued by the licensor, and
+   only for the features, the number of installations and the period that key
+   covers.
+
+2. Without a key. Without a key you may copy, read, modify, build and test the
+   Enterprise files for development, testing and evaluation. Code in the
+   Enterprise files that runs in an installation without any key, as shipped
+   by the licensor (for example the recording of the audit trail), may also be
+   used in production.
+
+3. Restrictions. You may not
+   a) remove, disable, circumvent or alter the license check, or use or
+      distribute a version of Nexora in which this has been done;
+   b) sell, sublicense or otherwise distribute the Enterprise files, or
+      modified versions of them, separately from Nexora as published by the
+      licensor;
+   c) remove or alter copyright and license notices in the Enterprise files.
+
+4. Contributions. Changes you send to the licensor for inclusion in Nexora are
+   licensed to the licensor under the same terms as the file they change, and
+   the licensor may additionally distribute them under this license.
+
+5. Third-party components keep their own licenses, see THIRD-PARTY.md.
+
+6. Termination. Any use in violation of this license terminates your rights
+   under it.
+
+THE ENTERPRISE FILES ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED. TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSOR
+SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM THEIR USE.
+
+License keys: lizenz@jonasgroll.de

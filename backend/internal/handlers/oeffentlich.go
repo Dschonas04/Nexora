@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // What a visitor without an account can see.
 //
 // Previously a publicly shared page contained only its text. Images linked to

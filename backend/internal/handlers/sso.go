@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // Signing in with an outside identity: OIDC and LDAP.
 //
 // Both answer the same question, "who is this", by different routes, and both

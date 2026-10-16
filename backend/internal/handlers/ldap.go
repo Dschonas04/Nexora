@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // Signing in against a directory (LDAP or Active Directory).
 //
 // The sequence is the same as with any directory service: bind with a service

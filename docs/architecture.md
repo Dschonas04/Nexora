@@ -10,7 +10,7 @@ The diagrams are Mermaid and render on GitHub without a plugin.
 |---|---|
 | **System** | Nexora, self-hosted knowledge base |
 | **Repository** | `github.com/Dschonas04/Nexora` |
-| **License** | Business Source License 1.1, Apache 2.0 from 2030-08-19 |
+| **License** | AGPL 3.0 core, paid extras under the Nexora Enterprise License |
 | **Status of this document** | describes the state of the `main` branch |
 
 **Contents**
@@ -110,10 +110,9 @@ decisions in chapter 9 are exactly that collision being resolved.
 
 - **One maintainer.** Everything that cannot be operated by one person is out of
   scope: no cluster, no sharding, no separate worker fleet.
-- **Business Source License 1.1**, not an OSI licence. The core may be run
-  commercially, version history, attachments and comments included; eight
-  extras for larger teams need a key. The whole thing turns Apache 2.0 on
-  2030-08-19.
+- **Open core.** The core is AGPL 3.0, version history, attachments and
+  comments included; eight extras for larger teams are under the Nexora
+  Enterprise License and need a key.
 - **The repository is public**, which shapes CI: no `pull_request` trigger on
   the self-hosted runner, and no Docker socket on it (chapter 7.4).
 

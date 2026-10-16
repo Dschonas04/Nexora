@@ -30,6 +30,6 @@ CMD ["/usr/local/bin/tls-start.sh"]
 # corresponding source for it. See THIRD-PARTY.md in the source tree.
 LABEL org.opencontainers.image.title="Nexora Frontend" \
       org.opencontainers.image.source="https://github.com/Dschonas04/Nexora" \
-      org.opencontainers.image.licenses="BUSL-1.1" \
+      org.opencontainers.image.licenses="AGPL-3.0-only AND LicenseRef-Nexora-Enterprise" \
       org.nexora.fremde-bestandteile="Das ausgelieferte Buendel enthaelt MPL-2.0-Code (BlockNote). Quelltext: https://github.com/TypeCellOS/BlockNote" \
       org.nexora.gpl-quellen="https://gitlab.alpinelinux.org/alpine/aports"

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // Exporting a whole space as a ZIP of Markdown files.
 //
 // The export's goal is portability rather than convenience: it answers

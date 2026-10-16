@@ -1,12 +1,11 @@
 # Nexora Premium
 
-This directory holds the license check. It is covered by the repository's
-[Business Source License 1.1](../../LICENSE) like everything else; there is no
-separate license here any more.
+This directory holds the license check. Unlike the AGPL core it is under the
+[Nexora Enterprise License](../../LICENSE-ENTERPRISE), like every other file
+whose header says `LicenseRef-Nexora-Enterprise`.
 
 What that means in practice: you may read, modify, build and test this code
-freely. What needs a license key is running the paid features in production. On
-2030-08-19 the restriction lapses and Apache 2.0 takes over.
+freely. What needs a license key is running the paid features in production.
 
 ## What lives here
 

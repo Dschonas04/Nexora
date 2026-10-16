@@ -5,6 +5,7 @@ A minimal, self-hosted knowledge base: think Notion or Outline, but small and yo
 [![Release](https://img.shields.io/github/v/release/Dschonas04/Nexora?style=flat-square)](https://github.com/Dschonas04/Nexora/releases)
 [![Docker Hub](https://img.shields.io/docker/pulls/dschohnas/nexora-backend?style=flat-square&logo=docker&logoColor=white&label=Docker%20Hub%20pulls)](https://hub.docker.com/r/dschohnas/nexora-backend)
 [![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-dschonas04%2Fnexora--*-2496ED?style=flat-square&logo=github)](https://github.com/Dschonas04?tab=packages&repo_name=Nexora)
+[![License](https://img.shields.io/badge/license-AGPL--3.0%20%2B%20Enterprise-blue?style=flat-square)](LICENSING.md)
 [![Platforms](https://img.shields.io/badge/platforms-amd64%20%7C%20arm64-555?style=flat-square)](#where-the-images-are)
 
 **[Project page](https://dschonas04.github.io/Nexora/)** ·
@@ -28,12 +29,12 @@ history, attachments, comments, a trash can, backlinks, a knowledge graph and a
 real full text search. **Go** backend, **React** frontend, **PostgreSQL**
 storage.
 
-Licensed under the [Business Source License 1.1](LICENSING.md). The source is
-open and the core may be run in production, commercially, without paying
-anyone. Version history, attachments, comments and conflict detection are
-included. Eight extras for larger teams need a license key: sharing and public
-links, real-time editing, PDF and Word export, search inside attachments,
-groups, audit trail, SSO and LDAP. On 2030-08-19 the whole thing becomes Apache 2.0.
+**Open core:** the core is free software under the [AGPL 3.0](LICENSE), version
+history, attachments, comments and conflict detection included. Eight extras
+for larger teams need a [license key](LICENSING.md#prices) (Pro 200 € per
+installation and year, Business on request): sharing and public links,
+real-time editing, PDF and Word export, search inside attachments, groups,
+audit trail, SSO and LDAP.
 
 ## Documentation
 
@@ -801,21 +802,24 @@ cd frontend && npm install && npm run dev
 
 ## Licensing
 
-**Business Source License 1.1**, see [LICENSE](LICENSE), explained in
-[LICENSING.md](LICENSING.md).
+**Open core**, explained in [LICENSING.md](LICENSING.md):
 
-Not an OSI open-source license, but not a closed one either: the source is
-open, and the Additional Use Grant explicitly permits production and commercial
-use of the core. On **2030-08-19** the restriction lapses and Apache 2.0 takes
-over.
+* the core under the **[GNU AGPL 3.0](LICENSE)**,
+* the paid extras under the **[Nexora Enterprise License](LICENSE-ENTERPRISE)**
+  (files marked `LicenseRef-Nexora-Enterprise` and `backend/premium/`).
 
-**Free to run:** editor, nested pages, spaces, tags, favourites, trash, full
-text search over pages, backlinks, knowledge graph, accounts and roles.
+**Free:** editor, nested pages, spaces, tags, favourites, trash, full text
+search over pages, backlinks, knowledge graph, accounts and roles, version
+history, attachments, comments, conflict detection.
 
-**Needs a key:** version history, attachments, sharing and public links, audit
-trail, groups and space permissions, SSO via OIDC, LDAP/Active Directory,
-attachment search, space export, comments, conflict detection, writing on a
-page together.
+**Pro, 200 € per installation and year:** sharing and public links, writing on
+a page together, PDF and Word export, space export, search inside attachments.
+
+**Business, on request:** everything in Pro plus groups and space permissions,
+audit trail, SSO via OIDC, LDAP/Active Directory.
+
+Keys: [lizenz@jonasgroll.de](mailto:lizenz@jonasgroll.de). They are checked
+offline, the installation never calls home.
 
 Locked endpoints answer `402 Payment Required` and the browser hides the
 corresponding controls. Hiding is a courtesy to the reader; the refusal is

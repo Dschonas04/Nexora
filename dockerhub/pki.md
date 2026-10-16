@@ -32,4 +32,4 @@ Architectures `linux/amd64` and `linux/arm64`. The same images are on
 - Source and documentation: https://github.com/Dschonas04/Nexora
 - Configuration: https://github.com/Dschonas04/Nexora/blob/main/docs/configuration.md
 - Live demo (resets nightly): https://nexora.jonasgroll.de
-- Licence: Business Source License 1.1, becomes Apache 2.0 on 2030-08-19.
+- Licence: AGPL 3.0 core, paid extras under the Nexora Enterprise License ([prices](https://github.com/Dschonas04/Nexora/blob/main/LICENSING.md#prices)).

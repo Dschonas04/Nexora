@@ -183,6 +183,7 @@ Issuing needs the private key, which lives in
 ## Contributing
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md). One thing to know before you start:
-Nexora is under the Business Source License 1.1, not an OSI licence. By opening
-a pull request you agree your contribution may be distributed under it and under
-the Apache 2.0 that succeeds it on 2030-08-19.
+the core is AGPL 3.0, the paid extras are under the Nexora Enterprise License.
+By opening a pull request you agree your contribution is licensed under the
+license of the files it changes and may additionally be distributed by the
+maintainer under other terms.

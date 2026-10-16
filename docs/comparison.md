@@ -14,7 +14,7 @@ considering.
 | | Nexora | Notion | Outline | Docmost | Wiki.js | BookStack | AppFlowy |
 |---|---|---|---|---|---|---|---|
 | Self-hosted | yes | no | yes | yes | yes | yes | yes |
-| Licence | BUSL 1.1, Apache 2.0 in 2030 | commercial SaaS | BUSL 1.1 | AGPL 3.0 | AGPL 3.0 | MIT | AGPL 3.0 |
+| Licence | AGPL 3.0 core + paid extras | commercial SaaS | BUSL 1.1 | AGPL 3.0 | AGPL 3.0 | MIT | AGPL 3.0 |
 | Stack | Go, React, PostgreSQL |, | Node, PostgreSQL, Redis | Node, PostgreSQL, Redis | Node, several databases | PHP, MySQL | Rust, Flutter |
 | Sign-in without an identity provider | yes, e-mail and password |, | no, needs an OAuth provider | yes | yes | yes | yes |
 | Block editor with a slash menu | yes | yes | yes | yes | markdown or WYSIWYG | WYSIWYG or markdown | yes |
@@ -68,11 +68,9 @@ considering.
 - **A plugin ecosystem, or AI.** There is no extension interface, no
   marketplace, no assistant writing text. Wiki.js has modules for nearly
   everything; Nexora has settings.
-- **An OSI-approved licence today.** BUSL 1.1 lets you run the core in
-  production, commercially, without paying anyone, and it turns into Apache 2.0
-  on 2030-08-19, but until then it is not an open-source licence in the
-  official sense, and some catalogues and company policies stop right there.
-  Docmost, Wiki.js and BookStack are AGPL or MIT.
+- **Everything for free.** The core is AGPL 3.0 and complete, but sharing,
+  real-time editing, export, groups, audit trail, SSO and LDAP need a paid key.
+  Wiki.js and BookStack ship those for free.
 - **A large community.** Nexora is young and mostly one person's work. Docmost,
   Outline and BookStack have years of issues, packages and people who have hit
   your problem before.
@@ -83,5 +81,5 @@ Nexora is for the person who wants one small service that holds nested pages,
 finds things again, shows how they connect, and can be operated and backed up
 without a second thought. If two people have to type in the same paragraph at
 the same second, or if the wiki is really a database in disguise, take another
-one, and if the licence is the sticking point, take an AGPL project instead of
-waiting for 2030.
+one, and if you need SSO, groups or an audit trail without paying for a key,
+take Wiki.js or BookStack.

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // Command schluessel issues and inspects Nexora license keys.
 //
 // It is the only place the private signing key is used. That key must stay with

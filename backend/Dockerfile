@@ -30,8 +30,8 @@ RUN apk add --no-cache poppler-utils postgresql16-client \
 # source tree.
 LABEL org.opencontainers.image.title="Nexora Backend" \
       org.opencontainers.image.source="https://github.com/Dschonas04/Nexora" \
-      org.opencontainers.image.licenses="BUSL-1.1" \
-      org.nexora.fremde-bestandteile="Enthaelt GPL-2.0-Programme aus Alpine, darunter poppler-utils. Nexora ruft sie als eigene Prozesse auf und bleibt unter BUSL-1.1." \
+      org.opencontainers.image.licenses="AGPL-3.0-only AND LicenseRef-Nexora-Enterprise" \
+      org.nexora.fremde-bestandteile="Enthaelt GPL-2.0-Programme aus Alpine, darunter poppler-utils. Nexora ruft sie als eigene Prozesse auf und behaelt seine eigene Lizenz." \
       org.nexora.gpl-quellen="https://gitlab.alpinelinux.org/alpine/aports"
 
 COPY --from=build /nexora /usr/local/bin/nexora

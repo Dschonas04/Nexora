@@ -13,6 +13,15 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ## [Unreleased]
 
+### Changed
+
+- **New license: open core.** The core is now free software under the
+  **GNU AGPL 3.0**; the paid extras (sharing, real-time editing, export,
+  attachment search, groups, audit trail, SSO, LDAP) are under the new
+  **Nexora Enterprise License** and are marked in their file headers. Prices
+  are in [LICENSING.md](LICENSING.md#prices): Pro 200 € per installation and
+  year, Business on request. Releases up to 2.2.1 stay under BUSL 1.1.
+
 ## [2.2.1]: 2026-10-09
 
 ### Security

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
+// Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
+
 // Read-only view behind a public link. It is rendered outside the workspace,
 // without a sidebar, and reaches the API through the one unauthenticated
 // endpoint, so it also works for a visitor with no account.
