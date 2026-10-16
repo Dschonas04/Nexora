@@ -13,6 +13,8 @@
 # dump into it and brings the stack back up. The dump stays next to this script
 # as nexora-pg16-<date>.sql. Nothing of the old data is deleted.
 set -eu
+# The dump holds every page and every password hash: readable by the owner only.
+umask 077
 
 DC="docker compose $*"
 
@@ -73,4 +75,5 @@ $DC exec -T db psql -q -U "$BENUTZER" -d postgres < "$DUMP" 2>&1 >/dev/null | gr
 
 echo "== Stack starten"
 $DC up -d
-echo "Fertig. Sicherung: $DUMP, altes Volume: $VOL-pg16 (beides löschen, wenn alles läuft)."
+echo "Fertig. Sicherung: $DUMP (enthält alle Inhalte und Passwort-Hashes), altes Volume: $VOL-pg16."
+echo "Beides löschen, sobald alles läuft."
