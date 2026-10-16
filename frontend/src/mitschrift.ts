@@ -260,7 +260,7 @@ export function farbeFuer(kennung: string): string {
 // address having to be maintained anywhere.
 function adresseFuer(seiteId: string): string {
   const schema = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${schema}//${window.location.host}/api/echtzeit/${encodeURIComponent(seiteId)}`;
+  return `${schema}//${window.location.host}/api/realtime/${encodeURIComponent(seiteId)}`;
 }
 
 /**

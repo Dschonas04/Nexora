@@ -93,7 +93,7 @@ WORT='%s'
 mkdir -p "$ZIEL"
 NAME="$ZIEL/nexora-$(date +%%Y-%%m-%%d_%%H%%M).zip"
 
-curl -fsS --max-time 3600      -H "Authorization: Bearer $WORT"      -o "$NAME"      %s/api/system/sicherung
+curl -fsS --max-time 3600      -H "Authorization: Bearer $WORT"      -o "$NAME"      %s/api/system/backup
 
 # The marker at the end proves the archive is complete. Half a ZIP is a valid
 # ZIP; without this check a truncated one goes unnoticed.

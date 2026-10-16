@@ -69,8 +69,8 @@ func Messen(m *puls.Messer) func(http.Handler) http.Handler {
 			// gets answered but a connection that stays open for hours; counted
 			// as one request of two hours it would spoil every average shown
 			// beside it.
-			if r.URL.Path == "/api/system/puls" ||
-				strings.HasPrefix(r.URL.Path, "/api/echtzeit/") {
+			if r.URL.Path == "/api/system/pulse" ||
+				strings.HasPrefix(r.URL.Path, "/api/realtime/") {
 				next.ServeHTTP(w, r)
 				return
 			}

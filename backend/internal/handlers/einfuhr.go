@@ -147,7 +147,7 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 	// Importing a whole space: the archive brings its own instead of mixing into
 	// an existing one. This is the way back from an export, so a space that was
 	// exported comes back in without creating a space by hand first.
-	neueAblage := strings.TrimSpace(r.FormValue("neueAblage"))
+	neueAblage := strings.TrimSpace(formWert(r, "newSpace", "neueAblage"))
 	if neueAblage != "" {
 		if elternID != "" || spaceID != "" {
 			writeErr(w, http.StatusBadRequest,
@@ -245,7 +245,7 @@ func (s *Server) Import(w http.ResponseWriter, r *http.Request) {
 	// Preview: the same plan, but nothing is created. Someone importing two
 	// hundred files wants to see what will come of it beforehand, because
 	// undoing it would mean moving two hundred pages into the trash one by one.
-	if r.FormValue("vorschau") != "" {
+	if formWert(r, "preview", "vorschau") != "" {
 		writeJSON(w, http.StatusOK, einfuhrVorschau{
 			Seiten:    len(plan),
 			Beilagen:  len(beilagen),

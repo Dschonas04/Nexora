@@ -197,6 +197,9 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(chimw.RealIP) // trust X-Forwarded-For, the SPA is served through nginx
+	// The API used German path names up to 2.3. Old clients and scripts keep
+	// working: their paths are translated before routing, see altepfade.go.
+	r.Use(middleware.AltePfade)
 	// Before everything else, so that a response rejected by some middleware
 	// further down still carries the headers.
 	r.Use(middleware.Sicherheitskopfzeilen)
@@ -214,7 +217,7 @@ func main() {
 	// sicherungszugang.go. Inside the group a call carrying a passphrase would
 	// never reach the handler -- the sign-in check would turn it away first.
 	r.With(handlers.SicherungZugang([]byte(secret), h.SitzungGilt)).
-		Get("/api/system/sicherung", h.Sicherung)
+		Get("/api/system/backup", h.Sicherung)
 
 	r.Route("/api", func(r chi.Router) {
 		// Public: no session required. Registration is open, and the very first
@@ -226,12 +229,12 @@ func main() {
 		// in yet, which is rather the point.
 		r.Get("/auth/sso", h.SSOZustand)
 		r.Get("/auth/oidc/start", h.OIDCStart)
-		r.Get("/auth/oidc/zurueck", h.OIDCZurueck)
+		r.Get("/auth/oidc/callback", h.OIDCZurueck)
 		r.Post("/auth/ldap", h.LDAPAnmeldung)
 		// The second step of signing in. Public, because at this point no
 		// session exists yet -- the caller identifies itself with the ticket
 		// from the first step, which is good for five minutes.
-		r.Post("/auth/zweitfaktor/pruefen", h.ZweitfaktorPruefen)
+		r.Post("/auth/two-factor/verify", h.ZweitfaktorPruefen)
 		// Public links are a paid extra. The route stays in place but answers
 		// 402 without a license instead of serving the page.
 		r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
@@ -240,7 +243,7 @@ func main() {
 		// page full of pictures shows a visitor nothing but broken images,
 		// because the ordinary attachment route demands a session.
 		r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
-			Get("/public/{token}/dateien/{attId}", h.OeffentlicheDatei)
+			Get("/public/{token}/files/{attId}", h.OeffentlicheDatei)
 
 		// Everything below requires a valid session cookie. Ownership and sharing
 		// are checked per request inside the handlers, not here.
@@ -251,18 +254,18 @@ func main() {
 			// Changing one's own password. It sits under /auth and not under
 			// /users because it needs no account name: what is meant is always
 			// the account making the request.
-			r.Post("/auth/passwort", h.PasswortWechseln)
+			r.Post("/auth/password", h.PasswortWechseln)
 			// The second factor of one's own account. Like the password, under
 			// /auth and not /users: what is meant is always whoever is asking.
-			r.Get("/auth/zweitfaktor", h.ZweitfaktorStand)
-			r.Post("/auth/zweitfaktor/start", h.ZweitfaktorStart)
-			r.Post("/auth/zweitfaktor/an", h.ZweitfaktorAn)
-			r.Post("/auth/zweitfaktor/aus", h.ZweitfaktorAus)
-			r.Post("/auth/zweitfaktor/codes", h.ZweitfaktorCodesNeu)
+			r.Get("/auth/two-factor", h.ZweitfaktorStand)
+			r.Post("/auth/two-factor/start", h.ZweitfaktorStart)
+			r.Post("/auth/two-factor/enable", h.ZweitfaktorAn)
+			r.Post("/auth/two-factor/disable", h.ZweitfaktorAus)
+			r.Post("/auth/two-factor/codes", h.ZweitfaktorCodesNeu)
 
 			// Tells the interface what is unlocked so it never offers what is
 			// locked. Contains no secret.
-			r.Get("/lizenz", h.LizenzStatus)
+			r.Get("/license", h.LizenzStatus)
 			// Sessions: see your own and end them one at a time. Locking out one
 			// device without taking everybody else with it works no other way.
 			// Reading and writing Word attachments. Whoever may read the page may
@@ -274,14 +277,14 @@ func main() {
 			// not as a form: the browser already holds the finished bytes, and
 			// a form around them would be packaging without content.
 			r.Put("/pages/{id}/attachments/{attId}/pdf", h.PDFErsetzen)
-			r.Get("/sitzungen", h.ListSitzungen)
-			r.Delete("/sitzungen", h.SitzungenBeenden)
-			r.Delete("/sitzungen/{id}", h.SitzungBeenden)
+			r.Get("/sessions", h.ListSitzungen)
+			r.Delete("/sessions", h.SitzungenBeenden)
+			r.Delete("/sessions/{id}", h.SitzungBeenden)
 			// Importing and issuing: both administrators only, checked inside the
 			// handler. On an ordinary installation issuing answers 501, because
 			// no private key lives there.
-			r.Put("/system/lizenz", h.LizenzEinlesen)
-			r.Post("/system/lizenz/ausstellen", h.LizenzAusstellen)
+			r.Put("/system/license", h.LizenzEinlesen)
+			r.Post("/system/license/issue", h.LizenzAusstellen)
 
 			// The static /pages/... routes must be registered before /pages/{id},
 			// otherwise chi would match "shared" and "trash" as page ids.
@@ -296,10 +299,10 @@ func main() {
 			// Moving and ordering in one call: the drag in the sidebar is one
 			// gesture. Registered before the wildcard routes below for the same
 			// reason as the static /pages/... ones above.
-			r.Put("/pages/{id}/reihenfolge", h.SeiteVerschieben)
+			r.Put("/pages/{id}/order", h.SeiteVerschieben)
 			// The text width of a page. Free like the page itself: getting at
 			// one's own text must not hang on any licence.
-			r.Put("/pages/{id}/breite", h.SetzeBreite)
+			r.Put("/pages/{id}/width", h.SetzeBreite)
 			r.Post("/pages/{id}/restore", h.RestorePage)
 			r.Delete("/pages/{id}/purge", h.PurgePage) // deletes for good, cascades to subpages
 			r.Post("/pages/{id}/favorite", h.AddFavorite)
@@ -345,9 +348,9 @@ func main() {
 			// meant to stay open for hours. Who may open it is checked by the
 			// handler itself, with the same question as when saving.
 			r.With(handlers.VerlangeFunktion(lizenz.Echtzeit)).
-				Get("/echtzeit/{id}", h.Mitschrift)
+				Get("/realtime/{id}", h.Mitschrift)
 			r.With(handlers.VerlangeFunktion(lizenz.Echtzeit)).
-				Get("/pages/{id}/mitschreibende", h.Mitschreibende)
+				Get("/pages/{id}/collaborators", h.Mitschreibende)
 
 			// Settings and system state. Administrators only, which the handlers
 			// check themselves, so there is no extra gate here, only the route.
@@ -357,60 +360,60 @@ func main() {
 			// The inbox. Free like the sidebar itself: it only shows what
 			// happened elsewhere anyway, and without comments and shares it
 			// simply stays empty.
-			r.Get("/postfach", h.ListPostfach)
-			r.Get("/postfach/anzahl", h.PostfachAnzahl)
-			r.Post("/postfach/gelesen", h.PostfachGelesen)
-			r.Post("/postfach/{id}/gelesen", h.PostfachGelesen)
-			r.Delete("/postfach", h.PostfachLeeren)
+			r.Get("/inbox", h.ListPostfach)
+			r.Get("/inbox/count", h.PostfachAnzahl)
+			r.Post("/inbox/read", h.PostfachGelesen)
+			r.Post("/inbox/{id}/read", h.PostfachGelesen)
+			r.Delete("/inbox", h.PostfachLeeren)
 
 			r.Get("/design", h.Design)
 			// Every account changes its appearance for itself, which is why
 			// this sits among the session routes and not under /einstellungen,
 			// which are reserved for administrators.
 			r.Put("/design", h.AussehenSpeichern)
-			r.Put("/design/sprache", h.SpracheSpeichern)
+			r.Put("/design/language", h.SpracheSpeichern)
 			// Inbox by e-mail, per account like the appearance.
-			r.Get("/konto/benachrichtigung", h.Benachrichtigung)
-			r.Put("/konto/benachrichtigung", h.BenachrichtigungSpeichern)
-			r.Post("/konto/benachrichtigung/test", h.BenachrichtigungTesten)
+			r.Get("/account/notifications", h.Benachrichtigung)
+			r.Put("/account/notifications", h.BenachrichtigungSpeichern)
+			r.Post("/account/notifications/test", h.BenachrichtigungTesten)
 
-			r.Get("/einstellungen", h.ListEinstellungen)
-			r.Put("/einstellungen", h.SetzeEinstellung)
-			r.Delete("/einstellungen", h.LoescheEinstellung)
+			r.Get("/settings", h.ListEinstellungen)
+			r.Put("/settings", h.SetzeEinstellung)
+			r.Delete("/settings", h.LoescheEinstellung)
 			r.Get("/system", h.SystemZustand)
 			// Sign-in attempts. Reading the rest of the audit trail is a paid
 			// extra, this is not: who is knocking at the door belongs to
 			// running the instance, not to reporting on it.
-			r.Get("/system/anmeldungen", h.ListAnmeldungen)
+			r.Get("/system/sign-ins", h.ListAnmeldungen)
 			// The live figures, polled once a second. It does not count itself,
 			// see middleware/messen.go.
-			r.Get("/system/puls", h.PulsAnsicht)
-			r.Get("/system/mitschrift", h.MitschriftZustand)
+			r.Get("/system/pulse", h.PulsAnsicht)
+			r.Get("/system/collab", h.MitschriftZustand)
 
 			// One's own hosts: the list and what can be seen of them right
 			// now. Administrators only, which the handlers check themselves --
 			// a route that knocks on arbitrary addresses belongs to nobody
 			// else.
-			r.Get("/system/rechner", h.ListRechner)
-			r.Post("/system/rechner", h.RechnerAnlegen)
-			r.Put("/system/rechner/{id}", h.RechnerAendern)
-			r.Delete("/system/rechner/{id}", h.RechnerLoeschen)
+			r.Get("/system/hosts", h.ListRechner)
+			r.Post("/system/hosts", h.RechnerAnlegen)
+			r.Put("/system/hosts/{id}", h.RechnerAendern)
+			r.Delete("/system/hosts/{id}", h.RechnerLoeschen)
 			// What a backup would contain. For the panel only, hence in here;
 			// the download itself sits further down, outside.
-			r.Get("/system/sicherung/umfang", h.SicherungUmfang)
-			r.Post("/system/sicherung/token", h.SicherungTokenNeu)
-			r.Delete("/system/sicherung/token", h.SicherungTokenWeg)
+			r.Get("/system/backup/scope", h.SicherungUmfang)
+			r.Post("/system/backup/token", h.SicherungTokenNeu)
+			r.Delete("/system/backup/token", h.SicherungTokenWeg)
 			// The counterpart: restoring a backup. Only with a sign-in, and
 			// deliberately no passphrase -- nobody should be able to trigger
 			// something that replaces the whole store from a script.
-			r.Post("/system/wiederherstellung", h.Wiederherstellen)
+			r.Post("/system/restore", h.Wiederherstellen)
 
-			r.Post("/system/suchindex", h.IndexNeuAufbauen)
-			r.Post("/system/anhangindex", h.AnhangIndexNachziehen)
+			r.Post("/system/search-index", h.IndexNeuAufbauen)
+			r.Post("/system/attachment-index", h.AnhangIndexNachziehen)
 			// Takes a body and throws it away. With it the interface measures
 			// how large a transfer may really be all the way through, see
 			// grenzprobe.go.
-			r.Post("/system/grenzprobe", h.Grenzprobe)
+			r.Post("/system/size-probe", h.Grenzprobe)
 
 			// The LDAP administration. Any administrator may look, licence or
 			// not: otherwise an instance cannot even see that something is set
@@ -418,29 +421,29 @@ func main() {
 			// and therefore hangs on the paid extra.
 			r.Get("/system/ldap", h.LDAPEinrichtung)
 			r.Post("/system/ldap/test", h.LDAPTesten)
-			r.Get("/system/ablage", h.AblageZustand)
-			r.Post("/system/ablage/test", h.S3Testen)
+			r.Get("/system/storage", h.AblageZustand)
+			r.Post("/system/storage/test", h.S3Testen)
 
 			// Maintenance: configuration file, restart, the instance-wide trash.
 			// Here too the handlers check the role themselves.
-			r.Get("/system/konfig", h.KonfigLesen)
-			r.Put("/system/konfig", h.KonfigSchreiben)
-			r.Post("/system/neustart", h.Neustart)
-			r.Post("/system/papierkorb", h.PapierkorbLeeren)
+			r.Get("/system/config", h.KonfigLesen)
+			r.Put("/system/config", h.KonfigSchreiben)
+			r.Post("/system/restart", h.Neustart)
+			r.Post("/system/trash", h.PapierkorbLeeren)
 
 			// Comments, a paid extra. Whoever may read the page may join the
 			// conversation; it gets no finer than that, and the handlers check
 			// it.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Kommentare))
-				r.Get("/pages/{id}/kommentare", h.ListKommentare)
+				r.Get("/pages/{id}/comments", h.ListKommentare)
 				// Who can be addressed here with an @. It belongs to the
 				// comments and therefore shares their paid extra.
-				r.Get("/pages/{id}/erwaehnbare", h.ErwaehnbarePersonen)
-				r.Post("/pages/{id}/kommentare", h.CreateKommentar)
-				r.Put("/kommentare/{kommentarId}", h.UpdateKommentar)
-				r.Delete("/kommentare/{kommentarId}", h.DeleteKommentar)
-				r.Post("/kommentare/{kommentarId}/erledigt", h.ToggleErledigt)
+				r.Get("/pages/{id}/mentionable", h.ErwaehnbarePersonen)
+				r.Post("/pages/{id}/comments", h.CreateKommentar)
+				r.Put("/comments/{kommentarId}", h.UpdateKommentar)
+				r.Delete("/comments/{kommentarId}", h.DeleteKommentar)
+				r.Post("/comments/{kommentarId}/resolved", h.ToggleErledigt)
 			})
 
 			// Groups and space permissions, a paid extra.
@@ -451,13 +454,13 @@ func main() {
 			// back unchanged once the extra is unlocked again.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Gruppen))
-				r.Get("/gruppen", h.ListGruppen)
-				r.Post("/gruppen", h.CreateGruppe)
-				r.Delete("/gruppen/{id}", h.DeleteGruppe)
-				r.Get("/gruppen/{id}/mitglieder", h.ListMitglieder)
-				r.Put("/gruppen/{id}/mitglieder", h.SetzeMitglied)
-				r.Get("/spaces/{id}/rechte", h.ListSpaceRechte)
-				r.Put("/spaces/{id}/rechte", h.SetzeSpaceRecht)
+				r.Get("/groups", h.ListGruppen)
+				r.Post("/groups", h.CreateGruppe)
+				r.Delete("/groups/{id}", h.DeleteGruppe)
+				r.Get("/groups/{id}/members", h.ListMitglieder)
+				r.Put("/groups/{id}/members", h.SetzeMitglied)
+				r.Get("/spaces/{id}/permissions", h.ListSpaceRechte)
+				r.Put("/spaces/{id}/permissions", h.SetzeSpaceRecht)
 			})
 
 			// Space export, a paid extra. The answer is a ZIP stream, which is
@@ -470,8 +473,8 @@ func main() {
 			// be worthless. Only reading it costs money.
 			r.Group(func(r chi.Router) {
 				r.Use(handlers.VerlangeFunktion(lizenz.Pruefspur))
-				r.Get("/pruefspur", h.ListPruefspur)
-				r.Get("/pruefspur/aktionen", h.PruefspurAktionen)
+				r.Get("/audit-log", h.ListPruefspur)
+				r.Get("/audit-log/actions", h.PruefspurAktionen)
 			})
 
 			// Account administration stays free; without it a multi-user instance
@@ -483,37 +486,37 @@ func main() {
 			r.Put("/users/{id}/role", h.SetUserRole)
 			// An account may set its own login name, which is why the check
 			// sits in the handler and not in this chain.
-			r.Put("/users/{id}/benutzername", h.BenutzernameSetzen)
+			r.Put("/users/{id}/username", h.BenutzernameSetzen)
 			// A reset by an administrator, for a forgotten password. The
 			// handler refuses one's own account, see passwort.go.
-			r.Put("/users/{id}/passwort", h.PasswortSetzen)
+			r.Put("/users/{id}/password", h.PasswortSetzen)
 			// The administrator's route for a lost phone: remove an account's
 			// second factor. It then signs in with the password alone again
 			// and sets a new one up.
-			r.Delete("/users/{id}/zweitfaktor", h.ZweitfaktorZuruecksetzen)
+			r.Delete("/users/{id}/two-factor", h.ZweitfaktorZuruecksetzen)
 			// One's own profile: display name and picture. Neither a paid
 			// extra nor an administrator's business -- what somebody is called
 			// and looks like concerns them alone, see profilbild.go.
-			r.Put("/profil", h.ProfilAendern)
-			r.Put("/profil/bild", h.ProfilbildSetzen)
-			r.Delete("/profil/bild", h.ProfilbildWeg)
+			r.Put("/profile", h.ProfilAendern)
+			r.Put("/profile/image", h.ProfilbildSetzen)
+			r.Delete("/profile/image", h.ProfilbildWeg)
 			// The picture of any account: every signed-in one may see every
 			// other, otherwise the faces next to comments would stay empty.
-			r.Get("/users/{id}/bild", h.Profilbild)
+			r.Get("/users/{id}/image", h.Profilbild)
 
 			// Spaces
 			r.Get("/spaces", h.ListSpaces)
 			r.Post("/spaces", h.CreateSpace)
 			// Before /spaces/{id}: otherwise chi would read "reihenfolge" as the
 			// id of a space and answer 404 for a rename that never happened.
-			r.Put("/spaces/reihenfolge", h.SpacesOrdnen)
+			r.Put("/spaces/order", h.SpacesOrdnen)
 			r.Put("/spaces/{id}", h.RenameSpace)
 			r.Delete("/spaces/{id}", h.DeleteSpace)
 			// Open a space to every signed-in account (not to the internet).
-			r.Put("/spaces/{id}/oeffentlich", h.SetSpaceOeffentlich)
+			r.Put("/spaces/{id}/public-access", h.SetSpaceOeffentlich)
 			// The colour of a space in the graph. It lives on the space and
 			// not in the browser so that everyone sees the same picture.
-			r.Put("/spaces/{id}/farbe", h.SetSpaceFarbe)
+			r.Put("/spaces/{id}/color", h.SetSpaceFarbe)
 
 			// Backlinks (pages linking here via [[wiki-link]] or manual links)
 			// Markdown export of one page. Done on the server so it works without

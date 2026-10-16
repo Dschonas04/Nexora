@@ -278,10 +278,10 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 	}
 	// A span in days rather than two date fields: people search for "what was
 	// last week", not for "what was between the 3rd and the 9th".
-	if tage, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("tage"))); err == nil && tage > 0 {
+	if tage, err := strconv.Atoi(strings.TrimSpace(r.URL.Query().Get("days"))); err == nil && tage > 0 {
 		setz("AND p.updated_at > now() - make_interval(days => $?)", tage)
 	}
-	if strings.TrimSpace(r.URL.Query().Get("wer")) == "ich" {
+	if wer := strings.TrimSpace(r.URL.Query().Get("who")); wer == "me" || wer == "ich" {
 		filter += "AND p.owner_id = $1\n"
 	}
 

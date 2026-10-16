@@ -91,7 +91,7 @@ func (s *Server) ListPostfach(w http.ResponseWriter, r *http.Request) {
 	uid := middleware.UserID(r)
 
 	bedingung := ""
-	if r.URL.Query().Get("ungelesen") != "" {
+	if r.URL.Query().Get("unread") != "" {
 		bedingung = " AND p.gelesen_am IS NULL"
 	}
 	rows, err := s.Pool.Query(r.Context(),

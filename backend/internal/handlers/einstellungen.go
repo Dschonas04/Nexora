@@ -54,7 +54,7 @@ var bekannt = map[string]struct {
 	"sicherung_token": {
 		Art:        "text",
 		Titel:      "Losungswort für die Sicherung",
-		Erklaerung: "Leer: Sicherung nur aus dem Panel, mit Anmeldung. Gesetzt: GET /api/system/sicherung nimmt statt der Sitzung dieses Wort an.",
+		Erklaerung: "Leer: Sicherung nur aus dem Panel, mit Anmeldung. Gesetzt: GET /api/system/backup nimmt statt der Sitzung dieses Wort an.",
 		Warnung:    "Das Archiv enthält alles: Passwort-Hashes, Freigabe-Tokens, Anhänge. Gesetzt und verwaltet unter Wartung.",
 	},
 	"registration_open": {
@@ -551,7 +551,7 @@ func (s *Server) LoescheEinstellung(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusForbidden, "nur für Administratoren")
 		return
 	}
-	schluessel := r.URL.Query().Get("schluessel")
+	schluessel := r.URL.Query().Get("key")
 	if _, ok := bekannt[schluessel]; !ok {
 		writeErr(w, http.StatusBadRequest, "unbekannte Einstellung")
 		return

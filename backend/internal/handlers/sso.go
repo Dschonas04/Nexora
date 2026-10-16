@@ -113,7 +113,7 @@ func (s *Server) oidcAnbieter(ctx context.Context) (*oidc.Provider, *oauth2.Conf
 // header could otherwise redirect the callback.
 func (s *Server) rueckAdresse() string {
 	basis := strings.TrimSuffix(s.SSO.OeffentlicheURL, "/")
-	return basis + "/api/auth/oidc/zurueck"
+	return basis + "/api/auth/oidc/callback"
 }
 
 // OIDCStart sends the browser to the provider.
@@ -140,7 +140,7 @@ func (s *Server) OIDCStart(w http.ResponseWriter, r *http.Request) {
 	s.oidcKeksSetzen(w, r, oidcSitzung{
 		Zustand: zustand,
 		Nonce:   nonce,
-		Ziel:    r.URL.Query().Get("ziel"),
+		Ziel:    r.URL.Query().Get("target"),
 		Bis:     time.Now().Add(10 * time.Minute),
 	})
 	http.Redirect(w, r, oauthKonf.AuthCodeURL(zustand, oidc.Nonce(nonce)), http.StatusFound)

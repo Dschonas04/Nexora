@@ -1201,7 +1201,7 @@ export const FRANZOESISCH: Record<string, string> = {
   "Attachment not saved": "Pièce jointe non enregistrée",
   "{0} skipped, executable program": "{0} ignoré, programme exécutable",
   "Password for backups": "Mot de passe des sauvegardes",
-  "Empty: backup only from the panel, with sign-in. Set: GET /api/system/sicherung accepts this word instead of the session.": "Vide : sauvegarde seulement depuis le panneau, avec connexion. Défini : GET /api/system/sicherung accepte ce mot à la place de la session.",
+  "Empty: backup only from the panel, with sign-in. Set: GET /api/system/backup accepts this word instead of the session.": "Vide : sauvegarde seulement depuis le panneau, avec connexion. Défini : GET /api/system/backup accepte ce mot à la place de la session.",
   "The archive contains everything: password hashes, share tokens, attachments. Set and managed under Maintenance.": "L’archive contient tout : empreintes de mots de passe, jetons de partage, pièces jointes. Défini et géré sous Maintenance.",
   "On: POST /api/auth/register is open. Off: 403, only an administrator creates accounts. The very first account comes into being in both cases and becomes administrator.": "Activé : POST /api/auth/register est ouvert. Désactivé : 403, seul un administrateur crée des comptes. Le tout premier compte est créé dans les deux cas et devient administrateur.",
   "Off for a reachable instance, otherwise the address is enough to create an account.": "Désactivé pour une instance joignable, sinon l’adresse suffit pour créer un compte.",

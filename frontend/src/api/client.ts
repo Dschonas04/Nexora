@@ -706,28 +706,28 @@ export const api = {
   // code and returns the recovery codes while doing so, aus takes it back.
   // Without separating start and an, an aborted setup -- a look at the QR code,
   // then a closed tab -- locked the account out.
-  zweitfaktorStand: () => req<ZweitfaktorStand>("/auth/zweitfaktor"),
+  zweitfaktorStand: () => req<ZweitfaktorStand>("/auth/two-factor"),
   zweitfaktorStart: () =>
-    req<{ geheim: string; uri: string; qr: string }>("/auth/zweitfaktor/start", { method: "POST" }),
+    req<{ geheim: string; uri: string; qr: string }>("/auth/two-factor/start", { method: "POST" }),
   zweitfaktorAn: (code: string) =>
-    req<{ ersatzcodes: string[] }>("/auth/zweitfaktor/an", {
+    req<{ ersatzcodes: string[] }>("/auth/two-factor/enable", {
       method: "POST",
       body: JSON.stringify({ code }),
     }),
   zweitfaktorAus: (passwort: string) =>
-    req<{ ok: boolean }>("/auth/zweitfaktor/aus", {
+    req<{ ok: boolean }>("/auth/two-factor/disable", {
       method: "POST",
       body: JSON.stringify({ passwort }),
     }),
   zweitfaktorCodesNeu: (passwort: string) =>
-    req<{ ersatzcodes: string[] }>("/auth/zweitfaktor/codes", {
+    req<{ ersatzcodes: string[] }>("/auth/two-factor/codes", {
       method: "POST",
       body: JSON.stringify({ passwort }),
     }),
   // The second step of signing in. Accepted is the current code from the app or
   // one of the recovery codes.
   zweitfaktorPruefen: (ticket: string, code: string) =>
-    req<User>("/auth/zweitfaktor/pruefen", {
+    req<User>("/auth/two-factor/verify", {
       method: "POST",
       body: JSON.stringify({ ticket, code }),
     }),
@@ -767,12 +767,12 @@ export const api = {
   // One's own profile. The name as JSON, the picture raw: it is already bytes,
   // and sending it through Base64 would make it a third larger.
   profilAendern: (name: string) =>
-    req<{ ok: boolean; name: string }>("/profil", {
+    req<{ ok: boolean; name: string }>("/profile", {
       method: "PUT",
       body: JSON.stringify({ name }),
     }),
   profilbildSetzen: async (bild: Blob) => {
-    const res = await fetch("/api/profil/bild", {
+    const res = await fetch("/api/profile/image", {
       method: "PUT",
       credentials: "include",
       headers: { "Content-Type": bild.type || "image/jpeg" },
@@ -790,77 +790,77 @@ export const api = {
     }
     return (await res.json()) as { ok: boolean; bildStand: string };
   },
-  profilbildWeg: () => req<{ ok: boolean }>("/profil/bild", { method: "DELETE" }),
+  profilbildWeg: () => req<{ ok: boolean }>("/profile/image", { method: "DELETE" }),
 
-  sitzungen: () => req<Sitzung[]>("/sitzungen"),
-  sitzungBeenden: (id: string) => req<void>(`/sitzungen/${id}`, { method: "DELETE" }),
-  sitzungenBeenden: () => req<{ beendet: number }>("/sitzungen", { method: "DELETE" }),
+  sitzungen: () => req<Sitzung[]>("/sessions"),
+  sitzungBeenden: (id: string) => req<void>(`/sessions/${id}`, { method: "DELETE" }),
+  sitzungenBeenden: () => req<{ beendet: number }>("/sessions", { method: "DELETE" }),
 
   // Read once after sign-in. Hiding locked features is a courtesy to the
   // reader, not a protection: the backend refuses the same calls with 402
   // regardless of what the interface shows.
-  lizenz: () => req<Lizenz>("/lizenz"),
+  lizenz: () => req<Lizenz>("/license"),
   lizenzEinlesen: (schluessel: string) =>
-    req<Lizenz>("/system/lizenz", { method: "PUT", body: JSON.stringify({ schluessel }) }),
+    req<Lizenz>("/system/license", { method: "PUT", body: JSON.stringify({ schluessel }) }),
   lizenzAusstellen: (p: {
     inhaber: string;
     stufe: string;
     funktionen?: string[];
     ablauf?: string;
-  }) => req<{ schluessel: string }>("/system/lizenz/ausstellen", {
+  }) => req<{ schluessel: string }>("/system/license/issue", {
     method: "POST",
     body: JSON.stringify(p),
   }),
 
   pruefspur: (p: { aktion?: string; akteur?: string; objekt?: string; limit?: number } = {}) => {
     const q = new URLSearchParams();
-    if (p.aktion) q.set("aktion", p.aktion);
-    if (p.akteur) q.set("akteur", p.akteur);
-    if (p.objekt) q.set("objekt", p.objekt);
+    if (p.aktion) q.set("action", p.aktion);
+    if (p.akteur) q.set("actor", p.akteur);
+    if (p.objekt) q.set("object", p.objekt);
     if (p.limit) q.set("limit", String(p.limit));
-    return req<Spureintrag[]>(`/pruefspur?${q.toString()}`);
+    return req<Spureintrag[]>(`/audit-log?${q.toString()}`);
   },
-  pruefspurAktionen: () => req<{ aktion: string; anzahl: number }[]>("/pruefspur/aktionen"),
+  pruefspurAktionen: () => req<{ aktion: string; anzahl: number }[]>("/audit-log/actions"),
 
   design: () => req<{ grundton: string; akzent: string; seitenbreite: string; sprache?: string }>("/design"),
   // The interface language on the account. Empty resets to "the browser decides".
   spracheSpeichern: (sprache: string) =>
-    req<unknown>("/design/sprache", { method: "PUT", body: JSON.stringify({ sprache }) }),
+    req<unknown>("/design/language", { method: "PUT", body: JSON.stringify({ sprache }) }),
   /** Base tone and accent of one's own account. Empty resets to the default. */
-  benachrichtigung: () => req<Benachrichtigung>("/konto/benachrichtigung"),
+  benachrichtigung: () => req<Benachrichtigung>("/account/notifications"),
   benachrichtigungSpeichern: (email: boolean) =>
-    req<Benachrichtigung>("/konto/benachrichtigung", { method: "PUT", body: JSON.stringify({ email }) }),
+    req<Benachrichtigung>("/account/notifications", { method: "PUT", body: JSON.stringify({ email }) }),
   benachrichtigungTesten: () =>
-    req<{ ok: boolean; an: string }>("/konto/benachrichtigung/test", { method: "POST" }),
+    req<{ ok: boolean; an: string }>("/account/notifications/test", { method: "POST" }),
   aussehenSpeichern: (grundton: string, akzent: string) =>
     req<{ grundton: string; akzent: string }>("/design", {
       method: "PUT",
       body: JSON.stringify({ grundton, akzent }),
     }),
 
-  einstellungen: () => req<Einstellung[]>("/einstellungen"),
+  einstellungen: () => req<Einstellung[]>("/settings"),
   einstellungSetzen: (schluessel: string, wert: string) =>
-    req<{ wert: string }>("/einstellungen", {
+    req<{ wert: string }>("/settings", {
       method: "PUT",
       body: JSON.stringify({ schluessel, wert }),
     }),
   einstellungZuruecksetzen: (schluessel: string) =>
-    req<{ wert: string }>(`/einstellungen?schluessel=${encodeURIComponent(schluessel)}`, {
+    req<{ wert: string }>(`/settings?key=${encodeURIComponent(schluessel)}`, {
       method: "DELETE",
     }),
   systemZustand: () => req<SystemZustand>("/system"),
-  puls: () => req<Puls>("/system/puls"),
-  mitschriftZustand: () => req<MitschriftZustand>("/system/mitschrift"),
+  puls: () => req<Puls>("/system/pulse"),
+  mitschriftZustand: () => req<MitschriftZustand>("/system/collab"),
   mitschreibende: (id: string) =>
-    req<{ anzahl: number; moeglich: boolean }>(`/pages/${id}/mitschreibende`),
-  sicherungUmfang: () => req<SicherungUmfang>("/system/sicherung/umfang"),
+    req<{ anzahl: number; moeglich: boolean }>(`/pages/${id}/collaborators`),
+  sicherungUmfang: () => req<SicherungUmfang>("/system/backup/scope"),
   // Restoring. No req: the body is multipart and can be gigabytes in size,
   // that does not belong through JSON.stringify.
   wiederherstellen: async (datei: File) => {
     const rumpf = new FormData();
-    rumpf.append("datei", datei);
-    rumpf.append("bestaetigung", "wiederherstellen");
-    const antwort = await fetch("/api/system/wiederherstellung", {
+    rumpf.append("file", datei);
+    rumpf.append("confirmation", "restore");
+    const antwort = await fetch("/api/system/restore", {
       method: "POST",
       credentials: "include",
       body: rumpf,
@@ -876,12 +876,12 @@ export const api = {
     };
   },
   sicherungTokenNeu: () =>
-    req<SicherungUmfang>("/system/sicherung/token", { method: "POST" }),
+    req<SicherungUmfang>("/system/backup/token", { method: "POST" }),
   sicherungTokenWeg: () =>
-    req<SicherungUmfang>("/system/sicherung/token", { method: "DELETE" }),
+    req<SicherungUmfang>("/system/backup/token", { method: "DELETE" }),
   // No req: the answer is an archive and not JSON, and it can be gigabytes in
   // size. The browser downloads it itself, the cookie goes along.
-  sicherungAdresse: "/api/system/sicherung",
+  sicherungAdresse: "/api/system/backup",
   ldapEinrichtung: () => req<LDAPEinrichtung>("/system/ldap"),
   ldapTesten: (benutzer: string, passwort: string) =>
     req<LDAPTestErgebnis>("/system/ldap/test", {
@@ -893,7 +893,7 @@ export const api = {
   // not an error.
   grenzprobe: async (mb: number): Promise<boolean> => {
     try {
-      const r = await fetch("/api/system/grenzprobe", {
+      const r = await fetch("/api/system/size-probe", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/octet-stream" },
@@ -909,18 +909,18 @@ export const api = {
   },
   anmeldungen: (p: { nur?: string; ip?: string; tage?: number; limit?: number } = {}) => {
     const q = new URLSearchParams();
-    if (p.nur) q.set("nur", p.nur);
+    if (p.nur) q.set("only", p.nur);
     if (p.ip) q.set("ip", p.ip);
-    if (p.tage !== undefined) q.set("tage", String(p.tage));
+    if (p.tage !== undefined) q.set("days", String(p.tage));
     if (p.limit) q.set("limit", String(p.limit));
-    return req<Anmeldungen>(`/system/anmeldungen?${q.toString()}`);
+    return req<Anmeldungen>(`/system/sign-ins?${q.toString()}`);
   },
-  suchindexNeu: () => req<{ ohneSuchtext: number }>("/system/suchindex", { method: "POST" }),
+  suchindexNeu: () => req<{ ohneSuchtext: number }>("/system/search-index", { method: "POST" }),
   anhangindexNachziehen: () =>
-    req<{ betrachtet: number; gelesen: number; ohneText: number }>("/system/anhangindex", {
+    req<{ betrachtet: number; gelesen: number; ohneText: number }>("/system/attachment-index", {
       method: "POST",
     }),
-  ablageZustand: () => req<{ ablage: string }>("/system/ablage"),
+  ablageZustand: () => req<{ ablage: string }>("/system/storage"),
   ablageTesten: (p: {
     endpunkt: string;
     bucket: string;
@@ -931,24 +931,24 @@ export const api = {
     pfadstil: boolean;
   }) =>
     req<{ ok: boolean; ablage?: string; schritt?: string; grund?: string; anmerkung?: string }>(
-      "/system/ablage/test",
+      "/system/storage/test",
       { method: "POST", body: JSON.stringify(p) },
     ),
 
-  kommentare: (pageId: string) => req<Kommentar[]>(`/pages/${pageId}/kommentare`),
+  kommentare: (pageId: string) => req<Kommentar[]>(`/pages/${pageId}/comments`),
   // Whom one can address with an @ in a comment on this page: exactly the
   // accounts allowed to read it. The others would get no notification anyway.
-  erwaehnbare: (pageId: string) => req<Person[]>(`/pages/${pageId}/erwaehnbare`),
+  erwaehnbare: (pageId: string) => req<Person[]>(`/pages/${pageId}/mentionable`),
   kommentarAnlegen: (pageId: string, text: string, elternId?: string) =>
-    req<Kommentar>(`/pages/${pageId}/kommentare`, {
+    req<Kommentar>(`/pages/${pageId}/comments`, {
       method: "POST",
       body: JSON.stringify({ text, elternId: elternId ?? null }),
     }),
   kommentarAendern: (id: string, text: string) =>
-    req<void>(`/kommentare/${id}`, { method: "PUT", body: JSON.stringify({ text }) }),
-  kommentarLoeschen: (id: string) => req<void>(`/kommentare/${id}`, { method: "DELETE" }),
+    req<void>(`/comments/${id}`, { method: "PUT", body: JSON.stringify({ text }) }),
+  kommentarLoeschen: (id: string) => req<void>(`/comments/${id}`, { method: "DELETE" }),
   kommentarErledigt: (id: string) =>
-    req<{ erledigt: boolean }>(`/kommentare/${id}/erledigt`, { method: "POST" }),
+    req<{ erledigt: boolean }>(`/comments/${id}/resolved`, { method: "POST" }),
 
   listPages: () => req<PageMeta[]>("/pages"),
   listShared: () => req<PageMeta[]>("/pages/shared"),
@@ -962,38 +962,38 @@ export const api = {
       }),
     }),
 
-  gruppen: () => req<Gruppe[]>("/gruppen"),
+  gruppen: () => req<Gruppe[]>("/groups"),
   gruppeAnlegen: (name: string, beschreibung: string) =>
-    req<Gruppe>("/gruppen", { method: "POST", body: JSON.stringify({ name, beschreibung }) }),
-  gruppeLoeschen: (id: string) => req<void>(`/gruppen/${id}`, { method: "DELETE" }),
-  gruppenMitglieder: (id: string) => req<Mitglied[]>(`/gruppen/${id}/mitglieder`),
+    req<Gruppe>("/groups", { method: "POST", body: JSON.stringify({ name, beschreibung }) }),
+  gruppeLoeschen: (id: string) => req<void>(`/groups/${id}`, { method: "DELETE" }),
+  gruppenMitglieder: (id: string) => req<Mitglied[]>(`/groups/${id}/members`),
   mitgliedSetzen: (gruppeId: string, userId: string, drin: boolean) =>
-    req<{ drin: boolean }>(`/gruppen/${gruppeId}/mitglieder`, {
+    req<{ drin: boolean }>(`/groups/${gruppeId}/members`, {
       method: "PUT",
       body: JSON.stringify({ userId, drin }),
     }),
 
   // The colour of a space in the graph. Empty resets it to the series.
   spaceFarbe: (id: string, farbe: string) =>
-    req<{ farbe: string }>(`/spaces/${id}/farbe`, {
+    req<{ farbe: string }>(`/spaces/${id}/color`, {
       method: "PUT",
       body: JSON.stringify({ farbe }),
     }),
 
-  spaceRechte: (spaceId: string) => req<SpaceRecht[]>(`/spaces/${spaceId}/rechte`),
+  spaceRechte: (spaceId: string) => req<SpaceRecht[]>(`/spaces/${spaceId}/permissions`),
   spaceRechtSetzen: (
     spaceId: string,
     ziel: { gruppeId?: string; userId?: string },
     recht: string,
   ) =>
-    req<{ recht: string }>(`/spaces/${spaceId}/rechte`, {
+    req<{ recht: string }>(`/spaces/${spaceId}/permissions`, {
       method: "PUT",
       body: JSON.stringify({ gruppeId: ziel.gruppeId ?? "", userId: ziel.userId ?? "", recht }),
     }),
   // The measure of a page. Whoever may write may set it: it is a property of
   // the text, not of the sharing.
   seiteBreite: (id: string, breite: Seitenbreite) =>
-    req<{ breite: Seitenbreite }>(`/pages/${id}/breite`, {
+    req<{ breite: Seitenbreite }>(`/pages/${id}/width`, {
       method: "PUT",
       body: JSON.stringify({ breite }),
     }),
@@ -1014,7 +1014,7 @@ export const api = {
   seiteVerschieben: (
     id: string,
     ziel: { elternId?: string | null; spaceId?: string | null; vorId?: string | null },
-  ) => req<Page>(`/pages/${id}/reihenfolge`, { method: "PUT", body: JSON.stringify(ziel) }),
+  ) => req<Page>(`/pages/${id}/order`, { method: "PUT", body: JSON.stringify(ziel) }),
   deletePage: (id: string) => req<void>(`/pages/${id}`, { method: "DELETE" }),
   restorePage: (id: string) => req<void>(`/pages/${id}/restore`, { method: "POST" }),
   purgePage: (id: string) => req<void>(`/pages/${id}/purge`, { method: "DELETE" }),
@@ -1097,10 +1097,10 @@ export const api = {
     for (const d of dateien) body.append("file", d);
     if (ziel.parentId) body.append("parentId", ziel.parentId);
     if (ziel.spaceId) body.append("spaceId", ziel.spaceId);
-    if (ziel.neueAblage) body.append("neueAblage", ziel.neueAblage);
+    if (ziel.neueAblage) body.append("newSpace", ziel.neueAblage);
     // The same call with the same content, only without consequences; the
     // server computes the same plan and creates nothing.
-    if (vorschau) body.append("vorschau", "1");
+    if (vorschau) body.append("preview", "1");
     const res = await fetch(`/api/import`, { method: "POST", credentials: "include", body });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
     return (await res.json()) as EinfuhrBericht & EinfuhrVorschau;
@@ -1109,10 +1109,10 @@ export const api = {
   // Postfach
   postfach: (nurUngelesen = false) =>
     req<Nachricht[]>(`/postfach${nurUngelesen ? "?ungelesen=1" : ""}`),
-  postfachAnzahl: () => req<{ ungelesen: number }>("/postfach/anzahl"),
+  postfachAnzahl: () => req<{ ungelesen: number }>("/inbox/count"),
   postfachGelesen: (id?: string) =>
-    req<{ ok: boolean }>(id ? `/postfach/${id}/gelesen` : "/postfach/gelesen", { method: "POST" }),
-  postfachLeeren: () => req<{ geloescht: number }>("/postfach", { method: "DELETE" }),
+    req<{ ok: boolean }>(id ? `/inbox/${id}/read` : "/inbox/read", { method: "POST" }),
+  postfachLeeren: () => req<{ geloescht: number }>("/inbox", { method: "DELETE" }),
 
   // Per-user sharing + roles
   listShares: (id: string) => req<ShareEntry[]>(`/pages/${id}/shares`),
@@ -1133,60 +1133,60 @@ export const api = {
   // Remove another account's second factor, for the lost phone. The account
   // signs in with the password alone again afterwards.
   zweitfaktorZuruecksetzen: (id: string) =>
-    req<{ ok: boolean }>(`/users/${id}/zweitfaktor`, { method: "DELETE" }),
+    req<{ ok: boolean }>(`/users/${id}/two-factor`, { method: "DELETE" }),
   setUserRole: (id: string, role: string) =>
     req<{ role: string }>(`/users/${id}/role`, { method: "PUT", body: JSON.stringify({ role }) }),
   benutzernameSetzen: (id: string, benutzername: string) =>
-    req<{ benutzername: string }>(`/users/${id}/benutzername`, {
+    req<{ benutzername: string }>(`/users/${id}/username`, {
       method: "PUT",
       body: JSON.stringify({ benutzername }),
     }),
 
   // One's own machines: the list together with what can currently be seen of
   // them.
-  rechner: () => req<RechnerListe>("/system/rechner"),
+  rechner: () => req<RechnerListe>("/system/hosts"),
   rechnerAnlegen: (r: RechnerEingabe) =>
-    req<Rechner>("/system/rechner", { method: "POST", body: JSON.stringify(r) }),
+    req<Rechner>("/system/hosts", { method: "POST", body: JSON.stringify(r) }),
   rechnerAendern: (id: string, r: RechnerEingabe) =>
-    req<Rechner>(`/system/rechner/${id}`, { method: "PUT", body: JSON.stringify(r) }),
+    req<Rechner>(`/system/hosts/${id}`, { method: "PUT", body: JSON.stringify(r) }),
   rechnerLoeschen: (id: string) =>
-    req<{ ok: boolean }>(`/system/rechner/${id}`, { method: "DELETE" }),
+    req<{ ok: boolean }>(`/system/hosts/${id}`, { method: "DELETE" }),
 
   // One's own password. The answer says how many other sessions were ended in
   // the process -- that is the number somebody wants to see who is changing it
   // because another device was involved.
   passwortWechseln: (alt: string, neu: string) =>
-    req<{ ok: boolean; beendet: number }>("/auth/passwort", {
+    req<{ ok: boolean; beendet: number }>("/auth/password", {
       method: "POST",
       body: JSON.stringify({ alt, neu }),
     }),
 
   // Reset by an administrator, for a forgotten password.
   passwortSetzen: (id: string, neu: string) =>
-    req<{ ok: boolean; beendet: number }>(`/users/${id}/passwort`, {
+    req<{ ok: boolean; beendet: number }>(`/users/${id}/password`, {
       method: "PUT",
       body: JSON.stringify({ neu }),
     }),
 
   // Wartung: Konfigurationsdatei, Neustart, Papierkorb der Instanz
-  konfigLesen: () => req<KonfigDatei>("/system/konfig"),
+  konfigLesen: () => req<KonfigDatei>("/system/config"),
   konfigPruefen: (inhalt: string) =>
-    req<{ hinweise: string[] }>("/system/konfig", {
+    req<{ hinweise: string[] }>("/system/config", {
       method: "PUT",
       body: JSON.stringify({ inhalt, nurPruefen: true }),
     }),
   konfigSchreiben: (inhalt: string) =>
-    req<{ hinweise: string[]; sicherung: string; neustartNoetig: boolean }>("/system/konfig", {
+    req<{ hinweise: string[]; sicherung: string; neustartNoetig: boolean }>("/system/config", {
       method: "PUT",
       body: JSON.stringify({ inhalt }),
     }),
   neustarten: () =>
-    req<{ ok: boolean }>("/system/neustart", {
+    req<{ ok: boolean }>("/system/restart", {
       method: "POST",
       body: JSON.stringify({ bestaetigung: "neustart" }),
     }),
   papierkorbLeeren: () =>
-    req<{ geloescht: number }>("/system/papierkorb", { method: "POST" }),
+    req<{ geloescht: number }>("/system/trash", { method: "POST" }),
 
   // Spaces
   listSpaces: () => req<Space[]>("/spaces"),
@@ -1199,9 +1199,9 @@ export const api = {
   // space open to the whole instance stands in everybody's sidebar, and whoever
   // drags it must not rearrange it for the others.
   spacesOrdnen: (ids: string[]) =>
-    req<void>("/spaces/reihenfolge", { method: "PUT", body: JSON.stringify({ ids }) }),
+    req<void>("/spaces/order", { method: "PUT", body: JSON.stringify({ ids }) }),
   spaceOeffentlich: (id: string, oeffentlich: "nein" | "lesen" | "schreiben") =>
-    req<{ oeffentlich: string }>(`/spaces/${id}/oeffentlich`, {
+    req<{ oeffentlich: string }>(`/spaces/${id}/public-access`, {
       method: "PUT",
       body: JSON.stringify({ oeffentlich }),
     }),
@@ -1226,8 +1226,8 @@ export const api = {
     const p = new URLSearchParams({ q });
     if (filter?.space) p.set("space", filter.space);
     if (filter?.tag) p.set("tag", filter.tag);
-    if (filter?.tage) p.set("tage", String(filter.tage));
-    if (filter?.wer) p.set("wer", filter.wer);
+    if (filter?.tage) p.set("days", String(filter.tage));
+    if (filter?.wer) p.set("who", filter.wer === "ich" ? "me" : filter.wer);
     return req<SearchHit[]>(`/search?${p.toString()}`);
   },
   getPublicPage: (token: string) => req<PublicPage>(`/public/${token}`),

@@ -64,11 +64,14 @@ func (s *Server) Wiederherstellen(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "Archiv konnte nicht gelesen werden")
 		return
 	}
-	if r.FormValue("bestaetigung") != "wiederherstellen" {
+	if b := formWert(r, "confirmation", "bestaetigung"); b != "restore" && b != "wiederherstellen" {
 		writeErr(w, http.StatusBadRequest, "Bestätigung fehlt")
 		return
 	}
-	datei, kopf, err := r.FormFile("datei")
+	datei, kopf, err := r.FormFile("file")
+	if err == http.ErrMissingFile {
+		datei, kopf, err = r.FormFile("datei") // the name up to 2.3
+	}
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, "Es wurde keine Datei gewählt")
 		return

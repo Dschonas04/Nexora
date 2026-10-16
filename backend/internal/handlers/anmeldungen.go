@@ -144,7 +144,7 @@ func (s *Server) ListAnmeldungen(w http.ResponseWriter, r *http.Request) {
 		grenze = n
 	}
 	tage := 30
-	if n, err := strconv.Atoi(q.Get("tage")); err == nil && n >= 0 && n <= 365 {
+	if n, err := strconv.Atoi(q.Get("days")); err == nil && n >= 0 && n <= 365 {
 		tage = n
 	}
 	// 0 means "everything there is". Written as a large number rather than as a
@@ -154,8 +154,10 @@ func (s *Server) ListAnmeldungen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// nur=fehl or nur=erfolg. Anything else is no filter.
-	nurFehl := q.Get("nur") == "fehl"
-	nurErfolg := q.Get("nur") == "erfolg"
+	// "fehl" and "erfolg" were the values up to 2.3 and are still understood.
+	nur := q.Get("only")
+	nurFehl := nur == "failed" || nur == "fehl"
+	nurErfolg := nur == "success" || nur == "erfolg"
 
 	rows, err := s.Pool.Query(ctx, `
 		SELECT zeitpunkt, aktion, akteur_name, akteur_email,

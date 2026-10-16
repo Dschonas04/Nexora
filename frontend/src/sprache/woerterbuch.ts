@@ -1271,7 +1271,7 @@ export const PAARE: [string, string][] = [
   ["Anhang nicht gespeichert", "Attachment not saved"],
   ["{0} übersprungen, ausführbares Programm", "{0} skipped, executable program"],
   ["Losungswort für die Sicherung", "Password for backups"],
-  ["Leer: Sicherung nur aus dem Panel, mit Anmeldung. Gesetzt: GET /api/system/sicherung nimmt statt der Sitzung dieses Wort an.", "Empty: backup only from the panel, with sign-in. Set: GET /api/system/sicherung accepts this word instead of the session."],
+  ["Leer: Sicherung nur aus dem Panel, mit Anmeldung. Gesetzt: GET /api/system/backup nimmt statt der Sitzung dieses Wort an.", "Empty: backup only from the panel, with sign-in. Set: GET /api/system/backup accepts this word instead of the session."],
   ["Das Archiv enthält alles: Passwort-Hashes, Freigabe-Tokens, Anhänge. Gesetzt und verwaltet unter Wartung.", "The archive contains everything: password hashes, share tokens, attachments. Set and managed under Maintenance."],
   ["An: POST /api/auth/register steht offen. Aus: 403, Konten legt nur ein Administrator an. Das allererste Konto entsteht in beiden Fällen und wird Administrator.", "On: POST /api/auth/register is open. Off: 403, only an administrator creates accounts. The very first account comes into being in both cases and becomes administrator."],
   ["Für eine erreichbare Instanz aus, sonst genügt die Adresse zum Anlegen eines Kontos.", "Off for a reachable instance, otherwise the address is enough to create an account."],

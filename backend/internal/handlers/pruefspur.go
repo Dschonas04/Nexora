@@ -206,7 +206,7 @@ func (s *Server) ListPruefspur(w http.ResponseWriter, r *http.Request) {
 		   AND ($3 = '' OR objekt_id = $3)
 		 ORDER BY zeitpunkt DESC, id DESC
 		 LIMIT $4`,
-		q.Get("aktion"), q.Get("akteur"), q.Get("objekt"), grenze)
+		q.Get("action"), q.Get("actor"), q.Get("object"), grenze)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "Prüfspur konnte nicht gelesen werden")
 		return

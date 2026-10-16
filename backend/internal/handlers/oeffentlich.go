@@ -25,7 +25,7 @@ import (
 // oeffentlicheDateien builds the URL under which files of a shared page are
 // served. It is a function rather than a repeated string: the path appears
 // both in the router and here and both must mean the same thing.
-func oeffentlicheDateien(token string) string { return "/api/public/" + token + "/dateien/" }
+func oeffentlicheDateien(token string) string { return "/api/public/" + token + "/files/" }
 
 // adressenOeffnen rewrites image and file addresses of a page to the public
 // path.
