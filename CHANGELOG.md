@@ -13,6 +13,12 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [3.0.0]: 2026-10-17
+
+The major number moves because scripts talking to the API have to be adjusted:
+the JSON field names are English now. Nothing to do for whoever only uses the
+interface.
+
 ### Changed
 
 - **The API speaks English.** Paths, query parameters, form fields and JSON
@@ -188,7 +194,8 @@ this release; see 2.1.0 for what became free since. Markdown import and export
 are free regardless, because the way out of a system must never sit behind a
 key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
-[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v2.3.0...main
+[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.0.0...main
+[3.0.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.0.0
 [2.3.0]: https://github.com/Dschonas04/Nexora/releases/tag/v2.3.0
 [2.2.1]: https://github.com/Dschonas04/Nexora/releases/tag/v2.2.1
 [2.2.0]: https://github.com/Dschonas04/Nexora/releases/tag/v2.2.0

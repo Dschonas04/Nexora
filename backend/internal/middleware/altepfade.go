@@ -11,7 +11,7 @@ import (
 // It runs before routing, so a script that still calls /api/pruefspur?tage=7
 // lands exactly where /api/audit-log?days=7 lands. Only fixed path segments are
 // translated; ids and tokens never collide with these words. Bodies are not
-// touched: their field names changed in 2.4 without a fallback.
+// touched: their field names changed in 3.0 without a fallback.
 func AltePfade(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {

@@ -192,7 +192,7 @@ func (s *Server) loadPage(ctx context.Context, viewerID, pageID string) (*models
 }
 
 // formWert reads a form field under its English name and, for clients from
-// before 2.4, under the German one it had.
+// before 3.0, under the German one it had.
 func formWert(r *http.Request, name, frueher string) string {
 	if v := r.FormValue(name); v != "" {
 		return v
