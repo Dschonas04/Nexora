@@ -13,14 +13,15 @@ FROM alpine:3.24
 # Purely in Go it would work without it, but it fails on many real PDF files:
 # font encodings, columns, embedded images.
 #
-# postgresql16-client supplies pg_dump for the backup. The dump comes out of the
+# postgresql18-client supplies pg_dump for the backup. The dump comes out of the
 # tool and not out of SQL output of our own: what gets backed up has to be
 # restorable, and pg_dump produces exactly the form psql reads back in. Three
 # megabytes in the image for that.
 #
-# MIND the major version: pg_dump refuses to back up a NEWER server. If 16
-# stands here and the database runs on 17, this line has to change with it.
-RUN apk add --no-cache poppler-utils postgresql16-client \
+# MIND the major version: pg_dump refuses to back up a NEWER server. If 18
+# stands here and the database runs on 19, this line has to change with it.
+# Older servers are fine: the 18 client also backs up a 16.
+RUN apk add --no-cache poppler-utils postgresql18-client \
  && adduser -D -u 10001 nexora \
  && mkdir -p /data/attachments \
  && chown -R nexora:nexora /data

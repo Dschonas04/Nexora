@@ -12,8 +12,11 @@ services:
       APP_PORT: 80
 
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     environment:
+      # Postgres 18 images keep their data elsewhere by default; pinned here so
+      # the volume stays where it always was, and an old 16 volume fails loudly.
+      PGDATA: /var/lib/postgresql/data
       POSTGRES_DB: nexora
       POSTGRES_USER: nexora
       POSTGRES_PASSWORD: ${APP_PASSWORD}

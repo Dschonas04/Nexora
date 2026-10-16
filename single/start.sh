@@ -39,12 +39,46 @@ if [ ! -s "$DATA/db_password" ]; then
 fi
 DB_PASSWORD=$(cat "$DATA/db_password")
 PGOPTS="-c listen_addresses=127.0.0.1 -c shared_buffers=64MB -c max_connections=30 -c password_encryption=scram-sha-256"
+PGBIN=/usr/libexec/postgresql18
+PGALT=/usr/libexec/postgresql16
+export PATH="$PGBIN:$PATH"
+
+# Up to 2.2 the image ran PostgreSQL 16. Its data directory does not start under
+# 18, so it is carried over once with pg_upgrade. The old directory is kept
+# next to it as postgres-16 until somebody deletes it by hand: if anything went
+# wrong, it is the way back.
+if [ -s "$PG/PG_VERSION" ] && [ "$(cat "$PG/PG_VERSION")" = 16 ]; then
+    ALT="$DATA/postgres-16"
+    if [ -e "$ALT" ]; then
+        echo "$ALT existiert schon, die Umstellung auf PostgreSQL 18 bricht ab" >&2
+        exit 1
+    fi
+    echo "Datenbank wird von PostgreSQL 16 auf 18 umgestellt"
+    rm -f "$PG/postmaster.pid"
+    mv "$PG" "$ALT"
+    mkdir -p "$PG" "$DATA/log/pg_upgrade"
+    chown postgres:postgres "$PG" "$DATA/log/pg_upgrade"
+    chmod 700 "$PG"
+    # Without checksums like the old one; pg_upgrade refuses a mismatch.
+    su-exec postgres "$PGBIN/initdb" -D "$PG" -U postgres -E UTF8 --no-data-checksums \
+        --auth-local=peer --auth-host=scram-sha-256 >/dev/null
+    if (cd "$DATA/log/pg_upgrade" && su-exec postgres "$PGBIN/pg_upgrade" \
+            -b "$PGALT" -B "$PGBIN" -d "$ALT" -D "$PG" -U postgres \
+            --socketdir=/run/postgresql >"$DATA/log/pg_upgrade/ausgabe.log" 2>&1); then
+        echo "Umstellung fertig, die alten Daten liegen in $ALT"
+    else
+        echo "pg_upgrade ist gescheitert, siehe $DATA/log/pg_upgrade; die alten Daten bleiben unberührt" >&2
+        rm -rf "$PG"
+        mv "$ALT" "$PG"
+        exit 1
+    fi
+fi
 if [ ! -s "$PG/PG_VERSION" ]; then
     echo "Datenbank wird angelegt"
     mkdir -p "$PG"
     chown postgres:postgres "$PG"
     chmod 700 "$PG"
-    su-exec postgres initdb -D "$PG" -U postgres -E UTF8 --auth-local=peer --auth-host=scram-sha-256 >/dev/null
+    su-exec postgres "$PGBIN/initdb" -D "$PG" -U postgres -E UTF8 --auth-local=peer --auth-host=scram-sha-256 >/dev/null
     NEU=1
 fi
 # Written on every start, so that an installation from 2.2.0, which trusted
@@ -57,15 +91,15 @@ HBA
 chown postgres:postgres "$PG/pg_hba.conf"
 chmod 600 "$PG/pg_hba.conf"
 rm -f "$PG/postmaster.pid"
-su-exec postgres pg_ctl -D "$PG" -o "$PGOPTS" -l "$DATA/log/postgres.log" -w start >/dev/null
+su-exec postgres "$PGBIN/pg_ctl" -D "$PG" -o "$PGOPTS" -l "$DATA/log/postgres.log" -w start >/dev/null
 if [ -n "${NEU:-}" ]; then
-    su-exec postgres psql -q -v ON_ERROR_STOP=1 \
+    su-exec postgres "$PGBIN/psql" -q -v ON_ERROR_STOP=1 \
         -c "CREATE ROLE nexora LOGIN" -c "CREATE DATABASE nexora OWNER nexora"
-    su-exec postgres psql -q -v ON_ERROR_STOP=1 -d nexora -c "CREATE EXTENSION IF NOT EXISTS pgcrypto"
+    su-exec postgres "$PGBIN/psql" -q -v ON_ERROR_STOP=1 -d nexora -c "CREATE EXTENSION IF NOT EXISTS pgcrypto"
 fi
 # Over stdin, so the password shows up in no process list.
 printf "ALTER ROLE nexora WITH LOGIN NOSUPERUSER PASSWORD '%s';\n" "$DB_PASSWORD" \
-    | su-exec postgres psql -q -v ON_ERROR_STOP=1 >/dev/null
+    | su-exec postgres "$PGBIN/psql" -q -v ON_ERROR_STOP=1 >/dev/null
 echo "Datenbank läuft"
 
 stop() {
@@ -73,7 +107,7 @@ stop() {
     [ -n "${WEB:-}" ] && kill "$WEB" 2>/dev/null || true
     [ -n "${SERVICE:-}" ] && kill "$SERVICE" 2>/dev/null || true
     wait 2>/dev/null || true
-    su-exec postgres pg_ctl -D "$PG" -m fast -w stop >/dev/null 2>&1 || true
+    su-exec postgres "$PGBIN/pg_ctl" -D "$PG" -m fast -w stop >/dev/null 2>&1 || true
     exit "${1:-0}"
 }
 trap stop TERM INT
@@ -92,7 +126,7 @@ WEB=$!
 while :; do
     if ! kill -0 "$SERVICE" 2>/dev/null; then echo "Der Dienst ist beendet" >&2; break; fi
     if ! kill -0 "$WEB" 2>/dev/null; then echo "nginx ist beendet" >&2; break; fi
-    if ! su-exec postgres pg_ctl -D "$PG" status >/dev/null 2>&1; then echo "PostgreSQL ist beendet" >&2; break; fi
+    if ! su-exec postgres "$PGBIN/pg_ctl" -D "$PG" status >/dev/null 2>&1; then echo "PostgreSQL ist beendet" >&2; break; fi
     sleep 5 &
     wait $! || true
 done

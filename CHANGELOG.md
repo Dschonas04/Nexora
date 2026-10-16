@@ -15,6 +15,12 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ### Changed
 
+- **PostgreSQL 18.** The stack, the single container and the CasaOS and Umbrel
+  templates now ship PostgreSQL 18.6 instead of 16. The single container
+  carries existing data over by itself on its first start; a compose stack
+  runs `deploy/postgres-18.sh` once, see
+  [Upgrading](docs/operations.md#from-22-to-23-postgresql-16-to-18). `pg_dump`
+  in the backend image is 18 as well and still backs up older servers.
 - **New license: open core.** The core is now free software under the
   **GNU AGPL 3.0**; the paid extras (sharing, real-time editing, export,
   attachment search, groups, audit trail, SSO, LDAP) are under the new

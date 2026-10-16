@@ -28,10 +28,11 @@ RUN npm run build
 # The frontend's base, because its start script and nginx template are reused
 # unchanged: they already know how to talk to a service over plain http.
 FROM nginx:1.31-alpine
-# postgresql16 brings the server and pg_dump for the backup, -contrib brings
-# pgcrypto. poppler-utils is what the backend calls for text out of PDFs.
-# su-exec starts each part under its own user.
-RUN apk add --no-cache postgresql16 postgresql16-contrib poppler-utils openssl gettext su-exec \
+# postgresql18 brings the server and pg_dump for the backup, -contrib brings
+# pgcrypto. postgresql16 stays only so that start.sh can carry the data of an
+# installation from 2.2 over with pg_upgrade. poppler-utils is what the backend
+# calls for text out of PDFs. su-exec starts each part under its own user.
+RUN apk add --no-cache postgresql18 postgresql18-contrib postgresql16 poppler-utils openssl gettext su-exec \
  && adduser -D -u 10001 nexora \
  && mkdir -p /data
 COPY frontend/nginx.conf /etc/nginx/vorlage.conf

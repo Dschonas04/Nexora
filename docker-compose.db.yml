@@ -7,7 +7,7 @@
 #     docker compose -f docker-compose.yml -f docker-compose.db.yml up -d
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     # Encrypted, with the certificate from the PKI container. PostgreSQL
     # otherwise speaks in the clear, and everything goes over this wire: every
     # page, every password hash, every session id.
@@ -19,6 +19,9 @@ services:
       - -c
       - ssl_key_file=/pki/db/db.key
     environment:
+      # Postgres 18 images keep their data elsewhere by default; pinned here so
+      # the volume stays where it always was, and an old 16 volume fails loudly.
+      PGDATA: /var/lib/postgresql/data
       POSTGRES_USER: nexora
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexora}
       POSTGRES_DB: nexora

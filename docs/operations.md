@@ -37,7 +37,7 @@ sudo chgrp 10001 config.conf && sudo chmod 660 config.conf
 
 ```bash
 COMPOSE_FILE=docker-compose.yml                              # your own PostgreSQL, set DATABASE_URL
-COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml        # the default: bundled PostgreSQL 16
+COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml        # the default: bundled PostgreSQL 18
 …:docker-compose.minio.yml                                   # plus a bundled MinIO
 …:docker-compose.redis.yml                                   # plus Redis as a cache
 ```
@@ -227,6 +227,32 @@ migration step and no maintenance window beyond the restart.
 Take a database dump first anyway. The migration itself only adds, so it is not
 the risk; the dump is what you will want if something else turns
 out to be wrong.
+
+### From 2.2 to 2.3: PostgreSQL 16 to 18
+
+2.3 moves the bundled database from PostgreSQL 16 to 18. A data directory of
+one major version does not start under the next, so this upgrade needs one
+step more than usual.
+
+**Single container:** nothing to do. On its first start the new image carries
+the data over with `pg_upgrade` and keeps the old directory as
+`/data/postgres-16`. Once everything works, delete it:
+`docker exec <container> rm -rf /data/postgres-16`.
+
+**Stack with `docker-compose.db.yml` or `docker-compose.stack.yml`:** after
+`git pull` (or downloading the new compose file), run
+
+```bash
+sh deploy/postgres-18.sh -f docker-compose.yml -f docker-compose.db.yml
+```
+
+with the same `-f` files the installation uses (or without any if `COMPOSE_FILE`
+is set in `.env`). It dumps the old database, keeps the old volume as
+`<volume>-pg16`, starts PostgreSQL 18 and loads the dump. Until it has run, the
+`db` container refuses to start with "database files are incompatible with
+server"; no data is touched by that.
+
+**Own PostgreSQL:** nothing changes, Nexora runs on 16 and newer.
 
 ---
 

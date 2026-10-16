@@ -66,7 +66,7 @@ Dockerfiles only ever see `backend/`, `frontend/` and `pki/`.
 | -------- | -------------------------------------------------------- |
 | Backend  | Go 1.27+, chi router, pgx, JWT (httpOnly cookie), bcrypt  |
 | Frontend | React 18, Vite, TypeScript, BlockNote editor             |
-| Database | PostgreSQL 16                                            |
+| Database | PostgreSQL 18                                            |
 | Delivery | Docker Compose (nginx serves the SPA and proxies `/api`) |
 
 ## Capacity
