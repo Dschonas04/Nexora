@@ -13,6 +13,16 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ## [Unreleased]
 
+### Changed
+
+- **The single container speaks HTTPS only.** Port 80 serves nothing any more
+  and redirects every request to HTTPS with a 308, so a POST stays a POST and
+  the login form never crosses the network in the clear. Open
+  `https://localhost:3443`; `docker-compose.single.yml` now publishes 443 as
+  3443 and keeps 3000 only for the redirect. Whoever publishes 443 under another
+  port sets `NEXORA_HTTPS_PORT`, and `NEXORA_HTTPS_ONLY=0` brings plain HTTP
+  back. The stack is unchanged; it can opt in with the same two variables.
+
 ## [3.0.0]: 2026-10-17
 
 The major number moves because scripts talking to the API have to be adjusted:

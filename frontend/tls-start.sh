@@ -70,6 +70,41 @@ if [ -f /etc/nginx/vorlage.conf ]; then
             /etc/nginx/conf.d/default.conf
     fi
     echo "Dienst: $NEXORA_SERVICE_SCHEME://$NEXORA_SERVICE_HOST:$NEXORA_SERVICE_PORT (DNS $NEXORA_RESOLVER)"
+
+    # ── Encrypted only ───────────────────────────────────────────────────────
+    #
+    # With NEXORA_HTTPS_ONLY the unencrypted entrance serves nothing any more
+    # and sends every request on to the encrypted one, so that the login form
+    # never goes over the network in the clear. NEXORA_HTTPS_PORT is the port
+    # the browser reaches 443 under from outside -- nginx cannot know it,
+    # because Docker translates it. 308 rather than 301, so that a POST stays a
+    # POST.
+    case "${NEXORA_HTTPS_ONLY:-}" in
+        1|true|yes|ja)
+            HTTPS_PORT="${NEXORA_HTTPS_PORT:-443}"
+            case "$HTTPS_PORT" in
+                443) ZIELPORT="" ;;
+                *[!0-9]*|"") echo "ACHTUNG: NEXORA_HTTPS_PORT ist keine Portnummer, es wird 443 angenommen" >&2; ZIELPORT="" ;;
+                *) ZIELPORT=":$HTTPS_PORT" ;;
+            esac
+            # Only the first "listen 80" (the application's server block) goes.
+            # awk rather than sed: busybox sed knows no 0,/re/ address.
+            awk '!weg && $0 == "    listen 80;" { weg = 1; next } { print }' \
+                /etc/nginx/conf.d/default.conf > /etc/nginx/conf.d/default.conf.neu
+            mv /etc/nginx/conf.d/default.conf.neu /etc/nginx/conf.d/default.conf
+            cat >> /etc/nginx/conf.d/default.conf <<UMLEITUNG
+
+server {
+    listen 80;
+    server_name _;
+    location / {
+        return 308 https://\$host$ZIELPORT\$request_uri;
+    }
+}
+UMLEITUNG
+            echo "Nur verschlüsselt: http leitet auf https://<Name>$ZIELPORT um"
+            ;;
+    esac
 fi
 
 # Without the compound's authority nginx would not reach the service, and the

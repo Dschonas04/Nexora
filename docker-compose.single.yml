@@ -5,8 +5,12 @@
 #     curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker-compose.single.yml
 #     docker compose -f docker-compose.single.yml up -d
 #
-# Then open http://localhost:3000. The first account that registers becomes the
-# administrator.
+# Then open https://localhost:3443. The certificate is self-signed and made on
+# the first start, so the browser warns once. http://localhost:3000 only
+# redirects there: passwords and the session cookie never travel unencrypted.
+# Whoever publishes 443 under another port sets NEXORA_HTTPS_PORT to it, and
+# NEXORA_HTTPS_ONLY=0 switches the plain entrance back on. The first account
+# that registers becomes the administrator.
 #
 # What it is and what it is not: the free Standard scope only, no licence key is
 # read. Everything runs in one process tree, so it scales no further than the
@@ -21,8 +25,12 @@ services:
   nexora:
     image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-single:${NEXORA_VERSION:-latest}
     ports:
-      - '3000:80'
-      # - '3443:443'   # https with a self-signed certificate
+      - '3443:443'   # https, self-signed certificate
+      - '3000:80'    # only redirects to https
+    environment:
+      NEXORA_HTTPS_PORT: '3443'
+      # NEXORA_TLS_NAME: nexora.example.lan   # name in the certificate
+      # NEXORA_TLS_IP: 192.168.1.20          # address in the certificate
     volumes:
       - nexora_data:/data
     restart: unless-stopped

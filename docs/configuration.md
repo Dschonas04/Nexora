@@ -303,6 +303,8 @@ Compose reads `.env` for the values it needs before the backend starts.
 | `NEXORA_ATTACHMENT_PATH` | The path **inside** the container. Moving attachments changes the *Ort*, not this |
 | `NEXORA_TLS_NAME` | Name in the self-signed certificate. Without it the container's hostname is used, which produces a second browser warning |
 | `NEXORA_TLS_IP` | An IP for the certificate's SAN |
+| `NEXORA_HTTPS_ONLY` | `1`: port 80 serves nothing and redirects every request to HTTPS (308). On by default in the single container, off in the stack |
+| `NEXORA_HTTPS_PORT` | The host port 443 is published under, for that redirect. `3443` in the single container, `443` otherwise |
 | `NEXORA_SERVICE_SCHEME` | How the interface addresses the service behind it, `https` by default. Only needed when running the service without a certificate, then `http` |
 | `NEXORA_SERVICE_PORT` | The port it listens on, `8443` by default (`8080` unencrypted) |
 | `NEXORA_SERVICE_HOST` | The service's host name, `backend` by default. On Kubernetes the full name, e.g. `backend.nexora.svc.cluster.local`: nginx knows no search domains |

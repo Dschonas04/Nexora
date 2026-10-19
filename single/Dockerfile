@@ -43,11 +43,16 @@ COPY --from=backend /nexora /usr/local/bin/nexora
 RUN chmod +x /usr/local/bin/tls-start.sh /usr/local/bin/nexora-single
 
 # The web server reaches the service inside the container, unencrypted, at a
-# fixed address: there is no network between them to protect.
+# fixed address: there is no network between them to protect. Towards the
+# browser it speaks only HTTPS: port 80 merely redirects to 443, which is
+# expected under 3443 from outside, as in docker-compose.single.yml.
+# NEXORA_HTTPS_ONLY=0 brings the plain entrance back.
 ENV NEXORA_SERVICE_SCHEME=http \
     NEXORA_SERVICE_HOST=127.0.0.1 \
     NEXORA_SERVICE_PORT=8080 \
-    NEXORA_RESOLVER=127.0.0.1
+    NEXORA_RESOLVER=127.0.0.1 \
+    NEXORA_HTTPS_ONLY=1 \
+    NEXORA_HTTPS_PORT=3443
 
 LABEL org.opencontainers.image.title="Nexora (single container)" \
       org.opencontainers.image.description="Nexora Standard with its database in one container" \

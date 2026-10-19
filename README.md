@@ -240,9 +240,16 @@ Everything in one image, database included, for a first try or a small team on
 a small machine:
 
 ```bash
-docker run -d --name nexora -p 3000:80 -v nexora_data:/data --restart unless-stopped \
+docker run -d --name nexora -p 3443:443 -p 3000:80 -v nexora_data:/data --restart unless-stopped \
   ghcr.io/dschonas04/nexora-single:latest
 ```
+
+Then open **https://localhost:3443**. The single container speaks HTTPS only:
+port 80 just redirects there, so passwords and the session cookie never cross
+the network unencrypted. The certificate is self-signed, so the browser warns
+once. Publishing 443 under another port? Set `NEXORA_HTTPS_PORT` to it, or the
+redirect points to the wrong place. `NEXORA_HTTPS_ONLY=0` switches plain HTTP
+back on.
 
 or with [`docker-compose.single.yml`](docker-compose.single.yml). One volume
 holds the database, the attachments, the session secret and database password

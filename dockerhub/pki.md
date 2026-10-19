@@ -19,7 +19,7 @@ NEXORA_REGISTRY=dschohnas docker compose -f docker-compose.stack.yml up -d
 ```
 
 Only want to try it? [`dschohnas/nexora-single`](https://hub.docker.com/r/dschohnas/nexora-single)
-is everything in one container: `docker run -d -p 3000:80 -v nexora_data:/data dschohnas/nexora-single`.
+is everything in one container: `docker run -d -p 3443:443 -p 3000:80 -v nexora_data:/data dschohnas/nexora-single`, then `https://localhost:3443`.
 
 ## Tags
 

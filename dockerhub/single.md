@@ -7,13 +7,15 @@ volume, nothing to configure. For trying Nexora or for a small team on a small
 machine.
 
 ```bash
-docker run -d --name nexora -p 3000:80 -v nexora_data:/data \
+docker run -d --name nexora -p 3443:443 -p 3000:80 -v nexora_data:/data \
   --restart unless-stopped dschohnas/nexora-single
 ```
 
-Open `http://localhost:3000`. The first account that registers becomes the
-administrator. Port 443 serves the same with a self-signed certificate
-(`-p 3443:443`).
+Open `https://localhost:3443`. The image speaks HTTPS only, with a certificate
+it creates on the first start, so the browser warns once; port 80 merely
+redirects. Publishing 443 under another port? Set `NEXORA_HTTPS_PORT` to it.
+`NEXORA_HTTPS_ONLY=0` brings plain HTTP back. The first account that registers
+becomes the administrator.
 
 Or with Compose:
 [docker-compose.single.yml](https://github.com/Dschonas04/Nexora/blob/main/docker-compose.single.yml)
