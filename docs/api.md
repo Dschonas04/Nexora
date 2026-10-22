@@ -275,7 +275,8 @@ Personal keys for scripts: send `Authorization: Bearer nxr_…` instead of the
 cookie. A key acts as the account that made it; one with `scope: "lesen"` may
 only send `GET`/`HEAD` (403 otherwise). Only the SHA-256 is stored. The routes
 below, and password, second factor, sessions and the licence import, refuse a
-key (403): a leaked key must not mint the next one.
+key (403): a leaked key must not mint the next one. The same holds for the
+real-time wire and the webhooks.
 
 | Method | Path | Notes |
 |---|---|---|

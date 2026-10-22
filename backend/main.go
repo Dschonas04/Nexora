@@ -308,12 +308,17 @@ func main() {
 			r.With(middleware.NurSitzung).Get("/api-keys", h.ListSchluessel)
 			r.With(middleware.NurSitzung).Post("/api-keys", h.SchluesselAnlegen)
 			r.With(middleware.NurSitzung).Delete("/api-keys/{id}", h.SchluesselWiderrufen)
-			// Webhooks, admins only (checked in the handlers).
-			r.Get("/system/webhooks", h.ListWebhooks)
-			r.Post("/system/webhooks", h.WebhookAnlegen)
-			r.Put("/system/webhooks/{id}", h.WebhookAendern)
-			r.Delete("/system/webhooks/{id}", h.WebhookLoeschen)
-			r.Post("/system/webhooks/{id}/test", h.WebhookTesten)
+			// Webhooks, admins only (checked in the handlers), and only from a
+			// browser session: a leaked admin key must not be able to set up a
+			// hook that carries every change of the instance elsewhere.
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.NurSitzung)
+				r.Get("/system/webhooks", h.ListWebhooks)
+				r.Post("/system/webhooks", h.WebhookAnlegen)
+				r.Put("/system/webhooks/{id}", h.WebhookAendern)
+				r.Delete("/system/webhooks/{id}", h.WebhookLoeschen)
+				r.Post("/system/webhooks/{id}/test", h.WebhookTesten)
+			})
 			r.Post("/pages", h.CreatePage)
 			r.Get("/pages/{id}", h.GetPage)
 			r.Put("/pages/{id}", h.UpdatePage)
@@ -371,7 +376,9 @@ func main() {
 			// request context, and the connection does not read that one: it is
 			// meant to stay open for hours. Who may open it is checked by the
 			// handler itself, with the same question as when saving.
-			r.With(handlers.VerlangeFunktion(lizenz.Echtzeit)).
+			// Browser only: the wire is opened with a GET, and a reading API key
+			// would otherwise write through it.
+			r.With(middleware.NurSitzung, handlers.VerlangeFunktion(lizenz.Echtzeit)).
 				Get("/realtime/{id}", h.Mitschrift)
 			r.With(handlers.VerlangeFunktion(lizenz.Echtzeit)).
 				Get("/pages/{id}/collaborators", h.Mitschreibende)

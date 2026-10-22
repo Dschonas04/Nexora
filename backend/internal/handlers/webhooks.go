@@ -47,6 +47,14 @@ const (
 var alleEreignisse = []string{EreignisSeiteAngelegt, EreignisSeiteGeaendert,
 	EreignisSeiteGeloescht, EreignisSeiteWieder, EreignisKommentar}
 
+// hookClient follows no redirects: the address an admin entered is the one
+// that is called, and a receiver cannot bounce the delivery somewhere else.
+// Internal addresses stay allowed on purpose -- n8n in the same network is the
+// case webhooks are for.
+var hookClient = &http.Client{
+	CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+}
+
 // ruheZeit is how long a page has to stay unchanged before page.updated goes
 // out. Long enough to cover a pause for thought while typing, short enough
 // that a workflow does not feel stuck.
@@ -278,7 +286,7 @@ func (s *Server) zustellenAnHook(ctx context.Context, id, ziel, geheim, ereignis
 	req.Header.Set("X-Nexora-Signature", "sha256="+hex.EncodeToString(mac.Sum(nil)))
 
 	status, fehler := 0, ""
-	antwort, err := http.DefaultClient.Do(req)
+	antwort, err := hookClient.Do(req)
 	if err != nil {
 		fehler = err.Error()
 	} else {
