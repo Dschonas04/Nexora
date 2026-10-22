@@ -13,6 +13,50 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ## [Unreleased]
 
+### Added
+
+- **Templates.** An empty page offers to start from a template: three built in
+  (meeting notes, how-to, project page, in the reader's language) and every
+  template one saved. "Save as template" in a page's ⋯ menu turns its content
+  into one; an admin can offer it to the whole instance. Templates are a table
+  of their own this time and appear nowhere else -- not in the tree, the search,
+  the graph or the export. Applying one copies it; changing a template later
+  leaves the pages made from it alone.
+- **Comparing versions.** Every entry in the version history has a "Compare"
+  button: what changed between that version and the current state, or the next
+  version. Line by line as a reader sees the page, and word by word inside a
+  changed line, unchanged stretches folded away.
+- **Table of contents.** ⋯ → Contents shows the page's headings beside it,
+  current while typing; a click jumps to the heading.
+- **Watching a page.** "Watch" beside "Favourite": when somebody else changes the
+  page, an inbox message (and an e-mail, where switched on). One message until
+  it is read, not one per autosave.
+- **Diagrams.** A code block in the language `mermaid` gets its picture drawn
+  below it -- flowcharts, sequences, Gantt and everything else Mermaid knows.
+  `/Diagram` inserts one. Still a code block underneath, so Markdown export and
+  import carry it as ```mermaid. Drawn as an image: no script from the source
+  text runs in the page.
+- **Tasks with due dates.** A checklist item with `@username` is a task for that
+  person, `📅 2026-10-30` (or `📅 30.10.2026`) gives it a due date; both are
+  highlighted, the date coloured by how close it is. The new **Tasks** view
+  gathers them from every readable page: "For me" or "On my pages", ticked off
+  right there. Being named in a task lands in the inbox. In the editor "@" now
+  offers people as well as pages, and "/" has "Task with due date" and "Due
+  date".
+- **API keys.** My account → API keys: personal keys for scripts and n8n,
+  `Authorization: Bearer nxr_…`, read-only or read and write, with an expiry.
+  Only a fingerprint is stored. A key cannot change the password or the second
+  factor, end sessions or make another key.
+- **Webhooks.** Administration → Integrations: addresses called on
+  `page.created`, `page.updated`, `page.deleted`, `page.restored` and
+  `comment.created`, signed with HMAC-SHA256 in `X-Nexora-Signature`.
+  `page.updated` goes out once a page has been quiet for 30 seconds. A test
+  button shows what the receiver answered.
+- **App mode and offline reading.** Nexora installs as an app (PWA) on phone and
+  desktop. A service worker keeps the pages one opened readable without a
+  connection; a stripe says when one is offline and that nothing is saved then.
+  Signing out empties that cache.
+
 ### Changed
 
 - **The single container speaks HTTPS only.** Port 80 serves nothing any more

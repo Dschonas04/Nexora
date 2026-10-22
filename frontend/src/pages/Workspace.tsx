@@ -24,6 +24,7 @@ const TrashView = lazy(() => import("./TrashView"));
 const GraphView = lazy(() => import("./GraphView"));
 const EinstellungenView = lazy(() => import("./EinstellungenView"));
 const PostfachView = lazy(() => import("./PostfachView"));
+const AufgabenView = lazy(() => import("./AufgabenView"));
 
 export default function Workspace() {
   const nav = useNavigate();
@@ -216,6 +217,7 @@ export default function Workspace() {
         }}
       />
       <div className="main">
+        <OfflineStreifen />
         <ZweitfaktorMahnung />
         {/* Until a lazily loaded part is there the waiting text stands here,
             faded in with a delay so that a fast switch shows nothing. */}
@@ -239,6 +241,7 @@ export default function Workspace() {
               }
             />
             <Route path="postfach" element={<PostfachView onGelesen={refreshPostfach} />} />
+            <Route path="aufgaben" element={<AufgabenView />} />
             <Route
               path="trash"
               element={
@@ -300,6 +303,31 @@ function ZweitfaktorMahnung() {
       Diese Instanz verlangt einen zweiten Faktor. Solange keiner steht, genügt zum
       Anmelden dein Passwort allein.{" "}
       <Link to="/einstellungen/zugang">Set it up now</Link>
+    </div>
+  );
+}
+
+/**
+ * Without a connection the pages opened before are still readable (the service
+ * worker keeps their last state), but nothing is saved. The stripe says so,
+ * so nobody writes a page full and loses it.
+ */
+function OfflineStreifen() {
+  const [offline, setOffline] = useState(typeof navigator !== "undefined" && !navigator.onLine);
+  useEffect(() => {
+    const an = () => setOffline(false);
+    const aus = () => setOffline(true);
+    window.addEventListener("online", an);
+    window.addEventListener("offline", aus);
+    return () => {
+      window.removeEventListener("online", an);
+      window.removeEventListener("offline", aus);
+    };
+  }, []);
+  if (!offline) return null;
+  return (
+    <div className="mahnstreifen">
+      Offline: you are reading the last saved state of pages you opened before. Changes are not saved until the connection is back.
     </div>
   );
 }

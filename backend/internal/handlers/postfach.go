@@ -31,6 +31,10 @@ const (
 	PostAntwort   = "antwort"
 	PostErwaehnt  = "erwaehnung"
 	PostFreigabe  = "freigabe"
+	// A watched page changed. Only for those who chose to watch it.
+	PostAenderung = "aenderung"
+	// Somebody put your @name into a task.
+	PostAufgabe = "aufgabe"
 )
 
 // Nachricht is one entry in the inbox.

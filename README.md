@@ -140,7 +140,17 @@ when the database approaches a gigabyte, not before.
   file. Written without a third-party library; the PDF uses the base fonts and
   WinAnsi encoding, so umlauts survive
 - **Version history**: a snapshot is written before every content change; browse
-  and restore any earlier revision
+  and restore any earlier revision, and **compare** any of them with the current
+  state or the next version, line by line and word by word
+- **Templates**: an empty page offers meeting notes, a how-to, a project page and
+  every template saved with "Save as template"; an admin can offer one to the
+  whole instance. Templates stay out of the tree, search, graph and export
+- **Table of contents**: the headings of a page beside it, current while typing
+- **Diagrams**: a ```mermaid code block is drawn as a diagram below it
+  (flowchart, sequence, Gantt …), and stays plain Mermaid text in every export
+- **Tasks**: a checklist item with `@username` and `📅 2026-10-30` is a task with
+  an owner and a due date; the Tasks view gathers them from every readable page
+  and ticks them off there
 - **Attachments**: stored on local disk or in any S3-compatible bucket (MinIO,
   Garage, Ceph, AWS), and the handlers never learn which. Upload files per page,
   with a quick viewer for images, PDFs
@@ -176,6 +186,11 @@ when the database approaches a gigabyte, not before.
 - **Backlinks and links**: link pages explicitly or with `@` mentions in the text,
   and see what points back at the current page
 - **Knowledge graph**: a global graph of all pages plus a local view around one page
+- **Watching**: watch a page and get an inbox message when somebody else changes it
+- **API keys and webhooks**: personal `Bearer` keys (read-only or read-write)
+  for scripts, and signed webhooks on page and comment events, for n8n and
+  friends
+- **App mode**: installable as a PWA; pages opened before stay readable offline
 
 ### Access
 
@@ -523,7 +538,8 @@ to its versions, attachments, shares, links and subpages.
 ## API
 
 Everything lives under `/api`. Authentication uses an httpOnly cookie set on login
-or register. Unauthenticated: the sign-in routes themselves, `GET /api/public/{token}`
+or register, or a personal API key as `Authorization: Bearer nxr_…` (My account →
+API keys). Unauthenticated: the sign-in routes themselves, `GET /api/public/{token}`
 with its file route, and `/healthz`. The complete reference, including the routes this
 overview leaves out, is in [docs/api.md](docs/api.md).
 

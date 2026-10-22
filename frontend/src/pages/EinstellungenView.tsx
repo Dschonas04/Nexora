@@ -39,6 +39,7 @@ import GruppenView from "./GruppenView";
 import PruefspurView from "./PruefspurView";
 import { useDesign } from "../design";
 import { useRueckfrage } from "../components/Rueckfrage";
+import WebhooksTeil from "../components/WebhooksTeil";
 
 // An area is an entry in the sidebar, a part is a topic group inside it.
 // Fifteen entries were no longer a structure but a list one had to search,
@@ -52,6 +53,7 @@ type Bereich =
   | "datenbank"
   | "lizenz"
   | "protokoll"
+  | "integrationen"
   | "system";
 
 type Teil =
@@ -70,6 +72,7 @@ type Teil =
   | "lizenz"
   | "protokoll"
   | "system"
+  | "webhooks"
   | "wartung";
 
 const BEREICHE: { id: Bereich; title: string; unter: string; teile: Teil[] }[] = [
@@ -112,6 +115,14 @@ const BEREICHE: { id: Bereich; title: string; unter: string; teile: Teil[] }[] =
     unter: "Actions and changes",
     teile: ["protokoll"],
   },
+  // What this instance tells other services. API keys, the way in for them,
+  // belong to each account and sit under My account.
+  {
+    id: "integrationen",
+    title: "Integrations",
+    unter: "Webhooks for n8n and other services",
+    teile: ["webhooks"],
+  },
   {
     id: "system",
     title: "System",
@@ -140,6 +151,7 @@ const TEIL_TITEL: Record<Teil, string> = {
   protokoll: "Audit log",
   system: "Configuration",
   wartung: "Maintenance",
+  webhooks: "Webhooks",
 };
 
 // The old addresses stay valid. A bookmark on /einstellungen/ldap and the two
@@ -1124,6 +1136,8 @@ export default function EinstellungenView() {
   // has changed is how many of its branches land on one page at the same time.
   const teilInhalt = (teil: Teil) => {
     switch (teil) {
+      case "webhooks":
+        return <WebhooksTeil />;
       case "sitzungen": {
         const begriff = sitzungFilter.trim().toLowerCase();
         const sichtbar = (sitzungen ?? []).filter(

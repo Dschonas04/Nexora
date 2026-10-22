@@ -165,6 +165,10 @@ func nachrichtMail(sprache, art, pageID, wer, titel, auszug, adresse string) (st
 		betreff = je(en, fmt.Sprintf("%s hat dich auf „%s“ erwähnt", wer, titel), fmt.Sprintf("%s mentioned you on “%s”", wer, titel))
 	case PostFreigabe:
 		betreff = je(en, fmt.Sprintf("%s hat „%s“ mit dir geteilt", wer, titel), fmt.Sprintf("%s shared “%s” with you", wer, titel))
+	case PostAufgabe:
+		betreff = je(en, fmt.Sprintf("%s hat dir auf „%s“ eine Aufgabe gegeben", wer, titel), fmt.Sprintf("%s gave you a task on “%s”", wer, titel))
+	case PostAenderung:
+		betreff = je(en, fmt.Sprintf("%s hat „%s“ geändert", wer, titel), fmt.Sprintf("%s changed “%s”", wer, titel))
 	default:
 		betreff = je(en, "Neue Nachricht in deinem Postfach", "New message in your inbox")
 	}

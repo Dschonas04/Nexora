@@ -100,6 +100,14 @@ const (
 	AktZweitfaktorAus     = "zweitfaktor.ausgeschaltet"
 	AktZweitfaktorReset   = "zweitfaktor.zurueckgesetzt"
 	AktZweitfaktorCodes   = "zweitfaktor.ersatzcodes"
+	AktVorlageAngelegt    = "vorlage.angelegt"
+	AktVorlageGeloescht   = "vorlage.geloescht"
+	AktSchluesselNeu      = "apischluessel.angelegt"
+	AktSchluesselWeg      = "apischluessel.widerrufen"
+	AktWebhookAngelegt    = "webhook.angelegt"
+	AktWebhookGeaendert   = "webhook.geaendert"
+	AktWebhookEntfernt    = "webhook.entfernt"
+	AktAufgabeAbgehakt    = "aufgabe.abgehakt"
 )
 
 // spur writes one entry. Callers pass what they know; empty fields stay empty.

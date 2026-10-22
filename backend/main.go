@@ -195,6 +195,10 @@ func main() {
 	// handlers read it.
 	h.Puls = puls.Neu()
 
+	// API keys are checked by the handlers' database, the middleware only
+	// asks.
+	middleware.SchluesselPruefer = h.SchluesselPruefen
+
 	r := chi.NewRouter()
 	r.Use(chimw.RealIP) // trust X-Forwarded-For, the SPA is served through nginx
 	// The API used German path names up to 2.3. Old clients and scripts keep
@@ -254,14 +258,14 @@ func main() {
 			// Changing one's own password. It sits under /auth and not under
 			// /users because it needs no account name: what is meant is always
 			// the account making the request.
-			r.Post("/auth/password", h.PasswortWechseln)
+			r.With(middleware.NurSitzung).Post("/auth/password", h.PasswortWechseln)
 			// The second factor of one's own account. Like the password, under
 			// /auth and not /users: what is meant is always whoever is asking.
 			r.Get("/auth/two-factor", h.ZweitfaktorStand)
-			r.Post("/auth/two-factor/start", h.ZweitfaktorStart)
-			r.Post("/auth/two-factor/enable", h.ZweitfaktorAn)
-			r.Post("/auth/two-factor/disable", h.ZweitfaktorAus)
-			r.Post("/auth/two-factor/codes", h.ZweitfaktorCodesNeu)
+			r.With(middleware.NurSitzung).Post("/auth/two-factor/start", h.ZweitfaktorStart)
+			r.With(middleware.NurSitzung).Post("/auth/two-factor/enable", h.ZweitfaktorAn)
+			r.With(middleware.NurSitzung).Post("/auth/two-factor/disable", h.ZweitfaktorAus)
+			r.With(middleware.NurSitzung).Post("/auth/two-factor/codes", h.ZweitfaktorCodesNeu)
 
 			// Tells the interface what is unlocked so it never offers what is
 			// locked. Contains no secret.
@@ -277,14 +281,14 @@ func main() {
 			// not as a form: the browser already holds the finished bytes, and
 			// a form around them would be packaging without content.
 			r.Put("/pages/{id}/attachments/{attId}/pdf", h.PDFErsetzen)
-			r.Get("/sessions", h.ListSitzungen)
-			r.Delete("/sessions", h.SitzungenBeenden)
-			r.Delete("/sessions/{id}", h.SitzungBeenden)
+			r.With(middleware.NurSitzung).Get("/sessions", h.ListSitzungen)
+			r.With(middleware.NurSitzung).Delete("/sessions", h.SitzungenBeenden)
+			r.With(middleware.NurSitzung).Delete("/sessions/{id}", h.SitzungBeenden)
 			// Importing and issuing: both administrators only, checked inside the
 			// handler. On an ordinary installation issuing answers 501, because
 			// no private key lives there.
-			r.Put("/system/license", h.LizenzEinlesen)
-			r.Post("/system/license/issue", h.LizenzAusstellen)
+			r.With(middleware.NurSitzung).Put("/system/license", h.LizenzEinlesen)
+			r.With(middleware.NurSitzung).Post("/system/license/issue", h.LizenzAusstellen)
 
 			// The static /pages/... routes must be registered before /pages/{id},
 			// otherwise chi would match "shared" and "trash" as page ids.
@@ -292,6 +296,24 @@ func main() {
 			r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
 				Get("/pages/shared", h.ListSharedPages)
 			r.Get("/pages/trash", h.ListTrash)
+			// Tasks: the checklist items of every readable page in one list.
+			r.Get("/tasks", h.ListAufgaben)
+			r.Put("/tasks/{pageId}/{blockId}", h.AufgabeAbhaken)
+			// Templates, kept apart from the pages.
+			r.Get("/templates", h.ListVorlagen)
+			r.Post("/templates", h.VorlageAnlegen)
+			r.Delete("/templates/{id}", h.VorlageLoeschen)
+			// Personal API keys. Only from a browser session: a key must not
+			// be able to make the next one.
+			r.With(middleware.NurSitzung).Get("/api-keys", h.ListSchluessel)
+			r.With(middleware.NurSitzung).Post("/api-keys", h.SchluesselAnlegen)
+			r.With(middleware.NurSitzung).Delete("/api-keys/{id}", h.SchluesselWiderrufen)
+			// Webhooks, admins only (checked in the handlers).
+			r.Get("/system/webhooks", h.ListWebhooks)
+			r.Post("/system/webhooks", h.WebhookAnlegen)
+			r.Put("/system/webhooks/{id}", h.WebhookAendern)
+			r.Delete("/system/webhooks/{id}", h.WebhookLoeschen)
+			r.Post("/system/webhooks/{id}/test", h.WebhookTesten)
 			r.Post("/pages", h.CreatePage)
 			r.Get("/pages/{id}", h.GetPage)
 			r.Put("/pages/{id}", h.UpdatePage)
@@ -306,6 +328,8 @@ func main() {
 			r.Post("/pages/{id}/restore", h.RestorePage)
 			r.Delete("/pages/{id}/purge", h.PurgePage) // deletes for good, cascades to subpages
 			r.Post("/pages/{id}/favorite", h.AddFavorite)
+			r.Post("/pages/{id}/watch", h.Beobachten)
+			r.Delete("/pages/{id}/watch", h.NichtBeobachten)
 			r.Delete("/pages/{id}/favorite", h.RemoveFavorite)
 			r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
 				Post("/pages/{id}/share", h.SharePage)

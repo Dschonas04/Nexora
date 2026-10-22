@@ -77,6 +77,7 @@ tier contains which feature is in [architecture chapter 8.5](architecture.md#85-
 | `PUT` | `/pages/{id}/order` | Move and order in one call, a drag in the sidebar is one gesture, and two requests could half-fail |
 | `PUT` | `/pages/{id}/width` | Page width. Free, like the page itself |
 | `POST` · `DELETE` | `/pages/{id}/favorite` | |
+| `POST` · `DELETE` | `/pages/{id}/watch` | Watch the page: an inbox message when somebody else changes it, one until it is read. `watching` in `GET /pages/{id}` says whether one does |
 | `POST` | `/pages/{id}/tags` | Attach a tag |
 | `DELETE` | `/pages/{id}/tags/{tagId}` | Detach it |
 
@@ -247,6 +248,58 @@ licensed.
 | `DELETE` | `/comments/{id}` | Empties the text and keeps the shell, so replies hanging off it keep their place |
 | `POST` | `/comments/{id}/resolved` | Mark the thread settled, or reopen it |
 
+## Templates
+
+Kept apart from the pages: a template appears in no tree, search, graph or
+export. The built-in ones live in the interface.
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/templates` | Your own templates and those offered to everyone, content included |
+| `POST` | `/templates` | `{title, icon?, content, forAll?}`. `content` is a BlockNote document (an array). `forAll` needs the admin role |
+| `DELETE` | `/templates/{id}` | Your own; an admin also those offered to everyone |
+
+## Tasks
+
+A task is a checklist item in any page. `@username` in its text says whom it is
+for, `📅 YYYY-MM-DD` or `📅 D.M.YYYY` when it is due.
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/tasks` | `?filter=mine` (default): tasks naming you, from every page you can read. `?filter=own`: every task on your own pages. `&done=1` includes ticked ones. Answers `{tasks, username}`; each task has `pageId, pageTitle, blockId, text, checked, due, assignees, mine, canEdit`. Open first, by due date |
+| `PUT` | `/tasks/{pageId}/{blockId}` | `{checked}`. Needs write access; **409** while people are writing on the page together -- tick it there |
+
+## API keys
+
+Personal keys for scripts: send `Authorization: Bearer nxr_…` instead of the
+cookie. A key acts as the account that made it; one with `scope: "lesen"` may
+only send `GET`/`HEAD` (403 otherwise). Only the SHA-256 is stored. The routes
+below, and password, second factor, sessions and the licence import, refuse a
+key (403): a leaked key must not mint the next one.
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/api-keys` | Your keys, without the keys |
+| `POST` | `/api-keys` | `{name, scope: "lesen"|"schreiben", days}`; `days: 0` never expires. The answer carries `key` -- the only time it is shown |
+| `DELETE` | `/api-keys/{id}` | Revoke; effective on the next request |
+
+## Webhooks · admin only
+
+| Method | Path | Notes |
+|---|---|---|
+| `GET` | `/system/webhooks` | `{hooks, events}` |
+| `POST` | `/system/webhooks` | `{name, url, events}`; an empty `events` means all. The answer carries `secret`, shown only here |
+| `PUT` | `/system/webhooks/{id}` | `{name?, url?, events?, active?}` |
+| `DELETE` | `/system/webhooks/{id}` | |
+| `POST` | `/system/webhooks/{id}/test` | Sends `ping` now, answers `{status, error}` |
+
+Events: `page.created`, `page.updated` (once the page was quiet for 30 seconds),
+`page.deleted`, `page.restored`, `comment.created`. A delivery is a `POST` with
+`{event, timestamp, instance?, page: {id, title, spaceId, url?}, actor: {id, name}, comment?}`
+and the headers `X-Nexora-Event`, `X-Nexora-Delivery` and
+`X-Nexora-Signature: sha256=<hex HMAC-SHA256 of the body with the secret>`.
+A failed delivery is retried once after a minute.
+
 ## Inbox
 
 Free, like the sidebar it sits in: it only shows what happened elsewhere anyway,
@@ -260,9 +313,10 @@ and on an instance without comments and shares it simply stays empty.
 | `POST` | `/inbox/{id}/read` | Mark one read |
 | `DELETE` | `/inbox` | Drop the read ones |
 
-Three kinds of entry and no more: comments on your pages, replies to your
-comments, `@` mentions, and pages somebody shared with you. An inbox that carries
-noise is one people stop opening.
+What lands here: comments on your pages, replies to your comments, `@`
+mentions, pages somebody shared with you, tasks that name you (`aufgabe`) and
+changes to pages you watch (`aenderung`, one until it is read). Nothing else --
+an inbox that carries noise is one people stop opening.
 
 ## Audit trail · paid: `pruefspur` · admin only
 

@@ -168,6 +168,7 @@ up with the command above.
 | `y-prosemirror` | 1.3.7 | MIT |
 | `y-protocols` | 1.0.7 | MIT |
 | `yjs` | 13.6.32 | MIT |
+| `mermaid` | 12.1.0 | MIT |
 
 **Everything else in the tree that is not MIT:**
 
@@ -176,6 +177,24 @@ up with the command above.
 | `pako` | 1.0.11 | MIT and Zlib |
 | `tslib` | 2.8.1 | 0BSD |
 | `type-fest` | 4.41.0 | MIT or CC0-1.0 |
+
+**Brought along by `mermaid` (since 3.1, loaded only when a page shows a diagram):**
+
+| Package | Version | Licence |
+|---|---|---|
+| `elkjs` | 0.9.3 | **EPL-2.0** |
+| `dompurify` | 3.4.17 | MPL-2.0 or Apache-2.0 |
+| `chevrotain` and `@chevrotain/*` | 13.2.0 | Apache-2.0 |
+| `d3` and its modules, `delaunator`, `internmap` | 3.x / 7.9.0 | ISC |
+| `d3-array@2`, `d3-ease`, `d3-path@1`, `d3-sankey`, `d3-shape@1`, `rw` | | BSD-3-Clause |
+| `robust-predicates` | 3.0.3 | Unlicense |
+| `khroma` | 2.1.0 | MIT (licence file, no field in package.json) |
+
+`elkjs` (the ELK layout engine) is under the Eclipse Public License 2.0, a weak
+copyleft that covers the library itself and not what uses it. It is bundled
+unchanged as a chunk of its own; its source is at
+<https://github.com/kieler/elkjs>. Whoever changes it has to publish those
+changes under EPL-2.0.
 
 `pdfjs-dist` is licensed under Apache-2.0 and is thus the first delivered
 package besides BlockNote that demands more than a copyright notice: section 4

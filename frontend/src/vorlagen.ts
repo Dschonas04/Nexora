@@ -1,0 +1,156 @@
+// The templates every instance has, in the reader's language. Saved templates
+// come from the service; these three are here so an empty page has something
+// to offer from the first day on.
+//
+// Written as plain partial blocks: the editor fills in ids and defaults when
+// it takes them over, exactly as it does for pasted content.
+import type { Sprache } from "./sprache";
+import { inTagen } from "./aufgaben";
+
+export type EingebauteVorlage = {
+  key: string;
+  title: string;
+  icon: string;
+  content: unknown[];
+};
+
+const h = (level: number, text: string) => ({ type: "heading", props: { level }, content: text });
+const p = (text = "") => ({ type: "paragraph", content: text });
+const li = (text: string) => ({ type: "bulletListItem", content: text });
+const todo = (text: string) => ({ type: "checkListItem", content: text });
+const nr = (text: string) => ({ type: "numberedListItem", content: text });
+
+function heute(s: Sprache): string {
+  return new Date().toLocaleDateString(s === "de" ? "de-DE" : s === "fr" ? "fr-FR" : "en-GB");
+}
+
+export function eingebauteVorlagen(s: Sprache): EingebauteVorlage[] {
+  const woche = inTagen(7);
+  if (s === "de") {
+    return [
+      {
+        key: "besprechung",
+        title: `Besprechung ${heute(s)}`,
+        icon: "",
+        content: [
+          p("Datum: " + heute(s) + " · Ort: "),
+          h(2, "Teilnehmende"),
+          li("@"),
+          h(2, "Tagesordnung"),
+          nr("Stand der Dinge"),
+          nr("Offene Fragen"),
+          h(2, "Notizen"),
+          p(),
+          h(2, "Beschlüsse"),
+          li(""),
+          h(2, "Aufgaben"),
+          todo(`Wer macht was 📅 ${woche}`),
+        ],
+      },
+      {
+        key: "anleitung",
+        title: "Anleitung: ",
+        icon: "",
+        content: [
+          p("Wofür ist diese Anleitung, und für wen?"),
+          h(2, "Voraussetzungen"),
+          li("Zugang zu …"),
+          h(2, "Schritte"),
+          nr("Erster Schritt"),
+          nr("Zweiter Schritt"),
+          nr("Prüfen, ob es geklappt hat"),
+          h(2, "Wenn es nicht klappt"),
+          p("Typische Fehler und was hilft."),
+          h(2, "Siehe auch"),
+          li("[[Verwandte Seite]]"),
+        ],
+      },
+      {
+        key: "projekt",
+        title: "Projekt: ",
+        icon: "",
+        content: [
+          h(2, "Worum es geht"),
+          p("Ziel in zwei Sätzen. Woran merken wir, dass wir fertig sind?"),
+          h(2, "Beteiligte"),
+          li("Verantwortlich: @"),
+          h(2, "Zeitplan"),
+          {
+            type: "codeBlock",
+            props: { language: "mermaid" },
+            content: `gantt\n  dateFormat YYYY-MM-DD\n  section Projekt\n  Planung   :a1, ${inTagen(0)}, 7d\n  Umsetzung :a2, after a1, 14d\n  Abschluss :after a2, 3d`,
+          },
+          h(2, "Aufgaben"),
+          todo(`Planung abschließen 📅 ${woche}`),
+          h(2, "Entscheidungen"),
+          li(""),
+          h(2, "Risiken"),
+          li(""),
+        ],
+      },
+    ];
+  }
+  const fr = s === "fr";
+  return [
+    {
+      key: "besprechung",
+      title: (fr ? "Réunion " : "Meeting ") + heute(s),
+      icon: "",
+      content: [
+        p((fr ? "Date : " : "Date: ") + heute(s) + (fr ? " · Lieu : " : " · Place: ")),
+        h(2, fr ? "Participants" : "Attendees"),
+        li("@"),
+        h(2, fr ? "Ordre du jour" : "Agenda"),
+        nr(fr ? "Où en sommes-nous" : "Where we stand"),
+        nr(fr ? "Questions ouvertes" : "Open questions"),
+        h(2, "Notes"),
+        p(),
+        h(2, fr ? "Décisions" : "Decisions"),
+        li(""),
+        h(2, fr ? "Tâches" : "Tasks"),
+        todo((fr ? "Qui fait quoi" : "Who does what") + ` 📅 ${woche}`),
+      ],
+    },
+    {
+      key: "anleitung",
+      title: fr ? "Guide : " : "How-to: ",
+      icon: "",
+      content: [
+        p(fr ? "À quoi sert ce guide, et pour qui ?" : "What is this guide for, and who is it for?"),
+        h(2, fr ? "Prérequis" : "Before you start"),
+        li(fr ? "Accès à …" : "Access to …"),
+        h(2, fr ? "Étapes" : "Steps"),
+        nr(fr ? "Première étape" : "First step"),
+        nr(fr ? "Deuxième étape" : "Second step"),
+        nr(fr ? "Vérifier que ça a marché" : "Check that it worked"),
+        h(2, fr ? "Si ça ne marche pas" : "If it does not work"),
+        p(fr ? "Erreurs typiques et ce qui aide." : "Typical mistakes and what helps."),
+        h(2, fr ? "Voir aussi" : "See also"),
+        li(fr ? "[[Page liée]]" : "[[Related page]]"),
+      ],
+    },
+    {
+      key: "projekt",
+      title: fr ? "Projet : " : "Project: ",
+      icon: "",
+      content: [
+        h(2, fr ? "De quoi s'agit-il" : "What it is about"),
+        p(fr ? "Le but en deux phrases. À quoi verrons-nous que c'est fini ?" : "The goal in two sentences. How will we know we are done?"),
+        h(2, fr ? "Personnes" : "People"),
+        li((fr ? "Responsable : " : "Owner: ") + "@"),
+        h(2, fr ? "Calendrier" : "Timeline"),
+        {
+          type: "codeBlock",
+          props: { language: "mermaid" },
+          content: `gantt\n  dateFormat YYYY-MM-DD\n  section ${fr ? "Projet" : "Project"}\n  ${fr ? "Planification" : "Planning"} :a1, ${inTagen(0)}, 7d\n  ${fr ? "Réalisation" : "Build"} :a2, after a1, 14d\n  ${fr ? "Clôture" : "Wrap-up"} :after a2, 3d`,
+        },
+        h(2, fr ? "Tâches" : "Tasks"),
+        todo((fr ? "Finir la planification" : "Finish planning") + ` 📅 ${woche}`),
+        h(2, fr ? "Décisions" : "Decisions"),
+        li(""),
+        h(2, fr ? "Risques" : "Risks"),
+        li(""),
+      ],
+    },
+  ];
+}

@@ -17,6 +17,17 @@ import "./styles.css";
 // Before the first render, so the very first frame already stands in the chosen language.
 import "./sprache";
 
+// The service worker makes Nexora installable as an app and keeps the pages
+// one has opened readable without a connection; see public/sw.js. Only in
+// the built application: in development it would serve yesterday's bundle.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      /* without it everything works as before, only not offline */
+    });
+  });
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>

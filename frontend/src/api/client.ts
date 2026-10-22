@@ -114,6 +114,8 @@ export interface Page {
   publicToken: string | null;
   tags: Tag[];
   isFavorite: boolean;
+  /** The viewer gets an inbox message when somebody else changes the page. */
+  watching: boolean;
   canEdit: boolean;
   isOwner: boolean;
   /**
@@ -275,6 +277,61 @@ export interface Spureintrag {
     mention is the name in the text, and the address would be nobody's business. */
 export interface Person {
   name: string;
+  /** What a task in the text addresses with @. Missing for accounts without one. */
+  username?: string;
+}
+
+/** A saved template. The built-in ones live in vorlagen.ts. */
+export interface Vorlage {
+  id: string;
+  title: string;
+  icon: string;
+  content: unknown;
+  forAll: boolean;
+  own: boolean;
+  ownerName: string;
+  createdAt: string;
+}
+
+/** A checklist item from some page, as "My tasks" lists it. */
+export interface Aufgabe {
+  pageId: string;
+  pageTitle: string;
+  blockId: string;
+  text: string;
+  checked: boolean;
+  /** YYYY-MM-DD */
+  due?: string;
+  assignees: string[];
+  mine: boolean;
+  canEdit: boolean;
+}
+
+/** A personal API key. key is only there in the answer that made it. */
+export interface APISchluessel {
+  id: string;
+  name: string;
+  hint: string;
+  scope: "lesen" | "schreiben";
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  key?: string;
+}
+
+export interface Webhook {
+  id: string;
+  name: string;
+  url: string;
+  events: string[];
+  active: boolean;
+  /** Only in the answer that made the hook. */
+  secret?: string;
+  secretHint: string;
+  createdAt: string;
+  lastAt: string | null;
+  lastStatus: number;
+  lastError: string;
 }
 
 export interface Kommentar {
@@ -606,7 +663,7 @@ export interface EinfuhrVorschau {
 // Nachricht is one entry in the inbox.
 export interface Nachricht {
   id: string;
-  type: "kommentar" | "antwort" | "erwaehnung" | "freigabe";
+  type: "kommentar" | "antwort" | "erwaehnung" | "freigabe" | "aenderung" | "aufgabe";
   pageId: string | null;
   commentId: string | null;
   /** Who triggered it. Null when the account was deleted. */
@@ -1020,6 +1077,34 @@ export const api = {
   purgePage: (id: string) => req<void>(`/pages/${id}/purge`, { method: "DELETE" }),
 
   addFavorite: (id: string) => req<void>(`/pages/${id}/favorite`, { method: "POST" }),
+  beobachten: (id: string) => req<void>(`/pages/${id}/watch`, { method: "POST" }),
+  nichtBeobachten: (id: string) => req<void>(`/pages/${id}/watch`, { method: "DELETE" }),
+
+  vorlagen: () => req<Vorlage[]>("/templates"),
+  vorlageAnlegen: (p: { title: string; icon?: string; content: unknown; forAll?: boolean }) =>
+    req<Vorlage>("/templates", { method: "POST", body: JSON.stringify(p) }),
+  vorlageLoeschen: (id: string) => req<void>(`/templates/${id}`, { method: "DELETE" }),
+
+  aufgaben: (filter: "mine" | "own", erledigte: boolean) =>
+    req<{ tasks: Aufgabe[]; username: string }>(
+      `/tasks?filter=${filter}${erledigte ? "&done=1" : ""}`,
+    ),
+  aufgabeAbhaken: (pageId: string, blockId: string, checked: boolean) =>
+    req<void>(`/tasks/${pageId}/${blockId}`, { method: "PUT", body: JSON.stringify({ checked }) }),
+
+  apiSchluessel: () => req<APISchluessel[]>("/api-keys"),
+  apiSchluesselAnlegen: (name: string, scope: "lesen" | "schreiben", days: number) =>
+    req<APISchluessel>("/api-keys", { method: "POST", body: JSON.stringify({ name, scope, days }) }),
+  apiSchluesselWiderrufen: (id: string) => req<void>(`/api-keys/${id}`, { method: "DELETE" }),
+
+  webhooks: () => req<{ hooks: Webhook[]; events: string[] }>("/system/webhooks"),
+  webhookAnlegen: (p: { name: string; url: string; events: string[] }) =>
+    req<Webhook>("/system/webhooks", { method: "POST", body: JSON.stringify(p) }),
+  webhookAendern: (id: string, p: { name?: string; url?: string; events?: string[]; active?: boolean }) =>
+    req<void>(`/system/webhooks/${id}`, { method: "PUT", body: JSON.stringify(p) }),
+  webhookLoeschen: (id: string) => req<void>(`/system/webhooks/${id}`, { method: "DELETE" }),
+  webhookTesten: (id: string) =>
+    req<{ status: number; error: string }>(`/system/webhooks/${id}/test`, { method: "POST" }),
   removeFavorite: (id: string) => req<void>(`/pages/${id}/favorite`, { method: "DELETE" }),
   listFavorites: () => req<PageMeta[]>("/favorites"),
 
@@ -1029,6 +1114,8 @@ export const api = {
 
   // Version history
   listVersions: (id: string) => req<PageVersion[]>(`/pages/${id}/versions`),
+  getVersion: (id: string, versionId: string) =>
+    req<PageVersion & { content: unknown }>(`/pages/${id}/versions/${versionId}`),
   restoreVersion: (id: string, versionId: string) =>
     req<Page>(`/pages/${id}/versions/${versionId}/restore`, { method: "POST" }),
 

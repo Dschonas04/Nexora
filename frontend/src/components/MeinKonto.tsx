@@ -15,7 +15,7 @@
 // else over too.
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Benachrichtigung, Sitzung, ZweitfaktorStand, api } from "../api/client";
+import { APISchluessel, Benachrichtigung, Sitzung, ZweitfaktorStand, api } from "../api/client";
 import { useAuth } from "../auth";
 import {
   AKZENTE,
@@ -38,7 +38,7 @@ import Sprachwahl from "../sprache/Sprachwahl";
 // sharp on high-resolution screens and in the profile.
 const KANTE = 256;
 
-type Teil = "profil" | "aussehen" | "sprache" | "benachrichtigung" | "passwort" | "zweitfaktor" | "geraete";
+type Teil = "profil" | "aussehen" | "sprache" | "benachrichtigung" | "passwort" | "zweitfaktor" | "geraete" | "schluessel";
 
 const TEILE: { id: Teil; title: string; unter: string }[] = [
   { id: "profil", title: "Profile", unter: "Name and picture" },
@@ -48,6 +48,7 @@ const TEILE: { id: Teil; title: string; unter: string }[] = [
   { id: "passwort", title: "Password", unter: "Change it" },
   { id: "zweitfaktor", title: "Second factor", unter: "App and recovery codes" },
   { id: "geraete", title: "Devices", unter: "Where you are signed in" },
+  { id: "schluessel", title: "API keys", unter: "For scripts and n8n" },
 ];
 
 /**
@@ -139,6 +140,7 @@ export default function MeinKonto({ onClose }: { onClose: () => void }) {
           {teil === "passwort" && <Passwort />}
           {teil === "zweitfaktor" && <ZweitfaktorTeil />}
           {teil === "geraete" && <Geraete />}
+          {teil === "schluessel" && <SchluesselTeil />}
         </div>
       </div>
     </Fenster>
@@ -790,6 +792,125 @@ function Geraete() {
           )}
         </tbody>
       </table>
+    </>
+  );
+}
+
+/**
+ * Personal API keys. A key acts as this account and can do no more than it;
+ * one that may only read cannot change anything. The key itself is shown once,
+ * right after it is made: only its fingerprint is kept on the server.
+ */
+function SchluesselTeil() {
+  const [liste, setListe] = useState<APISchluessel[]>([]);
+  const [name, setName] = useState("");
+  const [recht, setRecht] = useState<"lesen" | "schreiben">("lesen");
+  const [tage, setTage] = useState(90);
+  const [neu, setNeu] = useState<APISchluessel | null>(null);
+  const [fehler, setFehler] = useState("");
+  const [kopiert, setKopiert] = useState(false);
+
+  const laden = () => api.apiSchluessel().then(setListe).catch(() => setListe([]));
+  useEffect(() => {
+    laden();
+  }, []);
+
+  const anlegen = async () => {
+    setFehler("");
+    setKopiert(false);
+    try {
+      const k = await api.apiSchluesselAnlegen(name.trim(), recht, tage);
+      setNeu(k);
+      setName("");
+      laden();
+    } catch (e) {
+      setFehler(e instanceof Error ? e.message : "Not saved.");
+    }
+  };
+
+  const widerrufen = async (id: string) => {
+    await api.apiSchluesselWiderrufen(id).catch(() => {});
+    if (neu?.id === id) setNeu(null);
+    laden();
+  };
+
+  const kopieren = async () => {
+    if (!neu?.key) return;
+    try {
+      await navigator.clipboard.writeText(neu.key);
+      setKopiert(true);
+    } catch {
+      /* the field stays selectable */
+    }
+  };
+
+  const datum = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "–");
+
+  return (
+    <>
+      <h3>API keys</h3>
+      <p className="muted small">
+        For scripts, n8n and other tools. Send the key as a header: Authorization: Bearer nxr_… A key can do what your account can do – one that may only read changes nothing.
+      </p>
+
+      {neu?.key && (
+        <div className="hinweis-ok schluessel-neu">
+          <strong>Copy the key now – it is shown only this once.</strong>
+          <div className="schluessel-zeile">
+            <input className="input notranslate" readOnly value={neu.key} onFocus={(e) => e.target.select()} />
+            <button className="btn" onClick={kopieren}>
+              {kopiert ? "Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="schluessel-form">
+        <input
+          className="input"
+          placeholder="Name, e.g. n8n"
+          value={name}
+          maxLength={80}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <select value={recht} onChange={(e) => setRecht(e.target.value as "lesen" | "schreiben")}>
+          <option value="lesen">Read only</option>
+          <option value="schreiben">Read and write</option>
+        </select>
+        <select value={tage} onChange={(e) => setTage(Number(e.target.value))}>
+          <option value={30}>30 days</option>
+          <option value={90}>90 days</option>
+          <option value={365}>1 year</option>
+          <option value={0}>No expiry</option>
+        </select>
+        <button className="btn btn-primary" disabled={!name.trim()} onClick={anlegen}>
+          Create key
+        </button>
+      </div>
+      {fehler && <div className="fehler">{fehler}</div>}
+
+      {liste.length === 0 ? (
+        <p className="muted small">No keys yet.</p>
+      ) : (
+        <div className="list">
+          {liste.map((k) => (
+            <div key={k.id} className="version-row">
+              <div>
+                <div className="version-title notranslate">{k.name}</div>
+                <div className="muted small notranslate">
+                  {k.hint} · {k.scope === "schreiben" ? "read and write" : "read only"}
+                </div>
+                <div className="muted small">
+                  {`Created ${datum(k.createdAt)} · last used ${datum(k.lastUsedAt)} · expires ${k.expiresAt ? datum(k.expiresAt) : "never"}`}
+                </div>
+              </div>
+              <button className="btn" onClick={() => widerrufen(k.id)}>
+                Revoke
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

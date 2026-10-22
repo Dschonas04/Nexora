@@ -523,6 +523,76 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS sprache text NOT NULL DEFAULT '';
 -- Inbox messages by e-mail as well, switched on per account. Off by default:
 -- mail nobody asked for ends up as spam, and then the one that matters too.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_benachrichtigung boolean NOT NULL DEFAULT false;
+
+-- Templates, a table of their own this time.
+--
+-- The first attempt (removed in 2.x) was a tick on an ordinary page, and that
+-- page then stood in the tree, the search, the graph and the export as if it
+-- were content. A template is not content: it is the starting point of a page.
+-- So it lives apart, and a page gets a COPY of it -- changing a template later
+-- leaves the pages made from it alone.
+--
+-- fuer_alle: offered to every account of the instance, not only its owner.
+-- Only an admin may set it; such a template turns up in everybody's choice,
+-- and that is a decision for the instance, not for one account.
+CREATE TABLE IF NOT EXISTS vorlagen (
+	id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	owner_id    uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	titel       text NOT NULL,
+	icon        text NOT NULL DEFAULT '',
+	inhalt      jsonb NOT NULL DEFAULT '[]'::jsonb,
+	fuer_alle   boolean NOT NULL DEFAULT false,
+	erstellt_am timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS vorlagen_owner_idx ON vorlagen(owner_id);
+
+-- Who watches which page. Watching is chosen per page and per account: the
+-- inbox carries "page changed" only to those who asked for it, everybody else
+-- is spared the noise.
+CREATE TABLE IF NOT EXISTS beobachter (
+	user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	page_id uuid NOT NULL REFERENCES pages(id) ON DELETE CASCADE,
+	seit    timestamptz NOT NULL DEFAULT now(),
+	PRIMARY KEY (user_id, page_id)
+);
+CREATE INDEX IF NOT EXISTS beobachter_page_idx ON beobachter(page_id);
+
+-- Personal API keys. Only the SHA-256 of a key is stored: the key itself is
+-- shown once when it is made and never again, so a dump of the database yields
+-- no key that works. anfang keeps the first characters to tell keys apart in
+-- the list.
+--
+-- recht: 'lesen' allows reading requests only, 'schreiben' everything the
+-- account itself may do.
+CREATE TABLE IF NOT EXISTS api_schluessel (
+	id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	user_id     uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	name        text NOT NULL,
+	hash        text UNIQUE NOT NULL,
+	anfang      text NOT NULL DEFAULT '',
+	recht       text NOT NULL DEFAULT 'lesen',
+	erstellt_am timestamptz NOT NULL DEFAULT now(),
+	zuletzt_am  timestamptz,
+	laeuft_ab   timestamptz
+);
+CREATE INDEX IF NOT EXISTS api_schluessel_user_idx ON api_schluessel(user_id);
+
+-- Webhooks: an address that is called when something happens on the instance.
+-- Set up by an admin, because a hook hears about every page that changes. The
+-- secret signs every delivery (HMAC-SHA256) so the receiver can check that it
+-- really came from here; it has to be kept in the clear for that.
+CREATE TABLE IF NOT EXISTS webhooks (
+	id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	name           text NOT NULL DEFAULT '',
+	url            text NOT NULL,
+	geheimnis      text NOT NULL,
+	ereignisse     text[] NOT NULL DEFAULT '{}',
+	aktiv          boolean NOT NULL DEFAULT true,
+	erstellt_am    timestamptz NOT NULL DEFAULT now(),
+	zuletzt_am     timestamptz,
+	zuletzt_status integer NOT NULL DEFAULT 0,
+	zuletzt_fehler text NOT NULL DEFAULT ''
+);
 `
 
 // Migrate applies the schema. It is idempotent and safe to run on every start,

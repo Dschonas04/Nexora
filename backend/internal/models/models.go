@@ -138,8 +138,11 @@ type Page struct {
 	PublicToken *string         `json:"publicToken"`
 	Tags        []Tag           `json:"tags"`
 	IsFavorite  bool            `json:"isFavorite"`
-	CanEdit     bool            `json:"canEdit"` // false for read-only shares
-	IsOwner     bool            `json:"isOwner"`
+	// Beobachtet: the viewer gets an inbox message when somebody else changes
+	// this page.
+	Beobachtet bool `json:"watching"`
+	CanEdit    bool `json:"canEdit"` // false for read-only shares
+	IsOwner    bool `json:"isOwner"`
 	// Gemeinsam: more than one account may write on this page, and the service
 	// permits writing together. Only then does the browser connect to the wire;
 	// a page only one person sits at anyway does not need it.

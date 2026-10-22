@@ -19,6 +19,8 @@ const SATZ: Record<Nachricht["type"], { tat: string; vor: string }> = {
   antwort: { tat: "replied to your comment", vor: "on" },
   erwaehnung: { tat: "mentioned you", vor: "on" },
   freigabe: { tat: "shared a page with you", vor: "" },
+  aenderung: { tat: "changed", vor: "" },
+  aufgabe: { tat: "gave you a task", vor: "on" },
 };
 
 export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
@@ -71,8 +73,9 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
       <div className="page wide">
         <h1 className="view-title">Inbox</h1>
         <p className="muted">
-          Comments on your pages, replies to your comments, mentions of your name
-          and pages someone shared with you.
+          Comments on your pages, replies to your comments, mentions of your name,
+          tasks for you, pages someone shared with you and changes to pages you
+          watch.
         </p>
 
         <div className="postfach-leiste">

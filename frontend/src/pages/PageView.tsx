@@ -4,7 +4,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
-import { Graph, Page, PageMeta, PagePatch, Tag, api } from "../api/client";
+import { Graph, Page, PageMeta, PagePatch, Person, Tag, api } from "../api/client";
 // The editor brings BlockNote along, and that is the largest single piece of
 // the bundle. Whoever leafs through the list, looks at the graph or goes into
 // the settings needs none of it.
@@ -21,8 +21,21 @@ import { useAuth } from "../auth";
 import { useDesign } from "../design";
 import { schriftAuf } from "../farbe";
 import LocalGraph from "../components/LocalGraph";
-import { useEingabe } from "../components/Rueckfrage";
+import { useEingabe, useRueckfrage } from "../components/Rueckfrage";
 import { useAussenklick } from "../klappen";
+import Inhaltsverzeichnis, { useUeberschriften } from "../components/Inhaltsverzeichnis";
+import VorlagenWahl, { AngewandteVorlage, useLeer } from "../components/VorlagenWahl";
+
+// Whether the table of contents is open is remembered per browser: whoever
+// works with it wants it on the next page too.
+const INHALT_SCHLUESSEL = "nexora.inhalt";
+function inhaltGemerkt(): boolean {
+  try {
+    return localStorage.getItem(INHALT_SCHLUESSEL) === "1";
+  } catch {
+    return false;
+  }
+}
 
 interface Props {
   allTags: Tag[];
@@ -108,6 +121,7 @@ export default function PageView({
   const { id } = useParams();
   const nav = useNavigate();
   const eingabe = useEingabe();
+  const frage = useRueckfrage();
   const [page, setPage] = useState<Page | null>(null);
   // The browser title is the page's name, as in the heading.
   const sprache = useSprache();
@@ -164,6 +178,16 @@ export default function PageView({
   const [anhangTick, setAnhangTick] = useState(0);
   const [exportOffen, setExportOffen] = useState(false);
   const [breiteOffen, setBreiteOffen] = useState(false);
+  const [mehrOffen, setMehrOffen] = useState(false);
+  const [showInhalt, setShowInhalt] = useState(inhaltGemerkt);
+  // People who may read this page, for the "@" menu: picking one writes
+  // @username, which gives a checklist item to them.
+  const [personen, setPersonen] = useState<Person[]>([]);
+  // The editor as state as well as in the ref: the table of contents and the
+  // template choice follow its changes and have to render when it appears.
+  const [editorInst, setEditorInst] = useState<BlockNoteEditor | null>(null);
+  const ueberschriftenListe = useUeberschriften(editorInst);
+  const leer = useLeer(editorInst, istLeer);
   // Here too: a click beside it and Escape close it. An open menu above the
   // text is worse than one in the sidebar, because the editor lies underneath
   // it.
@@ -172,6 +196,9 @@ export default function PageView({
   );
   const breiteBereich = useAussenklick<HTMLDivElement>(breiteOffen, () =>
     setBreiteOffen(false),
+  );
+  const mehrBereich = useAussenklick<HTMLDivElement>(mehrOffen, () =>
+    setMehrOffen(false),
   );
   // Refs rather than state: changing either must not trigger a render. The timer
   // drives the debounced autosave, the editor handle is needed for the markdown
@@ -230,6 +257,10 @@ export default function PageView({
       .graph()
       .then(setGraph)
       .catch(() => setGraph({ nodes: [], edges: [] }));
+    api
+      .erwaehnbare(id)
+      .then(setPersonen)
+      .catch(() => setPersonen([]));
     return () => window.clearTimeout(saveTimer.current);
   }, [id]);
 
@@ -368,6 +399,65 @@ export default function PageView({
     if (!canEdit) return;
     if (mitschrift && !mitschrift.fuehrend) return;
     scheduleSave({ content: blocks });
+  };
+
+  const toggleBeobachten = async () => {
+    if (page.watching) await api.nichtBeobachten(page.id);
+    else await api.beobachten(page.id);
+    setPage({ ...page, watching: !page.watching });
+  };
+
+  const inhaltUmschalten = () => {
+    const neu = !showInhalt;
+    setShowInhalt(neu);
+    try {
+      localStorage.setItem(INHALT_SCHLUESSEL, neu ? "1" : "0");
+    } catch {
+      /* private mode: holds for this tab */
+    }
+  };
+
+  // A template is applied by the editor, not by the service: that way it goes
+  // through the same path as typing, reaches whoever writes along, and is saved
+  // by the autosave like any other change. The title comes along only while
+  // the page has none of its own.
+  const vorlageAnwenden = (v: AngewandteVorlage) => {
+    const ed = editorRef.current;
+    if (!ed || !Array.isArray(v.content)) return;
+    ed.replaceBlocks(ed.document, v.content as PartialBlock[]);
+    const t = page.title.trim();
+    const titel = !t || t === "Untitled" ? v.title : page.title;
+    setPage({ ...page, title: titel, icon: v.icon || page.icon });
+    // One save with everything: the debounced autosave keeps only the last
+    // patch, and the editor's own change has just scheduled one without the
+    // title.
+    scheduleSave({ title: titel, content: ed.document, ...(v.icon ? { icon: v.icon } : {}) });
+    ed.focus();
+  };
+
+  const alsVorlageSpeichern = async () => {
+    setMehrOffen(false);
+    const ed = editorRef.current;
+    if (!ed) return;
+    const name = await eingabe({
+      titel: "Save as template",
+      text: "The content of this page becomes a template. Changing the page later does not change the template.",
+      feld: "Name",
+      vorgabe: page.title,
+      bestaetigen: "Save",
+    });
+    if (!name) return;
+    let fuerAlle = false;
+    if (user?.role === "admin") {
+      fuerAlle = await frage({
+        titel: "Offer to everyone?",
+        text: "As an administrator you can offer this template to every account on the instance. Otherwise only you see it.",
+        bestaetigen: "For everyone",
+      });
+    }
+    await api
+      .vorlageAnlegen({ title: name, icon: page.icon, content: ed.document, forAll: fuerAlle })
+      .catch(() => {});
   };
 
   const toggleFav = async () => {
@@ -641,6 +731,17 @@ export default function PageView({
             >
               {page.isFavorite ? "Favourited" : "Favourite"}
             </button>
+            <button
+              className={"btn" + (page.watching ? " active" : "")}
+              onClick={toggleBeobachten}
+              title={
+                page.watching
+                  ? "You get an inbox message when someone else changes this page"
+                  : "Get an inbox message when someone else changes this page"
+              }
+            >
+              {page.watching ? "Watching" : "Watch"}
+            </button>
             {frei("versionen") && (
               <button
                 className="btn"
@@ -752,6 +853,38 @@ export default function PageView({
                 </div>
               )}
             </div>
+            <div className="exportmenue" ref={mehrBereich}>
+              <button
+                className="btn"
+                aria-label="More"
+                title="More"
+                onClick={() => {
+                  setExportOffen(false);
+                  setBreiteOffen(false);
+                  setMehrOffen((v) => !v);
+                }}
+              >
+                ⋯
+              </button>
+              {mehrOffen && (
+                <div className="klappliste" onMouseLeave={() => setMehrOffen(false)}>
+                  <button
+                    className={"klappeintrag" + (showInhalt ? " gewaehlt" : "")}
+                    onClick={() => {
+                      setMehrOffen(false);
+                      inhaltUmschalten();
+                    }}
+                  >
+                    Contents
+                    <span className="klappeintrag-hinweis">The headings of this page beside it</span>
+                  </button>
+                  <button className="klappeintrag" onClick={alsVorlageSpeichern}>
+                    Save as template
+                    <span className="klappeintrag-hinweis">Start new pages from this content</span>
+                  </button>
+                </div>
+              )}
+            </div>
             {page.isOwner && frei("freigeben") && (
               <button
                 className={"btn" + (page.isPublic ? " active" : "")}
@@ -817,6 +950,7 @@ export default function PageView({
             {/* A block the editor cannot read would otherwise take the whole
                 window with it: React unmounts everything on an uncaught render
                 error. Here only the document goes, the page around it stays. */}
+            {canEdit && leer && editorInst && <VorlagenWahl onWahl={vorlageAnwenden} />}
             <Fehlergrenze
               key={`grenze:${page.id}:${editorKey}:${mitschrift ? "gemeinsam" : "allein"}`}
               text="The content of this page could not be shown."
@@ -833,7 +967,11 @@ export default function PageView({
                   initialContent={page.content}
                   editable={canEdit}
                   onChange={onContent}
-                  onEditorReady={(e) => (editorRef.current = e)}
+                  onEditorReady={(e) => {
+                    editorRef.current = e;
+                    setEditorInst(e);
+                  }}
+                  personen={personen}
                   linkResolver={resolveLink}
                   onOpenLink={(pid) => nav(`/page/${pid}`)}
                   mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}
@@ -1003,9 +1141,17 @@ export default function PageView({
         <VersionPanel
           pageId={page.id}
           canEdit={canEdit}
+          aktuell={() => ({
+            title: page.title,
+            content: editorRef.current?.document ?? page.content,
+          })}
           onRestored={restoredFromVersion}
           onClose={() => setShowVersions(false)}
         />
+      )}
+
+      {showInhalt && (
+        <Inhaltsverzeichnis liste={ueberschriftenListe} onClose={inhaltUmschalten} />
       )}
 
       {showShare && frei("freigeben") && (

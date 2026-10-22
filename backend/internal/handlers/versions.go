@@ -130,6 +130,8 @@ func (s *Server) RestoreVersion(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusInternalServerError, "restore failed")
 		return
 	}
+	s.beobachterBenachrichtigen(id, uid)
+	s.webhookSeite(EreignisSeiteGeaendert, id, uid)
 	page, err := s.loadPage(r.Context(), uid, id)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "load failed")

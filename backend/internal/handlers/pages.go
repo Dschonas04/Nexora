@@ -115,6 +115,7 @@ func (s *Server) CreatePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.spurAusRequest(r, AktSeiteAngelegt, "seite", id, req.Title, nil)
+	s.webhookSeite(EreignisSeiteAngelegt, id, uid)
 	page, err := s.loadPage(r.Context(), uid, id)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "load failed")
@@ -267,6 +268,11 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.spurAusRequest(r, AktSeiteGeaendert, "seite", id, title, nil)
+	if len(req.Content) > 0 {
+		s.aufgabenZugewiesen(cur.Content, content, id, uid)
+	}
+	s.beobachterBenachrichtigen(id, uid)
+	s.webhookSeite(EreignisSeiteGeaendert, id, uid)
 
 	page, err := s.loadPage(r.Context(), uid, id)
 	if err != nil {
@@ -299,6 +305,7 @@ func (s *Server) DeletePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.spurAusRequest(r, AktSeiteGeloescht, "seite", id, "", nil)
+	s.webhookSeite(EreignisSeiteGeloescht, id, uid)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
@@ -358,6 +365,7 @@ func (s *Server) RestorePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.spurAusRequest(r, AktSeiteWieder, "seite", chi.URLParam(r, "id"), "", nil)
+	s.webhookSeite(EreignisSeiteWieder, id, uid)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 

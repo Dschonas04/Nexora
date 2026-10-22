@@ -151,6 +151,7 @@ func (s *Server) CreateKommentar(w http.ResponseWriter, r *http.Request) {
 
 	s.spurAusRequest(r, AktKommentar, "seite", id, "", nil)
 	s.postfachAusKommentar(r.Context(), uid, name, id, k.ID, req.ElternID, req.Text)
+	s.webhookKommentar(id, uid, k.ID, req.Text)
 	writeJSON(w, http.StatusCreated, k)
 }
 

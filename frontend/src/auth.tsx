@@ -61,6 +61,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // the user signed in rather than showing a logged-out UI with a live session.
   const logout = async () => {
     await api.logout();
+    // The pages kept for reading offline belong to this account; the next
+    // person at the same browser must not find them.
+    navigator.serviceWorker?.controller?.postMessage("abgemeldet");
+    await window.caches?.delete("nexora-api-v1").catch(() => false);
     setUser(null);
   };
   // A failure leaves the previous state standing: it is stale, but usable.

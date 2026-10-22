@@ -186,6 +186,8 @@ func (s *Server) loadPage(ctx context.Context, viewerID, pageID string) (*models
 		_ = s.Pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM favorites WHERE user_id=$1 AND page_id=$2)`,
 			viewerID, pageID).Scan(&exists)
 		p.IsFavorite = exists
+		_ = s.Pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM beobachter WHERE user_id=$1 AND page_id=$2)`,
+			viewerID, pageID).Scan(&p.Beobachtet)
 		p.Gemeinsam = canEdit && s.gemeinsamBeschrieben(ctx, pageID)
 	}
 	return &p, nil
