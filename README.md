@@ -24,6 +24,11 @@ here, and the graph over everything.*
 | [![A page in the editor](docs/images/seite.png)](https://nexora.jonasgroll.de) | [![Search results, backlinks and the local graph of a page](docs/images/suche.png)](https://nexora.jonasgroll.de) | [![The knowledge graph](docs/images/graph.png)](https://nexora.jonasgroll.de) |
 | Nested pages, tags, tables, Markdown shortcuts. | Every page says who points at it, with the neighbourhood drawn underneath. | Every page and every link, coloured by space. |
 
+| Diagrams | Tasks |
+| --- | --- |
+| [![A Mermaid flowchart drawn under its code block](docs/images/diagramm.png)](https://nexora.jonasgroll.de) | [![Tasks with due dates, gathered from all pages](docs/images/aufgaben.png)](https://nexora.jonasgroll.de) |
+| A code block in Mermaid is drawn right under itself. | Checklist items with `@username` and a date, from every page you can read. |
+
 Nested pages in a block editor, spaces, per-user sharing with roles, version
 history, attachments, comments, a trash can, backlinks, a knowledge graph and a
 real full text search. **Go** backend, **React** frontend, **PostgreSQL**
