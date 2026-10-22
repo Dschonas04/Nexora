@@ -42,7 +42,7 @@ Markdown export. Interface in English, German and French.
 
 ## Tags
 
-`latest` newest release · `3.0` stays on a minor line · `3.0.0` pinned exactly.
+`latest` newest release · `3.1` stays on a minor line · `3.1.0` pinned exactly.
 Architectures `linux/amd64` and `linux/arm64`. The same images are on
 `ghcr.io/dschonas04/nexora-single`.
 

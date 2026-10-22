@@ -13,6 +13,13 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [3.1.0]: 2026-10-22
+
+Templates, tasks with due dates, diagrams, version comparison, API keys and
+webhooks, an installable app, and install folders for Docker and Kubernetes.
+One thing needs a hand when upgrading a Compose installation: the compose
+files moved into `docker/`, see below.
+
 ### Added
 
 - **Templates.** An empty page offers to start from a template: three built in

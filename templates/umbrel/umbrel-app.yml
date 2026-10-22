@@ -3,7 +3,7 @@ id: nexora
 name: Nexora
 tagline: Self-hosted wiki with backlinks and a knowledge graph
 category: files
-version: "3.0.0"
+version: "3.1.0"
 port: 3000
 description: >-
   A small self-hosted knowledge base: think Notion or Outline, but small and
@@ -27,8 +27,8 @@ description: >-
   The first account that registers becomes the administrator, so open it once
   yourself right after installing.
 releaseNotes: >-
-  French as a third language, health checks, Kubernetes manifests, Unraid
-  templates and a single-container image. See
+  Templates, tasks with due dates, Mermaid diagrams, version comparison,
+  API keys, webhooks and an installable app. See
   https://github.com/Dschonas04/Nexora/blob/main/CHANGELOG.md
 developer: Dschonas04
 website: https://dschonas04.github.io/Nexora/
