@@ -185,6 +185,7 @@ func main() {
 	// that, full text search silently returned nothing for older pages, which
 	// looks like an empty result rather than a fault.
 	h.IndexNachziehen(ctx)
+	h.BlockIDsNachziehen(ctx)
 
 	// Runtime settings from the database into the cache. They override whatever
 	// config.conf says, because they were set later and on purpose.

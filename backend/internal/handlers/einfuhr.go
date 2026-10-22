@@ -860,6 +860,7 @@ func (s *Server) inhaltSchreiben(ctx context.Context, sp *einfuhrSeite) error {
 	if err != nil {
 		return err
 	}
+	roh = blockIDsErgaenzen(roh)
 	_, err = s.Pool.Exec(ctx,
 		`UPDATE pages SET content = $2::jsonb, content_text = $3, updated_at = now() WHERE id = $1`,
 		sp.id, string(roh), textAusInhalt(roh))

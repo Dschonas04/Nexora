@@ -254,6 +254,8 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	content = blockIDsErgaenzen(content)
+
 	// content_text is written here and not in a trigger: the running text can
 	// only be pulled out of the BlockNote JSON in Go. Whoever writes the content
 	// therefore has to write it along, otherwise the search silently shows an old

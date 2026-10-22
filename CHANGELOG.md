@@ -13,6 +13,15 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [3.1.2]: 2026-10-22
+
+### Fixed
+
+- **Imported tasks show up under Tasks.** Pages from the importer or written
+  through the API had blocks without ids, and a checklist item without an id
+  never reached "My tasks". Both now give every block an id on the way in, and
+  at startup Nexora fills in the ids of checklist items imported before.
+
 ## [3.1.1]: 2026-10-22
 
 ### Fixed
@@ -277,7 +286,10 @@ this release; see 2.1.0 for what became free since. Markdown import and export
 are free regardless, because the way out of a system must never sit behind a
 key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
-[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.0.0...main
+[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.1.2...main
+[3.1.2]: https://github.com/Dschonas04/Nexora/releases/tag/v3.1.2
+[3.1.1]: https://github.com/Dschonas04/Nexora/releases/tag/v3.1.1
+[3.1.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.1.0
 [3.0.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.0.0
 [2.3.0]: https://github.com/Dschonas04/Nexora/releases/tag/v2.3.0
 [2.2.1]: https://github.com/Dschonas04/Nexora/releases/tag/v2.2.1
