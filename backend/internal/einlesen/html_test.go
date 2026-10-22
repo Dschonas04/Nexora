@@ -105,13 +105,14 @@ func TestHTMLTabelleWirdRechteckig(t *testing.T) {
 }
 
 func TestHTMLCodeBlockBehaeltZeilen(t *testing.T) {
-	_, b := LiesHTML("<pre><code>func a() {\n    b()\n}</code></pre>")
-	if len(b) != 3 {
-		t.Fatalf("erwartet drei Zeilen, bekam %d: %s", len(b), htmlJSON(t, b))
+	_, b := LiesHTML(`<pre><code class="language-go">func a() {
+    b()
+}</code></pre>`)
+	if len(b) != 1 || b[0].Type != "codeBlock" || b[0].Props["language"] != "go" {
+		t.Fatalf("erwartet einen Codeblock mit Sprache: %s", htmlJSON(t, b))
 	}
-	// Do not check through NurText, that trims the edges because it delivers
-	// titles. In a code block the indent is the whole point.
-	if got := inhaltVon(b[1])[0].Text; got != "    b()" {
+	// In a code block the indent is the whole point.
+	if got := inhaltVon(b[0])[0].Text; got != "func a() {\n    b()\n}" {
 		t.Fatalf("Einrückung verloren: %q", got)
 	}
 }

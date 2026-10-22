@@ -13,6 +13,16 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [3.1.1]: 2026-10-22
+
+### Fixed
+
+- **Import keeps code blocks.** A fenced block in Markdown and a `<pre>` in an
+  HTML export now arrive as one code block with their language, instead of a
+  fixed-width paragraph per line. A ```mermaid fence from Obsidian or a Git
+  wiki is therefore drawn as a diagram, and the Markdown export writes it back
+  the same way.
+
 ## [3.1.0]: 2026-10-22
 
 Templates, tasks with due dates, diagrams, version comparison, API keys and

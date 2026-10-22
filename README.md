@@ -293,14 +293,14 @@ identical content. Pull from whichever you prefer, nothing else differs.
 | | |
 |---|---|
 | **Architectures** | `linux/amd64` (x86-64 PCs and servers) and `linux/arm64` (Raspberry Pi 4/5 on a 64-bit system, Apple Silicon, ARM servers). Docker picks the right one by itself |
-| **Tags** | `latest` for the newest release · `3.1` stays on a minor line · `3.1.0` is pinned exactly · `edge` is the current state of `main`, for trying, not for running |
+| **Tags** | `latest` for the newest release · `3.1` stays on a minor line · `3.1.1` is pinned exactly · `edge` is the current state of `main`, for trying, not for running |
 | **Built by** | [`.github/workflows/release.yml`](.github/workflows/release.yml) on GitHub's runners, on every tag `v*` |
 | **Pull without an account** | yes, on both |
 
 Two settings in the `.env` choose what is pulled:
 
 ```bash
-NEXORA_VERSION=3.1.0            # which version (default: latest)
+NEXORA_VERSION=3.1.1            # which version (default: latest)
 NEXORA_REGISTRY=dschohnas       # Docker Hub instead of the default ghcr.io/dschonas04
 ```
 

@@ -147,18 +147,25 @@ func TestCodeMitRueckstrichImInhalt(t *testing.T) {
 	}
 }
 
-func TestCodezaunWirdFesteSchrift(t *testing.T) {
+func TestCodezaunWirdCodeblock(t *testing.T) {
 	_, _, b := Lies("```go\nfunc a() {}\n\nfunc b() {}\n```\n")
 	s := alsJSON(t, b)
-	if !strings.Contains(s, `"code":true`) {
-		t.Fatalf("Code nicht ausgezeichnet: %s", s)
+	if len(b) != 1 || b[0].Type != "codeBlock" {
+		t.Fatalf("erwartet ein Codeblock, bekam %d: %s", len(b), s)
 	}
-	if !strings.Contains(s, "func a() {}") || !strings.Contains(s, "func b() {}") {
-		t.Fatalf("Codezeilen verloren: %s", s)
+	if b[0].Props["language"] != "go" {
+		t.Fatalf("Sprache verloren: %s", s)
 	}
 	// The blank line inside the code block is content and has to stay.
-	if len(b) != 4 {
-		t.Fatalf("erwartet Sprache + drei Zeilen, bekam %d: %s", len(b), s)
+	if teile := b[0].Content.([]Inline); teile[0].Text != "func a() {}\n\nfunc b() {}" {
+		t.Fatalf("Codezeilen verloren: %q", teile[0].Text)
+	}
+}
+
+func TestMermaidBleibtMermaid(t *testing.T) {
+	_, _, b := Lies("```mermaid\nflowchart LR\n  A --> B\n```\n")
+	if len(b) != 1 || b[0].Type != "codeBlock" || b[0].Props["language"] != "mermaid" {
+		t.Fatalf("Mermaid nicht als Codeblock: %s", alsJSON(t, b))
 	}
 }
 

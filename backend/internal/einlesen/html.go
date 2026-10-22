@@ -174,16 +174,8 @@ func (l *htmlLeser) knoten(n *html.Node, stile map[string]bool) {
 
 		case "pre":
 			l.absatzSchliessen()
-			for _, z := range strings.Split(strings.Trim(rohText(n), "\n"), "\n") {
-				if strings.TrimSpace(z) == "" {
-					l.bloecke = append(l.bloecke, Block{Type: "paragraph"})
-					continue
-				}
-				l.bloecke = append(l.bloecke, Block{
-					Type:    "paragraph",
-					Content: []Inline{{Type: "text", Text: z, Styles: map[string]bool{"code": true}}},
-				})
-			}
+			l.bloecke = append(l.bloecke, codeBloecke(
+				strings.Split(strings.Trim(rohText(n), "\n"), "\n"), preSprache(n))...)
 			return
 
 		case "table":
@@ -433,4 +425,20 @@ func suche(n *html.Node, name string) *html.Node {
 		}
 	}
 	return nil
+}
+
+// preSprache reads the language of a <pre>, from class="language-x" on it or
+// on the <code> inside, the way most exporters and highlighters write it.
+func preSprache(n *html.Node) string {
+	for _, k := range []*html.Node{n, n.FirstChild} {
+		if k == nil || k.Type != html.ElementNode {
+			continue
+		}
+		for _, c := range strings.Fields(attribut(k, "class")) {
+			if strings.HasPrefix(c, "language-") {
+				return strings.TrimPrefix(c, "language-")
+			}
+		}
+	}
+	return ""
 }

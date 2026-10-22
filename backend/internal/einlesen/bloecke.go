@@ -315,32 +315,22 @@ func absatzText(zeilen []string) string {
 	return b.String()
 }
 
-// codeBloecke turns the lines of a code fence into paragraphs in a fixed-width
-// face.
+// codeBloecke turns a code fence into one code block, language kept.
 //
-// The editor of this version has no code block. One paragraph per line keeps the
-// breaks and the order; putting everything into one paragraph would look more
-// contained in the editor but could no longer be edited line by line. The
-// language tag is lost on the way, since no field the editor knows holds it.
+// The first version of the import had no code block to aim at and wrote one
+// fixed-width paragraph per line, the language as a line of its own above. The
+// editor has had code blocks for a while now, and the language matters: a
+// ```mermaid fence is drawn as a diagram, and the Markdown export writes the
+// fence back the same way, so a page survives the round trip.
 func codeBloecke(zeilen []string, sprache string) []Block {
-	var out []Block
-	if sprache != "" {
-		out = append(out, Block{
-			Type:    "paragraph",
-			Content: []Inline{{Type: "text", Text: sprache, Styles: map[string]bool{"code": true, "italic": true}}},
-		})
+	b := Block{Type: "codeBlock", Content: []Inline{}}
+	if sprache = strings.TrimSpace(sprache); sprache != "" {
+		b.Props = map[string]any{"language": strings.ToLower(sprache)}
 	}
-	for _, z := range zeilen {
-		if z == "" {
-			out = append(out, Block{Type: "paragraph"})
-			continue
-		}
-		out = append(out, Block{
-			Type:    "paragraph",
-			Content: []Inline{{Type: "text", Text: z, Styles: map[string]bool{"code": true}}},
-		})
+	if text := strings.Join(zeilen, "\n"); text != "" {
+		b.Content = []Inline{{Type: "text", Text: text, Styles: map[string]bool{}}}
 	}
-	return out
+	return []Block{b}
 }
 
 // kursivMachen sets a whole block in italics, the stand-in for the quote block
