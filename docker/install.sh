@@ -62,8 +62,15 @@ else
 fi
 
 # The configuration file of the build-from-source variant. The image stack
-# does not mount it, but a later switch should find it in place.
-[ -f config.conf ] || cp ../config.example.conf config.conf
+# does not mount it, but a later switch should find it in place. It will hold
+# credentials, so it starts closed: readable for the owner and for the
+# service's group (10001), nobody else.
+if [ ! -f config.conf ]; then
+  (umask 077 && cp ../config.example.conf config.conf)
+  if [ "$(id -u)" = 0 ]; then
+    chgrp 10001 config.conf && chmod 660 config.conf
+  fi
+fi
 
 say "Pulling the images…"
 docker compose pull --quiet
