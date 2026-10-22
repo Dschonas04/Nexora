@@ -59,6 +59,18 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ### Changed
 
+- **Install folders `docker/` and `kubernetes/`.** All compose files, the
+  `.env.example` and `postgres-18.sh` moved from the top of the repository into
+  `docker/`; `deploy/kubernetes/` is now `kubernetes/`. Each folder has an
+  `install.sh` that writes random passwords, starts Nexora from the published
+  images and waits until it answers -- `./docker/install.sh` (also `single` or
+  `redis`) and `./kubernetes/install.sh wiki.example.org`. Running it again is
+  the update. The Kubernetes manifests now bring a PostgreSQL of their own
+  (`postgres.yaml`; remove it for an existing database).
+  **Upgrading a Compose installation:** move `.env` and `config.conf` into
+  `docker/` and run compose from there. The project name stays `nexora`, so the
+  containers and volumes are the same ones. Links to the raw stack file change
+  to `…/main/docker/docker-compose.stack.yml`.
 - **The single container speaks HTTPS only.** Port 80 serves nothing any more
   and redirects every request to HTTPS with a 308, so a POST stays a POST and
   the login form never crosses the network in the clear. Open

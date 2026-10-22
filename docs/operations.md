@@ -4,17 +4,37 @@ Installing, upgrading, backing up and repairing an instance.
 
 ## Installation
 
+The quick way, from the published images:
+
 ```bash
 git clone https://github.com/Dschonas04/Nexora.git && cd Nexora
+./docker/install.sh          # stack; "single" or "redis" as an argument
+```
+
+It writes `docker/.env` with random values for `POSTGRES_PASSWORD` and
+`JWT_SECRET`, pulls and starts, and waits until the API answers. Running it
+again keeps the `.env` and is the update. See [`docker/`](../docker/README.md).
+
+By hand, building from the checkout -- everything for Docker sits in
+`docker/`, the `.env` and `config.conf` included:
+
+```bash
+cd docker
 cp .env.example .env
-cp config.example.conf config.conf
+cp ../config.example.conf config.conf
 
 # the two values nobody may leave alone
 openssl rand -hex 32          # → JWT_SECRET in .env
 openssl rand -base64 24       # → POSTGRES_PASSWORD in .env
+# and which files: COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml
 
 docker compose up -d --build
 ```
+
+**Coming from before the `docker/` folder?** The compose files used to stand at
+the top of the repository. Move `.env` and `config.conf` into `docker/` and run
+compose from there; the project keeps its name (`name: nexora`), so the
+containers and volumes are the same ones.
 
 Then open `http://localhost:3000`, or `https://localhost:3443`, with a
 certificate warning that no one can avoid, because nobody issues a trusted
@@ -33,11 +53,11 @@ sudo chgrp 10001 config.conf && sudo chmod 660 config.conf
 
 ### Choosing the stack
 
-`COMPOSE_FILE` in `.env` decides which side files come along:
+`COMPOSE_FILE` in `docker/.env` decides which side files come along:
 
 ```bash
 COMPOSE_FILE=docker-compose.yml                              # your own PostgreSQL, set DATABASE_URL
-COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml        # the default: bundled PostgreSQL 18
+COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml        # bundled PostgreSQL 18, built from source
 …:docker-compose.minio.yml                                   # plus a bundled MinIO
 …:docker-compose.redis.yml                                   # plus Redis as a cache
 ```
@@ -57,34 +77,42 @@ Nexora would mean operating a second copy of each.
 
 ### Kubernetes
 
-[`deploy/kubernetes/`](../deploy/kubernetes) holds plain manifests for k3s or
-any other cluster, applied with kustomize. They run the backend and the
-frontend against a PostgreSQL you already have; the bundled database and the
-internal certificate authority of the Compose stack are left out. Inside the
-cluster the frontend talks plain HTTP to the backend, and TLS ends at the
-ingress.
+[`kubernetes/`](../kubernetes/README.md) holds plain manifests for k3s or any
+other cluster, applied with kustomize: PostgreSQL, backend, frontend and an
+ingress. The internal certificate authority of the Compose stack is left out;
+inside the cluster the frontend talks plain HTTP to the backend, and TLS ends
+at the ingress.
 
 ```bash
-cd deploy/kubernetes
-cp secret.env.example secret.env      # DATABASE_URL and JWT_SECRET
+./kubernetes/install.sh wiki.example.org      # NEXORA_NAMESPACE, NEXORA_VERSION optional
+```
+
+writes `secret.env` with random values, applies everything with the host name
+and waits for the rollout. By hand:
+
+```bash
+cd kubernetes
+cp secret.env.example secret.env      # POSTGRES_PASSWORD, DATABASE_URL, JWT_SECRET
 $EDITOR ingress.yaml                  # the host name
 kubectl apply -k .
-kubectl -n nexora get pods            # both Running and Ready
+kubectl -n nexora get pods            # all Running and Ready
 ```
 
 What gets created, in the namespace `nexora`:
 
 | Object | What it is for |
 | --- | --- |
-| Secret `nexora-…` | `DATABASE_URL` and `JWT_SECRET` from `secret.env` |
+| Secret `nexora-…` | `POSTGRES_PASSWORD`, `DATABASE_URL` and `JWT_SECRET` from `secret.env` |
+| StatefulSet and Service `postgres` | PostgreSQL 18 with a 10 GiB volume; leave out `postgres.yaml` for a database of your own |
 | PVC `nexora-attachments` | 10 GiB for the attachments, ReadWriteOnce |
 | Deployment and Service `backend` | The Go service on 8080; the frontend looks for it under exactly this name |
 | Deployment and Service `frontend` | The interface on 80 |
 | Ingress `nexora` | The way in from outside |
 
-- **The database has to exist**, with a user that owns it. The backend creates
-  its schema on the first start. Without `sslmode=disable` in the URL it
-  expects TLS from PostgreSQL.
+- **Your own database instead:** remove `postgres.yaml` from
+  `kustomization.yaml` and point `DATABASE_URL` at it, with a user that owns an
+  empty database; the backend creates its schema on the first start. Without
+  `sslmode=disable` in the URL it expects TLS from PostgreSQL.
 - **One backend replica.** The attachments volume is ReadWriteOnce and the
   backend runs with the Recreate strategy. With attachments in an S3 bucket
   (see [configuration](configuration.md)) the PVC can go and the backend can
@@ -108,7 +136,7 @@ What gets created, in the namespace `nexora`:
 | Pages, versions, comments, sessions, audit trail, settings, licence | PostgreSQL | `pg_dump` |
 | Attachment bytes | `nexora_files` volume, a host directory, or a bucket | A file-level copy, or the object store's own backup |
 | TLS certificate | `nexora_tls` volume | Only worth keeping if it is a real certificate |
-| `config.conf` | Bind mount from the repository directory | Ordinary file backup |
+| `config.conf` | Bind mount from `docker/` | Ordinary file backup |
 
 ### Moving attachments
 
@@ -243,7 +271,7 @@ the data over with `pg_upgrade` and keeps the old directory as
 `git pull` (or downloading the new compose file), run
 
 ```bash
-sh deploy/postgres-18.sh -f docker-compose.yml -f docker-compose.db.yml
+cd docker && sh postgres-18.sh -f docker-compose.yml -f docker-compose.db.yml
 ```
 
 with the same `-f` files the installation uses (or without any if `COMPOSE_FILE`

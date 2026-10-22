@@ -267,7 +267,7 @@ func sichern(pfad string, inhalt []byte) (string, error) {
 // outdated one.
 //
 // The fallback is for the common case in a container: if the file is mounted
-// individually (docker compose with ./config.conf:/etc/nexora/config.conf) the
+// individually (docker compose with ./config.conf:/etc/nexora/config.conf, in docker/) the
 // path IS the mount point, and a mount point cannot be renamed over. Then the
 // only option left is overwriting the existing file. That is unsafe for the
 // blink of an eye, which is why a backup was taken beforehand.

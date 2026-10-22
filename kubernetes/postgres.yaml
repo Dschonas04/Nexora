@@ -1,0 +1,96 @@
+# A PostgreSQL of Nexora's own, for clusters without one.
+#
+# Whoever already runs a database (an operator such as CloudNativePG, a managed
+# service, a server outside the cluster) removes postgres.yaml from
+# kustomization.yaml and points DATABASE_URL in secret.env at it. Nexora creates
+# its schema itself; it needs nothing but an account with rights on an empty
+# database.
+#
+# One replica on a volume of its own. It does not replicate and does not fail
+# over -- for that, use an operator. Back it up with pg_dump or with the backup
+# in Nexora's administration (System → Backup), which contains it.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nexora-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nexora-postgres
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        # The postgres user of the Alpine image.
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+      containers:
+        - name: postgres
+          image: postgres:18-alpine
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: nexora
+            - name: POSTGRES_USER
+              value: nexora
+            # Only the password, not the whole secret: the database has no
+            # business knowing the session key.
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nexora
+                  key: POSTGRES_PASSWORD
+            # A subdirectory: the root of a fresh volume often carries
+            # lost+found, and initdb refuses a directory that is not empty.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "nexora", "-d", "nexora"]
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "nexora", "-d", "nexora"]
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector:
+    app.kubernetes.io/name: nexora-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres

@@ -14,6 +14,12 @@
 # So that this need not be typed on every call, the same list is entered once as
 # COMPOSE_FILE in the .env, see .env.example.
 #
+# The project keeps the name it had while these files stood at the top of the
+# repository. Compose would otherwise take the directory name, "docker", and
+# start a second set of containers and empty volumes next to the old ones.
+# COMPOSE_PROJECT_NAME in the .env still wins, for a second instance.
+name: nexora
+
 services:
   # The certificates for traffic inside the compound. Runs once, creates a small
   # private certificate authority and one certificate each for backend, db,
@@ -22,13 +28,13 @@ services:
   # Repeatable: whatever already lies in the volume stays there. See
   # pki/create.sh.
   pki:
-    build: ./pki
+    build: ../pki
     volumes:
       - nexora_pki:/pki
     restart: "no"
 
   backend:
-    build: ./backend
+    build: ../backend
     # Asks /healthz, which also pings the database. Written with the shell and
     # wget so it works on every image, including those from before the binary
     # learnt "nexora healthcheck".
@@ -125,7 +131,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build: ../frontend
     # Only that nginx answers; whether the service behind it does is the
     # backend's own check.
     healthcheck:

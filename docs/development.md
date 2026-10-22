@@ -7,8 +7,10 @@ Setting up, what to run before committing, and how to add something.
 The whole stack, the quick way:
 
 ```bash
+cd docker
 cp .env.example .env
-cp config.example.conf config.conf
+cp ../config.example.conf config.conf
+# in .env: COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml (build from here)
 docker compose up -d --build      # interface at http://localhost:3000
 ```
 

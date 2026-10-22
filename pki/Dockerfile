@@ -1,7 +1,7 @@
 # A container that runs once and is then done.
 #
 # It issues the certificates for the internal traffic and ends. All other
-# services wait for it to end, see docker-compose.yml. An image of our own and
+# services wait for it to end, see docker/docker-compose.yml. An image of our own and
 # no reaching into a foreign one: this is where the key the whole compound
 # trusts comes into being, and whatever issues that one should be something you
 # built yourself.

@@ -22,7 +22,10 @@ distribute it under other terms, including the Enterprise License.
 The fastest way to run the whole stack:
 
 ```bash
+cd docker
 cp .env.example .env
+cp ../config.example.conf config.conf
+# in .env: COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml
 docker compose up -d --build
 # UI at http://localhost:3000
 ```

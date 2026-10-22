@@ -2,7 +2,7 @@
 # one volume, nothing else to set. The quickest way to try Nexora, and enough
 # for a small team on a small machine.
 #
-#     curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker-compose.single.yml
+#     curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker/docker-compose.single.yml
 #     docker compose -f docker-compose.single.yml up -d
 #
 # Then open https://localhost:3443. The certificate is self-signed and made on
@@ -21,6 +21,12 @@
 # The session secret is generated on the first start and kept in the volume.
 # Whoever wants to set it, sets JWT_SECRET. NEXORA_REGISTRY=dschohnas pulls from
 # Docker Hub instead, NEXORA_VERSION pins a version (default: latest).
+# The project keeps the name it had while these files stood at the top of the
+# repository. Compose would otherwise take the directory name, "docker", and
+# start a second set of containers and empty volumes next to the old ones.
+# COMPOSE_PROJECT_NAME in the .env still wins, for a second instance.
+name: nexora
+
 services:
   nexora:
     image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-single:${NEXORA_VERSION:-latest}

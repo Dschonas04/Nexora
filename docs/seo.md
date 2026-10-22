@@ -11,7 +11,7 @@ Without a public address an instance keeps every crawler out. That is the
 default, because most instances run in their own network.
 
 ```env
-# .env next to docker-compose.yml
+# docker/.env, next to the compose files
 NEXORA_OEFFENTLICHE_ADRESSE=https://wiki.example.org
 # optional, Google Search Console, verification by meta tag (content value only)
 NEXORA_GOOGLE_VERIFIZIERUNG=AbCdEf123

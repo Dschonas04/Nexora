@@ -5,7 +5,7 @@
 # files, with the same files the installation uses (or with COMPOSE_FILE set in
 # .env, then without arguments):
 #
-#     sh deploy/postgres-18.sh -f docker-compose.yml -f docker-compose.db.yml
+#     sh postgres-18.sh   (in docker/) -f docker-compose.yml -f docker-compose.db.yml
 #
 # What it does: stops the stack, starts the old volume once more under
 # PostgreSQL 16 to dump everything, keeps a copy of the old volume as

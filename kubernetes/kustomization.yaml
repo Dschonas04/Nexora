@@ -1,7 +1,11 @@
-# Nexora on Kubernetes, against a PostgreSQL that already runs somewhere.
+# Nexora on Kubernetes, with a PostgreSQL of its own (postgres.yaml).
+#
+#     ./install.sh nexora.example.org     # writes secret.env and applies
+#
+# or by hand:
 #
 #     cp secret.env.example secret.env    # and fill it in
-#     kubectl apply -k deploy/kubernetes
+#     kubectl apply -k kubernetes
 #
 # Change the host name in ingress.yaml, or delete the ingress from the list
 # below and reach the frontend service some other way. See
@@ -14,6 +18,7 @@ namespace: nexora
 resources:
   - namespace.yaml
   - pvc.yaml
+  - postgres.yaml
   - backend.yaml
   - frontend.yaml
   - ingress.yaml

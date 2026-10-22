@@ -31,7 +31,7 @@ Please include a description, steps to reproduce, and potential impact.
 - [ ] With LDAP: leave `ldap_starttls` and `ldap_tls_verify` on. Without them
       directory credentials cross the network in the clear
 
-> **A missing `.env` does not stop the stack.** `docker-compose.yml` declares
+> **A missing `.env` does not stop the stack.** `docker/docker-compose.yml` declares
 > fallbacks (`${POSTGRES_PASSWORD:-nexora}`, `${JWT_SECRET:-change-me-in-production}`),
 > so an instance without the file starts happily with a known database password and a
 > publicly documented signing secret, and logs no warning about it. Anyone holding

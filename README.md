@@ -235,19 +235,22 @@ when the database approaches a gigabyte, not before.
 
 ## Quick Start
 
-Published images, nothing to build:
+Two install folders, each with a script that writes random passwords and
+starts everything from the published images:
+
+| Folder | For | |
+|---|---|---|
+| [`docker/`](docker/README.md) | one machine with Docker | `./docker/install.sh` |
+| [`kubernetes/`](kubernetes/README.md) | a cluster (k3s, k8s, …) | `./kubernetes/install.sh wiki.example.org` |
 
 ```bash
 git clone https://github.com/Dschonas04/Nexora.git && cd Nexora
-cp .env.example .env
-cp config.example.conf config.conf
-# edit .env: set POSTGRES_PASSWORD and a long random JWT_SECRET
-echo 'COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml:docker-compose.image.yml' >> .env
-docker compose up -d
+./docker/install.sh            # or: ./docker/install.sh single
 ```
 
-Then open `http://localhost:3000`. The first account that registers becomes the
-administrator.
+Then open `https://localhost:3443` (or `http://localhost:3000`). The first
+account that registers becomes the administrator. Running the script again
+pulls the newest images and restarts, which is also how an update is done.
 
 ### Single container
 
@@ -266,7 +269,8 @@ once. Publishing 443 under another port? Set `NEXORA_HTTPS_PORT` to it, or the
 redirect points to the wrong place. `NEXORA_HTTPS_ONLY=0` switches plain HTTP
 back on.
 
-or with [`docker-compose.single.yml`](docker-compose.single.yml). One volume
+or with [`docker/docker-compose.single.yml`](docker/docker-compose.single.yml)
+(`./docker/install.sh single`). One volume
 holds the database, the attachments, the session secret and database password
 it generates on the first start, and the self-signed certificate for port 443.
 
@@ -312,20 +316,25 @@ container templates against your own PostgreSQL or as a stack with the Compose
 Manager.
 
 One file, nothing else, for Portainer, Coolify, Dokploy or a bare machine.
-[`docker-compose.stack.yml`](docker-compose.stack.yml) carries Nexora and its
-database together, needs no `.env`, and is meant to be pasted into a panel:
+[`docker/docker-compose.stack.yml`](docker/docker-compose.stack.yml) carries
+Nexora and its database together, needs no `.env`, and is meant to be pasted
+into a panel:
 
 ```bash
-curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker-compose.stack.yml
+curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker/docker-compose.stack.yml
 # change POSTGRES_PASSWORD and JWT_SECRET in it, then
 docker compose -f docker-compose.stack.yml up -d
 ```
 
-Building from source instead, for development or to run a patched version:
+Building from source instead, for development or to run a patched version.
+Everything for Docker lives in [`docker/`](docker/README.md), and so do the
+`.env` and `config.conf` that go with it:
 
 ```bash
+cd docker
 cp .env.example .env
-cp config.example.conf config.conf
+cp ../config.example.conf config.conf
+# in .env: COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml
 docker compose up -d --build
 ```
 
@@ -333,8 +342,9 @@ docker compose up -d --build
 from the maintenance page, so a tracked copy would be overwritten on every
 deployment.
 
-`.env.example` ships with `COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml`,
-so the command above brings its own PostgreSQL. The database and the object
+With `COMPOSE_FILE=docker-compose.yml:docker-compose.db.yml` the source build
+brings its own PostgreSQL (the `.env.example` itself starts with the image
+stack, which install.sh uses). The database and the object
 store are deliberately kept out of the main file, because most installations already
 run one, and tying Nexora to its own copy would mean operating them twice:
 
@@ -806,10 +816,19 @@ frontend/                      React SPA (Vite + TypeScript)
 pki/                           the stack's own certificate authority
   create.sh                   runs once at start-up, issues one certificate per
                                service, and leaves alone what is already there
-docker-compose.yml             pki + backend + frontend
-docker-compose.db.yml          optional: bundled PostgreSQL
-docker-compose.minio.yml       optional: bundled MinIO for attachments
-docker-compose.redis.yml       optional: Redis as a cache (never the source of truth)
+docker/                        installing with Docker
+  install.sh                  writes .env with random passwords, pulls, starts
+  docker-compose.stack.yml    the published images: db + pki + backend + frontend
+  docker-compose.single.yml   everything in one container
+  docker-compose.yml          pki + backend + frontend, built from this checkout
+  docker-compose.db.yml       optional: bundled PostgreSQL
+  docker-compose.image.yml    optional: published images instead of building
+  docker-compose.minio.yml    optional: bundled MinIO for attachments
+  docker-compose.redis.yml    optional: Redis as a cache (never the source of truth)
+  postgres-18.sh              moves a PostgreSQL 16 volume to 18
+kubernetes/                    installing on a cluster
+  install.sh                  writes secret.env, applies, waits for the rollout
+  kustomization.yaml          namespace, postgres, backend, frontend, ingress
 ```
 
 

@@ -725,7 +725,8 @@ Redis are services most installations already run, maintained and backed up
 somewhere; chaining them to Nexora would mean operating a second copy of each,
 or not being able to adopt Nexora at all.
 
-`COMPOSE_FILE` in `.env` selects the combination once so it need not be typed:
+The compose files live in `docker/`. `COMPOSE_FILE` in `docker/.env` selects
+the combination once so it need not be typed:
 
 ```bash
 COMPOSE_FILE=docker-compose.yml                                    # bring your own database

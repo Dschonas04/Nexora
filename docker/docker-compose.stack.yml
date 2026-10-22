@@ -5,7 +5,7 @@
 # Portainer, Coolify, Dokploy, Komodo -- and for a quick try on an empty
 # machine:
 #
-#     curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker-compose.stack.yml
+#     curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker/docker-compose.stack.yml
 #     docker compose -f docker-compose.stack.yml up -d
 #
 # CHANGE TWO VALUES before this runs anywhere for real: POSTGRES_PASSWORD and
@@ -28,6 +28,12 @@
 # NEXORA_FASSUNG and NEXORA_OEFFENTLICHE_ADRESSE were the earlier names of
 # NEXORA_VERSION and NEXORA_PUBLIC_URL; both are still read, so an existing
 # setup keeps working.
+# The project keeps the name it had while these files stood at the top of the
+# repository. Compose would otherwise take the directory name, "docker", and
+# start a second set of containers and empty volumes next to the old ones.
+# COMPOSE_PROJECT_NAME in the .env still wins, for a second instance.
+name: nexora
+
 services:
   db:
     image: postgres:18-alpine

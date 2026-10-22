@@ -18,7 +18,7 @@ redirects. Publishing 443 under another port? Set `NEXORA_HTTPS_PORT` to it.
 becomes the administrator.
 
 Or with Compose:
-[docker-compose.single.yml](https://github.com/Dschonas04/Nexora/blob/main/docker-compose.single.yml)
+[docker-compose.single.yml](https://github.com/Dschonas04/Nexora/blob/main/docker/docker-compose.single.yml)
 
 ## What you get
 

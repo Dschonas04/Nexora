@@ -13,7 +13,7 @@ alone.
 The whole stack from one file:
 
 ```bash
-curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker-compose.stack.yml
+curl -O https://raw.githubusercontent.com/Dschonas04/Nexora/main/docker/docker-compose.stack.yml
 # set POSTGRES_PASSWORD and JWT_SECRET first (openssl rand -hex 32)
 NEXORA_REGISTRY=dschohnas docker compose -f docker-compose.stack.yml up -d
 ```
