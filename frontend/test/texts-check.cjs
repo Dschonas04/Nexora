@@ -26,7 +26,8 @@ const UI_SCHLUESSEL = new Set(["titel", "unter", "text", "hinweis", "label"]);
 const normal = (s) => s.replace(/\s+/g, " ").trim();
 const entities = (s) =>
   s.replace(/&nbsp;/g, " ").replace(/&mdash;/g, "—").replace(/&ndash;/g, "–").replace(/&hellip;/g, "…")
-   .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n));
+   .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n))
+   .replace(/&amp;/g, "&"); // last, or "&amp;lt;" would turn into "<"
 
 // --- what the dictionary knows ------------------------------------------------
 const quelle = fs.readFileSync(path.join(SRC, "sprache/woerterbuch.ts"), "utf8");

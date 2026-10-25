@@ -26,6 +26,10 @@ concurrency:
   group: nexora
   cancel-in-progress: true
 
+# Die Jobs lesen nur den Code; ausgerollt wird über den Runner, nicht über das Token.
+permissions:
+  contents: read
+
 jobs:
 
   backend:
