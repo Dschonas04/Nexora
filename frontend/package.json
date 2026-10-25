@@ -38,5 +38,8 @@
     "jsdom": "^30.1.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.3"
+  },
+  "overrides": {
+    "katex": "^0.18.2"
   }
 }
