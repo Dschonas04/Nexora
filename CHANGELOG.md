@@ -15,6 +15,9 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ### Removed
 
+- **Tasks**: the Tasks view, `/api/tasks`, inbox messages for tasks, the
+  highlighting of `@username` and `📅` dates and the "/" menu entries for them.
+  Checklists stay as ordinary checklists.
 - **Gantt charts and timelines** are no longer drawn; such a diagram shows a short
   note instead. Every other Mermaid diagram stays.
 - The built-in **project page** template with its timeline: Nexora is a wiki, not a

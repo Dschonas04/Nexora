@@ -259,16 +259,6 @@ export. The built-in ones live in the interface.
 | `POST` | `/templates` | `{title, icon?, content, forAll?}`. `content` is a BlockNote document (an array). `forAll` needs the admin role |
 | `DELETE` | `/templates/{id}` | Your own; an admin also those offered to everyone |
 
-## Tasks
-
-A task is a checklist item in any page. `@username` in its text says whom it is
-for, `📅 YYYY-MM-DD` or `📅 D.M.YYYY` when it is due.
-
-| Method | Path | Notes |
-|---|---|---|
-| `GET` | `/tasks` | `?filter=mine` (default): tasks naming you, from every page you can read. `?filter=own`: every task on your own pages. `&done=1` includes ticked ones. Answers `{tasks, username}`; each task has `pageId, pageTitle, blockId, text, checked, due, assignees, mine, canEdit`. Open first, by due date |
-| `PUT` | `/tasks/{pageId}/{blockId}` | `{checked}`. Needs write access; **409** while people are writing on the page together -- tick it there |
-
 ## API keys
 
 Personal keys for scripts: send `Authorization: Bearer nxr_…` instead of the
@@ -315,7 +305,7 @@ and on an instance without comments and shares it simply stays empty.
 | `DELETE` | `/inbox` | Drop the read ones |
 
 What lands here: comments on your pages, replies to your comments, `@`
-mentions, pages somebody shared with you, tasks that name you (`aufgabe`) and
+mentions, pages somebody shared with you and
 changes to pages you watch (`aenderung`, one until it is read). Nothing else --
 an inbox that carries noise is one people stop opening.
 

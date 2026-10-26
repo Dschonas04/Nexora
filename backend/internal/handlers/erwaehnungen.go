@@ -24,9 +24,6 @@ import (
 // and the address would be nobody's business.
 type Person struct {
 	Name string `json:"name"`
-	// Benutzername is what a task in the text addresses with @, see
-	// aufgaben.go. Empty for accounts without one.
-	Benutzername string `json:"username,omitempty"`
 }
 
 // lesendeKonten collects the accounts allowed to read a page.
@@ -38,23 +35,23 @@ type Person struct {
 // be the wrong way round -- the same caveat as in erwaehnte().
 func (s *Server) lesendeKonten(ctx context.Context, pageID string) []Person {
 	liste := []Person{}
-	rows, err := s.Pool.Query(ctx, `SELECT id::text, name, coalesce(benutzername, '') FROM users WHERE name <> '' ORDER BY name`)
+	rows, err := s.Pool.Query(ctx, `SELECT id::text, name FROM users WHERE name <> '' ORDER BY name`)
 	if err != nil {
 		return liste
 	}
 	defer rows.Close()
 
-	type konto struct{ id, name, kennung string }
+	type konto struct{ id, name string }
 	var alle []konto
 	for rows.Next() {
 		var k konto
-		if rows.Scan(&k.id, &k.name, &k.kennung) == nil {
+		if rows.Scan(&k.id, &k.name) == nil {
 			alle = append(alle, k)
 		}
 	}
 	for _, k := range alle {
 		if canRead, _, _, ok := s.pagePerm(ctx, k.id, pageID); ok && canRead {
-			liste = append(liste, Person{Name: k.name, Benutzername: k.kennung})
+			liste = append(liste, Person{Name: k.name})
 		}
 	}
 	return liste

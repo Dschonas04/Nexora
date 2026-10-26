@@ -24,10 +24,10 @@ here, and the graph over everything.*
 | [![A page in the editor](docs/images/seite.png)](https://nexora.jonasgroll.de) | [![Search results, backlinks and the local graph of a page](docs/images/suche.png)](https://nexora.jonasgroll.de) | [![The knowledge graph](docs/images/graph.png)](https://nexora.jonasgroll.de) |
 | Nested pages, tags, tables, Markdown shortcuts. | Every page says who points at it, with the neighbourhood drawn underneath. | Every page and every link, coloured by space. |
 
-| Diagrams | Tasks |
-| --- | --- |
-| [![A Mermaid flowchart drawn under its code block](docs/images/diagramm.png)](https://nexora.jonasgroll.de) | [![Tasks with due dates, gathered from all pages](docs/images/aufgaben.png)](https://nexora.jonasgroll.de) |
-| A code block in Mermaid is drawn right under itself. | Checklist items with `@username` and a date, from every page you can read. |
+| Diagrams |
+| --- |
+| [![A Mermaid flowchart drawn under its code block](docs/images/diagramm.png)](https://nexora.jonasgroll.de) |
+| A code block in Mermaid is drawn right under itself. |
 
 Nested pages in a block editor, spaces, per-user sharing with roles, version
 history, attachments, comments, a trash can, backlinks, a knowledge graph and a
@@ -154,9 +154,6 @@ when the database approaches a gigabyte, not before.
 - **Diagrams**: a ```mermaid code block is drawn as a diagram below it
   (flowchart, sequence, class, state …; no Gantt charts or timelines), and
   stays plain Mermaid text in every export
-- **Tasks**: a checklist item with `@username` and `📅 2026-10-30` is a task with
-  an owner and a due date; the Tasks view gathers them from every readable page
-  and ticks them off there
 - **Attachments**: stored on local disk or in any S3-compatible bucket (MinIO,
   Garage, Ceph, AWS), and the handlers never learn which. Upload files per page,
   with a quick viewer for images, PDFs

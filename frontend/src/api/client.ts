@@ -277,8 +277,6 @@ export interface Spureintrag {
     mention is the name in the text, and the address would be nobody's business. */
 export interface Person {
   name: string;
-  /** What a task in the text addresses with @. Missing for accounts without one. */
-  username?: string;
 }
 
 /** A saved template. The built-in ones live in vorlagen.ts. */
@@ -291,20 +289,6 @@ export interface Vorlage {
   own: boolean;
   ownerName: string;
   createdAt: string;
-}
-
-/** A checklist item from some page, as "My tasks" lists it. */
-export interface Aufgabe {
-  pageId: string;
-  pageTitle: string;
-  blockId: string;
-  text: string;
-  checked: boolean;
-  /** YYYY-MM-DD */
-  due?: string;
-  assignees: string[];
-  mine: boolean;
-  canEdit: boolean;
 }
 
 /** A personal API key. key is only there in the answer that made it. */
@@ -1085,12 +1069,6 @@ export const api = {
     req<Vorlage>("/templates", { method: "POST", body: JSON.stringify(p) }),
   vorlageLoeschen: (id: string) => req<void>(`/templates/${id}`, { method: "DELETE" }),
 
-  aufgaben: (filter: "mine" | "own", erledigte: boolean) =>
-    req<{ tasks: Aufgabe[]; username: string }>(
-      `/tasks?filter=${filter}${erledigte ? "&done=1" : ""}`,
-    ),
-  aufgabeAbhaken: (pageId: string, blockId: string, checked: boolean) =>
-    req<void>(`/tasks/${pageId}/${blockId}`, { method: "PUT", body: JSON.stringify({ checked }) }),
 
   apiSchluessel: () => req<APISchluessel[]>("/api-keys"),
   apiSchluesselAnlegen: (name: string, scope: "lesen" | "schreiben", days: number) =>

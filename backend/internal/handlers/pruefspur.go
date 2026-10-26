@@ -107,7 +107,6 @@ const (
 	AktWebhookAngelegt    = "webhook.angelegt"
 	AktWebhookGeaendert   = "webhook.geaendert"
 	AktWebhookEntfernt    = "webhook.entfernt"
-	AktAufgabeAbgehakt    = "aufgabe.abgehakt"
 )
 
 // spur writes one entry. Callers pass what they know; empty fields stay empty.

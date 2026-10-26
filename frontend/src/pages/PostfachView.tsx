@@ -74,8 +74,7 @@ export default function PostfachView({ onGelesen }: { onGelesen: () => void }) {
         <h1 className="view-title">Inbox</h1>
         <p className="muted">
           Comments on your pages, replies to your comments, mentions of your name,
-          tasks for you, pages someone shared with you and changes to pages you
-          watch.
+          pages someone shared with you and changes to pages you watch.
         </p>
 
         <div className="postfach-leiste">

@@ -4,7 +4,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { Block, BlockNoteEditor, PartialBlock } from "@blocknote/core";
-import { Graph, Page, PageMeta, PagePatch, Person, Tag, api } from "../api/client";
+import { Graph, Page, PageMeta, PagePatch, Tag, api } from "../api/client";
 // The editor brings BlockNote along, and that is the largest single piece of
 // the bundle. Whoever leafs through the list, looks at the graph or goes into
 // the settings needs none of it.
@@ -182,7 +182,6 @@ export default function PageView({
   const [showInhalt, setShowInhalt] = useState(inhaltGemerkt);
   // People who may read this page, for the "@" menu: picking one writes
   // @username, which gives a checklist item to them.
-  const [personen, setPersonen] = useState<Person[]>([]);
   // The editor as state as well as in the ref: the table of contents and the
   // template choice follow its changes and have to render when it appears.
   const [editorInst, setEditorInst] = useState<BlockNoteEditor | null>(null);
@@ -257,10 +256,6 @@ export default function PageView({
       .graph()
       .then(setGraph)
       .catch(() => setGraph({ nodes: [], edges: [] }));
-    api
-      .erwaehnbare(id)
-      .then(setPersonen)
-      .catch(() => setPersonen([]));
     return () => window.clearTimeout(saveTimer.current);
   }, [id]);
 
@@ -971,7 +966,6 @@ export default function PageView({
                     editorRef.current = e;
                     setEditorInst(e);
                   }}
-                  personen={personen}
                   linkResolver={resolveLink}
                   onOpenLink={(pid) => nav(`/page/${pid}`)}
                   mentionTargets={graph.nodes.filter((n) => n.id !== page.id)}

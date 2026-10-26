@@ -24,7 +24,6 @@ const TrashView = lazy(() => import("./TrashView"));
 const GraphView = lazy(() => import("./GraphView"));
 const EinstellungenView = lazy(() => import("./EinstellungenView"));
 const PostfachView = lazy(() => import("./PostfachView"));
-const AufgabenView = lazy(() => import("./AufgabenView"));
 
 export default function Workspace() {
   const nav = useNavigate();
@@ -241,7 +240,6 @@ export default function Workspace() {
               }
             />
             <Route path="postfach" element={<PostfachView onGelesen={refreshPostfach} />} />
-            <Route path="aufgaben" element={<AufgabenView />} />
             <Route
               path="trash"
               element={

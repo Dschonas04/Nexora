@@ -1249,7 +1249,7 @@ export default function Sidebar(props: Props) {
               </div>
             )}
 
-            {/* One's own work: inbox, tasks, graph, trash. Laid out like the administration
+            {/* One's own work: inbox, graph, trash. Laid out like the administration
                 below -- a line above, one row each with a small symbol, no
                 heading to collapse: three entries need no folding. */}
             <div className="sidebar-section leiste-gruppe">
@@ -1264,15 +1264,6 @@ export default function Sidebar(props: Props) {
                 {/* The number stands there only when it says something. A zero
                     beside the entry would be a prompt without occasion. */}
                 {ungelesen > 0 && <span className="postfach-zaehler">{ungelesen}</span>}
-              </button>
-              <button
-                type="button"
-                className={"tree-row leiste-eintrag" + (currentPath === "/aufgaben" ? " active" : "")}
-                aria-current={currentPath === "/aufgaben" ? "page" : undefined}
-                onClick={() => onNavigate("/aufgaben")}
-              >
-                <span className="leiste-symbol" aria-hidden="true"><Haken /></span>
-                <span className="tree-label">Tasks</span>
               </button>
               <button
                 type="button"
@@ -1444,14 +1435,6 @@ function Postfach() {
     <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
       <path d="M2 9.5 3.8 3.5h8.4L14 9.5v3H2z" />
       <path d="M2 9.5h3.5l1 1.5h3l1-1.5H14" />
-    </svg>
-  );
-}
-function Haken() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-      <rect x="2.5" y="2.5" width="11" height="11" rx="2" />
-      <path d="M5 8.2 7.1 10.3 11 5.8" />
     </svg>
   );
 }

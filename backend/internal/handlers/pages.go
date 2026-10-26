@@ -270,9 +270,6 @@ func (s *Server) UpdatePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.spurAusRequest(r, AktSeiteGeaendert, "seite", id, title, nil)
-	if len(req.Content) > 0 {
-		s.aufgabenZugewiesen(cur.Content, content, id, uid)
-	}
 	s.beobachterBenachrichtigen(id, uid)
 	s.webhookSeite(EreignisSeiteGeaendert, id, uid)
 

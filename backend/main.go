@@ -185,7 +185,6 @@ func main() {
 	// that, full text search silently returned nothing for older pages, which
 	// looks like an empty result rather than a fault.
 	h.IndexNachziehen(ctx)
-	h.BlockIDsNachziehen(ctx)
 
 	// Runtime settings from the database into the cache. They override whatever
 	// config.conf says, because they were set later and on purpose.
@@ -297,9 +296,6 @@ func main() {
 			r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
 				Get("/pages/shared", h.ListSharedPages)
 			r.Get("/pages/trash", h.ListTrash)
-			// Tasks: the checklist items of every readable page in one list.
-			r.Get("/tasks", h.ListAufgaben)
-			r.Put("/tasks/{pageId}/{blockId}", h.AufgabeAbhaken)
 			// Templates, kept apart from the pages.
 			r.Get("/templates", h.ListVorlagen)
 			r.Post("/templates", h.VorlageAnlegen)

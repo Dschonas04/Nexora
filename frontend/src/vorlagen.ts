@@ -5,7 +5,6 @@
 // Written as plain partial blocks: the editor fills in ids and defaults when
 // it takes them over, exactly as it does for pasted content.
 import type { Sprache } from "./sprache";
-import { inTagen } from "./aufgaben";
 
 export type EingebauteVorlage = {
   key: string;
@@ -17,7 +16,6 @@ export type EingebauteVorlage = {
 const h = (level: number, text: string) => ({ type: "heading", props: { level }, content: text });
 const p = (text = "") => ({ type: "paragraph", content: text });
 const li = (text: string) => ({ type: "bulletListItem", content: text });
-const todo = (text: string) => ({ type: "checkListItem", content: text });
 const nr = (text: string) => ({ type: "numberedListItem", content: text });
 
 function heute(s: Sprache): string {
@@ -25,7 +23,6 @@ function heute(s: Sprache): string {
 }
 
 export function eingebauteVorlagen(s: Sprache): EingebauteVorlage[] {
-  const woche = inTagen(7);
   if (s === "de") {
     return [
       {
@@ -43,8 +40,6 @@ export function eingebauteVorlagen(s: Sprache): EingebauteVorlage[] {
           p(),
           h(2, "Beschlüsse"),
           li(""),
-          h(2, "Aufgaben"),
-          todo(`Wer macht was 📅 ${woche}`),
         ],
       },
       {
@@ -84,8 +79,6 @@ export function eingebauteVorlagen(s: Sprache): EingebauteVorlage[] {
         p(),
         h(2, fr ? "Décisions" : "Decisions"),
         li(""),
-        h(2, fr ? "Tâches" : "Tasks"),
-        todo((fr ? "Qui fait quoi" : "Who does what") + ` 📅 ${woche}`),
       ],
     },
     {

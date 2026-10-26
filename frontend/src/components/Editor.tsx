@@ -23,7 +23,6 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 
 import { useDesign } from "../design";
 import { sprache } from "../sprache";
-import { DATUM_RE, PERSON_RE, faelligkeit, inTagen, isoDatum } from "../aufgaben";
 import { diagrammErweiterung, setzeDiagrammThema } from "./Diagramm";
 
 // The editor's own menus sit inside BlockNote, where the interface translation
@@ -142,48 +141,6 @@ function verweisErweiterung(
   });
 }
 
-// Highlights the marks that make a checklist item a task: @username and a
-// 📅 date, the date coloured by how close it is. Like the wiki-links, the text
-// stays plain text; only the drawing changes.
-const aufgabenErweiterung = Extension.create({
-  name: "nexoraAufgaben",
-  addProseMirrorPlugins() {
-    return [
-      new Plugin({
-        props: {
-          decorations(zustand) {
-            const deko: Decoration[] = [];
-            zustand.doc.descendants((knoten, pos) => {
-              if (!knoten.isText || !knoten.text) return;
-              const text = knoten.text;
-              DATUM_RE.lastIndex = 0;
-              let m: RegExpExecArray | null;
-              while ((m = DATUM_RE.exec(text))) {
-                const art = faelligkeit(isoDatum(m[1])).art;
-                deko.push(
-                  Decoration.inline(pos + m.index, pos + m.index + m[0].length, {
-                    class: "aufgabe-datum " + art,
-                  }),
-                );
-              }
-              PERSON_RE.lastIndex = 0;
-              while ((m = PERSON_RE.exec(text))) {
-                const von = pos + m.index + m[1].length;
-                deko.push(
-                  Decoration.inline(von, von + 1 + m[2].length, {
-                    class: "aufgabe-person",
-                  }),
-                );
-              }
-            });
-            return DecorationSet.create(zustand.doc, deko);
-          },
-        },
-      }),
-    ];
-  },
-});
-
 // Bold AND italic in one go.
 //
 // The editor has separate input rules for bold and italic, so combined
@@ -264,7 +221,6 @@ export default function Editor({
   mentionTargets,
   dateiHochladen,
   mitschrift,
-  personen,
 }: {
   initialContent: unknown;
   editable?: boolean;
@@ -289,9 +245,6 @@ export default function Editor({
     provider: unknown;
     user: { name: string; color: string };
   };
-  // People offered in the "@" menu. Picking one writes @username, which is
-  // what turns a checklist item into a task for them.
-  personen?: { name: string; username?: string }[];
 }) {
   const { design } = useDesign();
   const grundton = design.baseColor;
@@ -342,7 +295,6 @@ export default function Editor({
       extensions: [
         verweisErweiterung(() => loeserRef.current),
         fettKursivErweiterung,
-        aufgabenErweiterung,
         diagrammErweiterung,
       ],
     },
@@ -370,8 +322,6 @@ export default function Editor({
   // Read the latest page list on each "@" trigger without recreating the editor.
   const targetsRef = useRef(mentionTargets ?? []);
   targetsRef.current = mentionTargets ?? [];
-  const personenRef = useRef(personen ?? []);
-  personenRef.current = personen ?? [];
 
   useEffect(() => {
     onEditorReady?.(editor);
@@ -381,19 +331,6 @@ export default function Editor({
   // on selection, insert a [[Title]] wiki-link at the cursor.
   const mentionItems = (query: string): DefaultReactSuggestionItem[] => {
     const q = query.toLowerCase().trim();
-    const leute = personenRef.current
-      .filter(
-        (p) =>
-          p.username &&
-          (p.name.toLowerCase().includes(q) || p.username.toLowerCase().includes(q)),
-      )
-      .slice(0, 6)
-      .map((p) => ({
-        title: p.name,
-        subtext: "@" + p.username,
-        group: je("Personen", "People", "Personnes"),
-        onItemClick: () => editor.insertInlineContent(`@${p.username} `),
-      }));
     const seiten = targetsRef.current
       .filter((t) => (t.title || "").toLowerCase().includes(q))
       .slice(0, 12)
@@ -402,12 +339,11 @@ export default function Editor({
         group: je("Seiten", "Pages", "Pages"),
         onItemClick: () => editor.insertInlineContent(`[[${t.title}]] `),
       }));
-    return [...leute, ...seiten];
+    return seiten;
   };
 
-  // Nexora's own entries in the "/" menu: a diagram, a task with a due date,
-  // a due date at the cursor. They go into a group of their own after
-  // BlockNote's, so the familiar entries keep their places.
+  // Nexora's own entry in the "/" menu: a diagram. It goes into a group of its
+  // own after BlockNote's, so the familiar entries keep their places.
   const eigeneEintraege = (): DefaultReactSuggestionItem[] => {
     const gruppe = "Nexora";
     const blockHier = (neu: PartialBlock) => {
@@ -437,28 +373,6 @@ export default function Editor({
               "flowchart LR\n  A[Idée] --> B{Ça va ?}\n  B -- oui --> C[Réaliser]\n  B -- non --> A",
             ),
           } as PartialBlock),
-      },
-      {
-        title: je("Aufgabe mit Termin", "Task with due date", "Tâche avec échéance"),
-        subtext: je(
-          "Checkliste mit 📅 in einer Woche; @Name gibt sie jemandem",
-          "Checklist item due in a week; @name gives it to someone",
-          "Case à cocher due dans une semaine ; @nom l'attribue",
-        ),
-        aliases: ["task", "todo", "aufgabe", "termin", "due"],
-        group: gruppe,
-        onItemClick: () =>
-          blockHier({
-            type: "checkListItem",
-            content: ` 📅 ${inTagen(7)}`,
-          } as PartialBlock),
-      },
-      {
-        title: je("Fälligkeit", "Due date", "Échéance"),
-        subtext: je("📅-Datum an der Schreibmarke", "📅 date at the cursor", "Date 📅 au curseur"),
-        aliases: ["datum", "date", "deadline", "frist"],
-        group: gruppe,
-        onItemClick: () => editor.insertInlineContent(`📅 ${inTagen(7)} `),
       },
     ];
   };
