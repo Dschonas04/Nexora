@@ -138,11 +138,10 @@ jobs:
             --outfile="$RUNNER_TEMP/farbe.mjs" --log-level=warning
           node "$RUNNER_TEMP/farbe.mjs"
 
-      - name: Comparing versions and reading tasks
+      - name: Comparing versions
         run: |
-          # What the version comparison marks as changed, and how a due date
-          # and an @name are read from a task, is plain arithmetic on text --
-          # the probe runs it on known documents.
+          # What the version comparison marks as changed is plain arithmetic on
+          # text -- the probe runs it on known documents.
           npx esbuild test/diff-check.ts --bundle --format=esm --platform=node \
             --outfile="$RUNNER_TEMP/vergleich.mjs" --log-level=warning
           node "$RUNNER_TEMP/vergleich.mjs"

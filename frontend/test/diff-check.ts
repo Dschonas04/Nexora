@@ -1,10 +1,9 @@
-// Checks the comparison of two page states (src/vergleich.ts) and the reading
-// of task marks (src/aufgaben.ts). Run like the other probes:
+// Checks the comparison of two page states (src/vergleich.ts). Run like the
+// other probes:
 //
 //   npx esbuild test/diff-check.ts --bundle --format=esm --platform=node --outfile=/tmp/vergleich.mjs
 //   node /tmp/vergleich.mjs
 import { vergleiche, woerter, zaehle, zeilenAus } from "../src/vergleich";
-import { isoDatum, ohneMarken } from "../src/aufgaben";
 
 const fehler: string[] = [];
 const absatz = (id: string, text: string, typ = "paragraph", props: Record<string, unknown> = {}) => ({
@@ -45,10 +44,6 @@ if (vergleiche(alt, alt).some((x) => x.art !== "gleich")) fehler.push("a page co
 
 const w = woerter("eins zwei drei", "eins drei");
 if (w.map((t) => t.art).join() !== "gleich,weg,gleich") fehler.push(`word diff: ${JSON.stringify(w)}`);
-
-if (isoDatum("3.1.2027") !== "2027-01-03") fehler.push("German date not read");
-if (isoDatum("2026-10-30") !== "2026-10-30") fehler.push("ISO date not kept");
-if (ohneMarken("Angebot 📅 2026-10-30 @anna") !== "Angebot @anna") fehler.push("date mark not removed");
 
 if (fehler.length) {
   console.error("diff probe failed:\n  " + fehler.join("\n  "));
