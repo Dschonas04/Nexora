@@ -152,7 +152,8 @@ when the database approaches a gigabyte, not before.
   whole instance. Templates stay out of the tree, search, graph and export
 - **Table of contents**: the headings of a page beside it, current while typing
 - **Diagrams**: a ```mermaid code block is drawn as a diagram below it
-  (flowchart, sequence, Gantt …), and stays plain Mermaid text in every export
+  (flowchart, sequence, class, state …; no Gantt charts or timelines), and
+  stays plain Mermaid text in every export
 - **Tasks**: a checklist item with `@username` and `📅 2026-10-30` is a task with
   an owner and a due date; the Tasks view gathers them from every readable page
   and ticks them off there

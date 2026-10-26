@@ -14,6 +14,7 @@
 import { Extension } from "@tiptap/core";
 import { Plugin } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { uebersetze } from "../sprache";
 
 type Mermaid = typeof import("mermaid").default;
 
@@ -21,6 +22,10 @@ let laden: Promise<Mermaid> | null = null;
 let dunkel = false;
 let eingerichtetDunkel: boolean | null = null;
 let zaehler = 0;
+// Nexora is a wiki, not a project tool: Gantt charts and timelines are not
+// drawn. Comments (%%) and a front-matter block may come before the type.
+const PROJEKTPLAN = /^\s*(---\n[\s\S]*?\n---\s*)?(%%[^\n]*\n\s*)*(gantt|timeline)\b/i;
+
 // Finished pictures by theme and source text. Typing elsewhere on the page
 // redraws the decorations, and without the cache every diagram would be
 // rendered anew each time.
@@ -64,6 +69,10 @@ function zeichnen(ziel: HTMLElement, code: string) {
   const da = fertig.get(schluessel);
   if (da) return zeigen(da);
   if (!code.trim()) return;
+  if (PROJEKTPLAN.test(code)) {
+    const fehler = "Gantt-Diagramme und Zeitleisten gibt es in Nexora nicht.";
+    return zeigen({ fehler: uebersetze(fehler) ?? fehler });
+  }
   ziel.textContent = "…";
   void (async () => {
     let e: { svg?: string; fehler?: string };

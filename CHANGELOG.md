@@ -15,6 +15,8 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ### Removed
 
+- **Gantt charts and timelines** are no longer drawn; such a diagram shows a short
+  note instead. Every other Mermaid diagram stays.
 - The built-in **project page** template with its timeline: Nexora is a wiki, not a
   project tool. Meeting notes, how-to and saved templates stay.
 

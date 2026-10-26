@@ -421,11 +421,11 @@ export default function Editor({
       {
         title: je("Diagramm", "Diagram", "Diagramme"),
         subtext: je(
-          "Ablauf, Sequenz oder Gantt als Mermaid-Text",
-          "Flowchart, sequence or Gantt as Mermaid text",
-          "Organigramme, séquence ou Gantt en texte Mermaid",
+          "Ablauf oder Sequenz als Mermaid-Text",
+          "Flowchart or sequence as Mermaid text",
+          "Organigramme ou séquence en texte Mermaid",
         ),
-        aliases: ["mermaid", "flowchart", "gantt", "diagramm", "ablauf"],
+        aliases: ["mermaid", "flowchart", "diagramm", "ablauf"],
         group: gruppe,
         onItemClick: () =>
           blockHier({

@@ -1408,4 +1408,5 @@ export const FRANZOESISCH: Record<string, string> = {
   "Webhook deleted": "Webhook supprimé",
   "Task ticked off in the task list": "Tâche cochée dans la liste des tâches",
   "Contents": "Sommaire",
+  "Nexora does not draw Gantt charts or timelines.": "Nexora ne dessine ni diagrammes de Gantt ni frises chronologiques.",
 };

@@ -1483,4 +1483,5 @@ export const PAARE: [string, string][] = [
   ["Webhook geändert", "Webhook changed"],
   ["Webhook gelöscht", "Webhook deleted"],
   ["Aufgabe in der Aufgabenliste abgehakt", "Task ticked off in the task list"],
+  ["Gantt-Diagramme und Zeitleisten gibt es in Nexora nicht.", "Nexora does not draw Gantt charts or timelines."],
 ];
