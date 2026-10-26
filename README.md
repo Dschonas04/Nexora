@@ -147,7 +147,7 @@ when the database approaches a gigabyte, not before.
 - **Version history**: a snapshot is written before every content change; browse
   and restore any earlier revision, and **compare** any of them with the current
   state or the next version, line by line and word by word
-- **Templates**: an empty page offers meeting notes, a how-to, a project page and
+- **Templates**: an empty page offers meeting notes, a how-to and
   every template saved with "Save as template"; an admin can offer one to the
   whole instance. Templates stay out of the tree, search, graph and export
 - **Table of contents**: the headings of a page beside it, current while typing

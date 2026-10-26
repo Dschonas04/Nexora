@@ -1347,7 +1347,6 @@ export const FRANZOESISCH: Record<string, string> = {
   "Start from a template:": "Commencer avec un modèle :",
   "Meeting notes": "Compte rendu de réunion",
   "How-to": "Guide",
-  "Project page": "Page de projet",
   "Delete template": "Supprimer le modèle",
   "Pages made from this template stay as they are.": "Les pages créées à partir de ce modèle restent telles quelles.",
   "Templates": "Modèles",

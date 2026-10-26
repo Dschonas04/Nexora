@@ -18,7 +18,6 @@ import { useRueckfrage } from "./Rueckfrage";
 const NAMEN: Record<string, string> = {
   besprechung: "Meeting notes",
   anleitung: "How-to",
-  projekt: "Project page",
 };
 
 export type AngewandteVorlage = { title: string; icon: string; content: unknown };

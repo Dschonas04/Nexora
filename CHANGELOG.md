@@ -13,6 +13,11 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 
 ## [Unreleased]
 
+### Removed
+
+- The built-in **project page** template with its timeline: Nexora is a wiki, not a
+  project tool. Meeting notes, how-to and saved templates stay.
+
 ## [3.1.2]: 2026-10-22
 
 ### Fixed

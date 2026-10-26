@@ -1423,7 +1423,6 @@ export const PAARE: [string, string][] = [
   ["Mit einer Vorlage beginnen:", "Start from a template:"],
   ["Besprechung", "Meeting notes"],
   ["Anleitung", "How-to"],
-  ["Projektseite", "Project page"],
   ["Vorlage löschen", "Delete template"],
   ["Seiten, die aus dieser Vorlage entstanden sind, bleiben, wie sie sind.", "Pages made from this template stay as they are."],
   ["Vorlagen", "Templates"],

@@ -1,5 +1,5 @@
 // The templates every instance has, in the reader's language. Saved templates
-// come from the service; these three are here so an empty page has something
+// come from the service; these two are here so an empty page has something
 // to offer from the first day on.
 //
 // Written as plain partial blocks: the editor fills in ids and defaults when
@@ -65,29 +65,6 @@ export function eingebauteVorlagen(s: Sprache): EingebauteVorlage[] {
           li("[[Verwandte Seite]]"),
         ],
       },
-      {
-        key: "projekt",
-        title: "Projekt: ",
-        icon: "",
-        content: [
-          h(2, "Worum es geht"),
-          p("Ziel in zwei Sätzen. Woran merken wir, dass wir fertig sind?"),
-          h(2, "Beteiligte"),
-          li("Verantwortlich: @"),
-          h(2, "Zeitplan"),
-          {
-            type: "codeBlock",
-            props: { language: "mermaid" },
-            content: `gantt\n  dateFormat YYYY-MM-DD\n  section Projekt\n  Planung   :a1, ${inTagen(0)}, 7d\n  Umsetzung :a2, after a1, 14d\n  Abschluss :after a2, 3d`,
-          },
-          h(2, "Aufgaben"),
-          todo(`Planung abschließen 📅 ${woche}`),
-          h(2, "Entscheidungen"),
-          li(""),
-          h(2, "Risiken"),
-          li(""),
-        ],
-      },
     ];
   }
   const fr = s === "fr";
@@ -127,29 +104,6 @@ export function eingebauteVorlagen(s: Sprache): EingebauteVorlage[] {
         p(fr ? "Erreurs typiques et ce qui aide." : "Typical mistakes and what helps."),
         h(2, fr ? "Voir aussi" : "See also"),
         li(fr ? "[[Page liée]]" : "[[Related page]]"),
-      ],
-    },
-    {
-      key: "projekt",
-      title: fr ? "Projet : " : "Project: ",
-      icon: "",
-      content: [
-        h(2, fr ? "De quoi s'agit-il" : "What it is about"),
-        p(fr ? "Le but en deux phrases. À quoi verrons-nous que c'est fini ?" : "The goal in two sentences. How will we know we are done?"),
-        h(2, fr ? "Personnes" : "People"),
-        li((fr ? "Responsable : " : "Owner: ") + "@"),
-        h(2, fr ? "Calendrier" : "Timeline"),
-        {
-          type: "codeBlock",
-          props: { language: "mermaid" },
-          content: `gantt\n  dateFormat YYYY-MM-DD\n  section ${fr ? "Projet" : "Project"}\n  ${fr ? "Planification" : "Planning"} :a1, ${inTagen(0)}, 7d\n  ${fr ? "Réalisation" : "Build"} :a2, after a1, 14d\n  ${fr ? "Clôture" : "Wrap-up"} :after a2, 3d`,
-        },
-        h(2, fr ? "Tâches" : "Tasks"),
-        todo((fr ? "Finir la planification" : "Finish planning") + ` 📅 ${woche}`),
-        h(2, fr ? "Décisions" : "Decisions"),
-        li(""),
-        h(2, fr ? "Risques" : "Risks"),
-        li(""),
       ],
     },
   ];
