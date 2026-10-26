@@ -31,7 +31,7 @@ everything in `backend/premium/`. Everything else is AGPL 3.0.
 | Single sign-on via OIDC | | | ✓ |
 | LDAP and Active Directory | | | ✓ |
 
-**To buy a key**, write to **[lizenz@jonasgroll.de](mailto:lizenz@jonasgroll.de)**
+**To buy a key**, write to **[info@jonasgroll.de](mailto:info@jonasgroll.de)**
 with the name the key should be issued to and the tier. You get an invoice and,
 once paid, the key.
 
@@ -149,4 +149,4 @@ files.
 
 ## Obtaining a licence
 
-License keys and other arrangements: [lizenz@jonasgroll.de](mailto:lizenz@jonasgroll.de).
+License keys and other arrangements: [info@jonasgroll.de](mailto:info@jonasgroll.de).

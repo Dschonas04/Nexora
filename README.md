@@ -863,7 +863,7 @@ a page together, PDF and Word export, space export, search inside attachments.
 **Business, on request:** everything in Pro plus groups and space permissions,
 audit trail, SSO via OIDC, LDAP/Active Directory.
 
-Keys: [lizenz@jonasgroll.de](mailto:lizenz@jonasgroll.de). They are checked
+Keys: [info@jonasgroll.de](mailto:info@jonasgroll.de). They are checked
 offline, the installation never calls home.
 
 Locked endpoints answer `402 Payment Required` and the browser hides the
