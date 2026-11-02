@@ -187,4 +187,4 @@ jobs:
         run: |
           # The key is pinned to /opt/ci/nexora-ausrollen.sh at the target;
           # whatever stood here would make no difference anyway.
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes debian@10.0.2.43 true
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes debian@10.0.2.7 true
