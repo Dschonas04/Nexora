@@ -11,6 +11,13 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
 `dschohnas/nexora-{backend,frontend,pki}` on Docker Hub. See
 [Where the images are](README.md#where-the-images-are).
 
+## Unreleased
+
+### Changed
+
+- Plans: Free, with Pro and Business on request. The fixed Pro price is gone, and the
+  free scope is now called Free instead of Standard. Key names and features are unchanged.
+
 ## [Unreleased]
 
 ### Removed

@@ -2137,7 +2137,7 @@ export default function EinstellungenView() {
                 </div>
                 <div>
                   <span className="lizenz-feldname">Stufe</span>
-                  <span className="lizenz-feldwert">{lizenzJetzt?.tier || "Standard"}</span>
+                  <span className="lizenz-feldwert">{lizenzJetzt?.tier || "Free"}</span>
                 </div>
                 <div>
                   <span className="lizenz-feldname">Laufzeit</span>
@@ -2163,7 +2163,7 @@ export default function EinstellungenView() {
               <div className="warnkasten">
                 <strong>{z.license.reason || "Kein Schlüssel hinterlegt."}</strong>
                 <div className="muted small">
-                  Nexora läuft im Standard-Umfang, mit Versionen, Anhängen, Kommentaren
+                  Nexora läuft im Free-Umfang, mit Versionen, Anhängen, Kommentaren
                   und Konflikterkennung. Pro- und Business-Funktionen antworten mit 402.
                 </div>
               </div>

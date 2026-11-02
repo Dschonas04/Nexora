@@ -855,7 +855,7 @@ graph TB
 
 | | |
 |---|---|
-| **Tiers** | `free`, shown as Standard (versionen, anhaenge, kommentare, konflikte, unlocked without any key) → `pro` (freigeben, echtzeit, export, anhangsuche) → `business` (gruppen, pruefspur, sso, ldap). Each contains the smaller ones. `advanced` still exists as a name so that old keys read as valid, and adds nothing since 2.1 |
+| **Tiers** | `free` (versionen, anhaenge, kommentare, konflikte, unlocked without any key) → `pro` (freigeben, echtzeit, export, anhangsuche) → `business` (gruppen, pruefspur, sso, ldap). Each contains the smaller ones. `advanced` still exists as a name so that old keys read as valid, and adds nothing since 2.1 |
 | **A key** | `payload.signature`, Ed25519. Carries holder, tier and/or individual features, issue date, expiry. Verified against a public key compiled into `pruefer.go` |
 | **Offline** | No licence server is contacted, so an air-gapped installation works. The cost: an issued key cannot be revoked, which is why keys carry an expiry of at most a year |
 | **Precedence** | A key imported through the admin pages wins over the one in the config file. Otherwise a licence imported in the browser would revert on the next restart |

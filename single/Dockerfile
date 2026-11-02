@@ -4,7 +4,7 @@
 #
 #     docker build -f single/Dockerfile -t nexora-single .
 #
-# It runs the free Standard scope only (built with the tag nur_kern), so no key
+# It runs the Free scope only (built with the tag nur_kern), so no key
 # is needed and none is read. Whoever wants Pro or Business, or more than a
 # handful of people at once, takes the stack with separate containers; see
 # docs/operations.md.

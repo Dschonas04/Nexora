@@ -36,8 +36,8 @@ storage.
 
 **Open core:** the core is free software under the [AGPL 3.0](LICENSE), version
 history, attachments, comments and conflict detection included. Eight extras
-for larger teams need a [license key](LICENSING.md#prices) (Pro 200 € per
-installation and year, Business on request): sharing and public links,
+for larger teams need a [license key](LICENSING.md#plans) (Pro and Business,
+on request): sharing and public links,
 real-time editing, PDF and Word export, search inside attachments, groups,
 audit trail, SSO and LDAP.
 
@@ -277,7 +277,7 @@ or with [`docker/docker-compose.single.yml`](docker/docker-compose.single.yml)
 holds the database, the attachments, the session secret and database password
 it generates on the first start, and the self-signed certificate for port 443.
 
-It runs the free **Standard** scope only and reads no licence key. It is not
+It runs the **Free** scope only and reads no licence key. It is not
 built for load: PostgreSQL, the service and nginx share one container, and
 there is no splitting them later without a backup and a restore (both are in
 the settings, under System). For Pro or Business, or more than a handful of
@@ -310,7 +310,7 @@ NEXORA_REGISTRY=dschohnas       # Docker Hub instead of the default ghcr.io/dsch
 The three images belong together: `nexora-pki` issues the internal
 certificates, `nexora-backend` is the Go service, `nexora-frontend` the web
 interface. None of them is meant to run alone. `nexora-single` is the
-exception: all of Nexora Standard in one image, see
+exception: all of Nexora Free in one image, see
 [Single container](#single-container).
 
 Templates for the home-server platforms are in
@@ -401,17 +401,17 @@ account, which becomes the workspace admin.
 
 ## Licensing tiers
 
-Three tiers, each containing the smaller ones. Standard needs no key at all:
+Free needs no key at all. Pro and Business are available on request, and each tier contains the smaller ones:
 
 | Tier | Name in the key | adds |
 |---|---|---|
-| **Standard** | `free` | pages, search, trash, backlinks and graph, Markdown import and export, **version history, attachments, comments, conflict detection** |
+| **Free** | `free` | pages, search, trash, backlinks and graph, Markdown import and export, **version history, attachments, comments, conflict detection** |
 | **Pro** | `pro` | sharing and public links, writing on a page together, PDF/Word export, search inside attachments |
 | **Business** | `business` | groups, audit trail, OIDC, LDAP |
 
 Up to 2.0 version history, attachments and comments were a paid `advanced` tier
 and conflict detection sat in `pro`. Keys issued for `advanced` stay valid; they
-no longer add anything the Standard scope does not already have.
+no longer add anything the Free scope does not already have.
 
 Keys are Ed25519-signed and verified offline, which is why they carry an expiry
 of at most a year: an issued key cannot be revoked, so the date is the only
@@ -857,7 +857,7 @@ cd frontend && npm install && npm run dev
 search over pages, backlinks, knowledge graph, accounts and roles, version
 history, attachments, comments, conflict detection.
 
-**Pro, 200 € per installation and year:** sharing and public links, writing on
+**Pro, on request:** sharing and public links, writing on
 a page together, PDF and Word export, space export, search inside attachments.
 
 **Business, on request:** everything in Pro plus groups and space permissions,

@@ -12,7 +12,7 @@
 # NEXORA_HTTPS_ONLY=0 switches the plain entrance back on. The first account
 # that registers becomes the administrator.
 #
-# What it is and what it is not: the free Standard scope only, no licence key is
+# What it is and what it is not: the Free scope only, no licence key is
 # read. Everything runs in one process tree, so it scales no further than the
 # machine and cannot be split up later without a backup and a restore. For Pro
 # or Business, or for more than a handful of people writing at once, take

@@ -13,11 +13,13 @@ Which license a file is under is written in its header: Enterprise files carry
 `SPDX-License-Identifier: LicenseRef-Nexora-Enterprise`, together with
 everything in `backend/premium/`. Everything else is AGPL 3.0.
 
-## Prices
+## Plans
 
-| | Standard | Pro | Business |
+There is Free, and Pro and Business on request. There is no fixed price list.
+
+| | Free | Pro | Business |
 |---|---|---|---|
-| Price | **free** | **200 € per installation and year** | **on request** |
+| Price | **free** | **on request** | **on request** |
 | Editor, nested pages, spaces, tags, trash | ✓ | ✓ | ✓ |
 | Full text search, backlinks, knowledge graph | ✓ | ✓ | ✓ |
 | Accounts, roles, two-factor sign-in | ✓ | ✓ | ✓ |
@@ -31,9 +33,9 @@ everything in `backend/premium/`. Everything else is AGPL 3.0.
 | Single sign-on via OIDC | | | ✓ |
 | LDAP and Active Directory | | | ✓ |
 
-**To buy a key**, write to **[info@jonasgroll.de](mailto:info@jonasgroll.de)**
-with the name the key should be issued to and the tier. You get an invoice and,
-once paid, the key.
+**To request a key**, write to **[info@jonasgroll.de](mailto:info@jonasgroll.de)**
+or use the [contact form](https://photo.jonasgroll.de/#kontakt), with the name
+the key should be issued to and the tier you are interested in.
 
 Keys are entered under *Settings → License* and are checked offline; the
 installation never calls home.
@@ -53,7 +55,7 @@ installation never calls home.
 
 Version history, attachments, comments and conflict detection
 (`versionen`, `anhaenge`, `kommentare`, `konflikte`) needed a key up to 2.0 and
-are part of the Standard scope since 2.1. Keys that name them, or the old
+are part of the Free scope since 2.1. Keys that name them, or the old
 `advanced` tier, stay valid; they simply no longer unlock anything the
 installation would not have anyway.
 
@@ -77,7 +79,7 @@ rm -rf backend/premium
 cd backend && go build -tags nur_kern ./...
 ```
 
-Every Pro and Business add-on then answers `402`; the Standard scope, version
+Every Pro and Business add-on then answers `402`; the Free scope, version
 history and attachments included, runs unchanged.
 
 ## Earlier versions

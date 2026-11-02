@@ -827,7 +827,7 @@ pruefe "ohne Anmeldung verschlossen" "401" \
           -H 'Content-Type: application/octet-stream' --data-binary '')"
 
 echo "== Was ohne Lizenz offen ist"
-# The Standard scope: version history, attachments and comments answer without
+# The Free scope: version history, attachments and comments answer without
 # a key since 2.1.
 pruefe "Anhänge sind offen" "200" \
        "$(curl -s -o /dev/null -w '%{http_code}' -b "$KEKSE" "$BASIS/api/pages/$BREIT/attachments")"

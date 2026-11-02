@@ -7,7 +7,7 @@ Everything for running Nexora on one machine with Docker Compose.
 ```bash
 ./install.sh            # Nexora, its PostgreSQL and the internal PKI
 ./install.sh redis      # the same plus a Redis cache
-./install.sh single     # everything in one container (Standard scope only)
+./install.sh single     # everything in one container (Free scope only)
 ```
 
 On the first run the script writes `.env` with random values for

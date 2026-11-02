@@ -29,7 +29,7 @@ Markdown export. Interface in English, German and French.
 
 ## Good to know
 
-- **Standard scope only.** This image runs the free part of Nexora and reads no
+- **Free scope only.** This image runs the free part of Nexora and reads no
   licence key. For Pro or Business features take the stack with separate
   containers.
 - **Not built for load.** Database, service and web server share one container.
@@ -50,5 +50,5 @@ Architectures `linux/amd64` and `linux/arm64`. The same images are on
 
 - Source and documentation: https://github.com/Dschonas04/Nexora
 - Live demo (resets nightly): https://nexora.jonasgroll.de
-- Licence: AGPL 3.0 core, paid extras under the Nexora Enterprise License ([prices](https://github.com/Dschonas04/Nexora/blob/main/LICENSING.md#prices)).
-  Production and commercial use of the Standard scope are permitted.
+- Licence: AGPL 3.0 core, paid extras under the Nexora Enterprise License ([plans](https://github.com/Dschonas04/Nexora/blob/main/LICENSING.md#plans)).
+  Production and commercial use of the Free scope are permitted.

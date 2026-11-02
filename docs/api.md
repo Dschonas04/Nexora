@@ -85,7 +85,7 @@ tier contains which feature is in [architecture chapter 8.5](architecture.md#85-
 
 Snapshots are written on every installation, and since 2.1 viewing and
 restoring them needs no licence either, version history is part of the
-Standard scope.
+Free scope.
 
 | Method | Path | Notes |
 |---|---|---|
