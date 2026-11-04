@@ -4,10 +4,10 @@
   "private": true,
   "description": "Nexora als App für Android und iOS",
   "devDependencies": {
-    "@capacitor/android": "^6.2.0",
-    "@capacitor/cli": "^6.2.0",
-    "@capacitor/core": "^6.2.0",
-    "@capacitor/ios": "^6.2.0"
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0"
   },
   "overrides": {
     "tar": "^7.5.22"
