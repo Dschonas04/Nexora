@@ -7,18 +7,21 @@ an upgrade needs a hand, the minor when something is added, the patch when
 something is repaired.
 
 Every release ships as images for amd64 and arm64, to two registries with the
-same tags: `ghcr.io/dschonas04/nexora-{backend,frontend,pki}` and, since 2.0.1,
-`dschohnas/nexora-{backend,frontend,pki}` on Docker Hub. See
+same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
+`dschohnas/nexora-{backend,frontend}` on Docker Hub. See
 [Where the images are](README.md#where-the-images-are).
 
-## Unreleased
+## [3.2.0]: 2026-11-06
 
 ### Changed
 
+- **Internal certificates come from the backend.** `nexora pki` in the backend
+  image sets up the authority and the certificates for db, redis, minio and the
+  backend, then ends; the compound runs it once as the service `pki`. Existing
+  keys in the `nexora_pki` volume stay untouched. The separate `nexora-pki`
+  image and the `pki/` folder are gone.
 - Plans: Free, with Pro and Business on request. The fixed Pro price is gone, and the
   free scope is now called Free instead of Standard. Key names and features are unchanged.
-
-## [Unreleased]
 
 ### Removed
 

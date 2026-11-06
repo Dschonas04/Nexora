@@ -29,8 +29,12 @@ services:
     restart: unless-stopped
 
   pki:
-    image: ghcr.io/dschonas04/nexora-pki:latest
+    image: ghcr.io/dschonas04/nexora-backend:latest
     container_name: nexora-pki
+    command: ['pki']
+    user: '0:0'
+    healthcheck:
+      disable: true
     volumes:
       - /DATA/AppData/nexora/pki:/pki
     restart: 'no'
