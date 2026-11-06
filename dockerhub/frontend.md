@@ -4,9 +4,8 @@
 
 nginx with the React interface. Serves the application and passes `/api` to `nexora-backend`.
 
-This image is one of three that run together: `nexora-backend`,
-`nexora-frontend` and `nexora-pki`, plus PostgreSQL. It is not meant to run
-alone.
+This image is one of two that run together: `nexora-backend` and
+`nexora-frontend`, plus PostgreSQL. It is not meant to run alone.
 
 ## Quick start
 

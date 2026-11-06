@@ -53,10 +53,15 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # Runs once, sets up a small certificate authority of its own and is then
-  # done. That way the traffic between the containers is encrypted as well.
+  # "nexora pki" from the backend image: runs once, sets up a small
+  # certificate authority of its own and is then done. That way the traffic
+  # between the containers is encrypted as well.
   pki:
-    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-pki:${NEXORA_VERSION:-${NEXORA_FASSUNG:-latest}}
+    image: ${NEXORA_REGISTRY:-ghcr.io/dschonas04}/nexora-backend:${NEXORA_VERSION:-${NEXORA_FASSUNG:-latest}}
+    command: ["pki"]
+    user: "0:0"
+    healthcheck:
+      disable: true
     volumes:
       - nexora_pki:/pki
     restart: 'no'

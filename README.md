@@ -63,7 +63,7 @@ Packaging Nexora as a desktop or mobile application for Windows, macOS, Linux,
 Android and iOS lives in [`packaging/`](packaging/README.md). Those wrappers are
 a window onto a running instance rather than a second Nexora, they build on
 their own schedule, and nothing of them ends up in the server image: the
-Dockerfiles only ever see `backend/`, `frontend/` and `pki/`.
+Dockerfiles only ever see `backend/` and `frontend/`.
 
 ## Stack
 
@@ -290,8 +290,8 @@ identical content. Pull from whichever you prefer, nothing else differs.
 
 | Registry | Images | Page |
 |---|---|---|
-| **GitHub Container Registry** (default) | `ghcr.io/dschonas04/nexora-backend`<br>`ghcr.io/dschonas04/nexora-frontend`<br>`ghcr.io/dschonas04/nexora-pki`<br>`ghcr.io/dschonas04/nexora-single` | [packages](https://github.com/Dschonas04?tab=packages&repo_name=Nexora) |
-| **Docker Hub** | `dschohnas/nexora-backend`<br>`dschohnas/nexora-frontend`<br>`dschohnas/nexora-pki`<br>`dschohnas/nexora-single` | [hub.docker.com/u/dschohnas](https://hub.docker.com/u/dschohnas) |
+| **GitHub Container Registry** (default) | `ghcr.io/dschonas04/nexora-backend`<br>`ghcr.io/dschonas04/nexora-frontend`<br>`ghcr.io/dschonas04/nexora-single` | [packages](https://github.com/Dschonas04?tab=packages&repo_name=Nexora) |
+| **Docker Hub** | `dschohnas/nexora-backend`<br>`dschohnas/nexora-frontend`<br>`dschohnas/nexora-single` | [hub.docker.com/u/dschohnas](https://hub.docker.com/u/dschohnas) |
 
 | | |
 |---|---|
@@ -307,9 +307,9 @@ NEXORA_VERSION=3.1.2            # which version (default: latest)
 NEXORA_REGISTRY=dschohnas       # Docker Hub instead of the default ghcr.io/dschonas04
 ```
 
-The three images belong together: `nexora-pki` issues the internal
-certificates, `nexora-backend` is the Go service, `nexora-frontend` the web
-interface. None of them is meant to run alone. `nexora-single` is the
+The two images belong together: `nexora-backend` is the Go service (and, as
+`nexora pki`, issues the internal certificates once at start-up),
+`nexora-frontend` the web interface. Neither is meant to run alone. `nexora-single` is the
 exception: all of Nexora Free in one image, see
 [Single container](#single-container).
 
@@ -816,14 +816,11 @@ frontend/                      React SPA (Vite + TypeScript)
                                PublicPage, TrashView, TagView, GraphView, AdminView,
                                GruppenView, EinstellungenView,
                                PruefspurView (shown as "Protokoll")
-pki/                           the stack's own certificate authority
-  create.sh                   runs once at start-up, issues one certificate per
-                               service, and leaves alone what is already there
 docker/                        installing with Docker
   install.sh                  writes .env with random passwords, pulls, starts
-  docker-compose.stack.yml    the published images: db + pki + backend + frontend
+  docker-compose.stack.yml    the published images: db + backend (+ its pki step) + frontend
   docker-compose.single.yml   everything in one container
-  docker-compose.yml          pki + backend + frontend, built from this checkout
+  docker-compose.yml          backend (+ its pki step) + frontend, built from this checkout
   docker-compose.db.yml       optional: bundled PostgreSQL
   docker-compose.image.yml    optional: published images instead of building
   docker-compose.minio.yml    optional: bundled MinIO for attachments

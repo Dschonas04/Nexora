@@ -30,6 +30,11 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
 		os.Exit(healthcheck())
 	}
+	// "nexora pki" issues the internal certificates once and ends, see pki.go
+	// and the service "pki" in docker/docker-compose.yml.
+	if len(os.Args) > 1 && os.Args[1] == "pki" {
+		os.Exit(pki())
+	}
 
 	// Settings come from config.conf, overridden by environment variables,
 	// overridden by nothing. See internal/config and config.conf; every value

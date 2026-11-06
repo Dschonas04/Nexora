@@ -38,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [backend, frontend, pki, single]
+        service: [backend, frontend, single]
 
     steps:
       - name: Check out

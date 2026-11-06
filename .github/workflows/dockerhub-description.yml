@@ -25,11 +25,9 @@ jobs:
           - image: single
             short: Self-hosted wiki with backlinks and a knowledge graph, database included, in one container.
           - image: backend
-            short: Nexora self-hosted wiki, Go API service. Runs with nexora-frontend, nexora-pki and PostgreSQL.
+            short: Nexora self-hosted wiki, Go API service. Runs with nexora-frontend and PostgreSQL; `nexora pki` issues the internal TLS certificates.
           - image: frontend
             short: Nexora self-hosted wiki, web interface (nginx + React). Runs with nexora-backend.
-          - image: pki
-            short: Nexora self-hosted wiki, one-shot container that issues the internal TLS certificates.
     steps:
       - uses: actions/checkout@v7
       - name: Lowercase the account

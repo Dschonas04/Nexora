@@ -21,14 +21,20 @@
 name: nexora
 
 services:
-  # The certificates for traffic inside the compound. Runs once, creates a small
-  # private certificate authority and one certificate each for backend, db,
-  # minio and redis, and is then done. All the others wait for it to end.
+  # The certificates for traffic inside the compound. "nexora pki" from the
+  # backend image runs once, creates a small private certificate authority and
+  # one certificate each for backend, db, minio and redis, and is then done.
+  # All the others wait for it to end. Runs as root so it can hand each key to
+  # the user of its service.
   #
   # Repeatable: whatever already lies in the volume stays there. See
-  # pki/create.sh.
+  # backend/pki.go.
   pki:
-    build: ../pki
+    build: ../backend
+    command: ["pki"]
+    user: "0:0"
+    healthcheck:
+      disable: true
     volumes:
       - nexora_pki:/pki
     restart: "no"

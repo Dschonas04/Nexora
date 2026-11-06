@@ -4,9 +4,9 @@
 
 The Go service: pages, search, versions, attachments, accounts. Talks to PostgreSQL, serves the API behind `nexora-frontend`.
 
-This image is one of three that run together: `nexora-backend`,
-`nexora-frontend` and `nexora-pki`, plus PostgreSQL. It is not meant to run
-alone.
+This image is one of two that run together: `nexora-backend` and
+`nexora-frontend`, plus PostgreSQL. Started as `nexora pki` it issues the
+internal TLS certificates once and ends. It is not meant to run alone.
 
 ## Quick start
 
