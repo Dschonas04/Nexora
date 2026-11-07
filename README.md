@@ -313,6 +313,10 @@ The two images belong together: `nexora-backend` is the Go service (and, as
 exception: all of Nexora Free in one image, see
 [Single container](#single-container).
 
+The former `nexora-pki` image is deprecated since 3.2.0 and gets no more
+updates (last tag 3.1.2). Its job is done by `nexora-backend` with the command
+`pki`: it runs once, ends with exit code 0 and stays stopped.
+
 Templates for the home-server platforms are in
 [`templates/`](templates/README.md): CasaOS, Umbrel, and Unraid, either as two
 container templates against your own PostgreSQL or as a stack with the Compose
