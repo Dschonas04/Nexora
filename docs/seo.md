@@ -23,7 +23,7 @@ Then `docker compose up -d frontend`. At start, `frontend/tls-start.sh` writes:
 |---|---|---|
 | `<meta name="robots">` | `index, follow` | `noindex, nofollow` |
 | canonical, `og:url`, `og:image`, JSON-LD | absolute, pointing at `/login` | removed |
-| `robots.txt` | admits `/`, `/login`, assets, favicon, preview image; names the sitemap | `Disallow: /` |
+| `robots.txt` | admits `/`, `/login`, assets, favicon, preview image and the sitemap itself; names the sitemap | `Disallow: /` |
 | `sitemap.xml` | the login page | none |
 
 In addition, nginx sends `X-Robots-Tag: noindex, nofollow` on every answer of

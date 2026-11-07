@@ -156,6 +156,7 @@ Allow: /favicon.ico
 Allow: /favicon-32.png
 Allow: /apple-touch-icon.png
 Allow: /og-image.png
+Allow: /sitemap.xml
 Disallow: /
 
 Sitemap: $ADRESSE/sitemap.xml

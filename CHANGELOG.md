@@ -11,6 +11,14 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 `dschohnas/nexora-{backend,frontend}` on Docker Hub. See
 [Where the images are](README.md#where-the-images-are).
 
+## [Unreleased]
+
+### Fixed
+
+- **Search engines may read the sitemap.** With a public address set,
+  `robots.txt` names `/sitemap.xml` but also forbade it with `Disallow: /`, so
+  Google refused to read it. It is now allowed explicitly.
+
 ## [3.2.1]: 2026-11-07
 
 ### Fixed
