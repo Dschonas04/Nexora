@@ -1,4 +1,6 @@
-FROM node:26-alpine AS build
+# The build output is plain files, the same for every platform: built once,
+# natively, instead of under QEMU (npm ci hung there for an hour in v3.2.0).
+FROM --platform=$BUILDPLATFORM node:26-alpine AS build
 WORKDIR /app
 # npm ci and the lock file, exactly as in CI. npm install from package.json alone
 # resolved a different tree on the Docker host than in CI, and with two

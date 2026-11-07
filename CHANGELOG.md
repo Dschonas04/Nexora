@@ -11,6 +11,15 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 `dschohnas/nexora-{backend,frontend}` on Docker Hub. See
 [Where the images are](README.md#where-the-images-are).
 
+## [3.2.1]: 2026-11-07
+
+### Fixed
+
+- **The single image is published again.** Its arm64 build ran under QEMU and
+  hung in `npm ci` until the 60-minute limit, so 3.2.0 shipped without it. The
+  build stages now run natively and Go cross-compiles; only the final image
+  layer is assembled per platform.
+
 ## [3.2.0]: 2026-11-06
 
 ### Changed

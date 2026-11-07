@@ -1,10 +1,13 @@
 # Go 1.25, because minio-go demands at least that, see go.mod.
-FROM golang:1.27.1-alpine AS build
+# Built on the build machine's own platform and cross-compiled: under QEMU the
+# arm64 build took eight times as long and once hung for an hour (v3.2.0).
+FROM --platform=$BUILDPLATFORM golang:1.27.1-alpine AS build
+ARG TARGETOS TARGETARCH
 WORKDIR /app
 RUN apk add --no-cache git
 COPY go.mod ./
 COPY . .
-RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -trimpath -o /nexora ./
+RUN go mod tidy && CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -trimpath -o /nexora ./
 
 FROM alpine:3.24
 # Two tools the service invokes as separate processes.

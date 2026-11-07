@@ -12,13 +12,16 @@
 # Everything that has to survive lies under /data: the database, the
 # attachments, the generated session secret and the self-signed certificate.
 
-FROM golang:1.27.1-alpine AS backend
+# Built on the build machine's own platform and cross-compiled: under QEMU the
+# arm64 build took eight times as long and once hung for an hour (v3.2.0).
+FROM --platform=$BUILDPLATFORM golang:1.27.1-alpine AS backend
+ARG TARGETOS TARGETARCH
 WORKDIR /app
 RUN apk add --no-cache git
 COPY backend/ ./
-RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -trimpath -tags nur_kern -o /nexora ./
+RUN go mod tidy && CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -trimpath -tags nur_kern -o /nexora ./
 
-FROM node:26-alpine AS frontend
+FROM --platform=$BUILDPLATFORM node:26-alpine AS frontend
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
