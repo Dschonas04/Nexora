@@ -1,5 +1,7 @@
-// Grafbild: a live force simulation drawn as SVG, supporting pan, zoom, and
-// drag.
+// Grafbild: a live force simulation drawn as SVG, in the manner of Obsidian's
+// graph view: plain dots, names under them that fade out when zooming away,
+// hovering lights up a page and its neighbours and lets the rest recede, and a
+// settings panel with filters, display and forces.
 //
 // This component lives here instead of the graph view because it is reused in
 // two places: a full workspace view and a small inline graph under a page.
@@ -7,7 +9,7 @@
 // advanced in a requestAnimationFrame loop; React is only triggered to redraw
 // because putting hundreds of coordinates into state would rerender the tree
 // dozens of times per second.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { Graph, GraphNode } from "../api/client";
 import { farbeFuerAblage } from "../ablagefarben";
@@ -115,45 +117,63 @@ const TICK_MS = 1000 / 60;
 const VORLAUF_MS = 120;
 const VORLAUF_ALPHA = 0.3;
 
-// Labels.
-//
-// Each node shows its title which leads to overlaps. Labels do not move nodes;
-// they shift to one of a few fixed positions around their node. A freely
-// floating label causes worse ambiguity than a fixed offset.
-const LABEL_SCHRIFT = 12;
-const LABEL_HOEHE = 14;
-// Approximate width per character at this font size. Measuring precisely
-// would require a canvas and per-string measurement; an overestimate is fine
-// because it only makes labels shift a bit more.
-const LABEL_BREITE_JE_ZEICHEN = 6.4;
-
-interface Kasten {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+// What the settings panel controls, as in Obsidian. The forces are factors on
+// the base physics of the view, 1 is the default.
+export interface Ansicht {
+  suche: string;
+  waisen: boolean;
+  pfeile: boolean;
+  faerben: boolean;
+  /** 0 = names stay even far out, 1 = names only when zoomed in close. */
+  textSchwelle: number;
+  knotenGroesse: number;
+  linienStaerke: number;
+  zentrum: number;
+  abstossung: number;
+  verbindung: number;
+  abstand: number;
 }
 
-function ueberlappen(a: Kasten, b: Kasten): boolean {
-  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+export const ANSICHT_STANDARD: Ansicht = {
+  suche: "",
+  waisen: true,
+  pfeile: false,
+  faerben: true,
+  textSchwelle: 0.5,
+  knotenGroesse: 1,
+  linienStaerke: 1,
+  zentrum: 1,
+  abstossung: 1,
+  verbindung: 1,
+  abstand: 1,
+};
+
+const ANSICHT_SCHLUESSEL = "nexora.graph.ansicht";
+
+function ansichtLaden(): Ansicht {
+  try {
+    const roh = localStorage.getItem(ANSICHT_SCHLUESSEL);
+    if (roh) return { ...ANSICHT_STANDARD, ...JSON.parse(roh), suche: "" };
+  } catch {
+    // private window or blocked storage: defaults
+  }
+  return ANSICHT_STANDARD;
 }
 
-// Candidate anchor positions for a label, ordered by preference: right, left,
-// below, above, then further below.
-type Anker = "start" | "end" | "middle";
-const LABEL_PLAETZE: { dx: (r: number) => number; dy: (r: number) => number; anker: Anker }[] = [
-  { dx: (r) => r + 5, dy: () => 4, anker: "start" },
-  { dx: (r) => -(r + 5), dy: () => 4, anker: "end" },
-  { dx: () => 0, dy: (r) => r + 14, anker: "middle" },
-  { dx: () => 0, dy: (r) => -(r + 8), anker: "middle" },
-  { dx: () => 0, dy: (r) => r + 28, anker: "middle" },
-];
-
-// `kastenFuer` computes the bounding box of a label at a chosen anchor.
-function kastenFuer(x: number, y: number, breite: number, dx: number, dy: number, anker: Anker): Kasten {
-  const links = anker === "start" ? x + dx : anker === "end" ? x + dx - breite : x + dx - breite / 2;
-  return { x: links, y: y + dy - LABEL_HOEHE + 3, w: breite, h: LABEL_HOEHE };
+function ansichtSpeichern(a: Ansicht) {
+  try {
+    // The search is a passing filter, not a setting.
+    localStorage.setItem(ANSICHT_SCHLUESSEL, JSON.stringify({ ...a, suche: "" }));
+  } catch {
+    // ignore
+  }
 }
+
+// Zoom limits and label font size (in graph units, so it scales with the zoom
+// like in Obsidian).
+const ZOOM_MIN = 0.1;
+const ZOOM_MAX = 4;
+const LABEL_SCHRIFT = 11;
 
 interface Props {
   graph: Graph;
@@ -167,9 +187,11 @@ interface Props {
   hinweis?: string;
   legende?: boolean;
   zentrieren?: boolean;
+  /** Show the settings panel (filters, display, forces). */
+  einstellungen?: boolean;
   /** User-selected colors per space; key is the spaceId. */
   eigeneFarben?: Record<string, string>;
-    /** Callback to change a space color. If provided, the legend shows a color
+  /** Callback to change a space color. If provided, the legend shows a color
       picker; otherwise the legend is read-only. */
   onFarbe?: (spaceId: string, farbe: string) => void;
   /**
@@ -183,13 +205,57 @@ interface Props {
    * place.
    */
   faerbbar?: Set<string>;
-    /** Whether the mouse wheel zooms. In a page view only with Ctrl to avoid
+  /** Whether the mouse wheel zooms. In a page view only with Ctrl to avoid
       interfering with normal scrolling. */
   radZoom?: "immer" | "mit-strg";
 }
 
+function Regler({
+  label,
+  wert,
+  min,
+  max,
+  schritt = 0.05,
+  onWert,
+}: {
+  label: string;
+  wert: number;
+  min: number;
+  max: number;
+  schritt?: number;
+  onWert: (v: number) => void;
+}) {
+  return (
+    <label className="graph-regler">
+      <span>{label}</span>
+      <input type="range" min={min} max={max} step={schritt} value={wert} onChange={(e) => onWert(+e.target.value)} />
+    </label>
+  );
+}
+
+function Schalter({ label, wert, onWert }: { label: string; wert: boolean; onWert: (v: boolean) => void }) {
+  return (
+    <label className="graph-schalter">
+      <span>{label}</span>
+      <input type="checkbox" checked={wert} onChange={(e) => onWert(e.target.checked)} />
+    </label>
+  );
+}
+
+function Abschnitt({ titel, offen, onKlick, children }: { titel: string; offen: boolean; onKlick: () => void; children: React.ReactNode }) {
+  return (
+    <div className="graph-abschnitt">
+      <button type="button" className="graph-abschnitt-kopf" onClick={onKlick} aria-expanded={offen}>
+        <span className="graph-abschnitt-pfeil">{offen ? "▾" : "▸"}</span>
+        {titel}
+      </button>
+      {offen && <div className="graph-abschnitt-inhalt">{children}</div>}
+    </div>
+  );
+}
+
 export default function Grafbild({
-  graph,
+  graph: graphRoh,
   onOeffnen,
   mitte,
   physik = PHYSIK_GROSS,
@@ -197,6 +263,7 @@ export default function Grafbild({
   hinweis,
   legende = false,
   zentrieren = false,
+  einstellungen = false,
   eigeneFarben,
   onFarbe,
   faerbbar,
@@ -204,19 +271,62 @@ export default function Grafbild({
 }: Props) {
   const rahmenRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const pfeilId = "graph-pfeil-" + useId().replace(/:/g, "");
   const [groesse, setGroesse] = useState({ w: 900, h: hoehe ?? 600 });
   const [blick, setBlick] = useState({ x: 0, y: 0, scale: 1 });
   const [zeiger, setZeiger] = useState<string | null>(null);
   const [, neuZeichnen] = useState(0);
+  const [ansicht, setAnsicht] = useState<Ansicht>(() =>
+    // The small graph under a page has no panel and always shows its names.
+    einstellungen ? ansichtLaden() : { ...ANSICHT_STANDARD, textSchwelle: 0 },
+  );
+  const [panelOffen, setPanelOffen] = useState(false);
+  const [offeneAbschnitte, setOffeneAbschnitte] = useState<Record<string, boolean>>({ filter: true, darstellung: false, kraefte: false });
+
+  // Filters: search and orphans narrow the set of pages, the simulation then
+  // only knows the visible ones (as in Obsidian).
+  const graph = useMemo<Graph>(() => {
+    const q = ansicht.suche.trim().toLowerCase();
+    if (!q && ansicht.waisen) return graphRoh;
+    const grad: Record<string, number> = {};
+    for (const e of graphRoh.edges) {
+      grad[e.source] = (grad[e.source] || 0) + 1;
+      grad[e.target] = (grad[e.target] || 0) + 1;
+    }
+    const nodes = graphRoh.nodes.filter(
+      (n) => (!q || (n.title || "").toLowerCase().includes(q)) && (ansicht.waisen || grad[n.id] || n.id === mitte),
+    );
+    const ids = new Set(nodes.map((n) => n.id));
+    return { nodes, edges: graphRoh.edges.filter((e) => ids.has(e.source) && ids.has(e.target)) };
+  }, [graphRoh, ansicht.suche, ansicht.waisen, mitte]);
+
+  const aendern = (teil: Partial<Ansicht>, heizen = 0) => {
+    setAnsicht((vorher) => {
+      const neu = { ...vorher, ...teil };
+      if (einstellungen) ansichtSpeichern(neu);
+      return neu;
+    });
+    if (heizen) anheizen(heizen);
+  };
 
   const groesseRef = useRef(groesse);
   groesseRef.current = groesse;
   const blickRef = useRef(blick);
   blickRef.current = blick;
   const physikRef = useRef(physik);
-  physikRef.current = physik;
+  physikRef.current = {
+    ...physik,
+    schwerkraft: physik.schwerkraft * ansicht.zentrum,
+    abstossung: physik.abstossung * ansicht.abstossung,
+    federEltern: physik.federEltern * ansicht.verbindung,
+    federVerweis: physik.federVerweis * ansicht.verbindung,
+    ruheEltern: physik.ruheEltern * ansicht.abstand,
+    ruheVerweis: physik.ruheVerweis * ansicht.abstand,
+  };
   const mitteRef = useRef(mitte);
   mitteRef.current = mitte;
+  const ansichtRef = useRef(ansicht);
+  ansichtRef.current = ansicht;
 
   const farbe = ablageFarben(graph, eigeneFarben);
 
@@ -247,14 +357,17 @@ export default function Grafbild({
     }
     return { grad, nachbarn, legende: eintraege };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idsKey]);
+  }, [idsKey, graph.edges.length]);
+  const gradRef = useRef(abgeleitet.grad);
+  gradRef.current = abgeleitet.grad;
 
-  // The center node is slightly larger: it is the reason the graph exists.
+  // Small dots that grow with the number of links, like in Obsidian; the
+  // centre page of the small graph a little larger.
   const radius = (id: string) =>
-    (id === mitte ? 3 : 0) + 6 + Math.min(7, Math.sqrt(abgeleitet.grad[id] || 0) * 2.2);
+    ((id === mitteRef.current ? 2 : 0) + 4 + Math.min(8, Math.sqrt(gradRef.current[id] || 0) * 1.7)) *
+    ansichtRef.current.knotenGroesse;
 
   const teilchen = useRef<Record<string, Teilchen>>({});
-  const beschriftung = useRef<Record<string, { dx: number; dy: number; anker: Anker }>>({});
   const alpha = useRef(0);
   const alphaZiel = useRef(0);
   const raf = useRef<number | null>(null);
@@ -262,6 +375,10 @@ export default function Grafbild({
   const zeitRest = useRef(0);
   const gehalten = useRef<{ id: string; x: number; y: number } | null>(null);
   const ablageVon = useRef<Record<string, string>>({});
+  // After the first unfolding the view fits itself to the graph once it has
+  // come to rest.
+  const einpassenNachRuhe = useRef(false);
+  const blickAnimation = useRef<number | null>(null);
 
   const zug = useRef<{
     art: "knoten" | "flaeche" | null;
@@ -303,6 +420,43 @@ export default function Grafbild({
     }
     neuZeichnen((v) => v + 1);
   }, [groesse.w, groesse.h]);
+
+  // Move the view smoothly to a target instead of jumping.
+  const blickNach = (ziel: { x: number; y: number; scale: number }, ms = 350) => {
+    if (blickAnimation.current != null) cancelAnimationFrame(blickAnimation.current);
+    const von = blickRef.current;
+    const start = performance.now();
+    const weiter = (jetzt: number) => {
+      const t = Math.min(1, (jetzt - start) / ms);
+      const e = 1 - Math.pow(1 - t, 3);
+      setBlick({
+        x: von.x + (ziel.x - von.x) * e,
+        y: von.y + (ziel.y - von.y) * e,
+        scale: von.scale + (ziel.scale - von.scale) * e,
+      });
+      blickAnimation.current = t < 1 ? requestAnimationFrame(weiter) : null;
+    };
+    blickAnimation.current = requestAnimationFrame(weiter);
+  };
+
+  // Fit the whole graph into the frame, never closer than 1:1.
+  const einpassen = (weich = true) => {
+    const ts = Object.values(teilchen.current);
+    if (!ts.length) return;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const t of ts) {
+      x0 = Math.min(x0, t.x);
+      y0 = Math.min(y0, t.y);
+      x1 = Math.max(x1, t.x);
+      y1 = Math.max(y1, t.y);
+    }
+    const { w, h } = groesseRef.current;
+    const rand = 60;
+    const scale = Math.max(ZOOM_MIN, Math.min(1, w / (x1 - x0 + rand * 2), h / (y1 - y0 + rand * 2)));
+    const ziel = { scale, x: w / 2 - ((x0 + x1) / 2) * scale, y: h / 2 - ((y0 + y1) / 2) * scale };
+    if (weich) blickNach(ziel);
+    else setBlick(ziel);
+  };
 
   // One simulation step over the current particle set.
   const schritt = () => {
@@ -468,47 +622,6 @@ export default function Grafbild({
     }
   };
 
-  // Assign each label a position that minimizes overlap.
-  //
-  // Greedy single-pass algorithm: nodes with highest degree get preference and
-  // keep the best spot on the right; others yield. A true optimum is not worth
-  // the CPU time because layout changes frequently.
-  const beschriftungenVerteilen = () => {
-    const p = teilchen.current;
-    const reihe = [...graph.nodes].sort(
-      (a, b) => (abgeleitet.grad[b.id] || 0) - (abgeleitet.grad[a.id] || 0),
-    );
-    const belegt: Kasten[] = [];
-    for (const n of reihe) {
-      const pp = p[n.id];
-      if (!pp) continue;
-      const r = radius(n.id);
-      belegt.push({ x: pp.x - r, y: pp.y - r, w: r * 2, h: r * 2 });
-    }
-    const gewaehlt: Record<string, { dx: number; dy: number; anker: Anker }> = {};
-    for (const n of reihe) {
-      const pp = p[n.id];
-      if (!pp) continue;
-      const r = radius(n.id);
-      const breite = (n.title || "Untitled").length * LABEL_BREITE_JE_ZEICHEN;
-      let platz = LABEL_PLAETZE[0];
-      let kasten = kastenFuer(pp.x, pp.y, breite, platz.dx(r), platz.dy(r), platz.anker);
-      for (const k of LABEL_PLAETZE) {
-        const versuch = kastenFuer(pp.x, pp.y, breite, k.dx(r), k.dy(r), k.anker);
-        if (!belegt.some((b) => ueberlappen(b, versuch))) {
-          platz = k;
-          kasten = versuch;
-          break;
-        }
-      }
-      // Either way it occupies space: even the last fallback reserves the
-      // spot for the next label, otherwise two labels that both gave up would
-      // end up overlapping.
-      belegt.push(kasten);
-      gewaehlt[n.id] = { dx: platz.dx(r), dy: platz.dy(r), anker: platz.anker };
-    }
-    beschriftung.current = gewaehlt;
-  };
 
   // One tick: temperature moves toward its target, then the forces act.
   const takt = () => {
@@ -530,15 +643,16 @@ export default function Grafbild({
       n++;
     }
     if (n === 4 || zeitRest.current < 0) zeitRest.current = 0;
-    if (n > 0) {
-      beschriftungenVerteilen();
-      neuZeichnen((v) => v + 1);
-    }
+    if (n > 0) neuZeichnen((v) => v + 1);
     if (laeuft()) {
       raf.current = requestAnimationFrame(schleife);
     } else {
       raf.current = null;
       letzterTakt.current = null;
+      if (einpassenNachRuhe.current) {
+        einpassenNachRuhe.current = false;
+        einpassen();
+      }
     }
   };
 
@@ -556,24 +670,16 @@ export default function Grafbild({
     starten();
   };
 
-  // Reinitialize particles whenever the node set changes, then run the
-  // simulation. Known nodes retain their positions across data updates.
-  useEffect(() => {
+  // Place nodes without a position: next to a neighbour that already has a
+  // place, otherwise on a sunflower spiral around the middle. A ring placed
+  // everything at the same distance and the first second was an explosion
+  // outward; the spiral spreads evenly without symmetries the forces cannot
+  // break.
+  const platzieren = (naechste: Record<string, Teilchen>) => {
     const { w, h } = groesseRef.current;
-    const naechste: Record<string, Teilchen> = {};
-    const ablagen: Record<string, string> = {};
-    let neu = 0;
-    graph.nodes.forEach((node) => {
-      ablagen[node.id] = ablageSchluessel(node);
-      const vorher = teilchen.current[node.id];
-      if (vorher) naechste[node.id] = vorher;
-    });
-    // New nodes: next to a neighbour that already has a place, otherwise on
-    // a sunflower spiral around the middle. A ring placed everything at the
-    // same distance and the first second was an explosion outward; the
-    // spiral spreads evenly without symmetries the forces cannot break.
     const goldenerWinkel = Math.PI * (3 - Math.sqrt(5));
     let spirale = 0;
+    let neu = 0;
     for (const node of graph.nodes) {
       if (naechste[node.id]) continue;
       neu++;
@@ -598,22 +704,38 @@ export default function Grafbild({
         naechste[node.id] = { x: w / 2 + Math.cos(ang) * r, y: h / 2 + Math.sin(ang) * r, vx: 0, vy: 0 };
       }
     }
+    return neu;
+  };
+
+  // Compute the rough unfolding before the first frame and only animate the
+  // settling; afterwards fit the view.
+  const entfalten = () => {
+    alpha.current = 1;
+    alphaZiel.current = 0;
+    const ende = performance.now() + VORLAUF_MS;
+    while (alpha.current > VORLAUF_ALPHA && performance.now() < ende) takt();
+    einpassen(false);
+    einpassenNachRuhe.current = true;
+    neuZeichnen((v) => v + 1);
+    starten();
+  };
+
+  // Reinitialize particles whenever the node set changes, then run the
+  // simulation. Known nodes retain their positions across data updates.
+  useEffect(() => {
+    const naechste: Record<string, Teilchen> = {};
+    const ablagen: Record<string, string> = {};
+    for (const node of graph.nodes) {
+      ablagen[node.id] = ablageSchluessel(node);
+      const vorher = teilchen.current[node.id];
+      if (vorher) naechste[node.id] = vorher;
+    }
+    const neu = platzieren(naechste);
     teilchen.current = naechste;
     ablageVon.current = ablagen;
     if (graph.nodes.length) {
-      if (neu > graph.nodes.length / 2) {
-        // Mostly new: compute the rough unfolding before the first frame
-        // and only animate the settling.
-        alpha.current = 1;
-        alphaZiel.current = 0;
-        const ende = performance.now() + VORLAUF_MS;
-        while (alpha.current > VORLAUF_ALPHA && performance.now() < ende) takt();
-        beschriftungenVerteilen();
-        neuZeichnen((v) => v + 1);
-        starten();
-      } else {
-        anheizen(0.5);
-      }
+      if (neu > graph.nodes.length / 2) entfalten();
+      else anheizen(0.5);
     }
     return () => {
       if (raf.current != null) cancelAnimationFrame(raf.current);
@@ -621,6 +743,16 @@ export default function Grafbild({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idsKey]);
+
+  // "Animate" in Obsidian: throw everything up again and let it settle anew.
+  const animieren = () => {
+    teilchen.current = {};
+    platzieren(teilchen.current);
+    alpha.current = 1;
+    alphaZiel.current = 0;
+    einpassenNachRuhe.current = true;
+    starten();
+  };
 
   // Convert screen coordinates to simulation coordinates, accounting for
   // pan and zoom. Every pointer handler needs this because the physics loop
@@ -635,6 +767,11 @@ export default function Grafbild({
   // beneath the pointer. Capture the pointer so a quick drag that leaves the
   // SVG remains tracked.
   const zeigerAb = (e: React.PointerEvent) => {
+    if (blickAnimation.current != null) {
+      cancelAnimationFrame(blickAnimation.current);
+      blickAnimation.current = null;
+    }
+    einpassenNachRuhe.current = false;
     const treffer = (e.target as Element).closest?.("[data-node]") as Element | null;
     svgRef.current?.setPointerCapture(e.pointerId);
     if (treffer) {
@@ -664,8 +801,8 @@ export default function Grafbild({
         offY: 0,
         startX: e.clientX,
         startY: e.clientY,
-        panX: blick.x,
-        panY: blick.y,
+        panX: blickRef.current.x,
+        panY: blickRef.current.y,
         bewegt: false,
       };
     }
@@ -706,62 +843,61 @@ export default function Grafbild({
   };
 
   // Zoom toward the pointer, not the center: the point under the pointer
-  // should remain fixed, adjust the transform accordingly. Limit the scale so
-  // the graph neither vanishes nor becomes a single node filling the window.
+  // should remain fixed. Proportional to the wheel distance, so a trackpad
+  // zooms smoothly and a mouse wheel in steps.
   const amRad = (e: React.WheelEvent) => {
     if (radZoom === "mit-strg" && !e.ctrlKey && !e.metaKey) return;
     e.preventDefault();
-    const faktor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+    if (blickAnimation.current != null) {
+      cancelAnimationFrame(blickAnimation.current);
+      blickAnimation.current = null;
+    }
+    einpassenNachRuhe.current = false;
+    const faktor = Math.exp(-Math.max(-100, Math.min(100, e.deltaY)) * 0.0025);
     const rect = svgRef.current!.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     setBlick((v) => {
-      const scale = Math.max(0.3, Math.min(3, v.scale * faktor));
+      const scale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, v.scale * faktor));
       return { scale, x: mx - ((mx - v.x) / v.scale) * scale, y: my - ((my - v.y) / v.scale) * scale };
     });
   };
 
-  // Reset view: restore the default viewport and nudge the simulation so it
-  // recenters.
+  // Centre: fit the graph into the frame and nudge the simulation.
   const zurueck = () => {
-    setBlick({ x: 0, y: 0, scale: 1 });
-    if (graph.nodes.length) anheizen(0.6);
+    einpassen();
+    if (graph.nodes.length) anheizen(0.3);
   };
 
   const p = teilchen.current;
-  const deckkraft = (id: string) => {
-    if (!zeiger) return 1;
-    if (id === zeiger || abgeleitet.nachbarn[zeiger]?.has(id)) return 1;
-    return 0.15;
-  };
+  const nachbarVon = zeiger ? abgeleitet.nachbarn[zeiger] : undefined;
+  const imFokus = (id: string) => !zeiger || id === zeiger || !!nachbarVon?.has(id);
 
-  // Every node shows its name at all zoom levels. Hiding labels until zoom
-  // kept the image tidy but made it useless: a cloud of unlabeled points
-  // does not convey what is related to what.
+  // Names fade with the zoom like in Obsidian: from a threshold on they
+  // appear, below it the picture is only dots and lines. The page under the
+  // pointer and its neighbours always show their names.
+  const schwelle = 0.25 + ansicht.textSchwelle * 1.1;
+  const textDeckkraft = Math.max(0, Math.min(1, (blick.scale - schwelle) / 0.3 + 1));
+  const legendeZeigen = legende && ansicht.faerben && abgeleitet.legende.length > (onFarbe ? 0 : 1);
+
   return (
-    <div className="graph-wrap" ref={rahmenRef} style={hoehe ? { height: hoehe } : undefined}>
+    <div className={"graph-wrap" + (zeiger ? " hat-fokus" : "")} ref={rahmenRef} style={hoehe ? { height: hoehe } : undefined}>
       {hinweis && <div className="graph-hint">{hinweis}</div>}
       {/* A legend of a single entry says nothing the graph does not show
           already -- except when the colour is chosen at its dot. Then it is no
           longer a sign but the control panel, and were it missing, a space in a
           workspace with only one space could get its colour nowhere. */}
-      {legende && abgeleitet.legende.length > (onFarbe ? 0 : 1) && (
+      {legendeZeigen && (
         <div className="graph-legend">
           {abgeleitet.legende.map((l) => (
             <span key={l.key} className="graph-legend-item">
-                {/* The dot itself is the color picker: click it, choose a color,
-                  done. A separate button would be an extra control for the
-                  same action, and the dot is precisely what the user intends
-                  to change. For "No space" only the dot is shown; there is
-                  no space to attach a color to. */}
+              {/* The dot itself is the color picker: click it, choose a color,
+                  done. For "No space" only the dot is shown; there is no space
+                  to attach a color to. */}
               {onFarbe && l.key !== "__none__" && (!faerbbar || faerbbar.has(l.key)) ? (
                 <label className="graph-legend-dot-wahl" title="Colour of this space">
                   <span className="graph-legend-dot" style={{ background: farbe[l.key] }} />
-                  <input
-                    type="color"
-                    value={farbe[l.key]}
-                    onChange={(e) => onFarbe(l.key, e.target.value)}
-                  />
+                  <input type="color" value={farbe[l.key]} onChange={(e) => onFarbe(l.key, e.target.value)} />
                 </label>
               ) : (
                 <span className="graph-legend-dot" style={{ background: farbe[l.key] }} />
@@ -771,10 +907,65 @@ export default function Grafbild({
           ))}
         </div>
       )}
-      {zentrieren && (
-        <button className="btn graph-reset" onClick={zurueck}>
-          Zentrieren
-        </button>
+      {(zentrieren || einstellungen) && (
+        <div className="graph-werkzeuge">
+          {zentrieren && (
+            <button className="btn graph-reset" onClick={zurueck}>
+              Zentrieren
+            </button>
+          )}
+          {einstellungen && (
+            <button
+              className={"btn graph-zahnrad" + (panelOffen ? " aktiv" : "")}
+              onClick={() => setPanelOffen((o) => !o)}
+              title="Graph settings"
+              aria-label="Graph settings"
+              aria-expanded={panelOffen}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
+      {einstellungen && panelOffen && (
+        <div className="graph-panel">
+          <Abschnitt titel="Filters" offen={offeneAbschnitte.filter} onKlick={() => setOffeneAbschnitte((o) => ({ ...o, filter: !o.filter }))}>
+            <input
+              className="graph-suche"
+              type="search"
+              placeholder="Search pages…"
+              value={ansicht.suche}
+              onChange={(e) => aendern({ suche: e.target.value })}
+            />
+            <Schalter label="Orphans" wert={ansicht.waisen} onWert={(v) => aendern({ waisen: v })} />
+          </Abschnitt>
+          <Abschnitt titel="Display" offen={offeneAbschnitte.darstellung} onKlick={() => setOffeneAbschnitte((o) => ({ ...o, darstellung: !o.darstellung }))}>
+            <Schalter label="Arrows" wert={ansicht.pfeile} onWert={(v) => aendern({ pfeile: v })} />
+            <Schalter label="Colour by space" wert={ansicht.faerben} onWert={(v) => aendern({ faerben: v })} />
+            <Regler label="Text fade threshold" wert={ansicht.textSchwelle} min={0} max={1} onWert={(v) => aendern({ textSchwelle: v })} />
+            <Regler label="Node size" wert={ansicht.knotenGroesse} min={0.4} max={2.5} onWert={(v) => aendern({ knotenGroesse: v }, 0.2)} />
+            <Regler label="Link thickness" wert={ansicht.linienStaerke} min={0.3} max={4} onWert={(v) => aendern({ linienStaerke: v })} />
+            <button type="button" className="btn graph-animieren" onClick={animieren}>
+              Animate
+            </button>
+          </Abschnitt>
+          <Abschnitt titel="Forces" offen={offeneAbschnitte.kraefte} onKlick={() => setOffeneAbschnitte((o) => ({ ...o, kraefte: !o.kraefte }))}>
+            <Regler label="Centre force" wert={ansicht.zentrum} min={0} max={3} onWert={(v) => aendern({ zentrum: v }, 0.3)} />
+            <Regler label="Repel force" wert={ansicht.abstossung} min={0} max={3} onWert={(v) => aendern({ abstossung: v }, 0.3)} />
+            <Regler label="Link force" wert={ansicht.verbindung} min={0} max={2} onWert={(v) => aendern({ verbindung: v }, 0.3)} />
+            <Regler label="Link distance" wert={ansicht.abstand} min={0.2} max={3} onWert={(v) => aendern({ abstand: v }, 0.3)} />
+            <button
+              type="button"
+              className="btn graph-animieren"
+              onClick={() => aendern({ zentrum: 1, abstossung: 1, verbindung: 1, abstand: 1 }, 0.5)}
+            >
+              Reset
+            </button>
+          </Abschnitt>
+        </div>
       )}
       <svg
         ref={svgRef}
@@ -786,31 +977,39 @@ export default function Grafbild({
         onPointerUp={zeigerAuf}
         onWheel={amRad}
       >
+        <defs>
+          <marker id={pfeilId} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" className="graph-pfeil" />
+          </marker>
+        </defs>
         <g transform={`translate(${blick.x}, ${blick.y}) scale(${blick.scale})`}>
           {graph.edges.map((kante, i) => {
             const a = p[kante.source];
             const b = p[kante.target];
             if (!a || !b) return null;
-            const hell = zeiger && (kante.source === zeiger || kante.target === zeiger);
-            const blass = zeiger && !hell;
+            const hell = !!zeiger && (kante.source === zeiger || kante.target === zeiger);
+            // With arrows the line ends at the edge of the target circle,
+            // otherwise the tip would hide under the dot.
+            let x2 = b.x;
+            let y2 = b.y;
+            if (ansicht.pfeile) {
+              const dx = b.x - a.x;
+              const dy = b.y - a.y;
+              const l = Math.hypot(dx, dy) || 1;
+              const r = radius(kante.target) + 1.5;
+              x2 = b.x - (dx / l) * r;
+              y2 = b.y - (dy / l) * r;
+            }
             return (
               <line
                 key={i}
                 x1={a.x}
                 y1={a.y}
-                x2={b.x}
-                y2={b.y}
-                // Colors live in the stylesheet, not as attributes: if set here
-                // they'd be tied to a base tone and could make light lines sit
-                // on light text in dark themes.
-                className={
-                  "graph-kante" +
-                  (kante.kind === "parent" ? " eltern" : "") +
-                  (hell ? " betont" : "")
-                }
-                strokeWidth={kante.kind === "parent" ? 1.6 : 1}
-                strokeDasharray={kante.kind === "link" ? "4 3" : undefined}
-                opacity={blass ? 0.12 : 1}
+                x2={x2}
+                y2={y2}
+                className={"graph-kante" + (hell ? " betont" : zeiger ? " blass" : "")}
+                strokeWidth={(hell ? 1.6 : 1) * ansicht.linienStaerke}
+                markerEnd={ansicht.pfeile ? `url(#${pfeilId})` : undefined}
               />
             );
           })}
@@ -818,39 +1017,32 @@ export default function Grafbild({
             const pp = p[node.id];
             if (!pp) return null;
             const r = radius(node.id);
-            const platz = beschriftung.current[node.id] ?? { dx: r + 5, dy: 4, anker: "start" as Anker };
-            const betont = zeiger === node.id || node.id === mitte;
+            const fokus = imFokus(node.id);
+            const selbst = zeiger === node.id;
+            const text = zeiger ? (fokus ? 1 : 0) : node.id === mitte ? Math.max(textDeckkraft, 1) : textDeckkraft;
             return (
               <g
                 key={node.id}
                 data-node={node.id}
                 transform={`translate(${pp.x}, ${pp.y})`}
-                className="graph-node"
-                opacity={deckkraft(node.id)}
+                className={"graph-node" + (fokus ? "" : " blass")}
                 onPointerEnter={() => setZeiger(node.id)}
                 onPointerLeave={() => setZeiger(null)}
               >
+                {/* A larger invisible circle makes small dots easy to grab. */}
+                <circle r={Math.max(r + 4, 10)} className="graph-treffer" />
                 <circle
-                  r={zeiger === node.id ? r + 2 : r}
-                  fill={farbe[ablageSchluessel(node)] ?? "#2383e2"}
-                  // The stroke color should match the page background so nodes
-                  // stand out from the lines behind them: light on light, dark on dark.
-                  className={"graph-knoten" + (betont ? " betont" : "")}
-                  strokeWidth={betont ? 2 : 1}
+                  r={selbst ? r * 1.25 : r}
+                  fill={selbst ? undefined : ansicht.faerben ? farbe[ablageSchluessel(node)] : undefined}
+                  className={"graph-knoten" + (selbst ? " betont" : "") + (node.id === mitte ? " mitte" : "")}
                 />
-                {/* The outline around letters keeps a name readable where it
-                  crosses a line, overlap avoidance manages labels with
-                  respect to each other, not the edges. */}
                 <text
-                  x={platz.dx}
-                  y={platz.dy}
-                  textAnchor={platz.anker}
+                  y={r + LABEL_SCHRIFT + 2}
+                  textAnchor="middle"
                   fontSize={LABEL_SCHRIFT}
-                  className="graph-name"
+                  className={"graph-name" + (selbst ? " betont" : "")}
+                  opacity={text}
                   fontWeight={node.id === mitte ? 600 : undefined}
-                  strokeWidth={3.5}
-                  paintOrder="stroke"
-                  strokeLinejoin="round"
                 >
                   {node.title || "Untitled"}
                 </text>

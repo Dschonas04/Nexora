@@ -1310,29 +1310,146 @@ textarea::placeholder {
 }
 /* The graph draws with the colours of the base tone instead of fixed ones:
    otherwise a picture of light lines and dark type would stand in a dark
-   window. */
-.graph-kante {
-  stroke: var(--border);
+   window. Like Obsidian: grey dots without a ring, thin pale lines, the page
+   under the pointer in the accent colour, everything else recedes softly. */
+.graph-wrap {
+  --graph-punkt: color-mix(in srgb, var(--muted) 85%, var(--text));
+  --graph-linie: color-mix(in srgb, var(--muted) 45%, transparent);
 }
-.graph-kante.eltern {
-  stroke: var(--muted);
+.graph-node {
+  transition: opacity 0.2s ease;
+}
+.graph-node.blass {
+  opacity: 0.18;
+}
+.graph-treffer {
+  fill: transparent;
+}
+.graph-knoten {
+  transition: r 0.15s ease, fill 0.15s ease;
+}
+.graph-knoten:not([fill]) {
+  fill: var(--graph-punkt);
+}
+.graph-knoten.betont {
+  fill: var(--accent);
+}
+.graph-kante {
+  stroke: var(--graph-linie);
+  transition: opacity 0.2s ease, stroke 0.2s ease;
+}
+.graph-kante.blass {
+  opacity: 0.12;
 }
 .graph-kante.betont {
   stroke: var(--accent);
 }
-.graph-knoten {
-  /* The border is the page's ground: that is how a node stands out from the
-     lines running past behind it. */
-  stroke: var(--bg);
-}
-.graph-knoten.betont {
-  stroke: var(--text);
+.graph-pfeil {
+  fill: var(--graph-linie);
 }
 .graph-name {
+  fill: var(--muted);
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.graph-name.betont {
   fill: var(--text);
-  /* The halo around the letters is the ground itself, so that a name stays
-     readable where it crosses a line. */
-  stroke: var(--bg);
+}
+.graph-werkzeuge {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  display: flex;
+  gap: 6px;
+  z-index: 3;
+}
+.graph-zahnrad {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 7px;
+  color: var(--muted);
+}
+.graph-zahnrad.aktiv,
+.graph-zahnrad:hover {
+  color: var(--text);
+}
+.graph-panel {
+  position: absolute;
+  top: 46px;
+  right: 14px;
+  width: 250px;
+  max-height: calc(100% - 60px);
+  overflow-y: auto;
+  background: var(--flaeche);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  font-size: 13px;
+  z-index: 3;
+}
+.graph-abschnitt + .graph-abschnitt {
+  border-top: 1px solid var(--border);
+}
+.graph-abschnitt-kopf {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 12px;
+  background: none;
+  border: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.graph-abschnitt-pfeil {
+  width: 10px;
+  color: var(--muted);
+}
+.graph-abschnitt-inhalt {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+.graph-suche {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 9px;
+  font-size: 13px;
+  background: var(--flaeche);
+  color: var(--text);
+  outline: none;
+}
+.graph-suche:focus {
+  border-color: var(--accent);
+}
+.graph-schalter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text);
+  cursor: pointer;
+}
+.graph-schalter input {
+  accent-color: var(--accent);
+}
+.graph-regler {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.graph-regler input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.graph-animieren {
+  align-self: stretch;
 }
 
 .graph-hint {
@@ -1346,12 +1463,6 @@ textarea::placeholder {
   padding: 4px 8px;
   border-radius: var(--radius);
   pointer-events: none;
-  z-index: 2;
-}
-.graph-reset {
-  position: absolute;
-  top: 10px;
-  right: 14px;
   z-index: 2;
 }
 .graph-legend {

@@ -55,9 +55,9 @@ export default function GraphView() {
       <Grafbild
         graph={graph}
         onOeffnen={(id) => nav(`/page/${id}`)}
-        hinweis="Drag a node · drag the background · scroll to zoom · the dot in the legend colours the space"
         legende
         zentrieren
+        einstellungen
         eigeneFarben={eigeneFarben}
         onFarbe={faerbbar.size > 0 ? farbeSetzen : undefined}
         faerbbar={faerbbar}
