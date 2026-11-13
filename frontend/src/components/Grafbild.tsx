@@ -38,47 +38,82 @@ interface Teilchen {
   vy: number;
 }
 
-// Physics parameters. Nodes repel each other, edges act like springs
-// (parent links stiffer than soft references), and a mild centering gravity
-// keeps the layout overall centered.
+// Physics parameters, modelled on d3-force:
+//
+// - Repulsion falls off with 1/distance (not 1/distance²) and stops at a
+//   range. 1/d² clumped the middle and flung loose nodes far out; the cut-off
+//   stops distant clusters from pushing each other off the screen.
+// - Edges are springs whose stiffness is divided by the smaller degree of
+//   their ends, and whose pull is shared by degree: a hub with twenty pages
+//   does not get yanked around by each of them, a leaf follows its hub.
+// - Collision keeps circles apart independent of temperature, so nodes never
+//   end up on top of each other, even after the layout has cooled.
 export interface Physik {
+  /** Strength of the mutual repulsion (force ≈ abstossung / distance). */
   abstossung: number;
+  /** Distance beyond which nodes no longer repel each other. */
+  reichweite: number;
+  /** Spring strength factor for parent links and for references. */
   federEltern: number;
   federVerweis: number;
+  /** Rest length of the springs, measured between the circle edges. */
   ruheEltern: number;
   ruheVerweis: number;
+  /** Pull toward the middle; keeps unconnected pages in view. */
   schwerkraft: number;
+  /** Pull toward the centre of the own space, so spaces form clusters. */
   gleicheAblage: number;
+  /** Minimum gap between two circles. */
+  luecke: number;
 }
 
 // Physics constants for the large workspace view.
 export const PHYSIK_GROSS: Physik = {
-  abstossung: 13000,
-  federEltern: 0.006,
-  federVerweis: 0.0022,
-  ruheEltern: 95,
-  ruheVerweis: 210,
-  schwerkraft: 0.014,
-  gleicheAblage: 0.0016,
+  abstossung: 200,
+  reichweite: 700,
+  federEltern: 0.9,
+  federVerweis: 0.35,
+  ruheEltern: 55,
+  ruheVerweis: 120,
+  schwerkraft: 0.035,
+  gleicheAblage: 0.025,
+  luecke: 10,
 };
 
 // Physics constants for the small inline graph: fewer nodes, less space. The
 // large-view constants would cause a few nodes to fly to the edges here.
 export const PHYSIK_KLEIN: Physik = {
-  abstossung: 2600,
-  federEltern: 0.010,
-  federVerweis: 0.006,
-  ruheEltern: 62,
-  ruheVerweis: 105,
-  schwerkraft: 0.035,
+  abstossung: 140,
+  reichweite: 300,
+  federEltern: 0.9,
+  federVerweis: 0.6,
+  ruheEltern: 45,
+  ruheVerweis: 75,
+  schwerkraft: 0.07,
   gleicheAblage: 0,
+  luecke: 8,
 };
 
-const GESCHWINDIGKEIT_DAEMPFUNG = 0.82;
-const ALPHA_ABFALL = 0.985;
-const ALPHA_MIN = 0.02;
-const ZUG_ALPHA = 0.35; // keeps the simulation warm while the user drags
+// Friction per tick: the share of velocity that is lost.
+const REIBUNG = 0.42;
+// Upper bound per tick, against single nodes shooting off.
+const MAX_TEMPO = 35;
+// Below this distance repulsion no longer grows; avoids huge kicks when two
+// nodes start at the same point.
+const ABSTAND_MIN = 24;
+// Temperature: it moves toward `alphaZiel` instead of jumping. Cooling from 1
+// to ALPHA_MIN takes about 300 ticks (five seconds at 60 frames).
+const ALPHA_MIN = 0.004;
+const ALPHA_ABFALL = 1 - Math.pow(ALPHA_MIN, 1 / 300);
+const ZUG_ALPHA = 0.3; // keeps the simulation warm while the user drags
 const ZUG_SCHWELLE = 4; // pixels threshold above which a press is a drag, not a click
+// The simulation ticks at a fixed rate, independent of the display: on a
+// 120 Hz screen it used to run twice as fast and twice as nervous.
+const TICK_MS = 1000 / 60;
+// When a graph appears, the first ticks are computed before the first frame,
+// so the layout unfolds from a rough shape instead of exploding from a ring.
+const VORLAUF_MS = 120;
+const VORLAUF_ALPHA = 0.3;
 
 // Labels.
 //
@@ -221,7 +256,10 @@ export default function Grafbild({
   const teilchen = useRef<Record<string, Teilchen>>({});
   const beschriftung = useRef<Record<string, { dx: number; dy: number; anker: Anker }>>({});
   const alpha = useRef(0);
+  const alphaZiel = useRef(0);
   const raf = useRef<number | null>(null);
+  const letzterTakt = useRef<number | null>(null);
+  const zeitRest = useRef(0);
   const gehalten = useRef<{ id: string; x: number; y: number } | null>(null);
   const ablageVon = useRef<Record<string, string>>({});
 
@@ -247,6 +285,25 @@ export default function Grafbild({
     return () => ro.disconnect();
   }, [hoehe]);
 
+  // Keep the picture where it was when the frame changes size: shift every
+  // node by the movement of the centre. Without this a cooled graph stayed
+  // in the old corner after a window resize.
+  const mitteVorher = useRef<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    const neu = { x: groesse.w / 2, y: groesse.h / 2 };
+    const alt = mitteVorher.current;
+    mitteVorher.current = neu;
+    if (!alt) return;
+    const dx = neu.x - alt.x;
+    const dy = neu.y - alt.y;
+    if (!dx && !dy) return;
+    for (const t of Object.values(teilchen.current)) {
+      t.x += dx;
+      t.y += dy;
+    }
+    neuZeichnen((v) => v + 1);
+  }, [groesse.w, groesse.h]);
+
   // One simulation step over the current particle set.
   const schritt = () => {
     const nodes = graph.nodes;
@@ -254,115 +311,161 @@ export default function Grafbild({
     const a = alpha.current;
     const { w, h } = groesseRef.current;
     const ph = physikRef.current;
+    const grad = abgeleitet.grad;
 
-    // Repulsion between every pair.
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const pa = p[nodes[i].id];
-        const pb = p[nodes[j].id];
-        if (!pa || !pb) continue;
-        let dx = pa.x - pb.x;
-        let dy = pa.y - pb.y;
-        let l = dx * dx + dy * dy;
-        if (l < 0.01) {
-          dx = (Math.random() - 0.5) * 0.5;
-          dy = (Math.random() - 0.5) * 0.5;
-          l = dx * dx + dy * dy + 0.01;
-        }
-        const dist = Math.sqrt(l);
-        const rep = (ph.abstossung * a) / l;
-        const ux = dx / dist;
-        const uy = dy / dist;
-        pa.vx += ux * rep;
-        pa.vy += uy * rep;
-        pb.vx -= ux * rep;
-        pb.vy -= uy * rep;
-        // Mild attraction within the same space: folders cluster without
-        // being pinned.
-        if (ph.gleicheAblage && ablageVon.current[nodes[i].id] === ablageVon.current[nodes[j].id]) {
-          pa.vx -= ux * ph.gleicheAblage * dist * a;
-          pa.vy -= uy * ph.gleicheAblage * dist * a;
-          pb.vx += ux * ph.gleicheAblage * dist * a;
-          pb.vy += uy * ph.gleicheAblage * dist * a;
+    const ids: string[] = [];
+    const ts: Teilchen[] = [];
+    const rs: number[] = [];
+    for (const n of nodes) {
+      const t = p[n.id];
+      if (!t) continue;
+      ids.push(n.id);
+      ts.push(t);
+      rs.push(radius(n.id));
+    }
+    const anzahl = ts.length;
+    if (!anzahl) return;
+
+    // Pull toward the centre of the own space. One centre per space instead
+    // of an attraction between every pair: that grew with distance and
+    // dragged far nodes across the whole picture.
+    if (ph.gleicheAblage) {
+      const summe: Record<string, { x: number; y: number; n: number }> = {};
+      for (let i = 0; i < anzahl; i++) {
+        const k = ablageVon.current[ids[i]];
+        const s = (summe[k] ??= { x: 0, y: 0, n: 0 });
+        s.x += ts[i].x;
+        s.y += ts[i].y;
+        s.n++;
+      }
+      if (Object.keys(summe).length > 1) {
+        for (let i = 0; i < anzahl; i++) {
+          const s = summe[ablageVon.current[ids[i]]];
+          if (s.n < 2) continue;
+          ts[i].vx += (s.x / s.n - ts[i].x) * ph.gleicheAblage * a;
+          ts[i].vy += (s.y / s.n - ts[i].y) * ph.gleicheAblage * a;
         }
       }
     }
 
-    // Spring forces along edges: parents act as short stiff springs, refs as
-    // longer softer springs.
+    // Springs along edges, on the positions the nodes are about to reach
+    // (as d3 does), which damps the swinging back and forth.
     for (const e of graph.edges) {
-      const ps = p[e.source];
-      const pt = p[e.target];
-      if (!ps || !pt) continue;
-      const dx = pt.x - ps.x;
-      const dy = pt.y - ps.y;
-      const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
+      const s = p[e.source];
+      const t = p[e.target];
+      if (!s || !t || s === t) continue;
+      let dx = t.x + t.vx - s.x - s.vx;
+      let dy = t.y + t.vy - s.y - s.vy;
+      if (!dx && !dy) {
+        dx = (Math.random() - 0.5) * 1e-3;
+        dy = (Math.random() - 0.5) * 1e-3;
+      }
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const gs = Math.max(1, grad[e.source] || 0);
+      const gt = Math.max(1, grad[e.target] || 0);
       const eltern = e.kind === "parent";
-      const ruhe = eltern ? ph.ruheEltern : ph.ruheVerweis;
-      const k = eltern ? ph.federEltern : ph.federVerweis;
-      const spr = k * (dist - ruhe) * a;
-      const ux = dx / dist;
-      const uy = dy / dist;
-      ps.vx += ux * spr;
-      ps.vy += uy * spr;
-      pt.vx -= ux * spr;
-      pt.vy -= uy * spr;
+      const ruhe = (eltern ? ph.ruheEltern : ph.ruheVerweis) + radius(e.source) + radius(e.target);
+      const k = (eltern ? ph.federEltern : ph.federVerweis) / Math.min(gs, gt);
+      const f = ((dist - ruhe) / dist) * a * k;
+      dx *= f;
+      dy *= f;
+      // The node with fewer links moves more.
+      const b = gs / (gs + gt);
+      t.vx -= dx * b;
+      t.vy -= dy * b;
+      s.vx += dx * (1 - b);
+      s.vy += dy * (1 - b);
     }
 
-    // Gravity toward the center. The emphasized node is held more strongly so
-    // that the focused page remains near the center in the small graph.
-    for (const n of nodes) {
-      const pp = p[n.id];
-      if (!pp) continue;
-      const stark = n.id === mitteRef.current ? 6 : 1;
-      pp.vx += (w / 2 - pp.x) * ph.schwerkraft * stark * a;
-      pp.vy += (h / 2 - pp.y) * ph.schwerkraft * stark * a;
+    // Repulsion and collision between every pair.
+    const reich2 = ph.reichweite * ph.reichweite;
+    const min2 = ABSTAND_MIN * ABSTAND_MIN;
+    for (let i = 0; i < anzahl; i++) {
+      const pa = ts[i];
+      for (let j = i + 1; j < anzahl; j++) {
+        const pb = ts[j];
+        let dx = pa.x - pb.x;
+        let dy = pa.y - pb.y;
+        let l = dx * dx + dy * dy;
+        if (l < 1e-6) {
+          dx = (Math.random() - 0.5) * 1e-2;
+          dy = (Math.random() - 0.5) * 1e-2;
+          l = dx * dx + dy * dy;
+        }
+        if (l < reich2) {
+          const lw = l < min2 ? Math.sqrt(min2 * l) : l;
+          const f = (ph.abstossung * a) / lw;
+          pa.vx += dx * f;
+          pa.vy += dy * f;
+          pb.vx -= dx * f;
+          pb.vy -= dy * f;
+        }
+        // Collision works on the predicted positions and does not depend
+        // on the temperature: circles do not overlap even when cooled.
+        const rr = rs[i] + rs[j] + ph.luecke;
+        const cx = pa.x + pa.vx - pb.x - pb.vx;
+        const cy = pa.y + pa.vy - pb.y - pb.vy;
+        const cl = cx * cx + cy * cy;
+        if (cl < rr * rr) {
+          const d = Math.sqrt(cl) || 0.01;
+          const m = ((rr - d) / d) * 0.6;
+          // Larger circles give way less.
+          const anteil = (rs[j] * rs[j]) / (rs[i] * rs[i] + rs[j] * rs[j]);
+          pa.vx += cx * m * anteil;
+          pa.vy += cy * m * anteil;
+          pb.vx -= cx * m * (1 - anteil);
+          pb.vy -= cy * m * (1 - anteil);
+        }
+      }
+    }
+
+    // Gravity toward the centre. The emphasized node is held more strongly so
+    // that the focused page remains near the centre in the small graph.
+    for (let i = 0; i < anzahl; i++) {
+      const stark = ids[i] === mitteRef.current ? 6 : 1;
+      ts[i].vx += (w / 2 - ts[i].x) * ph.schwerkraft * stark * a;
+      ts[i].vy += (h / 2 - ts[i].y) * ph.schwerkraft * stark * a;
     }
 
     // Integrate velocities to advance positions.
-    for (const n of nodes) {
-      const pp = p[n.id];
-      if (!pp) continue;
-      const f = gehalten.current;
-      if (f && f.id === n.id) {
+    const f = gehalten.current;
+    for (let i = 0; i < anzahl; i++) {
+      const pp = ts[i];
+      if (f && f.id === ids[i]) {
         pp.x = f.x;
         pp.y = f.y;
         pp.vx = 0;
         pp.vy = 0;
         continue;
       }
-      pp.vx *= GESCHWINDIGKEIT_DAEMPFUNG;
-      pp.vy *= GESCHWINDIGKEIT_DAEMPFUNG;
+      pp.vx *= 1 - REIBUNG;
+      pp.vy *= 1 - REIBUNG;
+      const tempo = Math.hypot(pp.vx, pp.vy);
+      if (tempo > MAX_TEMPO) {
+        pp.vx *= MAX_TEMPO / tempo;
+        pp.vy *= MAX_TEMPO / tempo;
+      }
       pp.x += pp.vx;
       pp.y += pp.vy;
     }
 
-    // Keep the whole layout centered by translating nodes so their centroid is
-    // at the center. Skip while dragging so the grabbed node remains under the
-    // cursor.
-    if (!gehalten.current) {
+    // Drift the whole layout toward the centre. Only a share per tick, so
+    // releasing a node no longer makes the whole picture jump; skipped while
+    // dragging so the grabbed node stays under the cursor.
+    if (!f) {
       let cx = 0;
       let cy = 0;
-      for (const n of nodes) {
-        const pp = p[n.id];
-        if (pp) {
-          cx += pp.x;
-          cy += pp.y;
-        }
+      for (const t of ts) {
+        cx += t.x;
+        cy += t.y;
       }
-      const anzahl = nodes.length || 1;
-      const schiebeX = w / 2 - cx / anzahl;
-      const schiebeY = h / 2 - cy / anzahl;
-      for (const n of nodes) {
-        const pp = p[n.id];
-        if (pp) {
-          pp.x += schiebeX;
-          pp.y += schiebeY;
-        }
+      const sx = (w / 2 - cx / anzahl) * 0.1;
+      const sy = (h / 2 - cy / anzahl) * 0.1;
+      for (const t of ts) {
+        t.x += sx;
+        t.y += sy;
       }
     }
-
-    beschriftungenVerteilen();
   };
 
   // Assign each label a position that minimizes overlap.
@@ -407,20 +510,50 @@ export default function Grafbild({
     beschriftung.current = gewaehlt;
   };
 
-  const schleife = () => {
+  // One tick: temperature moves toward its target, then the forces act.
+  const takt = () => {
+    alpha.current += (alphaZiel.current - alpha.current) * ALPHA_ABFALL;
     schritt();
-    alpha.current *= ALPHA_ABFALL;
-    neuZeichnen((v) => v + 1);
-    if (alpha.current > ALPHA_MIN || gehalten.current) {
+  };
+
+  const laeuft = () => alpha.current > ALPHA_MIN || alphaZiel.current > 0 || gehalten.current != null;
+
+  const schleife = (jetzt: number) => {
+    const dt = letzterTakt.current == null ? TICK_MS : Math.min(100, jetzt - letzterTakt.current);
+    letzterTakt.current = jetzt;
+    zeitRest.current += dt;
+    let n = 0;
+    // A small tolerance, so a display at 59.9 Hz does not skip every other tick.
+    while (zeitRest.current >= TICK_MS * 0.9 && n < 4) {
+      takt();
+      zeitRest.current -= TICK_MS;
+      n++;
+    }
+    if (n === 4 || zeitRest.current < 0) zeitRest.current = 0;
+    if (n > 0) {
+      beschriftungenVerteilen();
+      neuZeichnen((v) => v + 1);
+    }
+    if (laeuft()) {
       raf.current = requestAnimationFrame(schleife);
     } else {
       raf.current = null;
+      letzterTakt.current = null;
     }
   };
 
+  const starten = () => {
+    if (raf.current == null) {
+      letzterTakt.current = null;
+      zeitRest.current = TICK_MS;
+      raf.current = requestAnimationFrame(schleife);
+    }
+  };
+
+  // Raise the temperature to at least `ziel` and run.
   const anheizen = (ziel = 1) => {
     alpha.current = Math.max(alpha.current, ziel);
-    if (raf.current == null) raf.current = requestAnimationFrame(schleife);
+    starten();
   };
 
   // Reinitialize particles whenever the node set changes, then run the
@@ -429,27 +562,59 @@ export default function Grafbild({
     const { w, h } = groesseRef.current;
     const naechste: Record<string, Teilchen> = {};
     const ablagen: Record<string, string> = {};
-    const n = graph.nodes.length || 1;
-    graph.nodes.forEach((node, i) => {
+    let neu = 0;
+    graph.nodes.forEach((node) => {
       ablagen[node.id] = ablageSchluessel(node);
       const vorher = teilchen.current[node.id];
-      if (vorher) {
-        naechste[node.id] = vorher;
-      } else if (node.id === mitte) {
-        naechste[node.id] = { x: w / 2, y: h / 2, vx: 0, vy: 0 };
-      } else {
-        const ang = (i / n) * Math.PI * 2;
-        naechste[node.id] = {
-          x: w / 2 + Math.cos(ang) * (Math.min(w, h) / 3.5),
-          y: h / 2 + Math.sin(ang) * (Math.min(w, h) / 3.5),
-          vx: 0,
-          vy: 0,
-        };
-      }
+      if (vorher) naechste[node.id] = vorher;
     });
+    // New nodes: next to a neighbour that already has a place, otherwise on
+    // a sunflower spiral around the middle. A ring placed everything at the
+    // same distance and the first second was an explosion outward; the
+    // spiral spreads evenly without symmetries the forces cannot break.
+    const goldenerWinkel = Math.PI * (3 - Math.sqrt(5));
+    let spirale = 0;
+    for (const node of graph.nodes) {
+      if (naechste[node.id]) continue;
+      neu++;
+      if (node.id === mitte) {
+        naechste[node.id] = { x: w / 2, y: h / 2, vx: 0, vy: 0 };
+        continue;
+      }
+      let nachbar: Teilchen | undefined;
+      for (const id of abgeleitet.nachbarn[node.id] ?? []) {
+        if (naechste[id]) {
+          nachbar = naechste[id];
+          break;
+        }
+      }
+      if (nachbar) {
+        const ang = Math.random() * Math.PI * 2;
+        naechste[node.id] = { x: nachbar.x + Math.cos(ang) * 40, y: nachbar.y + Math.sin(ang) * 40, vx: 0, vy: 0 };
+      } else {
+        const r = 28 * Math.sqrt(0.5 + spirale);
+        const ang = spirale * goldenerWinkel;
+        spirale++;
+        naechste[node.id] = { x: w / 2 + Math.cos(ang) * r, y: h / 2 + Math.sin(ang) * r, vx: 0, vy: 0 };
+      }
+    }
     teilchen.current = naechste;
     ablageVon.current = ablagen;
-    if (graph.nodes.length) anheizen(1);
+    if (graph.nodes.length) {
+      if (neu > graph.nodes.length / 2) {
+        // Mostly new: compute the rough unfolding before the first frame
+        // and only animate the settling.
+        alpha.current = 1;
+        alphaZiel.current = 0;
+        const ende = performance.now() + VORLAUF_MS;
+        while (alpha.current > VORLAUF_ALPHA && performance.now() < ende) takt();
+        beschriftungenVerteilen();
+        neuZeichnen((v) => v + 1);
+        starten();
+      } else {
+        anheizen(0.5);
+      }
+    }
     return () => {
       if (raf.current != null) cancelAnimationFrame(raf.current);
       raf.current = null;
@@ -488,7 +653,10 @@ export default function Grafbild({
         bewegt: false,
       };
       gehalten.current = { id, x: p.x, y: p.y };
-      anheizen(ZUG_ALPHA);
+      alphaZiel.current = ZUG_ALPHA;
+      // A start boost, so the neighbours react from the first movement on.
+      alpha.current = Math.max(alpha.current, 0.12);
+      starten();
     } else {
       zug.current = {
         art: "flaeche",
@@ -514,7 +682,7 @@ export default function Grafbild({
     if (d.art === "knoten" && d.id) {
       const g = zuGraf(e.clientX, e.clientY);
       gehalten.current = { id: d.id, x: g.x - d.offX, y: g.y - d.offY };
-      anheizen(ZUG_ALPHA);
+      starten();
     } else if (d.art === "flaeche") {
       setBlick((v) => ({ ...v, x: d.panX + dx, y: d.panY + dy }));
     }
@@ -527,8 +695,13 @@ export default function Grafbild({
     const d = zug.current;
     svgRef.current?.releasePointerCapture(e.pointerId);
     if (d.art === "knoten" && d.id && !d.bewegt) onOeffnen(d.id);
-    gehalten.current = null;
-    anheizen(0.15);
+    // Let go: the temperature sinks back on its own instead of jumping, so
+    // the neighbours glide into place rather than freezing mid-movement.
+    if (gehalten.current) {
+      gehalten.current = null;
+      alphaZiel.current = 0;
+      starten();
+    }
     zug.current.art = null;
   };
 
@@ -552,7 +725,7 @@ export default function Grafbild({
   // recenters.
   const zurueck = () => {
     setBlick({ x: 0, y: 0, scale: 1 });
-    if (graph.nodes.length) anheizen(1);
+    if (graph.nodes.length) anheizen(0.6);
   };
 
   const p = teilchen.current;
