@@ -13,6 +13,31 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [3.3.0]: 2026-11-13
+
+### Added
+
+- **The graph looks and behaves like Obsidian's.** Plain dots, thin pale
+  lines, names under the dots that fade out when zooming away; hovering lights
+  up a page and its neighbours and lets the rest recede. A settings panel
+  (gear, top right) holds filters (search, orphans), display (arrows, colour by
+  space, text fade threshold, node size, link thickness, animate) and forces
+  (centre, repel, link force, link distance); the browser remembers them.
+- **Steadier physics.** Repulsion falls off with distance and has a range,
+  springs are weighted by degree, circles never overlap, the layout is
+  computed before the first frame and runs at the same speed on every display.
+
+### Security
+
+- **A second-factor code signs in once.** It used to stay valid for about 90
+  seconds; now it and every older code of the same account are spent.
+- **Sign-in takes the same time for unknown accounts.** A missing account and
+  an SSO-only account still run a full bcrypt comparison, so the response time
+  no longer reveals which addresses have an account.
+- **The visitor's address can no longer be forged.** The audit trail took it
+  from `True-Client-IP` or the leftmost `X-Forwarded-For` entry, both set by
+  the visitor. It is now read from the right, skipping the own proxies.
+
 ### Fixed
 
 - **Search engines may read the sitemap.** With a public address set,
