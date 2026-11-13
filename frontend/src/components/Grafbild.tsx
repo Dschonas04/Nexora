@@ -853,7 +853,7 @@ export default function Grafbild({
       blickAnimation.current = null;
     }
     einpassenNachRuhe.current = false;
-    const faktor = Math.exp(-Math.max(-100, Math.min(100, e.deltaY)) * 0.0025);
+    const faktor = Math.exp(-Math.max(-100, Math.min(100, e.deltaY)) * 0.0015);
     const rect = svgRef.current!.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
