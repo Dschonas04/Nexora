@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -70,28 +71,61 @@ func TOTPCode(geheim string, wann time.Time) (string, error) {
 	return fmt.Sprintf("%06d", wert%1000000), nil
 }
 
-// TOTPPruefen says whether the entered code matches the secret. The comparison
-// runs in constant time, and the neighbouring windows are checked as well so
-// that a slightly wrong clock locks nobody out.
-func TOTPPruefen(geheim, code string) bool {
+// totpFenster returns the time window the code belongs to, or -1. The
+// comparison runs in constant time, and the neighbouring windows are checked
+// as well so that a slightly wrong clock locks nobody out.
+func totpFenster(geheim, code string) int64 {
 	code = strings.TrimSpace(strings.ReplaceAll(code, " ", ""))
 	if len(code) != 6 {
-		return false
+		return -1
 	}
 	jetzt := time.Now()
-	passt := false
+	treffer := int64(-1)
 	for i := -TOTPToleranz; i <= TOTPToleranz; i++ {
-		soll, err := TOTPCode(geheim, jetzt.Add(time.Duration(i)*TOTPSchritt))
+		wann := jetzt.Add(time.Duration(i) * TOTPSchritt)
+		soll, err := TOTPCode(geheim, wann)
 		if err != nil {
-			return false
+			return -1
 		}
 		// Do not break out on a match: the loop should take the same time for
 		// every input.
 		if subtle.ConstantTimeCompare([]byte(soll), []byte(code)) == 1 {
-			passt = true
+			treffer = wann.Unix() / int64(TOTPSchritt/time.Second)
 		}
 	}
-	return passt
+	return treffer
+}
+
+// TOTPPruefen says whether the entered code matches the secret. Used where a
+// code only confirms the setup; for signing in see TOTPPruefenEinmal.
+func TOTPPruefen(geheim, code string) bool {
+	return totpFenster(geheim, code) >= 0
+}
+
+var (
+	totpVerbrauchtMu sync.Mutex
+	totpVerbraucht   = map[string]int64{}
+)
+
+// TOTPPruefenEinmal is TOTPPruefen for signing in: a code that has once let
+// somebody in is spent, as is every older one of the same account. Without
+// this a code read over someone's shoulder or caught in transit stays good
+// for a minute and a half, as long as the tolerance allows.
+//
+// The memory is in the process. A restart forgets it, but by the time the
+// service is back the windows in question have long run out.
+func TOTPPruefenEinmal(konto, geheim, code string) bool {
+	fenster := totpFenster(geheim, code)
+	if fenster < 0 {
+		return false
+	}
+	totpVerbrauchtMu.Lock()
+	defer totpVerbrauchtMu.Unlock()
+	if fenster <= totpVerbraucht[konto] {
+		return false
+	}
+	totpVerbraucht[konto] = fenster
+	return true
 }
 
 // OtpauthURI is what the QR code contains. The issuer appears twice, as part

@@ -205,7 +205,9 @@ func main() {
 	middleware.SchluesselPruefer = h.SchluesselPruefen
 
 	r := chi.NewRouter()
-	r.Use(chimw.RealIP) // trust X-Forwarded-For, the SPA is served through nginx
+	// The visitor's address from the proxy chain, read from the right (see
+	// middleware/absender.go); chi's RealIP believed headers the visitor sets.
+	r.Use(middleware.EchteIP)
 	// The API used German path names up to 2.3. Old clients and scripts keep
 	// working: their paths are translated before routing, see altepfade.go.
 	r.Use(middleware.AltePfade)

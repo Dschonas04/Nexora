@@ -4,6 +4,7 @@ package auth
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -20,8 +21,32 @@ func HashPassword(pw string) (string, error) {
 
 // CheckPassword reports whether pw matches the stored hash. The comparison is
 // constant time, so it leaks nothing about how far it got before failing.
+//
+// A hash that is no bcrypt hash at all (an SSO account's "sso:" marker, an
+// empty field) is still answered after a full bcrypt run against a dummy hash:
+// otherwise the quick "no" would tell from the response time alone which
+// accounts sign in only through SSO.
 func CheckPassword(hash, pw string) bool {
+	if _, err := bcrypt.Cost([]byte(hash)); err != nil {
+		PasswortAttrappe(pw)
+		return false
+	}
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(pw)) == nil
+}
+
+var (
+	attrappeEinmal sync.Once
+	attrappe       []byte
+)
+
+// PasswortAttrappe spends the same time as checking a real password and
+// always fails. The sign-in calls it for an unknown account, so that the
+// response time does not reveal which addresses have an account here.
+func PasswortAttrappe(pw string) {
+	attrappeEinmal.Do(func() {
+		attrappe, _ = bcrypt.GenerateFromPassword([]byte("nexora-attrappe"), 12)
+	})
+	_ = bcrypt.CompareHashAndPassword(attrappe, []byte(pw))
 }
 
 // Claims is the JWT payload. It carries the user id only, so any change to a

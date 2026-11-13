@@ -170,6 +170,12 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	// Use the same error message for unknown addresses and wrong passwords so
 	// the response cannot be used to enumerate registered emails. The audit
 	// trail records the distinction for administrators.
+	// For an unknown account the password is still checked against a dummy
+	// hash: an answer that comes a quarter second sooner would tell which
+	// addresses exist.
+	if err != nil {
+		auth.PasswortAttrappe(req.Password)
+	}
 	if err != nil || !auth.CheckPassword(hash, req.Password) {
 		// The failed attempt is recorded; without it the audit trail would lack
 		// exactly those events one opens it for in the first place. The address

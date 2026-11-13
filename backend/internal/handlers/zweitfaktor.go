@@ -421,7 +421,7 @@ func (s *Server) ZweitfaktorPruefen(w http.ResponseWriter, r *http.Request) {
 	code := strings.TrimSpace(req.Code)
 	gut := false
 	if geheim, err := auth.GeheimEntschluesseln(s.Secret, abgelegt); err == nil {
-		gut = auth.TOTPPruefen(geheim, code)
+		gut = auth.TOTPPruefenEinmal(u.ID, geheim, code)
 	}
 	if !gut {
 		gut = s.ersatzcodeVerbrauchen(r.Context(), u.ID, code)
