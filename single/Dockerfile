@@ -14,7 +14,7 @@
 
 # Built on the build machine's own platform and cross-compiled: under QEMU the
 # arm64 build took eight times as long and once hung for an hour (v3.2.0).
-FROM --platform=$BUILDPLATFORM golang:1.27.1-alpine AS backend
+FROM --platform=$BUILDPLATFORM golang:1.27.4-alpine AS backend
 ARG TARGETOS TARGETARCH
 WORKDIR /app
 RUN apk add --no-cache git
