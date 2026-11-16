@@ -27,6 +27,11 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 
 ### Fixed
 
+- **Settings cards were split in two columns.** A rule in the stylesheet had
+  lost its body, so every setting, tile and warning box took over the grid of
+  the colour tiles: the origin line stood beside the value under a dashed rule
+  in every card. Cards are one column again, with the origin as a quiet line
+  without a rule.
 - **Diagram labels were translated.** Mermaid measures text in the page, and
   the interface translation turned labels such as "Anmelden" into "Sign in"
   before the picture was taken.

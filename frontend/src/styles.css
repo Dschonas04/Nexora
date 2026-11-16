@@ -2105,10 +2105,11 @@ textarea::placeholder {
   color: inherit;
   font: inherit;
 }
+/* Where the value comes from, as a quiet line under the card's content. It
+   used to have a dashed rule above it, which in a list of twenty cards read
+   as twenty dotted lines and no information. */
 .einstellung-fuss {
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--border);
+  margin-top: 8px;
 }
 .schalter {
   display: flex;
@@ -2182,6 +2183,10 @@ textarea::placeholder {
 .einstellung,
 .kachel,
 .warnkasten,
+.tonkachel {
+  background: var(--flaeche);
+}
+
 /* The three base tones as tiles, each in its own tone.
 
    A table used to stand here with the four colour marks per tone and their hex
