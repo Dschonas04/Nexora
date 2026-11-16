@@ -128,7 +128,7 @@ export default function PageView({
   useEffect(() => {
     if (!page) return;
     const name = page.title.trim() || (uebersetze("Untitled", sprache) ?? "Untitled");
-    document.title = `${name} – Nexora`;
+    document.title = `${name} | Nexora`;
   }, [page?.title, sprache]);
   const [backlinks, setBacklinks] = useState<PageMeta[]>([]);
   const [links, setLinks] = useState<PageMeta[]>([]);

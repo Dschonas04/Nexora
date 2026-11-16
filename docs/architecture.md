@@ -19,7 +19,7 @@ The diagrams are Mermaid and render on GitHub without a plugin.
 2. [Constraints](#2-constraints)
 3. [Context and scope](#3-context-and-scope), *C4 level 1*
 4. [Solution strategy](#4-solution-strategy)
-5. [Building block view](#5-building-block-view), *C4 levels 2–4*
+5. [Building block view](#5-building-block-view), *C4 levels 2-4*
 6. [Runtime view](#6-runtime-view)
 7. [Deployment view](#7-deployment-view)
 8. [Cross-cutting concepts](#8-cross-cutting-concepts)

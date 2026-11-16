@@ -206,7 +206,7 @@ function BenachrichtigungTeil() {
     <>
       <h3>Notifications</h3>
       <p className="muted small">
-        What lands in your inbox – a comment on your page, a reply, a mention, a shared page – can also come by e-mail.
+        What lands in your inbox (a comment on your page, a reply, a mention, a shared page) can also come by e-mail.
       </p>
       {stand && !stand.available && (
         <p className="muted small">
@@ -762,7 +762,7 @@ function Geraete() {
                   </span>
                 )}
               </td>
-              <td className="muted small">{s.ip || "—"}</td>
+              <td className="muted small">{s.ip || "-"}</td>
               <td className="muted small">
                 {new Date(s.lastSeenAt).toLocaleString(undefined, {
                   day: "2-digit",
@@ -844,18 +844,18 @@ function SchluesselTeil() {
     }
   };
 
-  const datum = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "–");
+  const datum = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "-");
 
   return (
     <>
       <h3>API keys</h3>
       <p className="muted small">
-        For scripts, n8n and other tools. Send the key as a header: Authorization: Bearer nxr_… A key can do what your account can do – one that may only read changes nothing.
+        For scripts, n8n and other tools. Send the key as a header: Authorization: Bearer nxr_… A key can do what your account can do, one that may only read changes nothing.
       </p>
 
       {neu?.key && (
         <div className="hinweis-ok schluessel-neu">
-          <strong>Copy the key now – it is shown only this once.</strong>
+          <strong>Copy the key now: it is shown only this once.</strong>
           <div className="schluessel-zeile">
             <input className="input notranslate" readOnly value={neu.key} onFocus={(e) => e.target.select()} />
             <button className="btn" onClick={kopieren}>

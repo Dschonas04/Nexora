@@ -32,6 +32,6 @@ func TestCheckPasswordOhneBcrypt(t *testing.T) {
 		t.Fatal("SSO-Marker als Passwort angenommen")
 	}
 	if time.Since(start) < 50*time.Millisecond {
-		t.Fatal("Antwort ohne bcrypt-Lauf – verrät die Kontoart")
+		t.Fatal("Antwort ohne bcrypt-Lauf: verrät die Kontoart")
 	}
 }

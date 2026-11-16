@@ -94,7 +94,7 @@ func bloeckeAus(zeilen []string) []Block {
 		if trennerMuster.MatchString(z) {
 			gerade(&knoten{blk: Block{
 				Type:    "paragraph",
-				Content: []Inline{{Type: "text", Text: "———"}},
+				Content: []Inline{{Type: "text", Text: "---"}},
 			}})
 			continue
 		}

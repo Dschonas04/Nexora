@@ -247,7 +247,7 @@ export default function PruefspurView() {
                 </td>
                 <td>{beschriften(e.action)}</td>
                 <td>
-                  {e.objectTitle || <span className="muted">{e.objectType || "—"}</span>}
+                  {e.objectTitle || <span className="muted">{e.objectType || "-"}</span>}
                   {/* Details sind je Vorgang verschieden, etwa an wen freigegeben
                       wurde. Roh anzuzeigen ist ehrlicher, als sie zu verbergen. */}
                   {e.details && Object.keys(e.details).length > 0 && (
@@ -258,7 +258,7 @@ export default function PruefspurView() {
                     </div>
                   )}
                 </td>
-                <td className="muted small einzeilig">{e.ip || "—"}</td>
+                <td className="muted small einzeilig">{e.ip || "-"}</td>
               </tr>
               )}
             />

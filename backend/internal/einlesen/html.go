@@ -154,7 +154,7 @@ func (l *htmlLeser) knoten(n *html.Node, stile map[string]bool) {
 			return
 
 		case "hr":
-			l.block(Block{Type: "paragraph", Content: []Inline{{Type: "text", Text: "———"}}})
+			l.block(Block{Type: "paragraph", Content: []Inline{{Type: "text", Text: "---"}}})
 			return
 
 		case "ul", "ol":

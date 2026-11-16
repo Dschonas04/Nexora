@@ -27,7 +27,7 @@ function useBrowsertitel() {
   useEffect(() => {
     if (/^\/(page|share)\//.test(pathname)) return;
     const name = TITEL.find(([re]) => re.test(pathname))?.[1];
-    document.title = name ? `${uebersetze(name, sprache) ?? name} – Nexora` : "Nexora";
+    document.title = name ? `${uebersetze(name, sprache) ?? name} | Nexora` : "Nexora";
   }, [pathname, sprache]);
 }
 

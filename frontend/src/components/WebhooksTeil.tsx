@@ -96,7 +96,7 @@ export default function WebhooksTeil() {
 
       {neu?.secret && (
         <div className="hinweis-ok schluessel-neu">
-          <strong>The secret for checking signatures – shown only this once.</strong>
+          <strong>The secret for checking signatures, shown only this once.</strong>
           <div className="schluessel-zeile">
             <input className="input notranslate" readOnly value={neu.secret} onFocus={(e) => e.target.select()} />
           </div>

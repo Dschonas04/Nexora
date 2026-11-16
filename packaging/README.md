@@ -29,7 +29,7 @@ node build.mjs
 
 `build.mjs` fetches the prebuilt Electron release per platform, puts the
 application into `resources/app` and renames the binary. A packer does the
-same three things — but `electron-packager` demands Wine on Linux as soon as a
+same three things: but `electron-packager` demands Wine on Linux as soon as a
 Windows target is to carry metadata, and metadata already comes from
 `package.json`. A gigabyte of Wine for the name in a file dialog is not worth
 it.
@@ -56,7 +56,7 @@ The result is at `android/app/build/outputs/apk/debug/app-debug.apk`.
 
 Note that this is a *debug* build. Only that one carries
 `usesCleartextTraffic` automatically, and without it Android 9 and newer
-refuse plain HTTP without a word — the app would show a blank page. A release
+refuse plain HTTP without a word, the app would show a blank page. A release
 build needs the flag stated explicitly, or the instance needs TLS.
 
 ## iOS
@@ -64,7 +64,7 @@ build needs the flag stated explicitly, or the instance needs TLS.
 The project under `mobile/ios` is complete, but an `.ipa` is only produced on a
 Mac with Xcode, and installing it needs an Apple developer account. Without
 one the way in is the browser: open Nexora in Safari, Share, "Add to Home
-Screen". That gives an icon without an address bar — practically the same
+Screen". That gives an icon without an address bar, practically the same
 thing.
 
 ## Address of the instance
@@ -80,7 +80,7 @@ The default is `http://10.0.2.43:3000`.
 
 The wrapper hands only `http` and `https` to the operating system.
 `shell.openExternal` passes an address to the OS, and that opens `file:`,
-`smb:` or `ms-msdt:` just as happily — a page could otherwise start programs
+`smb:` or `ms-msdt:` just as happily: a page could otherwise start programs
 on the machine through a `window.open`.
 
 The window itself also stays with the origin of its instance. Without that a

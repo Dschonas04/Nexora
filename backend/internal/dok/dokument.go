@@ -198,7 +198,7 @@ func lies(knoten []knoten, tiefe int, hol Bildquelle) []Absatz {
 			}
 			a.Text = []Stueck{{Text: name, Verweis: adresse}}
 			if unterschrift != "" && unterschrift != name {
-				a.Text = append(a.Text, Stueck{Text: " – " + unterschrift, Kursiv: true})
+				a.Text = append(a.Text, Stueck{Text: " - " + unterschrift, Kursiv: true})
 			}
 			nummer = 0
 

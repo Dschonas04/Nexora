@@ -304,7 +304,7 @@ function AnlegenFenster({ schliessen }: { schliessen: () => void }) {
             {fertig.map((e) => (
               <tr key={e.email}>
                 <td>{e.email}</td>
-                <td>{e.fehler ? <span className="muted">—</span> : <code>{e.passwort}</code>}</td>
+                <td>{e.fehler ? <span className="muted">-</span> : <code>{e.passwort}</code>}</td>
                 <td className={e.fehler ? "fehlertext" : "muted"}>{e.fehler ?? "angelegt"}</td>
               </tr>
             ))}

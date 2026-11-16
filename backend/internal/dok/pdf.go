@@ -701,5 +701,5 @@ func bildUnterschrift(st []Stueck) string {
 			b.WriteString(s.Text)
 		}
 	}
-	return strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(b.String()), "– "))
+	return strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(b.String()), "- "))
 }

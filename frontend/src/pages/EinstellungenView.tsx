@@ -1238,7 +1238,7 @@ export default function EinstellungenView() {
                           </span>
                         )}
                       </td>
-                      <td className="muted small">{si.ip || "—"}</td>
+                      <td className="muted small">{si.ip || "-"}</td>
                       <td className="muted small">{zeitpunkt(si.lastSeenAt)}</td>
                       <td className="muted small">{zeitpunkt(si.expiresAt)}</td>
                       <td className="zeilen-aktionen">
@@ -1393,7 +1393,7 @@ export default function EinstellungenView() {
             <div className="kennzahlreihe">
               {kennzahl("Seiten", raeume.length)}
               {kennzahl("Personen", leute)}
-              {kennzahl("Höchstens je Seite", zusammen?.limit ?? "—")}
+              {kennzahl("Höchstens je Seite", zusammen?.limit ?? "-")}
             </div>
             {raeume.length === 0 ? (
               <p className="muted small">
@@ -1925,8 +1925,8 @@ export default function EinstellungenView() {
           <>
             <h3>Datenbank</h3>
             <div className="kachelreihe">
-              {kachel(z.database?.size ?? "—", "Gesamtgröße")}
-              {kachel(z.database?.version || "—", "PostgreSQL")}
+              {kachel(z.database?.size ?? "-", "Gesamtgröße")}
+              {kachel(z.database?.version || "-", "PostgreSQL")}
               {kachel(bytes(z.attachmentBytes ?? 0), "Anhänge (auf Platte)")}
             </div>
             <p className="muted small">
@@ -2078,7 +2078,7 @@ export default function EinstellungenView() {
             </div>
 
             <h3>Ablage der Dateien</h3>
-            <div className="kachelreihe">{kachel(ablage || "—", "Aktuelle Ablage")}</div>
+            <div className="kachelreihe">{kachel(ablage || "-", "Aktuelle Ablage")}</div>
             <p className="muted small">
               Vorgabe ist die lokale Platte. Objektspeicher macht den Datenbank-Dump
               vollständig und erlaubt zwei Instanzen auf denselben Dateien.
@@ -2195,7 +2195,7 @@ export default function EinstellungenView() {
                 </div>
                 <div>
                   <span className="lizenz-feldname">Inhaber</span>
-                  <span className="lizenz-feldwert">{z.license.holder || "—"}</span>
+                  <span className="lizenz-feldwert">{z.license.holder || "-"}</span>
                 </div>
                 <div>
                   <span className="lizenz-feldname">Stufe</span>
@@ -2360,10 +2360,10 @@ export default function EinstellungenView() {
             <h3>Letzte Minute</h3>
             {!puls ? (
               <div className="kennzahlreihe">
-                {kennzahl("Anfragen je Sekunde", "—")}
-                {kennzahl("Antwortzeit", "—")}
-                {kennzahl("Gleichzeitig", "—")}
-                {kennzahl("Verbindungen", "—")}
+                {kennzahl("Anfragen je Sekunde", "-")}
+                {kennzahl("Antwortzeit", "-")}
+                {kennzahl("Gleichzeitig", "-")}
+                {kennzahl("Verbindungen", "-")}
               </div>
             ) : (
               <>
@@ -2557,8 +2557,8 @@ export default function EinstellungenView() {
                             <span className="muted"> (nicht schlimm)</span>
                           )}
                         </td>
-                        <td className="muted">{d.version || "—"}</td>
-                        <td className="muted einzeilig">{d.response || "—"}</td>
+                        <td className="muted">{d.version || "-"}</td>
+                        <td className="muted einzeilig">{d.response || "-"}</td>
                       </tr>
                       {d.note && (
                         <tr className="verbund-hinweis">
@@ -2635,8 +2635,8 @@ export default function EinstellungenView() {
                         <td>{r.name}</td>
                         <td className="muted einzeilig">{r.target}</td>
                         <td>{r.state}</td>
-                        <td className="muted einzeilig">{r.response || "—"}</td>
-                        <td className="muted">{r.version || "—"}</td>
+                        <td className="muted einzeilig">{r.response || "-"}</td>
+                        <td className="muted">{r.version || "-"}</td>
                         {/* Below thirty days the cell turns red: an expired
                             certificate is the most frequent reason a service in
                             one's own house suddenly stops being reachable, and
@@ -2649,7 +2649,7 @@ export default function EinstellungenView() {
                               : "muted einzeilig"
                           }
                         >
-                          {r.certificate || "—"}
+                          {r.certificate || "-"}
                         </td>
                         <td className="zeilen-aktionen">
                           <button
@@ -3021,7 +3021,7 @@ export default function EinstellungenView() {
             <p className="muted small">
               Nötig, damit Änderungen an der Konfigurationsdatei greifen. Gelesen wird sie nur
               beim Start. Betrifft <strong>allein diesen Dienst</strong>; Oberfläche und
-              Datenbank laufen weiter. 1–2 s ohne Antwort.
+              Datenbank laufen weiter. 1-2 s ohne Antwort.
             </p>
             <p className="muted small">
               Der Dienst beendet sich selbst. Gestartet wird er von dem, was ihn betreibt:
