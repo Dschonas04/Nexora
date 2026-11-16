@@ -152,8 +152,10 @@ when the database approaches a gigabyte, not before.
   whole instance. Templates stay out of the tree, search, graph and export
 - **Table of contents**: the headings of a page beside it, current while typing
 - **Diagrams**: a ```mermaid code block is drawn as a diagram below it
-  (flowchart, sequence, class, state …; no Gantt charts or timelines), and
-  stays plain Mermaid text in every export
+  (flowchart, sequence, pie, bar, line, mind map, state …; no Gantt charts or
+  timelines), and stays plain Mermaid text in every export. The "/" menu
+  offers a template per kind; a click on the picture opens it with the text
+  beside a live preview, and pie, bar and line charts as a table
 - **Attachments**: stored on local disk or in any S3-compatible bucket (MinIO,
   Garage, Ceph, AWS), and the handlers never learn which. Upload files per page,
   with a quick viewer for images, PDFs

@@ -1,7 +1,7 @@
 // The block editor, a thin wrapper around BlockNote. Everything specific to
 // Nexora sits around it: [[wiki-links]] as clickable text, and an "@" menu that
 // inserts one. BlockNote itself knows nothing about either.
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DefaultReactSuggestionItem,
   SuggestionMenuController,
@@ -24,6 +24,8 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { useDesign } from "../design";
 import { sprache } from "../sprache";
 import { diagrammErweiterung, setzeDiagrammThema } from "./Diagramm";
+import DiagrammFenster from "./DiagrammFenster";
+import { DIAGRAMMVORLAGEN } from "./DiagrammVorlagen";
 
 // The editor's own menus sit inside BlockNote, where the interface translation
 // does not reach (it must not touch the text of a page). Nexora's additions to
@@ -342,39 +344,54 @@ export default function Editor({
     return seiten;
   };
 
-  // Nexora's own entry in the "/" menu: a diagram. It goes into a group of its
-  // own after BlockNote's, so the familiar entries keep their places.
+  // Nexora's own entries in the "/" menu: diagram templates. They go into a
+  // group of their own after BlockNote's, so the familiar entries keep their
+  // places.
   const eigeneEintraege = (): DefaultReactSuggestionItem[] => {
-    const gruppe = "Nexora";
-    const blockHier = (neu: PartialBlock) => {
+    const blockHier = (neu: PartialBlock): string | undefined => {
       const hier = editor.getTextCursorPosition().block;
       const leer =
         Array.isArray(hier.content) && hier.content.length === 0 && hier.type === "paragraph";
-      if (leer) editor.updateBlock(hier, neu);
-      else editor.insertBlocks([neu], hier, "after");
+      if (leer) return editor.updateBlock(hier, neu).id;
+      return editor.insertBlocks([neu], hier, "after")[0]?.id;
     };
-    return [
-      {
-        title: je("Diagramm", "Diagram", "Diagramme"),
-        subtext: je(
-          "Ablauf oder Sequenz als Mermaid-Text",
-          "Flowchart or sequence as Mermaid text",
-          "Organigramme ou séquence en texte Mermaid",
-        ),
-        aliases: ["mermaid", "flowchart", "diagramm", "ablauf"],
-        group: gruppe,
-        onItemClick: () =>
-          blockHier({
-            type: "codeBlock",
-            props: { language: "mermaid" },
-            content: je(
-              "flowchart LR\n  A[Idee] --> B{Passt?}\n  B -- ja --> C[Umsetzen]\n  B -- nein --> A",
-              "flowchart LR\n  A[Idea] --> B{Fits?}\n  B -- yes --> C[Build it]\n  B -- no --> A",
-              "flowchart LR\n  A[Idée] --> B{Ça va ?}\n  B -- oui --> C[Réaliser]\n  B -- non --> A",
-            ),
-          } as PartialBlock),
+    return DIAGRAMMVORLAGEN.map((v) => ({
+      title: je(...v.titel),
+      subtext: je(...v.unter),
+      aliases: v.aliases,
+      group: je("Diagramme", "Diagrams", "Diagrammes"),
+      onItemClick: () => {
+        const id = blockHier({
+          type: "codeBlock",
+          props: { language: "mermaid" },
+          content: je(...v.code),
+        } as PartialBlock);
+        // Straight into the dialog: a template is a starting point, and the
+        // table for pie and bar charts is the reason to pick one of those.
+        window.setTimeout(() => diagrammOeffnen(id), 0);
       },
-    ];
+    }));
+  };
+
+  // Opens the dialog for the Mermaid block with this id, or for the block a
+  // picture under it belongs to.
+  const [diagramm, setDiagramm] = useState<{ id: string; code: string } | null>(null);
+  const diagrammOeffnen = (id: string | undefined) => {
+    if (!id) return;
+    const block = editor.getBlock(id);
+    if (!block || block.type !== "codeBlock") return;
+    const inhalt = Array.isArray(block.content) ? block.content : [];
+    const code = inhalt.map((t) => ("text" in t ? t.text : "")).join("");
+    setDiagramm({ id, code });
+  };
+  const diagrammUebernehmen = (code: string) => {
+    if (!diagramm) return;
+    const block = editor.getBlock(diagramm.id);
+    // Through BlockNote and not around it: the change goes into the undo
+    // history and, when writing together, to everybody else on the page.
+    if (block) editor.updateBlock(block, { content: code } as PartialBlock);
+    setDiagramm(null);
+    onChange?.(editor.document);
   };
 
   // Navigate when a [[wiki-link]] token is clicked. Runs in the capture phase
@@ -386,6 +403,19 @@ export default function Editor({
   // A click that is not inside a token, or points at a title that does not
   // exist, falls through and behaves like an ordinary click in the text.
   const onClickCapture = (e: React.MouseEvent) => {
+    const ziel = e.target as HTMLElement | null;
+    // Clicks inside the diagram dialog are the dialog's own business.
+    if (ziel?.closest?.(".modal-backdrop")) return;
+    // A click on the picture under a Mermaid block opens the dialog. The
+    // picture is a decoration right after the block's content, so the block
+    // is the one whose DOM contains it.
+    const vorschau = ziel?.closest?.(".diagramm-vorschau");
+    if (vorschau) {
+      e.preventDefault();
+      e.stopPropagation();
+      diagrammOeffnen(vorschau.closest<HTMLElement>("[data-id]")?.dataset.id);
+      return;
+    }
     if (!linkResolver || !onOpenLink) return;
 
     // The fast path: the decoration above has already put the title into a
@@ -436,6 +466,8 @@ export default function Editor({
   // that itself and better.
   const onPasteCapture = (e: React.ClipboardEvent) => {
     if (!editable) return;
+    // Pasting into the diagram dialog's fields is plain text, not Markdown.
+    if ((e.target as HTMLElement | null)?.closest?.(".modal-backdrop")) return;
     const zwischen = e.clipboardData;
     if (!zwischen || zwischen.getData("text/html")) return;
     const text = zwischen.getData("text/plain");
@@ -496,6 +528,14 @@ export default function Editor({
           />
         )}
       </BlockNoteView>
+      {diagramm && (
+        <DiagrammFenster
+          code={diagramm.code}
+          editierbar={editable !== false}
+          schliessen={() => setDiagramm(null)}
+          uebernehmen={diagrammUebernehmen}
+        />
+      )}
     </div>
   );
 }

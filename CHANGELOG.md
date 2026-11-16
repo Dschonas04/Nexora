@@ -13,6 +13,26 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 
 ## [Unreleased]
 
+### Added
+
+- **Diagram templates in the "/" menu.** Flowchart, sequence, pie, bar, line,
+  mind map, org chart and state diagram, each a short starting point instead
+  of the one flowchart there was.
+- **Diagram dialog.** A click on a drawn diagram opens it with the Mermaid
+  text beside a live preview; an error shows the spot and keeps the last good
+  picture. Pie, bar and line charts with one series can be edited as a table
+  (title, axes, label and value per row) and switched between the three kinds;
+  the block stays plain Mermaid text. Without write access the dialog shows
+  the picture large and the text to copy.
+
+### Fixed
+
+- **Diagram labels were translated.** Mermaid measures text in the page, and
+  the interface translation turned labels such as "Anmelden" into "Sign in"
+  before the picture was taken.
+- **Bar and line charts were barely visible.** Mermaid's pale default colour
+  is replaced by the series colours, and bars edited in the table start at zero.
+
 ## [3.3.0]: 2026-11-13
 
 ### Added

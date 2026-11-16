@@ -42,53 +42,93 @@ async function mermaidHolen(): Promise<Mermaid> {
   if (eingerichtetDunkel !== dunkel) {
     // "strict": no click handlers, no HTML labels -- the source text is page
     // content anybody with write access may have typed.
-    m.initialize({ startOnLoad: false, securityLevel: "strict", theme: dunkel ? "dark" : "default" });
+    m.initialize({
+      startOnLoad: false,
+      securityLevel: "strict",
+      theme: dunkel ? "dark" : "default",
+      // Mermaid's own bar and line colour is a pale lavender: a line chart on
+      // white was barely there. The same series colours as the graph view.
+      themeVariables: {
+        xyChart: {
+          plotColorPalette: dunkel
+            ? "#5aa9f0, #f0a35a, #6fcf83, #c39af7, #f28b82"
+            : "#2383e2, #e8833a, #2ea043, #8957e5, #cf222e",
+        },
+      },
+    });
     eingerichtetDunkel = dunkel;
   }
   return m;
 }
 
-function zeichnen(ziel: HTMLElement, code: string) {
+/**
+ * Draws one diagram and returns the SVG or the first line of Mermaid's error.
+ * Shared by the picture under the code block and the live preview in the
+ * diagram dialog, so both show exactly the same thing and share the cache.
+ */
+export async function diagrammZeichnen(code: string): Promise<{ svg?: string; fehler?: string }> {
   const schluessel = (dunkel ? "d:" : "h:") + code;
-  const zeigen = (e: { svg?: string; fehler?: string }) => {
-    if (e.svg !== undefined) {
-      ziel.classList.remove("fehler");
-      // As an image and not as markup in the page: whatever the source text
-      // contains, an SVG inside <img> runs no script and reaches no cookie.
-      // Mermaid's own sanitising in "strict" mode is the first fence, this
-      // is the second.
-      const bild = document.createElement("img");
-      bild.alt = "Diagramm";
-      bild.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(e.svg);
-      ziel.replaceChildren(bild);
-    } else {
-      ziel.classList.add("fehler");
-      ziel.textContent = e.fehler ?? "";
-    }
-  };
   const da = fertig.get(schluessel);
-  if (da) return zeigen(da);
-  if (!code.trim()) return;
+  if (da) return da;
+  if (!code.trim()) return { fehler: "" };
   if (PROJEKTPLAN.test(code)) {
     const fehler = "Gantt-Diagramme und Zeitleisten gibt es in Nexora nicht.";
-    return zeigen({ fehler: uebersetze(fehler) ?? fehler });
+    return { fehler: uebersetze(fehler) ?? fehler };
   }
-  ziel.textContent = "…";
-  void (async () => {
-    let e: { svg?: string; fehler?: string };
+  let e: { svg?: string; fehler?: string };
+  try {
+    const m = await mermaidHolen();
+    // Mermaid draws into the page for a moment to measure the text. Without
+    // a box of its own the interface translation sees that draft and turns
+    // "Anmelden" into "Sign in" before the picture is taken.
+    const ablage = document.createElement("div");
+    ablage.className = "notranslate";
+    ablage.setAttribute("translate", "no");
+    ablage.style.cssText = "position:absolute;left:-10000px;top:0;";
+    document.body.appendChild(ablage);
+    let svg: string;
     try {
-      const m = await mermaidHolen();
-      const { svg } = await m.render(`nexora-diagramm-${++zaehler}`, code);
-      e = { svg };
-    } catch (f) {
-      // The first line of Mermaid's message says what is wrong and where; the
-      // rest is a dump of its parser state.
-      e = { fehler: String((f as Error)?.message ?? f).split("\n")[0] };
+      ({ svg } = await m.render(`nexora-diagramm-${++zaehler}`, code, ablage));
+    } finally {
+      ablage.remove();
     }
-    if (fertig.size > 200) fertig.clear();
-    fertig.set(schluessel, e);
-    zeigen(e);
-  })();
+    e = { svg };
+  } catch (f) {
+    // The whole message; the picture under the block shows only its first
+    // line, the dialog shows the part with the pointer to the spot.
+    e = { fehler: String((f as Error)?.message ?? f) };
+  }
+  if (fertig.size > 200) fertig.clear();
+  fertig.set(schluessel, e);
+  return e;
+}
+
+/** Puts a finished picture (or the error) into a box. */
+export function diagrammZeigen(ziel: HTMLElement, e: { svg?: string; fehler?: string }) {
+  if (e.svg !== undefined) {
+    ziel.classList.remove("fehler");
+    // As an image and not as markup in the page: whatever the source text
+    // contains, an SVG inside <img> runs no script and reaches no cookie.
+    // Mermaid's own sanitising in "strict" mode is the first fence, this
+    // is the second.
+    const bild = document.createElement("img");
+    bild.alt = "Diagramm";
+    bild.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(e.svg);
+    ziel.replaceChildren(bild);
+  } else {
+    ziel.classList.add("fehler");
+    // The first line says what is wrong and where; the rest is a dump of the
+    // parser state.
+    ziel.textContent = (e.fehler ?? "").split("\n")[0];
+  }
+}
+
+function zeichnen(ziel: HTMLElement, code: string) {
+  if (!code.trim()) return;
+  const da = fertig.get((dunkel ? "d:" : "h:") + code);
+  if (da) return diagrammZeigen(ziel, da);
+  ziel.textContent = "…";
+  void diagrammZeichnen(code).then((e) => diagrammZeigen(ziel, e));
 }
 
 export const diagrammErweiterung = Extension.create({
@@ -110,6 +150,10 @@ export const diagrammErweiterung = Extension.create({
                     const div = document.createElement("div");
                     div.className = "diagramm-vorschau notranslate";
                     div.contentEditable = "false";
+                    // A click opens the diagram dialog (Editor.tsx); the
+                    // editor's interface translation does not reach in here.
+                    const hinweis = "Diagramm öffnen";
+                    div.title = uebersetze(hinweis) ?? hinweis;
                     zeichnen(div, code);
                     return div;
                   },
