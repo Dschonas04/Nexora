@@ -40,8 +40,8 @@ const (
 	AktRolleGeaendert = "konto.rolle"
 	// An administrator released an account with a password for SSO, or
 	// withdrew that.
-	AktSSOFreigabe = "konto.sso"
-	AktNameGeaendert  = "konto.benutzername"
+	AktSSOFreigabe   = "konto.sso"
+	AktNameGeaendert = "konto.benutzername"
 	// What someone changes on their own account: the displayed name. A
 	// separate event because the log distinguishes an admin touching an
 	// account from someone setting up their own.
