@@ -29,7 +29,9 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
   has a password, matched by address. The password keeps working beside it,
   so the account still gets in when the provider is down. Until now such a
   sign-in was refused with "an administrator must release it" and there was
-  nowhere to do that. Every change is in the audit trail (`konto.sso`).
+  nowhere to do that. Every change is in the audit trail (`konto.sso`). Such
+  an account is taken over only when the provider marks the address as
+  verified, and its own second factor is still asked for after SSO.
 
 ### Fixed
 

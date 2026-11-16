@@ -66,7 +66,9 @@ func (s *Server) LDAPAnmeldung(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := s.kontoAusSSO(r.Context(), email, name, admin, "ldap")
+	// The address comes from the directory the administrator set up and
+	// signed in against, not from something the person typed.
+	u, err := s.kontoAusSSO(r.Context(), email, name, admin, "ldap", true)
 	if err != nil {
 		writeErr(w, http.StatusConflict, err.Error())
 		return

@@ -28,7 +28,9 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+
 	"golang.org/x/oauth2"
+	"nexora/internal/auth"
 
 	"nexora/internal/config"
 	"nexora/internal/lizenz"
@@ -219,9 +221,26 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	admin := gruppeEnthaelt(behauptung, k.OIDCGruppeAdmin)
-	u, err := s.kontoAusSSO(r.Context(), email, name, admin, "oidc")
+	// Only an explicit "verified" counts for an account with a password: a
+	// provider that does not say is not taken at its word there.
+	bestaetigt, _ := behauptung["email_verified"].(bool)
+	u, err := s.kontoAusSSO(r.Context(), email, name, admin, "oidc", bestaetigt)
 	if err != nil {
 		s.ssoFehler(w, r, err.Error())
+		return
+	}
+
+	// The second factor hangs on the account, not on the way in, as with
+	// LDAP. A released password account that has one set up is asked for the
+	// code. The ticket goes in the fragment: it never reaches a server log or
+	// a Referer, and the sign-in page picks it up from there.
+	if s.zweitfaktorAktiv(r.Context(), u.ID) {
+		ticket, err := auth.ZweitTicket(s.Secret, u.ID)
+		if err != nil {
+			s.ssoFehler(w, r, "Die Anmeldung ließ sich nicht fortsetzen.")
+			return
+		}
+		http.Redirect(w, r, "/login#zweit="+url.QueryEscape(ticket), http.StatusFound)
 		return
 	}
 
@@ -243,7 +262,10 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 }
 
 // kontoAusSSO finds or creates the account.
-func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool, herkunft string) (models.User, error) {
+//
+// adresseBestaetigt says whether the provider vouched for the address. A
+// released account with a password is taken over only then.
+func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool, herkunft string, adresseBestaetigt bool) (models.User, error) {
 	var u models.User
 	var hash string
 	var freigegeben bool
@@ -267,7 +289,7 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 		// then left as it is: the password account was given its role by a
 		// person, not by a group in the directory.
 		if !strings.HasPrefix(hash, "sso:") {
-			if freigegeben {
+			if freigegeben && adresseBestaetigt {
 				return u, nil
 			}
 			return u, errors.New("Für diese Adresse gibt es bereits ein Konto. " +

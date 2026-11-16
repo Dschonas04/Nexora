@@ -17,7 +17,16 @@ export default function Login() {
   // The ticket from the first step. As long as it stands, the sign-in is half
   // done: the password was right, the code is missing. It holds no session, is
   // valid for five minutes and opens nothing by itself.
-  const [ticket, setTicket] = useState("");
+  //
+  // Coming back from SSO on an account with a second factor, the server puts
+  // the ticket in the fragment (#zweit=...), where no server log sees it. It
+  // is taken from there once and the address cleaned up.
+  const [ticket, setTicket] = useState(() => {
+    const m = window.location.hash.match(/^#zweit=([^&]+)$/);
+    if (!m) return "";
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    return decodeURIComponent(m[1]);
+  });
   const [code, setCode] = useState("");
 
   // What this instance offers. Asked of the server rather than guessed: an SSO
