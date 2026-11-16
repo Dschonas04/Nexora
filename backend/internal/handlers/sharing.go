@@ -138,7 +138,8 @@ func (s *Server) RemoveShare(w http.ResponseWriter, r *http.Request) {
 func (s *Server) ListUsers(w http.ResponseWriter, r *http.Request) {
 	rows, err := s.Pool.Query(r.Context(),
 		`SELECT id, email, name, coalesce(benutzername, ''), role, created_at, bild_stand,
-		        (totp_geheim <> '' AND totp_seit IS NOT NULL)
+		        (totp_geheim <> '' AND totp_seit IS NOT NULL),
+		        password_hash LIKE 'sso:%', sso_freigegeben
 		 FROM users ORDER BY name`)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "query failed")
@@ -150,11 +151,41 @@ func (s *Server) ListUsers(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var u models.User
 		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &u.Role, &u.CreatedAt,
-			&u.BildStand, &u.Zweitfaktor); err == nil {
+			&u.BildStand, &u.Zweitfaktor, &u.SSOKonto, &u.SSOFreigegeben); err == nil {
 			list = append(list, u)
 		}
 	}
 	writeJSON(w, http.StatusOK, list)
+}
+
+// SSOFreigeben releases an existing account with a password for sign-in
+// through the provider, or withdraws that. Admins only. The password stays: if
+// the provider is down, the account still gets in.
+func (s *Server) SSOFreigeben(w http.ResponseWriter, r *http.Request) {
+	uid := middleware.UserID(r)
+	if !s.isAdmin(r.Context(), uid) {
+		writeErr(w, http.StatusForbidden, "admin only")
+		return
+	}
+	var req struct {
+		Allowed bool `json:"allowed"`
+	}
+	if err := decode(r, &req); err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid body")
+		return
+	}
+	target := chi.URLParam(r, "id")
+	tag, err := s.Pool.Exec(r.Context(), `UPDATE users SET sso_freigegeben=$2 WHERE id=$1`, target, req.Allowed)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "update failed")
+		return
+	}
+	if tag.RowsAffected() == 0 {
+		writeErr(w, http.StatusNotFound, "user not found")
+		return
+	}
+	s.spurAusRequest(r, AktSSOFreigabe, "konto", target, "", map[string]interface{}{"freigegeben": req.Allowed})
+	writeJSON(w, http.StatusOK, map[string]bool{"allowed": req.Allowed})
 }
 
 type roleReq struct {

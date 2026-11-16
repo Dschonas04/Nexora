@@ -28,6 +28,7 @@ const BESCHRIFTUNG: Record<string, string> = {
   "konto.angelegt": "Account created",
   "konto.geloescht": "Account deleted",
   "konto.rolle": "Role changed",
+  "konto.sso": "SSO release changed",
   "konto.passwort": "Password changed",
   "konto.passwort.gesetzt": "Password reset",
   "konto.passwort.fehlgeschlagen": "Password change refused",
@@ -107,6 +108,7 @@ const AUFFAELLIG = new Set([
   "seite.entfernt",
   "konto.geloescht",
   "konto.rolle",
+  "konto.sso",
   "konto.passwort.gesetzt",
   "konto.passwort.fehlgeschlagen",
   // Removing another account's second factor is the route a takeover runs

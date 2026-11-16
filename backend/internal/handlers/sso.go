@@ -246,9 +246,11 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool, herkunft string) (models.User, error) {
 	var u models.User
 	var hash string
+	var freigegeben bool
 	err := s.Pool.QueryRow(ctx,
-		`SELECT id, email, name, coalesce(benutzername, ''), password_hash, role, created_at FROM users WHERE email=$1`,
-		email).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &hash, &u.Role, &u.CreatedAt)
+		`SELECT id, email, name, coalesce(benutzername, ''), password_hash, role, created_at, sso_freigegeben
+		 FROM users WHERE email=$1`,
+		email).Scan(&u.ID, &u.Email, &u.Name, &u.Benutzername, &hash, &u.Role, &u.CreatedAt, &freigegeben)
 
 	if err == nil {
 		// Only an account that was EXPLICITLY created through SSO is taken
@@ -259,7 +261,15 @@ func (s *Server) kontoAusSSO(ctx context.Context, email, name string, admin bool
 		// hole: whoever can set an address in the directory would have attached
 		// themselves to a stranger's account as soon as its field was empty for
 		// whatever reason.
+		//
+		// An account with a password counts only once an administrator has
+		// released it in the account dialog (sso_freigegeben). Its role is
+		// then left as it is: the password account was given its role by a
+		// person, not by a group in the directory.
 		if !strings.HasPrefix(hash, "sso:") {
+			if freigegeben {
+				return u, nil
+			}
 			return u, errors.New("Für diese Adresse gibt es bereits ein Konto. " +
 				"Ein Administrator muss es freigeben, bevor SSO darauf zugreift.")
 		}

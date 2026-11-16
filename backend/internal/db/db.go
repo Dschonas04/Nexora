@@ -524,6 +524,12 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS sprache text NOT NULL DEFAULT '';
 -- mail nobody asked for ends up as spam, and then the one that matters too.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS mail_benachrichtigung boolean NOT NULL DEFAULT false;
 
+-- An existing account with a password that an administrator has released for
+-- SSO: a sign-in through the provider with the same address then lands on it,
+-- and the password keeps working beside it. Off by default, see kontoAusSSO
+-- for why an address alone is not enough.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS sso_freigegeben boolean NOT NULL DEFAULT false;
+
 -- Templates, a table of their own this time.
 --
 -- The first attempt (removed in 2.x) was a tick on an ordinary page, and that

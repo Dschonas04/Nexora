@@ -1506,4 +1506,13 @@ export const PAARE: [string, string][] = [
   ["Linie", "Line"],
   ["Diagramm öffnen", "Open diagram"],
   ["Nur Kreis-, Balken- und Liniendiagramme mit einer Datenreihe", "Only pie, bar and line charts with one data series"],
+  // SSO release in the account dialog
+  ["Angelegt über SSO, ohne Passwort.", "Created through SSO, without a password."],
+  ["Nicht freigegeben: Eine Anmeldung über SSO mit derselben Adresse wird abgewiesen.", "Not released: a sign-in through SSO with the same address is refused."],
+  ["Freigegeben: Eine Anmeldung über SSO mit derselben Adresse landet auf diesem Konto. Das Passwort gilt weiter.", "Released: a sign-in through SSO with the same address lands on this account. The password keeps working."],
+  ["Freigeben", "Release"],
+  ["Entziehen", "Withdraw"],
+  ["SSO-Freigabe geändert", "SSO release changed"],
+  ["{0} kann sich jetzt auch über SSO anmelden.", "{0} can now also sign in through SSO."],
+  ["SSO-Freigabe für {0} entzogen.", "SSO release withdrawn for {0}."],
 ];

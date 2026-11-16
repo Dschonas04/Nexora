@@ -21,6 +21,10 @@ export interface User {
   imageVersion?: string;
   /** Whether a second factor is set up on this account. */
   twoFactor?: boolean;
+  /** Created through the provider, no password. */
+  ssoAccount?: boolean;
+  /** Has a password and was released for SSO by an administrator. */
+  ssoAllowed?: boolean;
 }
 
 /**
@@ -1197,6 +1201,8 @@ export const api = {
   deleteUser: (id: string) => req<void>(`/users/${id}`, { method: "DELETE" }),
   // Remove another account's second factor, for the lost phone. The account
   // signs in with the password alone again afterwards.
+  ssoFreigeben: (id: string, allowed: boolean) =>
+    req<{ allowed: boolean }>(`/users/${id}/sso`, { method: "PUT", body: JSON.stringify({ allowed }) }),
   zweitfaktorZuruecksetzen: (id: string) =>
     req<{ ok: boolean }>(`/users/${id}/two-factor`, { method: "DELETE" }),
   setUserRole: (id: string, role: string) =>

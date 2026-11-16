@@ -30,3 +30,4 @@ Administrator
 Markdown (.md)
 PDF (.pdf)
 Word (.docx)
+SSO

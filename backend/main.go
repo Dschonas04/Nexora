@@ -519,6 +519,8 @@ func main() {
 			r.Post("/users", h.CreateUser)
 			r.Delete("/users/{id}", h.DeleteUser)
 			r.Put("/users/{id}/role", h.SetUserRole)
+			// Release an account with a password for SSO; see sharing.go.
+			r.Put("/users/{id}/sso", h.SSOFreigeben)
 			// An account may set its own login name, which is why the check
 			// sits in the handler and not in this chain.
 			r.Put("/users/{id}/username", h.BenutzernameSetzen)

@@ -24,6 +24,12 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
   (title, axes, label and value per row) and switched between the three kinds;
   the block stays plain Mermaid text. Without write access the dialog shows
   the picture large and the text to copy.
+- **Release an existing account for SSO.** The account dialog has a switch
+  that lets a sign-in through the provider land on an account that already
+  has a password, matched by address. The password keeps working beside it,
+  so the account still gets in when the provider is down. Until now such a
+  sign-in was refused with "an administrator must release it" and there was
+  nowhere to do that. Every change is in the audit trail (`konto.sso`).
 
 ### Fixed
 

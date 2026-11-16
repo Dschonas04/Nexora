@@ -30,6 +30,11 @@ type User struct {
 	// see in the account list who still has none -- that is the question one
 	// asks of such a list.
 	Zweitfaktor bool `json:"twoFactor"`
+	// SSOKonto: created through the provider, has no password at all.
+	// SSOFreigegeben: has a password and was released for SSO by an
+	// administrator. The account dialog shows the one and switches the other.
+	SSOKonto       bool `json:"ssoAccount"`
+	SSOFreigegeben bool `json:"ssoAllowed"`
 }
 
 // Space is a top-level container grouping pages beyond simple nesting.

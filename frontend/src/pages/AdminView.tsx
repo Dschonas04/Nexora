@@ -477,6 +477,17 @@ function KontoFenster({
     }
   };
 
+  const ssoUmschalten = async (an: boolean) => {
+    try {
+      await api.ssoFreigeben(konto.id, an);
+      melden(an ? `${konto.name} kann sich jetzt auch über SSO anmelden.` : `SSO-Freigabe für ${konto.name} entzogen.`);
+      nachladen();
+      schliessen();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
   const zweitfaktorWeg = async () => {
     if (
       !(await frage({
@@ -607,6 +618,24 @@ function KontoFenster({
             None set up. Only the account itself can set one up, under Access; the
             administration can only remove it.
           </p>
+        )}
+      </div>
+
+      <div className="fenster-abschnitt">
+        <div className="modal-label">SSO</div>
+        {konto.ssoAccount ? (
+          <p className="muted small">Angelegt über SSO, ohne Passwort.</p>
+        ) : (
+          <div className="fenster-zeile">
+            <span className="muted small">
+              {konto.ssoAllowed
+                ? "Freigegeben: Eine Anmeldung über SSO mit derselben Adresse landet auf diesem Konto. Das Passwort gilt weiter."
+                : "Nicht freigegeben: Eine Anmeldung über SSO mit derselben Adresse wird abgewiesen."}
+            </span>
+            <button className="btn" onClick={() => ssoUmschalten(!konto.ssoAllowed)}>
+              {konto.ssoAllowed ? "Entziehen" : "Freigeben"}
+            </button>
+          </div>
         )}
       </div>
     </Fenster>

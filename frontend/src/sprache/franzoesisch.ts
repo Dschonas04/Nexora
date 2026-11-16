@@ -1429,4 +1429,12 @@ export const FRANZOESISCH: Record<string, string> = {
   "Line": "Courbe",
   "Open diagram": "Ouvrir le diagramme",
   "Only pie, bar and line charts with one data series": "Uniquement camemberts, barres et courbes à une seule série",
+  "Created through SSO, without a password.": "Créé via SSO, sans mot de passe.",
+  "Not released: a sign-in through SSO with the same address is refused.": "Non autorisé : une connexion SSO avec la même adresse est refusée.",
+  "Released: a sign-in through SSO with the same address lands on this account. The password keeps working.": "Autorisé : une connexion SSO avec la même adresse arrive sur ce compte. Le mot de passe reste valable.",
+  "Release": "Autoriser",
+  "Withdraw": "Retirer",
+  "SSO release changed": "Autorisation SSO modifiée",
+  "{0} can now also sign in through SSO.": "{0} peut désormais aussi se connecter via SSO.",
+  "SSO release withdrawn for {0}.": "Autorisation SSO retirée pour {0}.",
 };
