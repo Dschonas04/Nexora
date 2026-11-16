@@ -251,6 +251,14 @@ fatal.
 
 ## OIDC / Keycloak · paid extra `sso`
 
+Easier than the file: **Administration → Access → Sign-in through SSO**. There
+`public_url`, `oidc_enabled`, `oidc_issuer`, `oidc_client_id`, `oidc_secret`,
+`oidc_button_text` and `oidc_admin_group` can be set and apply at once, without
+a restart; "Check connection" fetches the issuer's discovery document and shows
+the callback address to register. A value set there wins over this file and
+the environment, "reset" hands it back to them. The secret is never shown
+again, only replaced. Scopes and claim names stay file-only.
+
 | Key | Environment | Default | What it does |
 |---|---|---|---|
 | `oidc_enabled` | `NEXORA_OIDC_ENABLED` | `nein` | Requires `public_url`, or the callback cannot be built, warned about |

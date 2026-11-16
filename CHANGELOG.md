@@ -24,6 +24,12 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
   (title, axes, label and value per row) and switched between the three kinds;
   the block stays plain Mermaid text. Without write access the dialog shows
   the picture large and the text to copy.
+- **SSO set up in the administration.** Under Access → Sign-in through SSO:
+  public address, on/off, issuer, client ID, client secret, button label and
+  admin group, effective at once without a restart, plus a connection check
+  that reads the issuer's discovery document and shows the callback address.
+  `config.conf` and the environment remain the fallback. The secret is never
+  sent back to the browser or written to the audit trail.
 - **Release an existing account for SSO.** The account dialog has a switch
   that lets a sign-in through the provider land on an account that already
   has a password, matched by address. The password keeps working beside it,

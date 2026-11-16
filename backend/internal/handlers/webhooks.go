@@ -260,8 +260,8 @@ func (s *Server) WebhookTesten(w http.ResponseWriter, r *http.Request) {
 func (s *Server) webhookKoerper(ereignis string, felder map[string]interface{}) []byte {
 	felder["event"] = ereignis
 	felder["timestamp"] = time.Now().UTC().Format(time.RFC3339)
-	if s.SSO.OeffentlicheURL != "" {
-		felder["instance"] = strings.TrimRight(s.SSO.OeffentlicheURL, "/")
+	if s.oeffentlicheURL() != "" {
+		felder["instance"] = strings.TrimRight(s.oeffentlicheURL(), "/")
 	}
 	b, _ := json.Marshal(felder)
 	return b
@@ -355,8 +355,8 @@ func (s *Server) seitenFelder(ctx context.Context, pageID, akteurID string) map[
 	var name string
 	_ = s.Pool.QueryRow(ctx, `SELECT name FROM users WHERE id=$1`, akteurID).Scan(&name)
 	seite := map[string]interface{}{"id": pageID, "title": titel, "spaceId": space}
-	if s.SSO.OeffentlicheURL != "" {
-		seite["url"] = strings.TrimRight(s.SSO.OeffentlicheURL, "/") + "/page/" + pageID
+	if s.oeffentlicheURL() != "" {
+		seite["url"] = strings.TrimRight(s.oeffentlicheURL(), "/") + "/page/" + pageID
 	}
 	return map[string]interface{}{
 		"page":  seite,

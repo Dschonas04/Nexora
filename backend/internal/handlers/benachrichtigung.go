@@ -99,7 +99,7 @@ func (s *Server) BenachrichtigungTesten(w http.ResponseWriter, r *http.Request) 
 		writeErr(w, http.StatusBadRequest, "Dein Konto hat keine E-Mail-Adresse.")
 		return
 	}
-	betreff, text := testMail(sprache, s.SSO.OeffentlicheURL)
+	betreff, text := testMail(sprache, s.oeffentlicheURL())
 	ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
 	defer cancel()
 	if err := s.Mail.Senden(ctx, an, betreff, text); err != nil {
@@ -128,7 +128,7 @@ func (s *Server) mailZuNachricht(empfaenger, art, pageID, ausloeserName, seitenT
 			Scan(&an, &sprache, &ein); err != nil || !ein || strings.TrimSpace(an) == "" {
 			return
 		}
-		betreff, inhalt := nachrichtMail(sprache, art, pageID, ausloeserName, seitenTitel, text, s.SSO.OeffentlicheURL)
+		betreff, inhalt := nachrichtMail(sprache, art, pageID, ausloeserName, seitenTitel, text, s.oeffentlicheURL())
 		if err := s.Mail.Senden(ctx, an, betreff, inhalt); err != nil {
 			// The account id and not the address: the log is read by more
 			// people than the inbox.

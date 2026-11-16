@@ -415,6 +415,8 @@ func main() {
 			r.Get("/settings", h.ListEinstellungen)
 			r.Put("/settings", h.SetzeEinstellung)
 			r.Delete("/settings", h.LoescheEinstellung)
+			// Checks the SSO values in the administration against the issuer.
+			r.Post("/settings/sso-check", h.SSOPruefen)
 			r.Get("/system", h.SystemZustand)
 			// Sign-in attempts. Reading the rest of the audit trail is a paid
 			// extra, this is not: who is knocking at the door belongs to

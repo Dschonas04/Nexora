@@ -29,15 +29,18 @@ import (
 // browser so the page does not carry its own copy that drifts. Short lines on
 // purpose: the settings page is a switchboard, not a manual.
 type Einstellung struct {
-	Schluessel   string `json:"key"`
-	Wert         string `json:"value"`
-	Art          string `json:"type"` // "janein", "zahl", "text", "liste"
-	Titel        string `json:"title"`
-	Erklaerung   string `json:"description"`
-	Warnung      string `json:"warning,omitempty"`
-	Vorgabe      string `json:"default"`
-	Umgebung     string `json:"fromEnv,omitempty"` // env var that overrides this key at start
-	AusDatei     bool   `json:"fromFile"`          // true: value still comes from config.conf
+	Schluessel string `json:"key"`
+	Wert       string `json:"value"`
+	Art        string `json:"type"` // "janein", "zahl", "text", "liste"
+	Titel      string `json:"title"`
+	Erklaerung string `json:"description"`
+	Warnung    string `json:"warning,omitempty"`
+	Vorgabe    string `json:"default"`
+	Umgebung   string `json:"fromEnv,omitempty"` // env var that overrides this key at start
+	AusDatei   bool   `json:"fromFile"`          // true: value still comes from config.conf
+	// Hinterlegt: for a secret the value never travels to the browser, only
+	// whether one is stored.
+	Hinterlegt   bool   `json:"isSet,omitempty"`
 	GeaendertVon string `json:"updatedBy,omitempty"`
 	GeaendertAm  string `json:"updatedAt,omitempty"`
 }
@@ -109,6 +112,45 @@ var bekannt = map[string]struct {
 		Erklaerung: "Änderungen laufen als einzelne Schritte über WebSocket, jeder Reiter sieht sie sofort. Schreibrecht kommt aus der Freigabe der Seite.",
 		Warnung:    "Aus = die Seite wird beim Speichern vollständig geschrieben, der letzte Schreiber gewinnt. Die Konflikterkennung bleibt.",
 	},
+	// Sign-in through an identity provider (paid extra "sso"). Set here, these
+	// take effect at once, no restart: the provider is looked up anew at every
+	// sign-in anyway. config.conf and the environment stay the fallback.
+	"public_url": {
+		Art:        "text",
+		Titel:      "Öffentliche Adresse",
+		Erklaerung: "Die Adresse, unter der der Browser Nexora aufruft, ohne Schrägstrich am Ende, etwa https://wiki.example.de. Daraus entsteht die Rücksprungadresse für SSO, dazu die Links in Mails und Webhooks.",
+	},
+	"oidc_enabled": {
+		Art:        "janein",
+		Titel:      "Anmeldung über SSO",
+		Erklaerung: "An: Die Anmeldeseite zeigt einen Knopf für den Anbieter. Konten werden über die bestätigte E-Mail-Adresse gefunden oder beim ersten Mal angelegt. Ein bestehendes Konto mit Passwort muss unter Konten für SSO freigegeben werden.",
+		Warnung:    "Braucht Aussteller, Client-ID und öffentliche Adresse. Die Anmeldung mit Passwort bleibt daneben bestehen.",
+	},
+	"oidc_issuer": {
+		Art:        "text",
+		Titel:      "Aussteller (Issuer)",
+		Erklaerung: "Adresse des Realms beim Anbieter, bei Keycloak https://host:8180/realms/<realm>. Nexora liest darunter /.well-known/openid-configuration.",
+	},
+	"oidc_client_id": {
+		Art:        "text",
+		Titel:      "Client-ID",
+		Erklaerung: "Name des Clients beim Anbieter. Dort als Rücksprungadresse <öffentliche Adresse>/api/auth/oidc/callback eintragen.",
+	},
+	"oidc_secret": {
+		Art:        "geheim",
+		Titel:      "Client-Geheimnis",
+		Erklaerung: "Das Geheimnis des vertraulichen Clients. Wird nie angezeigt, nur ersetzt. Leer bei einem öffentlichen Client.",
+	},
+	"oidc_button_text": {
+		Art:        "text",
+		Titel:      "Beschriftung des Knopfes",
+		Erklaerung: "Steht auf dem Knopf der Anmeldeseite, etwa „Mit Keycloak anmelden“.",
+	},
+	"oidc_admin_group": {
+		Art:        "text",
+		Titel:      "Gruppe für Administratoren",
+		Erklaerung: "Wer diese Gruppe im Token führt, wird Administrator, sofern das Konto über SSO angelegt wurde. Leer: niemand wird über SSO Administrator.",
+	},
 	"seitenbreite": {
 		Art:        "auswahl",
 		Titel:      "Breite einer Seite",
@@ -127,6 +169,13 @@ var umgebungsname = map[string]string{
 	"max_attachment_mb": "NEXORA_MAX_ATTACHMENT_MB",
 	"session_hours":     "NEXORA_SESSION_HOURS",
 	"search_dictionary": "NEXORA_SEARCH_DICTIONARY",
+	"public_url":        "NEXORA_PUBLIC_URL",
+	"oidc_enabled":      "NEXORA_OIDC_ENABLED",
+	"oidc_issuer":       "NEXORA_OIDC_ISSUER",
+	"oidc_client_id":    "NEXORA_OIDC_CLIENT_ID",
+	"oidc_secret":       "NEXORA_OIDC_SECRET",
+	"oidc_button_text":  "NEXORA_OIDC_BUTTON_TEXT",
+	"oidc_admin_group":  "NEXORA_OIDC_ADMIN_GROUP",
 }
 
 // grundtoene are the permitted base tones. A fixed list instead of free
@@ -203,6 +252,20 @@ func ausDatei(schluessel string, k config.Konfig) string {
 		return "nein"
 	case "zweitfaktor_aussteller":
 		return "Nexora"
+	case "public_url":
+		return k.OeffentlicheURL
+	case "oidc_enabled":
+		return janein(k.OIDCAktiv)
+	case "oidc_issuer":
+		return k.OIDCAussteller
+	case "oidc_client_id":
+		return k.OIDCClientID
+	case "oidc_secret":
+		return k.OIDCGeheimnis
+	case "oidc_button_text":
+		return k.OIDCKnopfText
+	case "oidc_admin_group":
+		return k.OIDCGruppeAdmin
 	}
 	return ""
 }
@@ -382,6 +445,8 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 		"max_attachment_mb", "session_hours", "trash_days", "search_dictionary",
 		"echtzeit",
 		"seitenbreite",
+		"public_url", "oidc_enabled", "oidc_issuer", "oidc_client_id", "oidc_secret",
+		"oidc_button_text", "oidc_admin_group",
 	}
 
 	liste := make([]Einstellung, 0, len(reihenfolge))
@@ -400,6 +465,10 @@ func (s *Server) ListEinstellungen(w http.ResponseWriter, r *http.Request) {
 		}
 		if a, ok := art[k]; ok {
 			e.GeaendertVon, e.GeaendertAm = a.von, a.am
+		}
+		if b.Art == "geheim" {
+			e.Hinterlegt = e.Wert != ""
+			e.Wert, e.Vorgabe = "", ""
 		}
 		liste = append(liste, e)
 	}
@@ -469,7 +538,16 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, http.StatusBadRequest, "erwartet normal, breit oder voll")
 			return
 		}
+	case "geheim":
+		// Nothing to check; an empty value removes the secret.
 	case "text":
+		if (req.Schluessel == "public_url" || req.Schluessel == "oidc_issuer") && wertNeu != "" {
+			wertNeu = strings.TrimRight(wertNeu, "/")
+			if !strings.HasPrefix(wertNeu, "https://") && !strings.HasPrefix(wertNeu, "http://") {
+				writeErr(w, http.StatusBadRequest, "erwartet eine Adresse mit https://")
+				return
+			}
+		}
 		if req.Schluessel == "search_dictionary" {
 			switch wertNeu {
 			case "german", "english", "simple":
@@ -509,9 +587,17 @@ func (s *Server) SetzeEinstellung(w http.ResponseWriter, r *http.Request) {
 	speicher.werte[req.Schluessel] = wertNeu
 	speicher.Unlock()
 
+	// A secret neither goes into the audit trail nor back to the browser.
+	sichtbar := wertNeu
+	if b.Art == "geheim" {
+		sichtbar = ""
+		if wertNeu != "" {
+			sichtbar = "(geändert)"
+		}
+	}
 	s.spurAusRequest(r, AktEinstellung, "einstellung", req.Schluessel, b.Titel,
-		map[string]interface{}{"wert": wertNeu})
-	writeJSON(w, http.StatusOK, map[string]string{"value": wertNeu})
+		map[string]interface{}{"wert": sichtbar})
+	writeJSON(w, http.StatusOK, map[string]string{"value": sichtbar})
 }
 
 // einstellungSchreiben stores a value and brings the cache along with it.
@@ -538,9 +624,7 @@ func (s *Server) einstellungSchreiben(ctx context.Context, schluessel, wertNeu s
 // speicherOeffentlicheURL is the address the instance can be reached at, as
 // far as anybody has entered one.
 func speicherOeffentlicheURL() string {
-	speicher.RLock()
-	defer speicher.RUnlock()
-	return speicher.basis.OeffentlicheURL
+	return strings.TrimRight(wert("public_url"), "/")
 }
 
 // LoescheEinstellung removes the override and lets the file value take over

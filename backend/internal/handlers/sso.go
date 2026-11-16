@@ -34,6 +34,7 @@ import (
 
 	"nexora/internal/config"
 	"nexora/internal/lizenz"
+	"nexora/internal/middleware"
 	"nexora/internal/models"
 )
 
@@ -46,6 +47,34 @@ type SSOEinstellungen struct {
 	// outside. Without it no callback address can be formed.
 	OeffentlicheURL string
 }
+
+// oidcWerte are the OIDC settings in effect right now: a value set in the
+// administration wins over config.conf and the environment, and applies
+// without a restart. Scopes and claim names stay in the file; they are only
+// changed together with the provider anyway.
+type oidcWerte struct {
+	Aktiv, Aussteller, ClientID, Geheimnis, KnopfText, GruppeAdmin string
+	Bereiche, FeldName, FeldEmail                                  string
+}
+
+func (s *Server) oidcJetzt() oidcWerte {
+	k := s.SSO.Konf
+	return oidcWerte{
+		Aktiv:       wert("oidc_enabled"),
+		Aussteller:  strings.TrimRight(strings.TrimSpace(wert("oidc_issuer")), "/"),
+		ClientID:    strings.TrimSpace(wert("oidc_client_id")),
+		Geheimnis:   wert("oidc_secret"),
+		KnopfText:   wert("oidc_button_text"),
+		GruppeAdmin: wert("oidc_admin_group"),
+		Bereiche:    k.OIDCBereiche,
+		FeldName:    k.OIDCFeldName,
+		FeldEmail:   k.OIDCFeldEmail,
+	}
+}
+
+// oeffentlicheURL is the address the instance is reached at, as set in the
+// administration or the file.
+func (s *Server) oeffentlicheURL() string { return speicherOeffentlicheURL() }
 
 // oidcSitzung remembers what is needed between the outbound and return leg.
 type oidcSitzung struct {
@@ -60,14 +89,20 @@ const oidcKeksName = "nexora_oidc"
 // SSOZustand tells the sign-in page what may be offered.
 func (s *Server) SSOZustand(w http.ResponseWriter, r *http.Request) {
 	k := s.SSO.Konf
+	o := s.oidcJetzt()
+	knopf := o.KnopfText
+	if strings.TrimSpace(knopf) == "" {
+		knopf = "Mit SSO anmelden"
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		// Both only when configured AND licensed. Showing a button that then
 		// answers with 402 would be a promise without cover.
-		"oidc":           k.OIDCAktiv && k.OIDCAussteller != "" && lizenz.Frei(lizenz.SSO),
-		"oidcButtonText": k.OIDCKnopfText,
+		"oidc": o.Aktiv == "ja" && o.Aussteller != "" && o.ClientID != "" &&
+			s.oeffentlicheURL() != "" && lizenz.Frei(lizenz.SSO),
+		"oidcButtonText": knopf,
 		"ldap":           k.LDAPAktiv && k.LDAPServer != "" && lizenz.Frei(lizenz.LDAP),
 		"password":       true,
-		"provider":       kurzerAussteller(k.OIDCAussteller),
+		"provider":       kurzerAussteller(o.Aussteller),
 	})
 }
 
@@ -88,21 +123,27 @@ func kurzerAussteller(url string) string {
 // sign-in, and keeping a cache that goes stale whenever the issuer changes is
 // not worth it.
 func (s *Server) oidcAnbieter(ctx context.Context) (*oidc.Provider, *oauth2.Config, error) {
-	k := s.SSO.Konf
-	if !k.OIDCAktiv || k.OIDCAussteller == "" || k.OIDCClientID == "" {
+	o := s.oidcJetzt()
+	if o.Aktiv != "ja" || o.Aussteller == "" || o.ClientID == "" {
 		return nil, nil, errors.New("OIDC ist nicht eingerichtet")
 	}
-	anbieter, err := oidc.NewProvider(ctx, strings.TrimSuffix(k.OIDCAussteller, "/"))
+	return s.oidcVerbinden(ctx, o)
+}
+
+// oidcVerbinden fetches the discovery document; split off so the test in the
+// administration can check values before SSO is switched on.
+func (s *Server) oidcVerbinden(ctx context.Context, o oidcWerte) (*oidc.Provider, *oauth2.Config, error) {
+	anbieter, err := oidc.NewProvider(ctx, o.Aussteller)
 	if err != nil {
 		return nil, nil, fmt.Errorf("Aussteller nicht erreichbar: %w", err)
 	}
-	bereiche := strings.Fields(k.OIDCBereiche)
+	bereiche := strings.Fields(o.Bereiche)
 	if len(bereiche) == 0 {
 		bereiche = []string{oidc.ScopeOpenID, "email", "profile"}
 	}
 	return anbieter, &oauth2.Config{
-		ClientID:     k.OIDCClientID,
-		ClientSecret: k.OIDCGeheimnis,
+		ClientID:     o.ClientID,
+		ClientSecret: o.Geheimnis,
 		Endpoint:     anbieter.Endpoint(),
 		RedirectURL:  s.rueckAdresse(),
 		Scopes:       bereiche,
@@ -114,7 +155,7 @@ func (s *Server) oidcAnbieter(ctx context.Context) (*oidc.Provider, *oauth2.Conf
 // public URL and not from the request header: an attacker who sets the Host
 // header could otherwise redirect the callback.
 func (s *Server) rueckAdresse() string {
-	basis := strings.TrimSuffix(s.SSO.OeffentlicheURL, "/")
+	basis := strings.TrimSuffix(s.oeffentlicheURL(), "/")
 	return basis + "/api/auth/oidc/callback"
 }
 
@@ -124,7 +165,7 @@ func (s *Server) OIDCStart(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusPaymentRequired, "SSO gehört zum Zusatzumfang")
 		return
 	}
-	if s.SSO.OeffentlicheURL == "" {
+	if s.oeffentlicheURL() == "" {
 		writeErr(w, http.StatusPreconditionFailed,
 			"oeffentliche_url ist nicht gesetzt. Ohne sie gibt es keine Rücksprungadresse.")
 		return
@@ -188,7 +229,7 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 		s.ssoFehler(w, r, "Der Anbieter hat kein id_token geschickt.")
 		return
 	}
-	idToken, err := anbieter.Verifier(&oidc.Config{ClientID: s.SSO.Konf.OIDCClientID}).
+	idToken, err := anbieter.Verifier(&oidc.Config{ClientID: s.oidcJetzt().ClientID}).
 		Verify(r.Context(), rohID)
 	if err != nil {
 		s.ssoFehler(w, r, "Das Token des Anbieters ist nicht gültig.")
@@ -205,9 +246,9 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	k := s.SSO.Konf
-	email := strings.ToLower(strings.TrimSpace(behauptungText(behauptung, k.OIDCFeldEmail, "email")))
-	name := strings.TrimSpace(behauptungText(behauptung, k.OIDCFeldName, "name"))
+	k := s.oidcJetzt()
+	email := strings.ToLower(strings.TrimSpace(behauptungText(behauptung, k.FeldEmail, "email")))
+	name := strings.TrimSpace(behauptungText(behauptung, k.FeldName, "name"))
 	if email == "" {
 		s.ssoFehler(w, r, "Der Anbieter hat keine E-Mail-Adresse mitgeschickt.")
 		return
@@ -220,7 +261,7 @@ func (s *Server) OIDCZurueck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	admin := gruppeEnthaelt(behauptung, k.OIDCGruppeAdmin)
+	admin := gruppeEnthaelt(behauptung, k.GruppeAdmin)
 	// Only an explicit "verified" counts for an account with a password: a
 	// provider that does not say is not taken at its word there.
 	bestaetigt, _ := behauptung["email_verified"].(bool)
@@ -402,4 +443,41 @@ func gruppeEnthaelt(m map[string]any, gesucht string) bool {
 		}
 	}
 	return false
+}
+
+// SSOPruefen checks the OIDC values as they stand: is the issuer reachable,
+// does it publish a discovery document, is a public address there for the
+// callback. Admins only. It cannot check the client secret, that only shows
+// at the first real sign-in.
+func (s *Server) SSOPruefen(w http.ResponseWriter, r *http.Request) {
+	if !s.isAdmin(r.Context(), middleware.UserID(r)) {
+		writeErr(w, http.StatusForbidden, "nur für Administratoren")
+		return
+	}
+	o := s.oidcJetzt()
+	antwort := map[string]any{
+		"callback": "",
+		"licensed": lizenz.Frei(lizenz.SSO),
+		"enabled":  o.Aktiv == "ja",
+	}
+	if u := s.oeffentlicheURL(); u != "" {
+		antwort["callback"] = s.rueckAdresse()
+	}
+	switch {
+	case o.Aussteller == "":
+		antwort["ok"], antwort["message"] = false, "Kein Aussteller eingetragen."
+	case o.ClientID == "":
+		antwort["ok"], antwort["message"] = false, "Keine Client-ID eingetragen."
+	case s.oeffentlicheURL() == "":
+		antwort["ok"], antwort["message"] = false, "Keine öffentliche Adresse eingetragen, ohne sie gibt es keine Rücksprungadresse."
+	default:
+		ctx, abbruch := context.WithTimeout(r.Context(), 10*time.Second)
+		defer abbruch()
+		if _, _, err := s.oidcVerbinden(ctx, o); err != nil {
+			antwort["ok"], antwort["message"] = false, err.Error()
+		} else {
+			antwort["ok"], antwort["message"] = true, "Aussteller erreichbar, Discovery-Dokument gelesen."
+		}
+	}
+	writeJSON(w, http.StatusOK, antwort)
 }

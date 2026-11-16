@@ -342,7 +342,7 @@ export interface Kommentar {
 export interface Einstellung {
   key: string;
   value: string;
-  type: "janein" | "zahl" | "text" | "liste";
+  type: "janein" | "zahl" | "text" | "liste" | "auswahl" | "geheim";
   title: string;
   description: string;
   warning?: string;
@@ -351,6 +351,8 @@ export interface Einstellung {
   fromEnv?: string;
   /** true while the value still comes from config.conf, untouched here. */
   fromFile: boolean;
+  /** Only for secrets: whether one is stored. The value itself never comes. */
+  isSet?: boolean;
   updatedBy?: string;
   updatedAt?: string;
 }
@@ -889,6 +891,11 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ key: schluessel, value: wert }),
     }),
+  ssoPruefen: () =>
+    req<{ ok: boolean; message: string; callback: string; licensed: boolean; enabled: boolean }>(
+      "/settings/sso-check",
+      { method: "POST" },
+    ),
   einstellungZuruecksetzen: (schluessel: string) =>
     req<{ value: string }>(`/settings?key=${encodeURIComponent(schluessel)}`, {
       method: "DELETE",

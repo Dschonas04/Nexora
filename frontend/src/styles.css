@@ -4920,3 +4920,8 @@ textarea::placeholder {
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+/* Result of the SSO check beside its button. */
+.sso-fehler {
+  color: var(--fehler-text);
+}

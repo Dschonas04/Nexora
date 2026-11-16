@@ -769,7 +769,7 @@ export default function EinstellungenView() {
   const [neustartWort, setNeustartWort] = useState("");
 
   // Licence: reading one in and, at the issuer, issuing one.
-  const { lizenz: lizenzJetzt, neuLaden: lizenzNeuLaden } = useLizenz();
+  const { lizenz: lizenzJetzt, neuLaden: lizenzNeuLaden, frei: lizenzFrei } = useLizenz();
   const [schluesselFeld, setSchluesselFeld] = useState("");
   const [ausstellen, setAusstellen] = useState({
     inhaber: "",
@@ -961,6 +961,13 @@ export default function EinstellungenView() {
     try {
       await api.einstellungSetzen(e.key, wert);
       setMeldung({ text: `„${e.title}“ gespeichert.`, type: "ok" });
+      // Drop the draft: for a secret the field would otherwise keep the typed
+      // value and the save button, since the server never sends it back.
+      setEntwurf((v) => {
+        const n = { ...v };
+        delete n[e.key];
+        return n;
+      });
       // The page width comes from the same request as the appearance. Without
       // reloading it the workspace showed the old width until a page reload.
       if (e.key === "seitenbreite") designNeuLaden();
@@ -968,6 +975,20 @@ export default function EinstellungenView() {
     } catch (err) {
       setMeldung({ text: (err as Error).message, type: "fehler" });
       setEntwurf((v) => ({ ...v, [e.key]: e.value }));
+    } finally {
+      setLaeuft(null);
+    }
+  };
+
+  // The result of the last SSO check; it also carries the callback address
+  // that has to be registered with the provider.
+  const [ssoTest, setSsoTest] = useState<{ ok: boolean; message: string; callback: string } | null>(null);
+  const ssoPruefen = async () => {
+    setLaeuft("sso-check");
+    try {
+      setSsoTest(await api.ssoPruefen());
+    } catch (err) {
+      setSsoTest({ ok: false, message: (err as Error).message, callback: "" });
     } finally {
       setLaeuft(null);
     }
@@ -1043,8 +1064,9 @@ export default function EinstellungenView() {
   const feld = (schluessel: string) => {
     const e = holen(schluessel);
     if (!e) return null;
+    const geheim = e.type === "geheim";
     const w = entwurf[e.key] ?? e.value;
-    const geaendert = w !== e.value;
+    const geaendert = geheim ? (entwurf[e.key] ?? "") !== "" : w !== e.value;
 
     return (
       <div className="einstellung" key={e.key}>
@@ -1077,10 +1099,19 @@ export default function EinstellungenView() {
             ) : (
               <>
                 <input
-                  type={e.type === "zahl" ? "number" : "text"}
+                  type={e.type === "zahl" ? "number" : geheim ? "password" : "text"}
                   value={w}
                   disabled={laeuft === e.key}
-                  placeholder={e.type === "liste" ? "leer = keine Einschränkung" : undefined}
+                  autoComplete={geheim ? "new-password" : undefined}
+                  placeholder={
+                    e.type === "liste"
+                      ? "leer = keine Einschränkung"
+                      : geheim
+                        ? e.isSet
+                          ? "hinterlegt, zum Ändern neu eingeben"
+                          : "nicht gesetzt"
+                        : undefined
+                  }
                   onChange={(ev) => setEntwurf((v) => ({ ...v, [e.key]: ev.target.value }))}
                   onKeyDown={(ev) => {
                     if (ev.key === "Enter" && geaendert) speichern(e, w);
@@ -1434,6 +1465,37 @@ export default function EinstellungenView() {
             {feld("registration_open")}
             {feld("allowed_domains")}
             {feld("session_hours")}
+
+            <h3>Anmeldung über SSO</h3>
+            <p className="muted small">
+              Über einen Identitätsanbieter wie Keycloak, Authentik oder Entra ID (OpenID Connect).
+              Die Werte gelten sofort, ohne Neustart.
+            </p>
+            <p className="muted small">Beim Anbieter einen Client anlegen und diese Rücksprungadresse eintragen:</p>
+            <p className="small">
+              <code>{ssoTest?.callback || "<öffentliche Adresse>/api/auth/oidc/callback"}</code>
+            </p>
+            {!lizenzFrei("sso") && (
+              <div className="warnkasten">
+                <strong>SSO gehört zum Zusatzumfang.</strong> Ohne Lizenz mit „sso“ lassen sich die
+                Werte eintragen, der Knopf auf der Anmeldeseite erscheint aber nicht.
+              </div>
+            )}
+            {feld("oidc_enabled")}
+            {feld("public_url")}
+            {feld("oidc_issuer")}
+            {feld("oidc_client_id")}
+            {feld("oidc_secret")}
+            {feld("oidc_button_text")}
+            {feld("oidc_admin_group")}
+            <div className="einstellung-aktionen">
+              <button className="btn" disabled={laeuft === "sso-check"} onClick={ssoPruefen}>
+                Verbindung prüfen
+              </button>
+              {ssoTest && (
+                <span className={"small " + (ssoTest.ok ? "muted" : "sso-fehler")}>{ssoTest.message}</span>
+              )}
+            </div>
 
             <Listenkopf
               titel="Administratoren"
@@ -2703,29 +2765,11 @@ export default function EinstellungenView() {
                   </td>
                 </tr>
                 <tr>
-                  <td>Öffentliche Adresse</td>
-                  <td>
-                    {z.fileOnly.publicUrl || <span className="muted">nicht gesetzt</span>}
-                  </td>
-                </tr>
-                <tr>
                   <td>LDAP</td>
                   <td>
                     {z.fileOnly.ldapEnabled ? (
                       <>
                         an, <code>{z.fileOnly.ldapServer || "kein Server angegeben"}</code>
-                      </>
-                    ) : (
-                      <span className="muted">aus</span>
-                    )}
-                  </td>
-                </tr>
-                <tr>
-                  <td>SSO über OIDC</td>
-                  <td>
-                    {z.fileOnly.oidcEnabled ? (
-                      <>
-                        an, <code>{z.fileOnly.oidcIssuer || "kein Aussteller angegeben"}</code>
                       </>
                     ) : (
                       <span className="muted">aus</span>
