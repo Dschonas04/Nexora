@@ -650,7 +650,13 @@ func (s *Server) LoescheEinstellung(w http.ResponseWriter, r *http.Request) {
 	speicher.Unlock()
 
 	s.spurAusRequest(r, AktEinstellungZurueck, "einstellung", schluessel, "", nil)
-	writeJSON(w, http.StatusOK, map[string]string{"value": wert(schluessel)})
+	// A secret falls back to the file value, which must not reach the browser
+	// either.
+	zurueck := wert(schluessel)
+	if bekannt[schluessel].Art == "geheim" {
+		zurueck = ""
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"value": zurueck})
 }
 
 // SystemZustand is the read-only half of the settings page: what cannot be
