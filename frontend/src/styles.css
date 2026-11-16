@@ -2096,7 +2096,8 @@ textarea::placeholder {
   box-sizing: border-box;
 }
 .einstellung-feld input[type="text"],
-.einstellung-feld input[type="number"] {
+.einstellung-feld input[type="number"],
+.einstellung-feld input[type="password"] {
   width: 220px;
   padding: 6px 9px;
   border: 1px solid var(--border);
