@@ -13,6 +13,15 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [3.4.1]: 2026-11-16
+
+### Changed
+
+- **Go 1.27.4** for backend and single image; the patch releases since 1.27.1
+  carry security fixes in the standard library.
+- Interface texts without dashes: separators are now colons, commas or
+  brackets, empty values show "-". Translations follow the same wording.
+
 ## [3.4.0]: 2026-11-16
 
 ### Added
@@ -389,7 +398,8 @@ this release; see 2.1.0 for what became free since. Markdown import and export
 are free regardless, because the way out of a system must never sit behind a
 key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
-[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.4.0...main
+[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.4.1...main
+[3.4.1]: https://github.com/Dschonas04/Nexora/releases/tag/v3.4.1
 [3.4.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.4.0
 [3.3.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.3.0
 [3.1.2]: https://github.com/Dschonas04/Nexora/releases/tag/v3.1.2
