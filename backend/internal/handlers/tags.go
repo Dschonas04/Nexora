@@ -130,6 +130,52 @@ func (s *Server) CreateTag(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, t)
 }
 
+type updateTagReq struct {
+	Name  *string `json:"name"`
+	Color *string `json:"color"`
+}
+
+var tagFarbe = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
+
+// UpdateTag renames or recolours one of the caller's tags. Both fields are
+// optional; what is missing stays. A new name that another tag of the same
+// account already carries is refused with 409 instead of merging silently.
+func (s *Server) UpdateTag(w http.ResponseWriter, r *http.Request) {
+	uid := middleware.UserID(r)
+	var req updateTagReq
+	if err := decode(r, &req); err != nil {
+		writeErr(w, http.StatusBadRequest, "invalid body")
+		return
+	}
+	if req.Name != nil {
+		n := strings.TrimSpace(*req.Name)
+		if n == "" || len(n) > 80 {
+			writeErr(w, http.StatusBadRequest, "name required")
+			return
+		}
+		req.Name = &n
+	}
+	if req.Color != nil && !tagFarbe.MatchString(*req.Color) {
+		writeErr(w, http.StatusBadRequest, "invalid colour")
+		return
+	}
+	var t models.Tag
+	err := s.Pool.QueryRow(r.Context(),
+		`UPDATE tags SET name = COALESCE($3, name), color = COALESCE($4, color)
+		 WHERE id=$1 AND owner_id=$2
+		 RETURNING id, name, color`,
+		chi.URLParam(r, "id"), uid, req.Name, req.Color).Scan(&t.ID, &t.Name, &t.Color)
+	if err != nil {
+		if strings.Contains(err.Error(), "23505") || strings.Contains(err.Error(), "duplicate key") {
+			writeErr(w, http.StatusConflict, "Ein Schlagwort mit diesem Namen gibt es schon.")
+			return
+		}
+		writeErr(w, http.StatusNotFound, "Schlagwort nicht gefunden")
+		return
+	}
+	writeJSON(w, http.StatusOK, t)
+}
+
 // DeleteTag removes a tag. The page_tags rows go with it through the cascade,
 // so the tag disappears from every page at once.
 func (s *Server) DeleteTag(w http.ResponseWriter, r *http.Request) {

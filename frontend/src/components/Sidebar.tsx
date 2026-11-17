@@ -1231,48 +1231,20 @@ export default function Sidebar(props: Props) {
                 heading to collapse: three entries need no folding. */}
             <div className="sidebar-section leiste-gruppe">
               {/* Tags as a row of their own above the inbox, like the other
-                  places one goes to. Clicking opens the list underneath. */}
-              {tags.length > 0 && (
-                <>
-                  <button
-                    type="button"
-                    className="tree-row leiste-eintrag"
-                    aria-expanded={!zu.has("schlagwoerter")}
-                    onClick={() => klappen("schlagwoerter")}
-                  >
-                    <span className="leiste-symbol" aria-hidden="true"><Etikett /></span>
-                    <span className="tree-label">Tags</span>
-                    <span className="tag-anzahl muted small">{tags.length}</span>
-                  </button>
-                  {!zu.has("schlagwoerter") && (
-                    <div className="schlagwort-zweige">
-                      {sichtbareTags.map((t) => (
-                        <div
-                          key={t.id}
-                          className={"tree-row" + (currentPath === `/tag/${t.id}` ? " active" : "")}
-                          onClick={() => onNavigate(`/tag/${t.id}`)}
-                        >
-                          <span className="tag-dot" style={{ background: t.color }} />
-                          <span className="tree-label">{t.name}</span>
-                          <span className={"tag-anzahl muted small" + (t.count === 0 ? " leer" : "")}>
-                            {t.count}
-                          </span>
-                        </div>
-                      ))}
-                      {tags.length > sichtbareTags.length && (
-                        <div className="tree-row mehr-zeile" onClick={() => setAlleTags(true)}>
-                          <span className="tree-label">{tags.length - sichtbareTags.length} more tags</span>
-                        </div>
-                      )}
-                      {alleTags && tags.length > KURZ && (
-                        <div className="tree-row mehr-zeile" onClick={() => setAlleTags(false)}>
-                          <span className="tree-label">Show less</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
+                  places one goes to. The overview on the right manages them. */}
+              <button
+                type="button"
+                className={
+                  "tree-row leiste-eintrag" +
+                  (currentPath === "/tags" || currentPath.startsWith("/tag/") ? " active" : "")
+                }
+                aria-current={currentPath === "/tags" ? "page" : undefined}
+                onClick={() => onNavigate("/tags")}
+              >
+                <span className="leiste-symbol" aria-hidden="true"><Etikett /></span>
+                <span className="tree-label">Tags</span>
+                {tags.length > 0 && <span className="tag-anzahl muted small">{tags.length}</span>}
+              </button>
               <button
                 type="button"
                 className={"tree-row leiste-eintrag" + (currentPath === "/postfach" ? " active" : "")}

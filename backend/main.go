@@ -590,6 +590,7 @@ func main() {
 			r.Get("/tags", h.ListTags)
 			r.Post("/tags", h.CreateTag)
 			r.Get("/tags/{id}/pages", h.SeitenZuTag)
+			r.Patch("/tags/{id}", h.UpdateTag)
 			r.Delete("/tags/{id}", h.DeleteTag)
 			r.Get("/search", h.Search)
 		})

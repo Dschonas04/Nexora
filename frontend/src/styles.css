@@ -5026,3 +5026,59 @@ textarea::placeholder {
 .schlagwort-zweige {
   padding-left: 14px;
 }
+
+/* Overview of all tags. */
+.schlagwort-seite {
+  max-width: 820px;
+}
+.schlagwort-kopf {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.schlagwort-anlegen,
+.schlagwort-werkzeuge {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 0;
+}
+.schlagwort-anlegen input:not(.farbwahl),
+.schlagwort-werkzeuge input {
+  flex: 1;
+}
+.farbwahl {
+  width: 30px;
+  height: 30px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--flaeche);
+  cursor: pointer;
+}
+.schlagwort-tabelle td {
+  vertical-align: middle;
+}
+.schlagwort-name {
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.schlagwort-name:hover {
+  text-decoration: underline;
+}
+.schlagwort-umbenennen {
+  width: 100%;
+}
+.schlagwort-aktionen {
+  text-align: right;
+  white-space: nowrap;
+}
+.schlagwort-aktionen .icon-btn {
+  width: 26px;
+  height: 26px;
+}

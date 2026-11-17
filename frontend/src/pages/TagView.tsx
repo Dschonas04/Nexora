@@ -61,13 +61,16 @@ export default function TagView({
       return;
     await api.deleteTag(tagId).catch(() => {});
     onTagsChange();
-    nav("/");
+    nav("/tags");
   };
 
   if (!tagId) return null;
 
   return (
     <div className="page-pad">
+      <button className="link-btn" onClick={() => nav("/tags")}>
+        ← Alle Schlagwörter
+      </button>
       <div className="tagkopf">
         <h2>
           {tag && <span className="tag-dot gross" style={{ background: tag.color }} />}
@@ -85,8 +88,8 @@ export default function TagView({
 
       {!laedt && seiten.length === 0 && !fehler && (
         <p className="muted">
-          Keine Seite trägt dieses Schlagwort. Vergeben wird es unter dem Titel einer
-          Seite.
+          Keine Seite trägt dieses Schlagwort. Vergeben wird es im Menü einer Seite unter
+          „Schlagwörter…“.
         </p>
       )}
 

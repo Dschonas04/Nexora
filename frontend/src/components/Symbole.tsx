@@ -19,7 +19,8 @@ export type SymbolName =
   | "schloss"
   | "schild"
   | "geraet"
-  | "schluessel";
+  | "schluessel"
+  | "stift";
 
 const pfade: Record<SymbolName, ReactElement> = {
   unterseite: (
@@ -59,6 +60,7 @@ const pfade: Record<SymbolName, ReactElement> = {
   ),
   menue: <path d="M4 7h16M4 12h16M4 17h16" />,
   plus: <path d="M12 5v14M5 12h14" />,
+  stift: <path d="M4 20l1-4.5L15.5 5a2.1 2.1 0 0 1 3 3L8 18.5zM13.5 7l3 3" />,
   person: (
     <>
       <circle cx="12" cy="8" r="4" />

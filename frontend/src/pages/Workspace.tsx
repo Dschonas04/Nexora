@@ -21,6 +21,7 @@ import { useEingabe, useRueckfrage } from "../components/Rueckfrage";
 // Whoever opens them waits briefly once for the load, and in exchange the
 // application starts faster for everybody else.
 const TrashView = lazy(() => import("./TrashView"));
+const TagsView = lazy(() => import("./TagsView"));
 const GraphView = lazy(() => import("./GraphView"));
 const EinstellungenView = lazy(() => import("./EinstellungenView"));
 const PostfachView = lazy(() => import("./PostfachView"));
@@ -263,6 +264,7 @@ export default function Workspace() {
             <Route path="einstellungen" element={<EinstellungenView />} />
             <Route path="einstellungen/:bereich" element={<EinstellungenView />} />
             <Route path="gruppen" element={<Navigate to="/einstellungen/gruppen" replace />} />
+            <Route path="tags" element={<TagsView allTags={tags} onTagsChange={refreshTags} />} />
             <Route
               path="tag/:tagId"
               element={<TagView allTags={tags} onTagsChange={refreshTags} />}

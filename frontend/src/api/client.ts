@@ -1291,6 +1291,8 @@ export const api = {
   createTag: (name: string, color: string) =>
     req<Tag>("/tags", { method: "POST", body: JSON.stringify({ name, color }) }),
   seitenZuTag: (id: string) => req<PageMeta[]>(`/tags/${id}/pages`),
+  updateTag: (id: string, felder: { name?: string; color?: string }) =>
+    req<Tag>(`/tags/${id}`, { method: "PATCH", body: JSON.stringify(felder) }),
   deleteTag: (id: string) => req<void>(`/tags/${id}`, { method: "DELETE" }),
   attachTag: (pageId: string, tagId: string) =>
     req<void>(`/pages/${pageId}/tags`, { method: "POST", body: JSON.stringify({ tagId }) }),
