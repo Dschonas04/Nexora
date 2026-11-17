@@ -1556,4 +1556,11 @@ export const PAARE: [string, string][] = [
   ["Alles ausklappen", "Expand all"],
   ["Alles einklappen", "Collapse all"],
   ["← Zurück", "← Back"],
+  ["Schlagwörter…", "Tags…"],
+  ["Noch keine", "None yet"],
+  ["Schlagwort hinzufügen…", "Add a tag…"],
+  ["Schlagwort entfernen", "Remove tag"],
+  ["Diese Seite hat noch keine Schlagwörter.", "This page has no tags yet."],
+  ["Persönlich", "Personal"],
+  ["Sicherheit", "Security"],
 ];

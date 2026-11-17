@@ -13,10 +13,11 @@
 // somebody works light or dark is nobody else's business. As long as it stood
 // in the administration, whoever switched to dark at night switched everybody
 // else over too.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 
 import { APISchluessel, Benachrichtigung, Sitzung, ZweitfaktorStand, api } from "../api/client";
 import { useAuth } from "../auth";
+import Symbol, { type SymbolName } from "./Symbole";
 import {
   AKZENTE,
   GRUND,
@@ -40,15 +41,18 @@ const KANTE = 256;
 
 type Teil = "profil" | "aussehen" | "sprache" | "benachrichtigung" | "passwort" | "zweitfaktor" | "geraete" | "schluessel";
 
-const TEILE: { id: Teil; title: string; unter: string }[] = [
-  { id: "profil", title: "Profile", unter: "Name and picture" },
-  { id: "aussehen", title: "Appearance", unter: "Base tone and accent" },
-  { id: "sprache", title: "Language", unter: "German, English or French" },
-  { id: "benachrichtigung", title: "Notifications", unter: "Inbox by e-mail" },
-  { id: "passwort", title: "Password", unter: "Change it" },
-  { id: "zweitfaktor", title: "Second factor", unter: "App and recovery codes" },
-  { id: "geraete", title: "Devices", unter: "Where you are signed in" },
-  { id: "schluessel", title: "API keys", unter: "For scripts and n8n" },
+// Two groups instead of one long column: what is about oneself, and what is
+// about getting in. Each entry an icon and one word; the explanation stands in
+// the tooltip.
+const TEILE: { id: Teil; title: string; unter: string; symbol: SymbolName; gruppe: string }[] = [
+  { id: "profil", title: "Profile", unter: "Name and picture", symbol: "person", gruppe: "Personal" },
+  { id: "aussehen", title: "Appearance", unter: "Base tone and accent", symbol: "palette", gruppe: "Personal" },
+  { id: "sprache", title: "Language", unter: "German, English or French", symbol: "sprache", gruppe: "Personal" },
+  { id: "benachrichtigung", title: "Notifications", unter: "Inbox by e-mail", symbol: "glocke", gruppe: "Personal" },
+  { id: "passwort", title: "Password", unter: "Change it", symbol: "schloss", gruppe: "Security" },
+  { id: "zweitfaktor", title: "Second factor", unter: "App and recovery codes", symbol: "schild", gruppe: "Security" },
+  { id: "geraete", title: "Devices", unter: "Where you are signed in", symbol: "geraet", gruppe: "Security" },
+  { id: "schluessel", title: "API keys", unter: "For scripts and n8n", symbol: "schluessel", gruppe: "Security" },
 ];
 
 /**
@@ -121,15 +125,21 @@ export default function MeinKonto({ onClose }: { onClose: () => void }) {
           before: nobody finds the second factor who does not know it exists. */}
       <div className="konto-fenster">
         <nav className="konto-leiste">
-          {TEILE.map((t) => (
-            <button
-              key={t.id}
-              className={"konto-leiste-eintrag" + (teil === t.id ? " aktiv" : "")}
-              onClick={() => setTeil(t.id)}
-            >
-              <span>{t.title}</span>
-              <span className="muted small">{t.unter}</span>
-            </button>
+          {TEILE.map((t, i) => (
+            <Fragment key={t.id}>
+              {(i === 0 || TEILE[i - 1].gruppe !== t.gruppe) && (
+                <div className="konto-leiste-gruppe">{t.gruppe}</div>
+              )}
+              <button
+                className={"konto-leiste-eintrag" + (teil === t.id ? " aktiv" : "")}
+                onClick={() => setTeil(t.id)}
+                title={t.unter}
+                aria-current={teil === t.id ? "page" : undefined}
+              >
+                <Symbol name={t.symbol} />
+                <span>{t.title}</span>
+              </button>
+            </Fragment>
           ))}
         </nav>
         <div className="konto-inhalt">

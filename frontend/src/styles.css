@@ -4421,8 +4421,9 @@ textarea::placeholder {
 }
 .konto-leiste-eintrag {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
   width: 100%;
   text-align: left;
   border: none;
@@ -4973,4 +4974,55 @@ textarea::placeholder {
   left: 8px;
   right: 8px;
   min-width: 0;
+}
+
+/* Group headings in the account dialog: small and grey, like the section
+   titles in the sidebar. */
+.konto-leiste-gruppe {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 10px 10px 4px;
+}
+.konto-leiste-gruppe:first-child {
+  padding-top: 0;
+}
+.konto-leiste-eintrag .symbol {
+  flex: none;
+  color: var(--muted);
+}
+.konto-leiste-eintrag.aktiv .symbol {
+  color: var(--text);
+}
+
+/* Tags of a page, in their dialog: calm chips with the colour as a dot. */
+.schlagwort-liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.schlagwort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 4px 2px 10px;
+  font-size: 13px;
+}
+.schlagwort .icon-btn {
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+}
+.schlagwort-neu {
+  display: flex;
+  gap: 6px;
+}
+.schlagwort-neu input {
+  flex: 1;
+}
+/* The tag list under its row in the sidebar, indented one step. */
+.schlagwort-zweige {
+  padding-left: 14px;
 }

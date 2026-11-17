@@ -1226,48 +1226,53 @@ export default function Sidebar(props: Props) {
               </div>
             )}
 
-            {tags.length > 0 && (
-              <div className="sidebar-section">
-                <Klapptitel marke="schlagwoerter" zu={zu} klappen={klappen} anzahl={tags.length}>
-                  Tags
-                </Klapptitel>
-                {!zu.has("schlagwoerter") &&
-                  sichtbareTags.map((t) => (
-                    // Clickable, and the number behind it says whether anything
-                    // hangs on it. Without both this was mere decoration: a
-                    // label one cannot follow promises an order that does not
-                    // exist.
-                    <div
-                      key={t.id}
-                      className={"tree-row" + (currentPath === `/tag/${t.id}` ? " active" : "")}
-                      onClick={() => onNavigate(`/tag/${t.id}`)}
-                    >
-                      <span className="tag-dot" style={{ background: t.color }} />
-                      <span className="tree-label">{t.name}</span>
-                      <span className={"tag-anzahl muted small" + (t.count === 0 ? " leer" : "")}>
-                        {t.count}
-                      </span>
-                    </div>
-                  ))}
-                {!zu.has("schlagwoerter") && tags.length > sichtbareTags.length && (
-                  <div className="tree-row mehr-zeile" onClick={() => setAlleTags(true)}>
-                    <span className="tree-label">
-                      {tags.length - sichtbareTags.length} more tags
-                    </span>
-                  </div>
-                )}
-                {!zu.has("schlagwoerter") && alleTags && tags.length > KURZ && (
-                  <div className="tree-row mehr-zeile" onClick={() => setAlleTags(false)}>
-                    <span className="tree-label">Show less</span>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* One's own work: inbox, graph, trash. Laid out like the administration
                 below -- a line above, one row each with a small symbol, no
                 heading to collapse: three entries need no folding. */}
             <div className="sidebar-section leiste-gruppe">
+              {/* Tags as a row of their own above the inbox, like the other
+                  places one goes to. Clicking opens the list underneath. */}
+              {tags.length > 0 && (
+                <>
+                  <button
+                    type="button"
+                    className="tree-row leiste-eintrag"
+                    aria-expanded={!zu.has("schlagwoerter")}
+                    onClick={() => klappen("schlagwoerter")}
+                  >
+                    <span className="leiste-symbol" aria-hidden="true"><Etikett /></span>
+                    <span className="tree-label">Tags</span>
+                    <span className="tag-anzahl muted small">{tags.length}</span>
+                  </button>
+                  {!zu.has("schlagwoerter") && (
+                    <div className="schlagwort-zweige">
+                      {sichtbareTags.map((t) => (
+                        <div
+                          key={t.id}
+                          className={"tree-row" + (currentPath === `/tag/${t.id}` ? " active" : "")}
+                          onClick={() => onNavigate(`/tag/${t.id}`)}
+                        >
+                          <span className="tag-dot" style={{ background: t.color }} />
+                          <span className="tree-label">{t.name}</span>
+                          <span className={"tag-anzahl muted small" + (t.count === 0 ? " leer" : "")}>
+                            {t.count}
+                          </span>
+                        </div>
+                      ))}
+                      {tags.length > sichtbareTags.length && (
+                        <div className="tree-row mehr-zeile" onClick={() => setAlleTags(true)}>
+                          <span className="tree-label">{tags.length - sichtbareTags.length} more tags</span>
+                        </div>
+                      )}
+                      {alleTags && tags.length > KURZ && (
+                        <div className="tree-row mehr-zeile" onClick={() => setAlleTags(false)}>
+                          <span className="tree-label">Show less</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
               <button
                 type="button"
                 className={"tree-row leiste-eintrag" + (currentPath === "/postfach" ? " active" : "")}
@@ -1445,6 +1450,15 @@ export default function Sidebar(props: Props) {
 // which only smears at this size.
 // Small symbols for the rows at the end of the sidebar. Strokes only, in the
 // text colour (see .leiste-symbol).
+function Etikett() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M2 2.5h5.5L14 9l-5 5-6.5-6.5z" />
+      <circle cx="5.2" cy="5.2" r="1" />
+    </svg>
+  );
+}
+
 function Postfach() {
   return (
     <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">

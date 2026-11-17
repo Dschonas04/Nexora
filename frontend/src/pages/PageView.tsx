@@ -26,6 +26,7 @@ import { useAussenklick } from "../klappen";
 import Inhaltsverzeichnis, { useUeberschriften } from "../components/Inhaltsverzeichnis";
 import VorlagenWahl, { AngewandteVorlage, useLeer } from "../components/VorlagenWahl";
 import Symbol from "../components/Symbole";
+import Fenster from "../components/Fenster";
 
 // Whether the table of contents is open is remembered per browser: whoever
 // works with it wants it on the next page too.
@@ -471,12 +472,12 @@ export default function PageView({
 
   // Tags are matched by name, case-insensitively, and created only when none
   // exists. Otherwise typing "Projekt" twice would produce two separate tags.
-  const addTag = async () => {
-    const name = await eingabe({
-      titel: "Add tag",
-      feld: "Name",
-      bestaetigen: "Add",
-    });
+  // Tags are managed in a dialog from the page menu. Under the title they
+  // pushed the text down and looked like part of the content.
+  const [schlagwortFenster, setSchlagwortFenster] = useState(false);
+  const [schlagwortNeu, setSchlagwortNeu] = useState("");
+  const addTag = async (eingabeName: string) => {
+    const name = eingabeName.trim();
     if (!name) return;
     let tag = allTags.find((t) => t.name.toLowerCase() === name.toLowerCase());
     if (!tag) {
@@ -488,6 +489,7 @@ export default function PageView({
       ...page,
       tags: [...page.tags.filter((t) => t.id !== tag!.id), tag],
     });
+    setSchlagwortNeu("");
   };
 
   const detachTag = async (tagId: string) => {
@@ -793,6 +795,18 @@ export default function PageView({
                     Contents
                     <span className="klappeintrag-hinweis">The headings of this page beside it</span>
                   </button>
+                  <button
+                    className="klappeintrag"
+                    onClick={() => {
+                      setMehrOffen(false);
+                      setSchlagwortFenster(true);
+                    }}
+                  >
+                    Tags…
+                    <span className="klappeintrag-hinweis">
+                      {page.tags.length > 0 ? page.tags.map((x) => x.name).join(", ") : "None yet"}
+                    </span>
+                  </button>
                   {canEdit && (
                     <button className="klappeintrag" onClick={alsVorlageSpeichern}>
                       Save as template
@@ -855,6 +869,68 @@ export default function PageView({
           </div>
         </div>
 
+        {schlagwortFenster && (
+          <Fenster
+            titel="Tags"
+            unter={page.title || "Untitled"}
+            schliessen={() => setSchlagwortFenster(false)}
+            fuss={
+              <>
+                <span className="fuss-luecke" />
+                <button className="btn btn-primary" onClick={() => setSchlagwortFenster(false)}>
+                  Close
+                </button>
+              </>
+            }
+          >
+            <div className="schlagwort-liste">
+              {page.tags.length === 0 && <span className="muted small">This page has no tags yet.</span>}
+              {page.tags.map((x) => (
+                <span key={x.id} className="schlagwort">
+                  <span className="tag-dot" style={{ background: x.color }} />
+                  {x.name}
+                  {canEdit && (
+                    <button
+                      className="icon-btn"
+                      title="Remove tag"
+                      aria-label="Remove tag"
+                      onClick={() => detachTag(x.id)}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+            {canEdit && (
+              <form
+                className="schlagwort-neu"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void addTag(schlagwortNeu);
+                }}
+              >
+                <input
+                  list="schlagwort-vorschlaege"
+                  placeholder="Add a tag…"
+                  value={schlagwortNeu}
+                  onChange={(e) => setSchlagwortNeu(e.target.value)}
+                />
+                <datalist id="schlagwort-vorschlaege">
+                  {allTags
+                    .filter((x) => !page.tags.some((y) => y.id === x.id))
+                    .map((x) => (
+                      <option key={x.id} value={x.name} />
+                    ))}
+                </datalist>
+                <button className="btn" type="submit" disabled={!schlagwortNeu.trim()}>
+                  Add
+                </button>
+              </form>
+            )}
+          </Fenster>
+        )}
+
         <div className="editor-scroll">
           {/* Without a choice of its own the instance default applies, and
               that stands at "voll": the measure used to be fixed, and on a wide
@@ -878,29 +954,6 @@ export default function PageView({
                 onChange={(e) => setTitle(e.target.value)}
               />
             </h1>
-            <div className="page-tags">
-              {page.tags.map((t) => (
-                <span
-                  key={t.id}
-                  className="tag"
-                  // Text colour computed from the tag colour: fixed white was
-                  // hard to read on the lighter tones of the palette.
-                  style={{ background: t.color, color: schriftAuf(t.color) }}
-                >
-                  {t.name}
-                  {canEdit && (
-                    <span className="x" onClick={() => detachTag(t.id)}>
-                      ✕
-                    </span>
-                  )}
-                </span>
-              ))}
-              {canEdit && (
-                <button className="tag-add" onClick={addTag}>
-                  + Schlagwort
-                </button>
-              )}
-            </div>
             {/* A block the editor cannot read would otherwise take the whole
                 window with it: React unmounts everything on an uncaught render
                 error. Here only the document goes, the page around it stays. */}

@@ -1477,4 +1477,11 @@ export const FRANZOESISCH: Record<string, string> = {
   "Expand all": "Tout déplier",
   "Collapse all": "Tout replier",
   "← Back": "← Retour",
+  "Tags…": "Tags…",
+  "None yet": "Aucune pour l'instant",
+  "Add a tag…": "Ajouter un tag…",
+  "Remove tag": "Retirer le tag",
+  "This page has no tags yet.": "Cette page n'a pas encore de tags.",
+  "Personal": "Personnel",
+  "Security": "Sécurité",
 };
