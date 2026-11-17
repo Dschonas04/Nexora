@@ -30,7 +30,7 @@ const ZIELE = [
 function anwendungKopieren(nachResources) {
   const app = path.join(nachResources, 'app');
   fs.mkdirSync(app, { recursive: true });
-  for (const datei of ['haupt.js', 'package.json']) {
+  for (const datei of ['haupt.js', 'offline.js', 'zusammenfuehren.js', 'package.json']) {
     fs.copyFileSync(path.join(QUELLE, datei), path.join(app, datei));
   }
   // Die Anwendung hat keine Laufzeit-Abhaengigkeiten: alles, was sie braucht,
@@ -41,7 +41,10 @@ function anwendungKopieren(nachResources) {
   fs.writeFileSync(path.join(app, 'package.json'), JSON.stringify(p, null, 2));
 }
 
-for (const z of ZIELE) {
+// NEXORA_ZIEL=darwin-arm64 baut nur dieses eine Ziel.
+const nur = process.env.NEXORA_ZIEL;
+
+for (const z of ZIELE.filter((z) => !nur || `${z.platform}-${z.arch}` === nur)) {
   const ordner = path.join(ZIEL, z.ordner);
   console.log(`\n== ${z.ordner}`);
   const zip = await downloadArtifact({
@@ -71,6 +74,21 @@ for (const z of ZIELE) {
       path.join(neu, 'Contents', 'MacOS', 'Electron'),
       path.join(neu, 'Contents', 'MacOS', 'Nexora'),
     );
+    // Das Zeichen von Nexora statt des Electron-Atoms im Dock.
+    const icns = path.join(QUELLE, 'nexora.icns');
+    if (fs.existsSync(icns)) fs.copyFileSync(icns, path.join(neu, 'Contents', 'Resources', 'electron.icns'));
+    // Ein Abbild zum Weitergeben. genisoimage schreibt ein Apple-ISO, das macOS
+    // wie jedes andere Abbild einhaengt.
+    try {
+      const dmg = path.join(ZIEL, `${z.ordner}.dmg`);
+      fs.rmSync(dmg, { force: true });
+      fs.symlinkSync('/Applications', path.join(ordner, 'Programme'));
+      execFileSync('genisoimage', ['-quiet', '-V', 'Nexora', '-D', '-R', '-apple', '-no-pad', '-o', dmg, ordner]);
+      fs.rmSync(path.join(ordner, 'Programme'));
+      console.log('   Abbild:', dmg);
+    } catch (f) {
+      console.log('   kein Abbild:', f.message);
+    }
   } else {
     anwendungKopieren(path.join(ordner, 'resources'));
     fs.renameSync(path.join(ordner, z.binaer), path.join(ordner, z.neu));

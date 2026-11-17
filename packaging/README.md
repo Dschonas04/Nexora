@@ -1,9 +1,26 @@
 # Nexora to take with you
 
-Nexora is a web application. What is built here is not a second Nexora, it is
-a window of its own onto the one already running: the same interface, the same
-server, the same state for everyone. A separate store inside the app would
-give up the very thing Nexora is for.
+Nexora is a web application. What is built here is a window of its own onto the
+one already running: the same interface, the same server, the same state for
+everyone.
+
+## Working offline (desktop)
+
+The desktop app keeps a mirror of one's own and shared pages
+(`offline.js`). While the server is reachable the window shows the server
+itself; every two minutes the mirror is refreshed. Without a connection the
+window switches to the mirror, served from `127.0.0.1`, where pages can be read,
+edited, created and deleted. Every change goes into an outbox.
+
+Back in reach of the server (checked every 30 seconds) the outbox is sent first,
+then the mirror refreshed, then the window switches back. A page changed on both
+sides is merged block by block (`zusammenfuehren.js`): what changed on one side
+comes from there; a block changed on both keeps the server's version with one's
+own copy right below it. A notification says how much went through.
+
+Sync uses the window's session; when it has expired, the outbox waits until one
+has signed in again. Comments, attachments, search and administration need the
+server.
 
 What the app adds over a bookmark: a window without an address bar and other
 people's tabs, an entry in the start menu or on the home screen, and the
@@ -69,7 +86,7 @@ thing.
 
 ## Address of the instance
 
-The default is `http://10.0.2.43:3000`.
+The default is `https://10.0.2.7:3000`.
 
 * Desktop: in the menu under *Nexora → Adresse ändern…*; it is remembered in
   the application data. Alternatively the environment variable
