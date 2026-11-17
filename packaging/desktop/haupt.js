@@ -35,7 +35,14 @@ function adresseLesen() {
 function adresseSchreiben(adresse) {
   try {
     fs.mkdirSync(path.dirname(EINSTELLUNGEN()), { recursive: true });
-    fs.writeFileSync(EINSTELLUNGEN(), JSON.stringify({ adresse, anbieter: ANBIETER() }, null, 2));
+    // Gelernte Anbieter bleiben an ihrer Instanz; eine neue Adresse erbt keine.
+    let anbieterJe = {};
+    try {
+      anbieterJe = JSON.parse(fs.readFileSync(EINSTELLUNGEN(), 'utf8')).anbieterJe || {};
+    } catch {
+      anbieterJe = {};
+    }
+    fs.writeFileSync(EINSTELLUNGEN(), JSON.stringify({ adresse, anbieterJe }, null, 2));
   } catch (fehler) {
     dialog.showErrorBox('Nicht gespeichert', String(fehler));
   }
@@ -69,7 +76,9 @@ function gleicherUrsprung(adresse, instanz) {
 const ANBIETER = () => {
   try {
     const roh = JSON.parse(fs.readFileSync(EINSTELLUNGEN(), 'utf8'));
-    return Array.isArray(roh.anbieter) ? roh.anbieter : [];
+    // Nur die Anbieter, die fuer genau diese Instanz gelernt wurden.
+    const liste = roh.anbieterJe && roh.anbieterJe[new URL(adresseLesen()).origin];
+    return Array.isArray(liste) ? liste : [];
   } catch {
     return [];
   }
@@ -81,7 +90,10 @@ function anbieterMerken(ursprung) {
   } catch {
     roh = { adresse: adresseLesen() };
   }
-  roh.anbieter = [...new Set([...(roh.anbieter || []), ursprung])];
+  const instanz = new URL(adresseLesen()).origin;
+  roh.anbieterJe = roh.anbieterJe || {};
+  roh.anbieterJe[instanz] = [...new Set([...(roh.anbieterJe[instanz] || []), ursprung])];
+  delete roh.anbieter;
   fs.mkdirSync(path.dirname(EINSTELLUNGEN()), { recursive: true });
   fs.writeFileSync(EINSTELLUNGEN(), JSON.stringify(roh, null, 2));
 }
@@ -153,20 +165,22 @@ function fensterBauen() {
   // Weiterleitungen pruefen wie Klicks. Die eine Ausnahme: der Server schickt
   // beim Start der SSO-Anmeldung zum Anbieter. Dessen Ursprung wird gemerkt,
   // damit das Formular dort abgeschickt werden kann.
-  // Wo die laufende Navigation begonnen hat. Eine Weiterleitung allein sagt
-  // nicht, woher sie kommt.
-  let navStart = '';
+  // Die letzte Station der laufenden Navigation. Gelernt wird ein Anbieter
+  // nur aus dem einen Sprung, der unmittelbar von /api/auth/oidc/start der
+  // eigenen Instanz ausgeht; jede weitere Weiterleitung wird normal geprueft.
+  let letzteStation = '';
   fenster.webContents.on('did-start-navigation', (d) => {
-    if (d.isMainFrame && !d.isSameDocument) navStart = d.url;
+    if (d.isMainFrame && !d.isSameDocument) letzteStation = d.url;
   });
   fenster.webContents.on('will-redirect', (ereignis) => {
     const ziel = ereignis.url;
+    const von = letzteStation;
+    letzteStation = ziel;
     if (zielErlaubt(ziel)) return;
     let vomStart = false;
     let https = false;
     try {
-      const s = new URL(navStart);
-      vomStart = gleicherUrsprung(navStart, adresseLesen()) && s.pathname === '/api/auth/oidc/start';
+      vomStart = gleicherUrsprung(von, adresseLesen()) && new URL(von).pathname === '/api/auth/oidc/start';
       https = new URL(ziel).protocol === 'https:';
     } catch {
       vomStart = false;
