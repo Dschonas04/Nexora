@@ -3,8 +3,7 @@
   "appName": "Nexora",
   "webDir": "web",
   "server": {
-    "url": "https://10.0.2.7:3000",
-    "cleartext": false
+    "androidScheme": "https"
   },
   "android": {
     "allowMixedContent": false

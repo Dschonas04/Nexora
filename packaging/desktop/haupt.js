@@ -9,7 +9,8 @@
 // eigenes Fenster ohne Adresszeile und fremde Reiter, ein Eintrag im
 // Startmenue, und die Adresse der Instanz steht einmal fest statt in jedem
 // Browserprofil neu.
-const { app, BrowserWindow, Menu, Notification, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, dialog, ipcMain, session, shell } = require('electron');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -30,6 +31,75 @@ function adresseLesen() {
     // Erster Start oder beschaedigte Datei: dann eben die Vorgabe.
   }
   return process.env.NEXORA_ADRESSE || VORGABE;
+}
+
+/** Ob schon ein Server gewaehlt wurde (sonst kommt die Einrichtung). */
+function eingerichtet() {
+  if (process.env.NEXORA_ADRESSE) return true;
+  try {
+    const roh = JSON.parse(fs.readFileSync(EINSTELLUNGEN(), 'utf8'));
+    return typeof roh.adresse === 'string' && roh.adresse.startsWith('http');
+  } catch {
+    return false;
+  }
+}
+
+/** Der Spiegel gehoert zu einem Server: je Ursprung ein eigener Ordner. */
+function spiegelOrdner(adresse) {
+  const kennung = crypto.createHash('sha256').update(new URL(adresse).origin).digest('hex').slice(0, 16);
+  return path.join(app.getPath('userData'), 'offline', kennung);
+}
+
+// Die Homelab-CA. Ihr wird nur fuer den eingestellten Server und seine
+// Anmeldeanbieter vertraut, nicht fuer beliebige Seiten: wer die App mit einem
+// anderen Server nutzt, soll keiner fremden CA ausgeliefert sein.
+const EIGENE_CA = (() => {
+  try {
+    return new crypto.X509Certificate(fs.readFileSync(path.join(__dirname, 'homelab-root-ca.pem')));
+  } catch {
+    return null;
+  }
+})();
+
+function ketteZurEigenenCA(zertifikat) {
+  if (!EIGENE_CA) return false;
+  try {
+    let glied = zertifikat;
+    for (let i = 0; glied && i < 5; i++) {
+      const x = new crypto.X509Certificate(glied.data);
+      if (x.fingerprint256 === EIGENE_CA.fingerprint256) return true;
+      if (x.verify(EIGENE_CA.publicKey) && x.checkIssued(EIGENE_CA)) return true;
+      const aussteller = glied.issuerCert;
+      if (!aussteller || aussteller === glied) return false;
+      if (!x.verify(new crypto.X509Certificate(aussteller.data).publicKey)) return false;
+      glied = aussteller;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+function zertifikatePruefen() {
+  session.defaultSession.setCertificateVerifyProc((anfrage, antwort) => {
+    if (anfrage.verificationResult === 'net::OK') return antwort(0);
+    const erlaubteHosts = new Set();
+    try {
+      erlaubteHosts.add(new URL(adresseLesen()).hostname);
+      if (process.env.NEXORA_PRUEFADRESSE) erlaubteHosts.add(new URL(process.env.NEXORA_PRUEFADRESSE).hostname);
+      for (const a of ANBIETER()) erlaubteHosts.add(new URL(a).hostname);
+    } catch {
+      // keine gueltige Adresse: dann eben keine Ausnahme
+    }
+    if (
+      anfrage.verificationResult === 'net::ERR_CERT_AUTHORITY_INVALID' &&
+      erlaubteHosts.has(anfrage.hostname) &&
+      ketteZurEigenenCA(anfrage.certificate)
+    ) {
+      return antwort(0);
+    }
+    return antwort(-3); // Chromium entscheidet wie sonst
+  });
 }
 
 function adresseSchreiben(adresse) {
@@ -130,6 +200,8 @@ function fensterBauen() {
       // Fenster laedt, das Dateisystem des Rechners.
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
+      preload: path.join(__dirname, 'vorab.js'),
       spellcheck: true,
     },
   });
@@ -207,31 +279,74 @@ function fensterBauen() {
         title: 'Nexora nicht erreichbar',
         message: `${ziel} antwortet nicht.`,
         detail: `${beschreibung}\n\nLäuft die Instanz, und bist du im selben Netz?`,
-        buttons: ['Erneut versuchen', 'Adresse ändern', 'Beenden'],
+        buttons: ['Erneut versuchen', 'Server wechseln', 'Beenden'],
         defaultId: 0,
         cancelId: 2,
       })
       .then(({ response }) => {
         if (response === 0) fenster.loadURL(adresseLesen());
-        else if (response === 1) adresseAendern();
+        else if (response === 1) einrichtungZeigen();
         else app.quit();
       });
   });
 }
 
-async function adresseAendern() {
-  // Electron hat keinen Eingabedialog. Statt dafuer ein zweites Fenster mit
-  // eigener Oberflaeche zu bauen, fragt eine kleine Seite im Fenster selbst.
-  const eingabe = await fenster.webContents
-    .executeJavaScript(
-      `window.prompt(${JSON.stringify('Adresse der Nexora-Instanz')}, ${JSON.stringify(adresseLesen())})`,
-    )
-    .catch(() => null);
-  if (!eingabe) return;
-  let adresse = String(eingabe).trim();
-  if (!/^https?:\/\//.test(adresse)) adresse = 'http://' + adresse;
-  adresseSchreiben(adresse);
-  fenster.loadURL(adresse);
+const EINRICHTUNG = () => path.join(__dirname, 'einrichten.html');
+
+function einrichtungZeigen() {
+  modus = 'einrichtung';
+  fenster.loadFile(EINRICHTUNG());
+  titelSetzen();
+}
+
+/** Nur die lokale Einrichtungsseite darf Adresse lesen, pruefen, speichern. */
+function vonEinrichtung(ereignis) {
+  try {
+    const u = ereignis.senderFrame && ereignis.senderFrame.url;
+    return !!u && u.startsWith('file:') && decodeURIComponent(new URL(u).pathname).endsWith('/einrichten.html');
+  } catch {
+    return false;
+  }
+}
+
+function einrichtungVerdrahten() {
+  ipcMain.handle('einrichtung:adresse', (e) => (vonEinrichtung(e) && eingerichtet() ? adresseLesen() : ''));
+  ipcMain.handle('einrichtung:pruefen', async (e, adresse) => {
+    if (!vonEinrichtung(e)) return { ok: false, fehler: 'nicht erlaubt' };
+    let u;
+    try {
+      u = new URL(adresse);
+      if (u.protocol !== 'https:' && u.protocol !== 'http:') throw new Error('');
+    } catch {
+      return { ok: false, fehler: 'Das ist keine gültige Adresse.' };
+    }
+    // Vorab eintragen, damit die Pruefung der CA fuer diesen Host gilt.
+    const vorher = process.env.NEXORA_PRUEFADRESSE;
+    process.env.NEXORA_PRUEFADRESSE = u.origin;
+    try {
+      const r = await session.defaultSession.fetch(u.origin + '/healthz', { signal: AbortSignal.timeout(6000) });
+      if (!r.ok) return { ok: false, fehler: `Der Server antwortet mit ${r.status}. Ist das ein Nexora?` };
+      return { ok: true };
+    } catch (f) {
+      const text = String((f && f.message) || f);
+      if (/CERT|certificate/i.test(text)) return { ok: false, fehler: 'Dem Zertifikat des Servers wird nicht vertraut.' };
+      return { ok: false, fehler: 'Der Server ist nicht erreichbar. Stimmt die Adresse, und bist du im selben Netz?' };
+    } finally {
+      if (vorher === undefined) delete process.env.NEXORA_PRUEFADRESSE;
+      else process.env.NEXORA_PRUEFADRESSE = vorher;
+    }
+  });
+  ipcMain.handle('einrichtung:speichern', async (e, adresse) => {
+    if (!vonEinrichtung(e)) return false;
+    const u = new URL(adresse);
+    adresseSchreiben(u.origin);
+    await offline.ordnerWechseln(spiegelOrdner(u.origin));
+    letzterAbgleich = null;
+    modus = 'start';
+    onlineZeigen();
+    pruefen();
+    return true;
+  });
 }
 
 function menueBauen() {
@@ -241,7 +356,7 @@ function menueBauen() {
         label: 'Nexora',
         submenu: [
           { label: 'Neu laden', accelerator: 'CmdOrCtrl+R', click: () => fenster.reload() },
-          { label: 'Adresse ändern…', click: adresseAendern },
+          { label: 'Server wechseln…', click: einrichtungZeigen },
           { label: 'Jetzt abgleichen', accelerator: 'CmdOrCtrl+Shift+S', click: () => pruefen(true) },
           { label: 'Abgleich-Stand anzeigen', click: standZeigen },
           { type: 'separator' },
@@ -368,8 +483,17 @@ function standZeigen() {
 }
 
 async function starten() {
-  offline = offline || new Offline(path.join(app.getPath('userData'), 'offline'));
+  offline = offline || new Offline(spiegelOrdner(adresseLesen()));
   await offline.starten();
+  // Alle 30 Sekunden schauen, ob man zuhause ist; online frischt das den
+  // Spiegel auf, damit er beim Losgehen aktuell ist.
+  setInterval(() => {
+    if (modus !== 'einrichtung') pruefen();
+  }, 30_000);
+  if (!eingerichtet()) {
+    einrichtungZeigen();
+    return;
+  }
   const server = adresseLesen();
   if (await offline.erreichbar(server)) {
     onlineZeigen();
@@ -379,12 +503,11 @@ async function starten() {
   } else {
     fenster.loadURL(server); // zeigt die Meldung "nicht erreichbar"
   }
-  // Alle 30 Sekunden schauen, ob man zuhause ist; online frischt das den
-  // Spiegel auf, damit er beim Losgehen aktuell ist.
-  setInterval(() => pruefen(), 30_000);
 }
 
 app.whenReady().then(() => {
+  zertifikatePruefen();
+  einrichtungVerdrahten();
   menueBauen();
   fensterBauen();
   app.on('activate', () => {

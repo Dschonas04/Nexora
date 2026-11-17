@@ -1,13 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Die Instanz spricht HTTPS mit einem Zertifikat der Homelab-CA. Android
-     vertraut nur den Wurzeln des Systems; die eigene steht deshalb in der App
-     (res/raw), dazu die vom Nutzer installierten. Klartext bleibt aus. -->
+<!-- Die Homelab-CA gilt nur fuer die Rechner im Heimnetz, nicht fuer
+     beliebige Seiten: wer die App mit einem anderen Server nutzt, soll keiner
+     fremden CA ausgeliefert sein. Andere Server brauchen ein Zertifikat, dem
+     das System traut, oder eine vom Nutzer installierte CA. -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
-            <certificates src="@raw/homelab_root_ca" />
         </trust-anchors>
     </base-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="false">10.0.2.7</domain>
+        <domain includeSubdomains="false">vm-debian-docker</domain>
+        <domain includeSubdomains="true">fritz.box</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+            <certificates src="@raw/homelab_root_ca" />
+        </trust-anchors>
+    </domain-config>
 </network-security-config>

@@ -30,7 +30,7 @@ const ZIELE = [
 function anwendungKopieren(nachResources) {
   const app = path.join(nachResources, 'app');
   fs.mkdirSync(app, { recursive: true });
-  for (const datei of ['haupt.js', 'offline.js', 'zusammenfuehren.js', 'package.json']) {
+  for (const datei of ['haupt.js', 'offline.js', 'zusammenfuehren.js', 'vorab.js', 'einrichten.html', 'homelab-root-ca.pem', 'package.json']) {
     fs.copyFileSync(path.join(QUELLE, datei), path.join(app, datei));
   }
   // Die Anwendung hat keine Laufzeit-Abhaengigkeiten: alles, was sie braucht,

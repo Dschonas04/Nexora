@@ -4,6 +4,7 @@
 // than in the sidebar, because the views on the right change them and the
 // sidebar has to follow. The refresh callbacks passed down are how a view says
 // "something you display has changed".
+import { ABGLEICH_SCHLUESSEL, OfflineZustand, aufOffline, offlineZustand } from "../offline";
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { Routes, Route, Link, Navigate, useNavigate, useLocation } from "react-router";
 import { PageMeta, Space, Tag, api } from "../api/client";
@@ -308,28 +309,70 @@ function ZweitfaktorMahnung() {
 }
 
 /**
- * Without a connection the pages opened before are still readable (the service
- * worker keeps their last state), but nothing is saved. The stripe says so,
- * so nobody writes a page full and loses it.
+ * Without the server one works on the state kept on this device (see
+ * public/sw.js). The stripe says so, how many changes wait, and after the sync
+ * what went through.
  */
 function OfflineStreifen() {
-  const [offline, setOffline] = useState(typeof navigator !== "undefined" && !navigator.onLine);
+  const [z, setZ] = useState<OfflineZustand>(offlineZustand());
+  const [abgleich, setAbgleich] = useState<{
+    gesendet: number;
+    zusammengefuehrt: number;
+    konflikte: number;
+    fehlgeschlagen: number;
+  } | null>(() => {
+    try {
+      const roh = sessionStorage.getItem(ABGLEICH_SCHLUESSEL);
+      sessionStorage.removeItem(ABGLEICH_SCHLUESSEL);
+      return roh ? JSON.parse(roh) : null;
+    } catch {
+      return null;
+    }
+  });
+  useEffect(() => aufOffline(setZ), []);
   useEffect(() => {
-    const an = () => setOffline(false);
-    const aus = () => setOffline(true);
-    window.addEventListener("online", an);
-    window.addEventListener("offline", aus);
-    return () => {
-      window.removeEventListener("online", an);
-      window.removeEventListener("offline", aus);
-    };
-  }, []);
-  if (!offline) return null;
-  return (
-    <div className="mahnstreifen">
-      Offline: you are reading the last saved state of pages you opened before. Changes are not saved until the connection is back.
-    </div>
-  );
+    if (!abgleich || abgleich.konflikte) return;
+    const t = window.setTimeout(() => setAbgleich(null), 8000);
+    return () => window.clearTimeout(t);
+  }, [abgleich]);
+
+  if (z.fremd) {
+    return (
+      <div className="mahnstreifen">
+        Changes of another account are waiting on this device. Sign in with that account to transfer them.
+      </div>
+    );
+  }
+  if (z.offline) {
+    return (
+      <div className="mahnstreifen">
+        Offline: you are working on the state kept on this device. Changes are saved here and synced once the server
+        is reachable.{" "}
+        {z.wartend > 0 && <strong>{z.wartend === 1 ? "One change waiting." : `${z.wartend} changes waiting.`}</strong>}
+      </div>
+    );
+  }
+  if (abgleich) {
+    return (
+      <div className="mahnstreifen" role="status">
+        {abgleich.gesendet === 1 ? "Synced: one change transferred." : `Synced: ${abgleich.gesendet} changes transferred.`}{" "}
+        {abgleich.zusammengefuehrt > 0 &&
+          (abgleich.zusammengefuehrt === 1 ? "One page merged." : `${abgleich.zusammengefuehrt} pages merged.`)}{" "}
+        {abgleich.konflikte > 0 &&
+          (abgleich.konflikte === 1
+            ? "One passage is there twice, please review."
+            : `${abgleich.konflikte} passages are there twice, please review.`)}{" "}
+        {abgleich.fehlgeschlagen > 0 &&
+          (abgleich.fehlgeschlagen === 1
+            ? "One change was not possible."
+            : `${abgleich.fehlgeschlagen} changes were not possible.`)}{" "}
+        <button className="btn btn-sm" onClick={() => setAbgleich(null)}>
+          Close
+        </button>
+      </div>
+    );
+  }
+  return null;
 }
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {

@@ -38,6 +38,18 @@ const TYPEN = {
 
 class Offline {
   constructor(verzeichnis) {
+    this.ordnerSetzen(verzeichnis);
+    this.schluessel = crypto.randomBytes(24).toString('hex');
+    this.port = null;
+    this.laeuft = false;
+  }
+
+  /** Ein anderer Server, ein anderer Spiegel; der Dienst auf 127.0.0.1 bleibt. */
+  ordnerWechseln(verzeichnis) {
+    this.ordnerSetzen(verzeichnis);
+  }
+
+  ordnerSetzen(verzeichnis) {
     this.dir = verzeichnis;
     this.schale = path.join(verzeichnis, 'schale');
     this.standDatei = path.join(verzeichnis, 'stand.json');
@@ -45,9 +57,6 @@ class Offline {
     fs.mkdirSync(this.schale, { recursive: true });
     this.stand = this.lesen(this.standDatei, null);
     this.ausgang = this.lesen(this.ausgangDatei, []);
-    this.schluessel = crypto.randomBytes(24).toString('hex');
-    this.port = null;
-    this.laeuft = false;
   }
 
   lesen(datei, vorgabe) {
