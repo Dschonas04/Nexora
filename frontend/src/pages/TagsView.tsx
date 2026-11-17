@@ -1,10 +1,9 @@
 // All tags of one's account on one page: create, rename, recolour, delete,
-// and see at a glance which pages carry each. Cards instead of a table: a tag
-// is a place, and the newest pages under it say more than a bare number.
+// and how many pages carry each. A plain list, one row per tag.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
-import { PageMeta, Tag, api } from "../api/client";
+import { Tag, api } from "../api/client";
 import { useRueckfrage } from "../components/Rueckfrage";
 import Symbol from "../components/Symbole";
 import { useAussenklick } from "../klappen";
@@ -25,8 +24,6 @@ const FARBEN = [
   "#8a6a4f",
   "#6b7280",
 ];
-
-const VORSCHAU = 3;
 
 function Farbwahl({
   wert,
@@ -77,32 +74,7 @@ export default function TagsView({
   const [bearbeite, setBearbeite] = useState<string | null>(null);
   const [entwurf, setEntwurf] = useState("");
   const [fehler, setFehler] = useState<string | null>(null);
-  const [seiten, setSeiten] = useState<Record<string, PageMeta[]>>({});
   const neuFeld = useRef<HTMLInputElement>(null);
-
-  // The newest pages per tag, fetched once per change of the tag list. A
-  // handful of small requests; with many tags only the visible ones would be
-  // worth it, but an account rarely has more than a few dozen.
-  const kennungen = allTags.map((t) => `${t.id}:${t.count}`).join(",");
-  useEffect(() => {
-    let aktiv = true;
-    Promise.all(
-      allTags
-        .filter((t) => (t.count ?? 0) > 0)
-        .map((t) =>
-          api
-            .seitenZuTag(t.id)
-            .then((s) => [t.id, s] as const)
-            .catch(() => [t.id, [] as PageMeta[]] as const),
-        ),
-    ).then((paare) => {
-      if (aktiv) setSeiten(Object.fromEntries(paare));
-    });
-    return () => {
-      aktiv = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kennungen]);
 
   useEffect(() => {
     if (neuOffen) neuFeld.current?.focus();
@@ -245,12 +217,6 @@ export default function TagsView({
 
       {allTags.length === 0 ? (
         <div className="schlagwort-leer">
-          <span className="schlagwort-leer-symbol" aria-hidden="true">
-            <svg viewBox="0 0 16 16">
-              <path d="M2 2.5h5.5L14 9l-5 5-6.5-6.5z" />
-              <circle cx="5.2" cy="5.2" r="1" />
-            </svg>
-          </span>
           <p>No tags yet.</p>
           <p className="muted small">
             Create one with &ldquo;New tag&rdquo;, or add one to a page from its menu under &ldquo;Tags&hellip;&rdquo;.
@@ -259,106 +225,69 @@ export default function TagsView({
       ) : liste.length === 0 ? (
         <p className="muted">No tag matches the search.</p>
       ) : (
-        <div className="schlagwort-raster">
-          {liste.map((t) => {
-            const vorschau = (seiten[t.id] ?? []).slice(0, VORSCHAU);
-            const rest = (t.count ?? 0) - vorschau.length;
-            return (
-              <article
-                key={t.id}
-                className={"schlagwort-karte" + ((t.count ?? 0) === 0 ? " verwaist" : "")}
-                style={{ "--schlagwort-farbe": t.color } as React.CSSProperties}
-              >
-                <div className="schlagwort-karte-kopf">
-                  <div className="farbe-anker">
-                    <button
-                      className="farbtupfer"
-                      style={{ background: t.color }}
-                      title="Change colour"
-                      aria-label="Change colour"
-                      onClick={() => setFarbeFuer(farbeFuer === t.id ? null : t.id)}
-                    />
-                    {farbeFuer === t.id && (
-                      <Farbwahl
-                        wert={t.color}
-                        waehlen={(f) => void aendern(t, { color: f })}
-                        schliessen={() => setFarbeFuer(null)}
-                      />
-                    )}
-                  </div>
-                  {bearbeite === t.id ? (
-                    <input
-                      autoFocus
-                      className="schlagwort-umbenennen"
-                      value={entwurf}
-                      onChange={(e) => setEntwurf(e.target.value)}
-                      onBlur={() => void umbenennen(t)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") void umbenennen(t);
-                        if (e.key === "Escape") setBearbeite(null);
-                      }}
-                      aria-label="Rename tag"
-                    />
-                  ) : (
-                    <button
-                      className="schlagwort-name"
-                      onClick={() => nav(`/tag/${t.id}`)}
-                      title="Show the pages with this tag"
-                    >
-                      {t.name}
-                    </button>
-                  )}
-                  <span className="schlagwort-karte-aktionen">
-                    <button
-                      className="icon-btn"
-                      title="Rename"
-                      aria-label="Rename"
-                      onClick={() => {
-                        setEntwurf(t.name);
-                        setBearbeite(t.id);
-                      }}
-                    >
-                      <Symbol name="stift" />
-                    </button>
-                    <button
-                      className="icon-btn"
-                      title="Delete"
-                      aria-label="Delete"
-                      onClick={() => void loeschen(t)}
-                    >
-                      <Symbol name="loeschen" />
-                    </button>
-                  </span>
-                </div>
-
-                <div className="schlagwort-karte-zahl">
-                  {(t.count ?? 0) === 0
-                    ? "Not on any page"
-                    : t.count === 1
-                      ? "One page"
-                      : `${t.count} pages`}
-                </div>
-
-                {vorschau.length > 0 && (
-                  <ul className="schlagwort-vorschau">
-                    {vorschau.map((p) => (
-                      <li key={p.id}>
-                        <button onClick={() => nav(`/page/${p.id}`)}>{p.title || "Untitled"}</button>
-                      </li>
-                    ))}
-                    {rest > 0 && (
-                      <li>
-                        <button className="muted" onClick={() => nav(`/tag/${t.id}`)}>
-                          {rest === 1 ? "one more" : `${rest} more`} →
-                        </button>
-                      </li>
-                    )}
-                  </ul>
+        <ul className="schlagwort-zeilen">
+          {liste.map((t) => (
+            <li key={t.id} className={"schlagwort-zeile" + ((t.count ?? 0) === 0 ? " verwaist" : "")}>
+              <div className="farbe-anker">
+                <button
+                  className="farbtupfer"
+                  style={{ background: t.color }}
+                  title="Change colour"
+                  aria-label="Change colour"
+                  onClick={() => setFarbeFuer(farbeFuer === t.id ? null : t.id)}
+                />
+                {farbeFuer === t.id && (
+                  <Farbwahl
+                    wert={t.color}
+                    waehlen={(f) => void aendern(t, { color: f })}
+                    schliessen={() => setFarbeFuer(null)}
+                  />
                 )}
-              </article>
-            );
-          })}
-        </div>
+              </div>
+              {bearbeite === t.id ? (
+                <input
+                  autoFocus
+                  className="schlagwort-umbenennen"
+                  value={entwurf}
+                  onChange={(e) => setEntwurf(e.target.value)}
+                  onBlur={() => void umbenennen(t)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void umbenennen(t);
+                    if (e.key === "Escape") setBearbeite(null);
+                  }}
+                  aria-label="Rename tag"
+                />
+              ) : (
+                <button
+                  className="schlagwort-name"
+                  onClick={() => nav(`/tag/${t.id}`)}
+                  title="Show the pages with this tag"
+                >
+                  {t.name}
+                </button>
+              )}
+              <span className="schlagwort-zahl">
+                {(t.count ?? 0) === 0 ? "Not on any page" : t.count === 1 ? "One page" : `${t.count} pages`}
+              </span>
+              <span className="schlagwort-aktionen">
+                <button
+                  className="icon-btn"
+                  title="Rename"
+                  aria-label="Rename"
+                  onClick={() => {
+                    setEntwurf(t.name);
+                    setBearbeite(t.id);
+                  }}
+                >
+                  <Symbol name="stift" />
+                </button>
+                <button className="icon-btn" title="Delete" aria-label="Delete" onClick={() => void loeschen(t)}>
+                  <Symbol name="loeschen" />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

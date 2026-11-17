@@ -5029,7 +5029,7 @@ textarea::placeholder {
 
 /* Overview of all tags: cards in a grid, each tinted with its own colour. */
 .schlagwort-seite {
-  max-width: 1100px;
+  max-width: 760px;
 }
 .schlagwort-kopf {
   display: flex;
@@ -5056,10 +5056,6 @@ textarea::placeholder {
   gap: 8px;
   align-items: center;
   margin: 16px 0 4px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--flaeche);
 }
 .schlagwort-anlegen input {
   flex: 1;
@@ -5101,42 +5097,32 @@ textarea::placeholder {
   font-weight: 500;
 }
 
-.schlagwort-raster {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
+.schlagwort-zeilen {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
 }
-.schlagwort-karte {
-  position: relative;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 14px 12px;
-  background:
-    linear-gradient(color-mix(in srgb, var(--schlagwort-farbe) 9%, transparent),
-      color-mix(in srgb, var(--schlagwort-farbe) 9%, transparent)),
-    var(--flaeche);
-  border-top: 3px solid var(--schlagwort-farbe);
-  transition: box-shadow 0.15s, transform 0.15s;
-}
-.schlagwort-karte:hover {
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-  transform: translateY(-1px);
-}
-.schlagwort-karte.verwaist {
-  opacity: 0.7;
-}
-.schlagwort-karte-kopf {
+.schlagwort-zeile {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.schlagwort-zeile:hover {
+  background: var(--hover);
+}
+.schlagwort-zeile.verwaist .schlagwort-name,
+.schlagwort-zeile.verwaist .schlagwort-zahl {
+  opacity: 0.55;
 }
 .schlagwort-name {
   border: none;
   background: none;
   color: inherit;
   font: inherit;
-  font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   padding: 0;
   cursor: pointer;
   text-align: left;
@@ -5153,48 +5139,24 @@ textarea::placeholder {
   flex: 1;
   min-width: 0;
 }
-.schlagwort-karte-aktionen {
-  display: inline-flex;
-  gap: 2px;
-  opacity: 0;
-  transition: opacity 0.12s;
-}
-.schlagwort-karte:hover .schlagwort-karte-aktionen,
-.schlagwort-karte:focus-within .schlagwort-karte-aktionen {
-  opacity: 1;
-}
-.schlagwort-karte-aktionen .icon-btn {
-  width: 26px;
-  height: 26px;
-}
-.schlagwort-karte-zahl {
+.schlagwort-zahl {
   font-size: 12px;
   color: var(--muted);
-  margin: 6px 0 0 26px;
-}
-.schlagwort-vorschau {
-  list-style: none;
-  margin: 10px 0 0;
-  padding: 8px 0 0;
-  border-top: 1px solid color-mix(in srgb, var(--schlagwort-farbe) 25%, var(--border));
-}
-.schlagwort-vorschau li button {
-  display: block;
-  width: 100%;
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
-  font-size: 13px;
-  text-align: left;
-  padding: 3px 0;
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.schlagwort-vorschau li button:hover {
-  color: var(--accent-lesbar);
+.schlagwort-aktionen {
+  display: inline-flex;
+  gap: 2px;
+  visibility: hidden;
+}
+.schlagwort-zeile:hover .schlagwort-aktionen,
+.schlagwort-zeile:focus-within .schlagwort-aktionen {
+  visibility: visible;
+}
+.schlagwort-aktionen .icon-btn {
+  width: 26px;
+  height: 26px;
 }
 
 /* Colour: a round swatch that opens a small palette. */
@@ -5242,22 +5204,10 @@ textarea::placeholder {
 }
 
 .schlagwort-leer {
-  text-align: center;
-  padding: 60px 20px;
-  border: 1px dashed var(--border);
-  border-radius: 12px;
-  margin-top: 18px;
+  padding: 24px 0;
 }
 .schlagwort-leer p {
   margin: 4px 0;
-}
-.schlagwort-leer-symbol svg {
-  width: 40px;
-  height: 40px;
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 1.2;
-  stroke-linejoin: round;
 }
 /* Fields on the tag overview: the same look as the search in the sidebar. */
 .schlagwort-seite input:not([type="color"]),
@@ -5272,8 +5222,7 @@ textarea::placeholder {
 .schlagwort-neu input:focus {
   border-color: var(--accent);
 }
-.schlagwort-karte .schlagwort-umbenennen {
+.schlagwort-zeile .schlagwort-umbenennen {
   padding: 3px 8px;
   font-size: 14px;
-  font-weight: 600;
 }
