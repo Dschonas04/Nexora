@@ -828,7 +828,7 @@ export const PAARE: [string, string][] = [
   ["Ein Knopf im Browser sichert nur, wenn jemand ihn drückt. Für einen Zeitplan braucht ein Skript einen eigenen Zugang, und ein Cookie hat es nicht. Dafür ist das Losungswort da.", "A button in the browser only backs up when somebody presses it. For a schedule a script needs its own access, and it has no cookie. That is what the password is for."],
   ["Dieses Wort wiegt schwerer als jedes andere hier", "This word weighs more than any other here"],
   ["Es gibt den gesamten Bestand heraus, ohne Anmeldung. Jeder Abruf damit steht mit seiner Adresse im Protokoll.", "It hands out the entire body, without signing in. Every request with it stands in the log with its address."],
-  ["Neues Losungswort", "New password"],
+  ["Neues Losungswort", "New backup password"],
   ["Losungswort erzeugen", "Generate password"],
   ["Fertiges Skript mit Wort und Adresse. Prüft die Marke", "Ready-made script with word and address. Checks the marker"],
   ["und löscht Archive nach 14 Tagen.", "and deletes archives after 14 days."],
@@ -1588,4 +1588,6 @@ export const PAARE: [string, string][] = [
   ["{0} weitere", "{0} more"],
   ["Auf keiner Seite", "Not on any page"],
   ["Lege eines mit „Neues Schlagwort“ an oder vergib eines im Menü einer Seite unter „Schlagwörter…“.", "Create one with “New tag”, or add one to a page from its menu under “Tags…”."],
+  ["{0} Sitzungen", "{0} sessions"],
+  ["{0} Sitzung", "{0} session"],
 ];

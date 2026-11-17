@@ -300,14 +300,31 @@ function Aussehen() {
               key={g.value}
               type="button"
               className={"tonkachel" + (ton === g.value ? " gewaehlt" : "")}
-              style={{ background: marken[0], borderColor: marken[2], color: marken[3] }}
+              aria-pressed={ton === g.value}
               onClick={() => tonSetzen(g.value)}
             >
+              {/* A small window in that tone: ground, sidebar, two lines of
+                  text and one in the accent. The name stands below it in the
+                  normal text colour, so it can never vanish into the tone. */}
               <span
-                className="tonkachel-probe"
-                style={{ background: marken[1], borderColor: marken[2] }}
-              />
-              <span className="tonkachel-name">{g.title}</span>
+                className="tonkachel-vorschau"
+                style={{ background: marken[0], borderColor: marken[2] }}
+                aria-hidden="true"
+              >
+                <span
+                  className="tonkachel-leiste"
+                  style={{ background: marken[1], borderColor: marken[2] }}
+                />
+                <span className="tonkachel-zeilen">
+                  <i style={{ background: marken[3], width: "70%" }} />
+                  <i style={{ background: marken[3], width: "50%", opacity: 0.5 }} />
+                  <i style={{ background: akzent, width: "35%" }} />
+                </span>
+              </span>
+              <span className="tonkachel-name">
+                {ton === g.value && <span className="tonkachel-haken" aria-hidden="true">✓</span>}
+                {g.title}
+              </span>
             </button>
           );
         })}
@@ -528,8 +545,8 @@ function Profil() {
         </div>
         <p className="muted small">
           This is how you appear on pages, in comments and in share lists. The email
-          address is the account’s identifier and cannot be changed here, sign-in
-          and every share hang on it.
+          address is the account’s identifier and cannot be changed here, because
+          sign-in and every share hang on it.
         </p>
       </div>
 
@@ -877,7 +894,7 @@ function SchluesselTeil() {
 
       <div className="schluessel-form">
         <input
-          className="input"
+          className="input breit"
           placeholder="Name, e.g. n8n"
           value={name}
           maxLength={80}

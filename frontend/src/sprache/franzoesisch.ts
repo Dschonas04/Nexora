@@ -1509,4 +1509,7 @@ export const FRANZOESISCH: Record<string, string> = {
   "{0} more": "{0} de plus",
   "Not on any page": "Sur aucune page",
   "Create one with “New tag”, or add one to a page from its menu under “Tags…”.": "Créez-en un avec « Nouveau tag » ou ajoutez-en un à une page depuis son menu, sous « Tags… ».",
+  "New backup password": "Nouveau mot de passe de sauvegarde",
+  "{0} sessions": "{0} sessions",
+  "{0} session": "{0} session",
 };
