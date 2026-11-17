@@ -13,6 +13,15 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [3.4.2]: 2026-11-17
+
+### Changed
+
+- **Page header with icons.** Subpage, favourite, watch, history, share and
+  delete are icon buttons with their name as tooltip; contents, save as
+  template, export and width sit in one menu behind three lines. The header
+  fits on a laptop screen again.
+
 ## [3.4.1]: 2026-11-16
 
 ### Changed
@@ -398,7 +407,8 @@ this release; see 2.1.0 for what became free since. Markdown import and export
 are free regardless, because the way out of a system must never sit behind a
 key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
-[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.4.1...main
+[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.4.2...main
+[3.4.2]: https://github.com/Dschonas04/Nexora/releases/tag/v3.4.2
 [3.4.1]: https://github.com/Dschonas04/Nexora/releases/tag/v3.4.1
 [3.4.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.4.0
 [3.3.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.3.0
