@@ -22,7 +22,7 @@ is everything in one container: `docker run -d -p 3443:443 -p 3000:80 -v nexora_
 
 ## Tags
 
-`latest` newest release · `3.4` stays on a minor line · `3.4.2` pinned exactly.
+`latest` newest release · `3.5` stays on a minor line · `3.5.0` pinned exactly.
 Architectures `linux/amd64` and `linux/arm64`. The same images are on
 `ghcr.io/dschonas04/nexora-frontend`.
 

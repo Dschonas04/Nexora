@@ -13,6 +13,32 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [3.5.0]: 2026-11-17
+
+### Added
+
+- **Tag overview.** "Tags" in the sidebar, right above the inbox, opens a list
+  of all tags: create, rename, recolour from a palette, delete, search, and
+  sort by name or use. The API has `PATCH /api/tags/{id}` for name and colour;
+  a name another tag already carries is refused with 409.
+
+### Changed
+
+- **Tags of a page** moved from under the title into the page menu
+  ("Tags…"), with a dialog that suggests existing tags while typing.
+- **Sidebar header:** "+" for a new page or space, a menu with import, export
+  and collapse all, and an icon to hide the sidebar. The row of words above the
+  tree is gone.
+- **My account:** entries grouped into "Personal" and "Security", each with an
+  icon. Base tones show as small previews with the name below, the custom
+  accent is a round swatch like the presets.
+
+### Fixed
+
+- Texts in "My account" that stayed English in German (profile hint, session
+  count), a cut-off filter placeholder under devices, and unstyled fields under
+  API keys in the dark tone.
+
 ## [3.4.2]: 2026-11-17
 
 ### Changed
@@ -407,7 +433,8 @@ this release; see 2.1.0 for what became free since. Markdown import and export
 are free regardless, because the way out of a system must never sit behind a
 key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
-[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.4.2...main
+[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.5.0...main
+[3.5.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.5.0
 [3.4.2]: https://github.com/Dschonas04/Nexora/releases/tag/v3.4.2
 [3.4.1]: https://github.com/Dschonas04/Nexora/releases/tag/v3.4.1
 [3.4.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.4.0
