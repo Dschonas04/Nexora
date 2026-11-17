@@ -35,6 +35,10 @@ function anwendungKopieren(nachResources) {
   }
   // Die Anwendung hat keine Laufzeit-Abhaengigkeiten: alles, was sie braucht,
   // steckt in Electron selbst. Deshalb wandert kein node_modules mit.
+  // Die Oberflaeche fuer den Betrieb ohne Server (frontend/dist).
+  const dist = path.join(HIER, '..', 'frontend', 'dist');
+  if (!fs.existsSync(path.join(dist, 'index.html'))) throw new Error('frontend/dist fehlt: erst im Frontend "npx vite build"');
+  fs.cpSync(dist, path.join(app, 'oberflaeche'), { recursive: true });
   const p = JSON.parse(fs.readFileSync(path.join(app, 'package.json')));
   delete p.devDependencies;
   delete p.scripts;

@@ -7,4 +7,7 @@ contextBridge.exposeInMainWorld('nexoraEinrichtung', {
   adresse: () => ipcRenderer.invoke('einrichtung:adresse'),
   pruefen: (adresse) => ipcRenderer.invoke('einrichtung:pruefen', String(adresse)),
   speichern: (adresse) => ipcRenderer.invoke('einrichtung:speichern', String(adresse)),
+  ohneServer: () => ipcRenderer.invoke('einrichtung:lokal'),
+  benutzer: () => ipcRenderer.invoke('lokal:benutzer'),
+  zurueck: () => ipcRenderer.invoke('lokal:zurueck'),
 });

@@ -13,6 +13,35 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [3.6.0]: 2026-11-17
+
+### Added
+
+- **Working offline in the app and the installed web app.** The service worker
+  keeps a mirror of all pages one can see (in the Android app and when Nexora
+  is installed from the browser). When the server does not answer, pages can
+  be read, edited, created and deleted; changes wait in an outbox on the
+  device. Back in reach, the outbox goes out first, and a page changed on both
+  sides is merged block by block; a block changed on both keeps the server's
+  version with one's own copy directly below it. A stripe says when one works
+  offline, how many changes wait, and what went through after the sync.
+- **Without a server.** The desktop app (macOS, Windows) and the Android app
+  can run Nexora on the device alone: no server, no account, the pages kept in
+  the app's storage for the user signed in to the device.
+- **Setup in the apps.** On first start the apps ask for the server address,
+  or offer to run without one. The desktop menu has "Change server…";
+  without a server, signing out leads back to the setup.
+- **Desktop app offline.** The desktop app keeps its own mirror and switches
+  to it when the server is gone, syncing on return the same way.
+
+### Security
+
+- The apps keep their windows on the chosen server and the sign-in provider it
+  redirects to; everything else opens in the browser. The homelab CA bundled
+  with the apps is trusted only for the configured hosts, with hostname,
+  validity and CA flags checked along the chain.
+- Waiting offline changes are sent only with the account that made them.
+
 ## [3.5.0]: 2026-11-17
 
 ### Added

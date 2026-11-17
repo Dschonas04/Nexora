@@ -17,11 +17,17 @@ import "./styles.css";
 // Before the first render, so the very first frame already stands in the chosen language.
 import "./sprache";
 import { offlineStarten } from "./offline";
+import { lokalModus } from "./lokal";
+import AppEinrichtung, { appEinrichtungNoetig } from "./components/AppEinrichtung";
 
 // The service worker makes Nexora installable as an app and keeps the pages
 // one has opened readable without a connection; see public/sw.js. Only in
 // the built application: in development it would serve yesterday's bundle.
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
+// Not inside the apps' own origin (app:// on the desktop, https://localhost
+// on Android): there the interface comes with the app, and without a server
+// there is nothing to cache.
+const imAppUrsprung = location.protocol === "app:" || location.hostname === "localhost";
+if (import.meta.env.PROD && "serviceWorker" in navigator && !imAppUrsprung) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js")
@@ -32,7 +38,11 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
   });
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+const wurzel = ReactDOM.createRoot(document.getElementById("root")!);
+if (appEinrichtungNoetig() && !lokalModus()) {
+  // The Android app before a choice: server or this device only.
+  wurzel.render(<AppEinrichtung />);
+} else wurzel.render(
   <React.StrictMode>
     <BrowserRouter>
       <AuthProvider>

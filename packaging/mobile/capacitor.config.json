@@ -1,7 +1,7 @@
 {
   "appId": "de.jonasgroll.nexora",
   "appName": "Nexora",
-  "webDir": "web",
+  "webDir": "../../frontend/dist",
   "server": {
     "androidScheme": "https"
   },

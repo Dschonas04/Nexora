@@ -1,3 +1,4 @@
+import { anfrage as lokalAnfrage, lokalModus } from "../lokal";
 // Typed client for the backend API, plus the wire types it returns. These
 // mirror the Go structs in backend/internal/models: changing a JSON tag there
 // means changing the matching field here.
@@ -204,6 +205,8 @@ export interface Graph {
 // It unwraps the backend's {"error": "..."} shape into a thrown Error and hangs
 // the HTTP status on it, so callers can tell a 403 from a 404 when they care.
 async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
+  // Without a server everything is answered on the device; see lokal.ts.
+  if (lokalModus()) return lokalAnfrage<T>(path, opts);
   const res = await fetch(`/api${path}`, {
     credentials: "include",
     headers: { "Content-Type": "application/json" },

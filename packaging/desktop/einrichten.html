@@ -26,6 +26,10 @@
   .meldung { min-height: 21px; margin-top: 12px; font-size: 13px; }
   .meldung.fehler { color: var(--fehler); }
   .hinweis { font-size: 12px; margin-top: 24px; }
+  .klein { font-size: 12px; margin: 8px 0 0; }
+  .trenner { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: var(--leise); font-size: 12px; }
+  .trenner::before, .trenner::after { content: ""; flex: 1; border-top: 1px solid var(--rand); }
+  button.breit { width: 100%; }
 </style>
 </head>
 <body>
@@ -33,7 +37,7 @@
   <div class="zeichen"><svg width="48" height="48" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="15" fill="#111"/><path d="M20 44V20L44 44V20" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><g fill="#fff"><circle cx="20" cy="44" r="5.5"/><circle cx="20" cy="20" r="5.5"/><circle cx="44" cy="44" r="5.5"/><circle cx="44" cy="20" r="5.5"/></g></svg>
 </div>
   <h1>Nexora einrichten</h1>
-  <p>Mit welchem Server soll sich die App verbinden? Unterwegs arbeitest du auf einer Kopie deiner Seiten, zuhause wird abgeglichen.</p>
+  <p>Mit deinem Server: Unterwegs arbeitest du auf einer Kopie deiner Seiten, zuhause wird abgeglichen. Oder nur auf diesem Rechner, ohne Server und ohne Konto.</p>
   <form id="form">
     <label for="adresse">Adresse des Servers</label>
     <input id="adresse" placeholder="https://10.0.2.7:3000" autocomplete="url" spellcheck="false" required>
@@ -42,13 +46,17 @@
     </div>
     <div class="meldung" id="meldung" role="status"></div>
   </form>
-  <p class="hinweis">Später änderbar im Menü unter „Server wechseln …“.</p>
+  <div class="trenner"><span>oder</span></div>
+  <button id="lokal" class="breit" type="button">Ohne Server nutzen</button>
+  <p class="klein">Die Seiten liegen dann nur auf diesem Rechner, für deinen Benutzer hier. Kein Konto nötig.</p>
+  <p class="hinweis">Später änderbar im Menü unter „Server wechseln …“, ohne Server über „Abmelden“.</p>
 </main>
 <script>
   const feld = document.getElementById('adresse');
   const meldung = document.getElementById('meldung');
   const los = document.getElementById('los');
   window.nexoraEinrichtung.adresse().then((a) => { if (a) feld.value = a; feld.focus(); });
+  document.getElementById('lokal').addEventListener('click', () => window.nexoraEinrichtung.ohneServer());
   document.getElementById('form').addEventListener('submit', async (e) => {
     e.preventDefault();
     let a = feld.value.trim().replace(/\/+$/, '');

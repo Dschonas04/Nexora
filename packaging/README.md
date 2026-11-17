@@ -4,6 +4,19 @@ Nexora is a web application. What is built here is a window of its own onto the
 one already running: the same interface, the same server, the same state for
 everyone.
 
+## Setup and running without a server
+
+On first start the apps (desktop and Android) ask: which server, or none.
+Without a server the interface comes with the app (`frontend/dist`, built
+before packaging) and `frontend/src/lokal.ts` answers the API on the device;
+the pages lie in the app's IndexedDB, for the user signed in to the device.
+Sharing, groups, comments and attachments need a server. Signing out leads
+back to the setup; the pages stay.
+
+The Android app keeps only the chosen server and its sign-in provider in its
+window (`MainActivity.java`); offline it relies on the service worker of the
+web interface (`frontend/public/sw.js`).
+
 ## Working offline (desktop)
 
 The desktop app keeps a mirror of one's own and shared pages

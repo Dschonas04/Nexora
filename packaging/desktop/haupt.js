@@ -9,7 +9,9 @@
 // eigenes Fenster ohne Adresszeile und fremde Reiter, ein Eintrag im
 // Startmenue, und die Adresse der Instanz steht einmal fest statt in jedem
 // Browserprofil neu.
-const { app, BrowserWindow, Menu, Notification, dialog, ipcMain, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, Notification, dialog, ipcMain, net, protocol, session, shell } = require('electron');
+const os = require('os');
+const { pathToFileURL } = require('url');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -18,7 +20,7 @@ const EINSTELLUNGEN = () => path.join(app.getPath('userData'), 'einstellungen.js
 const VORGABE = 'https://10.0.2.7:3000';
 const { Offline } = require('./offline');
 let offline = null;
-let modus = 'start'; // 'online' oder 'offline'
+let modus = 'start'; // 'online', 'offline', 'lokal' oder 'einrichtung'
 let abgleichLaeuft = false;
 let letzterAbgleich = null;
 let fremdGemeldet = false;
@@ -33,16 +35,51 @@ function adresseLesen() {
   return process.env.NEXORA_ADRESSE || VORGABE;
 }
 
-/** Ob schon ein Server gewaehlt wurde (sonst kommt die Einrichtung). */
-function eingerichtet() {
-  if (process.env.NEXORA_ADRESSE) return true;
+function einstellungenLesen() {
   try {
-    const roh = JSON.parse(fs.readFileSync(EINSTELLUNGEN(), 'utf8'));
-    return typeof roh.adresse === 'string' && roh.adresse.startsWith('http');
+    return JSON.parse(fs.readFileSync(EINSTELLUNGEN(), 'utf8')) || {};
   } catch {
-    return false;
+    return {};
   }
 }
+
+function einstellungenAendern(aenderung) {
+  const roh = { ...einstellungenLesen(), ...aenderung };
+  fs.mkdirSync(path.dirname(EINSTELLUNGEN()), { recursive: true });
+  fs.writeFileSync(EINSTELLUNGEN(), JSON.stringify(roh, null, 2));
+}
+
+/** Ob ohne Server gearbeitet wird: alles liegt dann nur auf diesem Rechner. */
+const ohneServer = () => einstellungenLesen().modus === 'lokal';
+
+/** Ob schon gewaehlt wurde, Server oder ohne (sonst kommt die Einrichtung). */
+function eingerichtet() {
+  if (process.env.NEXORA_ADRESSE) return true;
+  const roh = einstellungenLesen();
+  return roh.modus === 'lokal' || (typeof roh.adresse === 'string' && roh.adresse.startsWith('http'));
+}
+
+// Ohne Server kommt die Oberflaeche aus der Anwendung selbst, unter einem
+// eigenen Ursprung app://nexora. Der bleibt immer gleich, damit der Speicher
+// des Fensters (IndexedDB, dort liegen die Seiten) beim naechsten Start
+// wieder derselbe ist.
+const LOKAL = 'app://nexora/';
+const OBERFLAECHE = path.join(__dirname, 'oberflaeche');
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+]);
+function lokalAusliefern() {
+  protocol.handle('app', (anfrage) => {
+    const u = new URL(anfrage.url);
+    if (u.host !== 'nexora') return new Response('', { status: 404 });
+    let datei = path.normalize(path.join(OBERFLAECHE, decodeURIComponent(u.pathname)));
+    if (!datei.startsWith(OBERFLAECHE + path.sep) && datei !== OBERFLAECHE) return new Response('', { status: 400 });
+    // Seitenadressen wie /page/... sind Sache der Oberflaeche: index.html.
+    if (!fs.existsSync(datei) || fs.statSync(datei).isDirectory()) datei = path.join(OBERFLAECHE, 'index.html');
+    return net.fetch(pathToFileURL(datei).toString());
+  });
+}
+const istLokal = (adresse) => typeof adresse === 'string' && adresse.startsWith(LOKAL);
 
 /** Der Spiegel gehoert zu einem Server: je Ursprung ein eigener Ordner. */
 function spiegelOrdner(adresse) {
@@ -61,17 +98,32 @@ const EIGENE_CA = (() => {
   }
 })();
 
-function ketteZurEigenenCA(zertifikat) {
-  if (!EIGENE_CA) return false;
+function gueltig(x) {
+  const jetzt = Date.now();
+  return Date.parse(x.validFrom) <= jetzt && jetzt <= Date.parse(x.validTo);
+}
+
+/**
+ * Ob das Zertifikat fuer den Host gilt und ueber eine saubere Kette an der
+ * eigenen CA haengt: Name passt, alle Glieder gueltig, das Blatt ist keine CA,
+ * jeder Aussteller ist eine.
+ */
+function ketteZurEigenenCA(zertifikat, host) {
+  if (!EIGENE_CA || !zertifikat) return false;
   try {
+    const blatt = new crypto.X509Certificate(zertifikat.data);
+    if (blatt.ca || !gueltig(blatt)) return false;
+    if (!blatt.checkHost(host) && !blatt.checkIP(host)) return false;
+    let x = blatt;
     let glied = zertifikat;
-    for (let i = 0; glied && i < 5; i++) {
-      const x = new crypto.X509Certificate(glied.data);
-      if (x.fingerprint256 === EIGENE_CA.fingerprint256) return true;
-      if (x.verify(EIGENE_CA.publicKey) && x.checkIssued(EIGENE_CA)) return true;
+    for (let i = 0; i < 5; i++) {
+      if (x.checkIssued(EIGENE_CA) && x.verify(EIGENE_CA.publicKey)) return gueltig(EIGENE_CA);
       const aussteller = glied.issuerCert;
       if (!aussteller || aussteller === glied) return false;
-      if (!x.verify(new crypto.X509Certificate(aussteller.data).publicKey)) return false;
+      const ax = new crypto.X509Certificate(aussteller.data);
+      if (!ax.ca || !gueltig(ax) || !x.checkIssued(ax) || !x.verify(ax.publicKey)) return false;
+      if (ax.fingerprint256 === EIGENE_CA.fingerprint256) return true;
+      x = ax;
       glied = aussteller;
     }
   } catch {
@@ -94,7 +146,7 @@ function zertifikatePruefen() {
     if (
       anfrage.verificationResult === 'net::ERR_CERT_AUTHORITY_INVALID' &&
       erlaubteHosts.has(anfrage.hostname) &&
-      ketteZurEigenenCA(anfrage.certificate)
+      ketteZurEigenenCA(anfrage.certificate, anfrage.hostname)
     ) {
       return antwort(0);
     }
@@ -112,7 +164,7 @@ function adresseSchreiben(adresse) {
     } catch {
       anbieterJe = {};
     }
-    fs.writeFileSync(EINSTELLUNGEN(), JSON.stringify({ adresse, anbieterJe }, null, 2));
+    fs.writeFileSync(EINSTELLUNGEN(), JSON.stringify({ adresse, anbieterJe, modus: 'server' }, null, 2));
   } catch (fehler) {
     dialog.showErrorBox('Nicht gespeichert', String(fehler));
   }
@@ -176,6 +228,7 @@ function istAnbieter(adresse) {
   }
 }
 function zielErlaubt(ziel) {
+  if (ohneServer()) return istLokal(ziel);
   return (
     gleicherUrsprung(ziel, adresseLesen()) ||
     (offline && offline.port && gleicherUrsprung(ziel, `http://127.0.0.1:${offline.port}`)) ||
@@ -267,6 +320,7 @@ function fensterBauen() {
 
   fenster.webContents.on('did-fail-load', (_e, code, beschreibung, _url, hauptRahmen) => {
     if (code === -3 || !hauptRahmen) return; // abgebrochene Weiterleitung, kein Fehler
+    if (modus === 'lokal' || modus === 'einrichtung') return;
     // Mit Spiegel: still in den Offline-Modus, statt eine Fehlermeldung zu zeigen.
     if (offline && offline.hatSpiegel()) {
       offlineZeigen();
@@ -336,6 +390,29 @@ function einrichtungVerdrahten() {
       else process.env.NEXORA_PRUEFADRESSE = vorher;
     }
   });
+  ipcMain.handle('einrichtung:lokal', async (e) => {
+    if (!vonEinrichtung(e)) return false;
+    einstellungenAendern({ modus: 'lokal' });
+    lokalZeigen();
+    return true;
+  });
+  // Aus der Oberflaeche ohne Server: der Name des Benutzers auf diesem
+  // Rechner, und der Weg zurueck zur Einrichtung (das "Abmelden").
+  const vonLokal = (e) => istLokal(e.senderFrame && e.senderFrame.url);
+  ipcMain.handle('lokal:benutzer', (e) => {
+    if (!vonLokal(e)) return '';
+    try {
+      return os.userInfo().username;
+    } catch {
+      return '';
+    }
+  });
+  ipcMain.handle('lokal:zurueck', (e) => {
+    if (!vonLokal(e)) return false;
+    einstellungenAendern({ modus: einstellungenLesen().adresse ? 'server' : '' });
+    einrichtungZeigen();
+    return true;
+  });
   ipcMain.handle('einrichtung:speichern', async (e, adresse) => {
     if (!vonEinrichtung(e)) return false;
     const u = new URL(adresse);
@@ -357,7 +434,7 @@ function menueBauen() {
         submenu: [
           { label: 'Neu laden', accelerator: 'CmdOrCtrl+R', click: () => fenster.reload() },
           { label: 'Server wechseln…', click: einrichtungZeigen },
-          { label: 'Jetzt abgleichen', accelerator: 'CmdOrCtrl+Shift+S', click: () => pruefen(true) },
+          { label: 'Jetzt abgleichen', accelerator: 'CmdOrCtrl+Shift+S', click: () => (ohneServer() ? melden('Nexora', 'Ohne Server gibt es nichts abzugleichen.') : pruefen(true)) },
           { label: 'Abgleich-Stand anzeigen', click: standZeigen },
           { type: 'separator' },
           { label: 'Vollbild', role: 'togglefullscreen' },
@@ -405,6 +482,12 @@ function offlineZeigen() {
   titelSetzen();
 }
 
+function lokalZeigen() {
+  modus = 'lokal';
+  fenster.loadURL(LOKAL);
+  titelSetzen();
+}
+
 function onlineZeigen() {
   const wechsel = modus !== 'online';
   modus = 'online';
@@ -417,7 +500,7 @@ function onlineZeigen() {
  * auffrischen, dann das Fenster auf den Server stellen. Ohne Server: Spiegel.
  */
 async function pruefen(vonHand = false) {
-  if (abgleichLaeuft || !offline) return;
+  if (abgleichLaeuft || !offline || modus === 'lokal' || ohneServer()) return;
   abgleichLaeuft = true;
   const server = adresseLesen();
   try {
@@ -494,6 +577,10 @@ async function starten() {
     einrichtungZeigen();
     return;
   }
+  if (ohneServer()) {
+    lokalZeigen();
+    return;
+  }
   const server = adresseLesen();
   if (await offline.erreichbar(server)) {
     onlineZeigen();
@@ -507,6 +594,7 @@ async function starten() {
 
 app.whenReady().then(() => {
   zertifikatePruefen();
+  lokalAusliefern();
   einrichtungVerdrahten();
   menueBauen();
   fensterBauen();

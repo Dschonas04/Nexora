@@ -345,6 +345,11 @@ async function abgleichenRoh() {
   let fehlgeschlagen = 0;
   while (ausgang.length) {
     const op = ausgang[0];
+    // Every entry for itself: only what this account wrote goes out with it.
+    if (op.konto && op.konto !== ich.id) {
+      await melden({ art: "nexora-fremd" });
+      break;
+    }
     try {
       if (op.art === "anlegen") {
         const s = await api("/pages", {
@@ -428,6 +433,10 @@ async function offlineSchreiben(methode, pfad, k) {
   const ich = await jsonLesen(API, "/api/auth/me");
   if (!ich) return nichtOffline();
   const ausgang = await ausgangLesen();
+  // Changes of another account wait here: no mixing of two accounts' writes.
+  if (ausgang.some((x) => x.konto && x.konto !== ich.id)) {
+    return antwort(409, { error: "Changes of another account are waiting on this device. Sign in with that account to transfer them." });
+  }
   const jetzt = new Date().toISOString();
   const liste = bloecke(await jsonLesen(API, "/api/pages"));
   let ergebnis;
