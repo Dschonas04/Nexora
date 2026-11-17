@@ -11,6 +11,7 @@ import { useAussenklick } from "../klappen";
 import SpaceRechte from "./SpaceRechte";
 import Einfuhr from "./Einfuhr";
 import Zeichen from "./Zeichen";
+import Symbol from "./Symbole";
 import MeinKonto from "./MeinKonto";
 import Profilbild from "./Profilbild";
 
@@ -286,8 +287,8 @@ export default function Sidebar(props: Props) {
   // The same for the export menu of a space.
   // The two menus in the toolbar. `exportFuer` holds the selected space so
   // the same control can switch to showing export formats instead of a list.
-  const [einfuhrOffen, setEinfuhrOffen] = useState(false);
-  const [ausfuhrOffen, setAusfuhrOffen] = useState(false);
+  const [neuOffen, setNeuOffen] = useState(false);
+  const [menue, setMenue] = useState<null | "haupt" | "import" | "export">(null);
   const [exportFuer, setExportFuer] = useState<string | null>(null);
   // Clicking outside or pressing Escape closes these menus. Without this
   // they'd remain over the page tree and intercept clicks.
@@ -297,9 +298,9 @@ export default function Sidebar(props: Props) {
   const ausgebbar = spaces.filter((sp) => pages.some((p) => (p.spaceId ?? null) === sp.id));
   const ohneAblage = pages.some((p) => (p.spaceId ?? null) === null);
 
-  const einfuhrBereich = useAussenklick<HTMLDivElement>(einfuhrOffen, () => setEinfuhrOffen(false));
-  const ausfuhrBereich = useAussenklick<HTMLDivElement>(ausfuhrOffen, () => {
-    setAusfuhrOffen(false);
+  const kopfBereich = useAussenklick<HTMLDivElement>(neuOffen || menue !== null, () => {
+    setNeuOffen(false);
+    setMenue(null);
     setExportFuer(null);
   });
   // Target for the import while its panel is open.
@@ -569,21 +570,188 @@ export default function Sidebar(props: Props) {
         onPointerCancel={zugBeenden}
         onDoubleClick={zugZuruecksetzen}
       />
-      <div className="sidebar-header">
+      {/* Creating, import/export and collapsing used to fill a row of words
+          above the tree. They now sit in the header as two icons: "+" for what
+          creates something, three lines for the rest. The lists hang on the
+          header, as wide as the sidebar, so they always fit. */}
+      <div className="sidebar-header" ref={kopfBereich}>
         <span className="brand">
           <Zeichen groesse={18} />
           Nexora
         </span>
-        {/* Placed on the far right because it affects the entire sidebar and
-          not its contents. */}
-        <button
-          className="icon-btn leiste-griff"
-          title="Hide sidebar (Ctrl + \)"
-          aria-label="Hide sidebar"
-          onClick={leisteUmschalten}
-        >
-          «
-        </button>
+        <span className="kopf-knoepfe">
+          {results === null && (
+            <>
+              <button
+                className={"icon-btn kopf-knopf" + (neuOffen ? " aktiv" : "")}
+                title="New page or space"
+                aria-label="New page or space"
+                aria-expanded={neuOffen}
+                onClick={() => {
+                  setMenue(null);
+                  setNeuOffen((v) => !v);
+                }}
+              >
+                <Symbol name="plus" />
+              </button>
+              <button
+                className={"icon-btn kopf-knopf" + (menue ? " aktiv" : "")}
+                title="Menu"
+                aria-label="Menu"
+                aria-expanded={menue !== null}
+                onClick={() => {
+                  setNeuOffen(false);
+                  setExportFuer(null);
+                  setMenue((m) => (m ? null : "haupt"));
+                }}
+              >
+                <Symbol name="menue" />
+              </button>
+            </>
+          )}
+          {/* Far right because it affects the whole sidebar, not its content. */}
+          <button
+            className="icon-btn kopf-knopf"
+            title="Hide sidebar (Ctrl + \)"
+            aria-label="Hide sidebar"
+            onClick={leisteUmschalten}
+          >
+            <Symbol name="leiste" />
+          </button>
+        </span>
+        {neuOffen && (
+          <div className="klappliste kopf-liste">
+            <button
+              className="klappeintrag"
+              onClick={() => {
+                setNeuOffen(false);
+                onCreateRoot();
+              }}
+            >
+              Neue Seite
+              <span className="klappeintrag-hinweis">Create a page at the top level</span>
+            </button>
+            <button
+              className="klappeintrag"
+              onClick={() => {
+                setNeuOffen(false);
+                onCreateSpace();
+              }}
+            >
+              Neue Ablage
+              <span className="klappeintrag-hinweis">Create a space</span>
+            </button>
+          </div>
+        )}
+        {menue === "haupt" && (
+          <div className="klappliste kopf-liste">
+            <button className="klappeintrag" onClick={() => setMenue("import")}>
+              Import…
+              <span className="klappeintrag-hinweis">Markdown, HTML or a ZIP, optionally as its own space</span>
+            </button>
+            {frei("export") && (ausgebbar.length > 0 || ohneAblage) && (
+              <button className="klappeintrag" onClick={() => setMenue("export")}>
+                Export…
+                <span className="klappeintrag-hinweis">A whole space as ZIP, PDF or Word</span>
+              </button>
+            )}
+            {/* Collapsing every space by hand would be a dozen clicks. */}
+            <button
+              className="klappeintrag"
+              onClick={() => {
+                setMenue(null);
+                alleKlappen();
+              }}
+            >
+              {alleZu ? "Alles ausklappen" : "Alles einklappen"}
+            </button>
+          </div>
+        )}
+        {menue === "import" && (
+          <div className="klappliste kopf-liste">
+            <div className="klappliste-titel">Where to import</div>
+            <button
+              className="klappeintrag"
+              onClick={() => {
+                setMenue(null);
+                setEinfuhrZiel({ ziel: {}, name: "Pages" });
+              }}
+            >
+              Als neue Ablage oder ohne
+            </button>
+            {spaces.map((sp) => (
+              <button
+                key={sp.id}
+                className="klappeintrag"
+                onClick={() => {
+                  setMenue(null);
+                  setEinfuhrZiel({ ziel: { spaceId: sp.id }, name: sp.name });
+                }}
+              >
+                In: {sp.name}
+              </button>
+            ))}
+            <button className="klappeintrag" onClick={() => setMenue("haupt")}>
+              ← Zurück
+            </button>
+          </div>
+        )}
+        {/* A normal navigation to the URL, not a fetch: the browser takes the
+            filename from Content-Disposition and streams the download to disk. */}
+        {menue === "export" && (
+          <div className="klappliste kopf-liste">
+            {exportFuer === null ? (
+              <>
+                <div className="klappliste-titel">Which space</div>
+                {ausgebbar.map((sp) => (
+                  <button key={sp.id} className="klappeintrag" onClick={() => setExportFuer(sp.id)}>
+                    {sp.name}
+                  </button>
+                ))}
+                {ohneAblage && (
+                  <button className="klappeintrag" onClick={() => setExportFuer("ohne")}>
+                    Pages without a space
+                  </button>
+                )}
+                <button className="klappeintrag" onClick={() => setMenue("haupt")}>
+                  ← Zurück
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="klappliste-titel">
+                  {exportFuer === "ohne"
+                    ? "Pages without a space"
+                    : (spaces.find((sp) => sp.id === exportFuer)?.name ?? "Space")}{" "}
+                  exportieren
+                </div>
+                {(
+                  [
+                    ["", "Markdown files (.zip)"],
+                    ["pdf", "A PDF with every page"],
+                    ["word", "A Word document"],
+                  ] as const
+                ).map(([form, titel]) => (
+                  <button
+                    key={titel}
+                    className="klappeintrag"
+                    onClick={() => {
+                      const id = exportFuer;
+                      setMenue(null);
+                      setExportFuer(null);
+                      window.location.href = `/api/spaces/${id}/export` + (form ? `?format=${form}` : "");
+                    }}
+                  >
+                    {titel}
+                  </button>
+                ))}
+                <button className="klappeintrag" onClick={() => setExportFuer(null)}>
+                  ← Andere Ablage
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="search-box">
@@ -670,159 +838,6 @@ export default function Sidebar(props: Props) {
               zurücksetzen
             </button>
           )}
-        </div>
-      )}
-
-      {/* Both actions used to hang on the heading "Seiten". That tied them to a
-          section which does not always exist and which looked out of place
-          beside named spaces anyway. They now stand on their own, above all
-          sections. */}
-      {results === null && (
-        <div className="sidebar-werkzeuge">
-            {/* Everything that creates or exports content is grouped on this
-              single line: new page, new space, import, export. Previously the
-              new-page action lived as an unlabeled plus in the header, an
-              icon without a word, far from the three other actions that do
-              the same. */}
-          <button className="text-btn" title="Create a page at the top level" onClick={() => onCreateRoot()}>
-            + Seite
-          </button>
-          <button className="text-btn" title="Create a space" onClick={onCreateSpace}>
-            + Ablage
-          </button>
-          {/* Labelled instead of an arrow: an icon alone does not say that a
-              whole archive can be read in here, and since the import can create
-              a space of its own, this is the way back out of an export. */}
-            {/* The import first asks where to put the content. Previously each
-              space had its own arrow; the question is the same but is now
-              asked once instead of on every heading. */}
-          <div className="klappmenue" ref={einfuhrBereich}>
-            <button
-              className="text-btn"
-              title="Import Markdown, HTML or a ZIP, optionally as its own space"
-              onClick={() => {
-                setAusfuhrOffen(false);
-                setEinfuhrOffen((v) => !v);
-              }}
-            >
-              Import
-            </button>
-            {einfuhrOffen && (
-              <div className="klappliste" onMouseLeave={() => setEinfuhrOffen(false)}>
-                <div className="klappliste-titel">Where to import</div>
-                <button
-                  className="klappeintrag"
-                  onClick={() => {
-                    setEinfuhrOffen(false);
-                    setEinfuhrZiel({ ziel: {}, name: "Pages" });
-                  }}
-                >
-                  Als neue Ablage oder ohne
-                </button>
-                {spaces.map((sp) => (
-                  <button
-                    key={sp.id}
-                    className="klappeintrag"
-                    onClick={() => {
-                      setEinfuhrOffen(false);
-                      setEinfuhrZiel({ ziel: { spaceId: sp.id }, name: sp.name });
-                    }}
-                  >
-                    In: {sp.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-            {/* A normal navigation to the URL, not a fetch: the browser can pick
-              up the filename from the Content-Disposition header and stream
-              the download directly to disk instead of loading it into memory. */}
-          {frei("export") && (ausgebbar.length > 0 || ohneAblage) && (
-            <div className="klappmenue" ref={ausfuhrBereich}>
-              <button
-                className="text-btn"
-                title="Export a whole space as ZIP, PDF or Word"
-                onClick={() => {
-                  setEinfuhrOffen(false);
-                  setExportFuer(null);
-                  setAusfuhrOffen((v) => !v);
-                }}
-              >
-                Export
-              </button>
-              {ausfuhrOffen && (
-                <div
-                  className="klappliste"
-                  onMouseLeave={() => {
-                    setAusfuhrOffen(false);
-                    setExportFuer(null);
-                  }}
-                >
-                  {exportFuer === null ? (
-                    <>
-                      <div className="klappliste-titel">Which space</div>
-                      {ausgebbar.map((sp) => (
-                        <button
-                          key={sp.id}
-                          className="klappeintrag"
-                          onClick={() => setExportFuer(sp.id)}
-                        >
-                          {sp.name}
-                        </button>
-                      ))}
-                      {ohneAblage && (
-                        <button className="klappeintrag" onClick={() => setExportFuer("ohne")}>
-                          Pages without a space
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="klappliste-titel">
-                        {exportFuer === "ohne"
-                          ? "Pages without a space"
-                          : (spaces.find((sp) => sp.id === exportFuer)?.name ?? "Space")}{" "}
-                        exportieren
-                      </div>
-                      {(
-                        [
-                          ["", "Markdown files (.zip)"],
-                          ["pdf", "A PDF with every page"],
-                          ["word", "A Word document"],
-                        ] as const
-                      ).map(([form, titel]) => (
-                        <button
-                          key={titel}
-                          className="klappeintrag"
-                          onClick={() => {
-                            const id = exportFuer;
-                            setAusfuhrOffen(false);
-                            setExportFuer(null);
-                            window.location.href =
-                              `/api/spaces/${id}/export` + (form ? `?format=${form}` : "");
-                          }}
-                        >
-                          {titel}
-                        </button>
-                      ))}
-                      <button className="klappeintrag" onClick={() => setExportFuer(null)}>
-                        ← Andere Ablage
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-            {/* Collapsing every space individually would be a dozen clicks with a
-              dozen spaces. This button does it in one. */}
-          <button
-            className="text-btn klapp-alles"
-            title={alleZu ? "Expand every section again" : "Collapse every section"}
-            onClick={alleKlappen}
-          >
-            {alleZu ? "▾ Ausklappen" : "▸ Einklappen"}
-          </button>
         </div>
       )}
 

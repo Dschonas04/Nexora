@@ -1548,4 +1548,12 @@ export const PAARE: [string, string][] = [
   ["Breite", "Width"],
   ["Beobachtet: Du bekommst eine Nachricht, wenn jemand anderes diese Seite ändert", "Watching: you get an inbox message when someone else changes this page"],
   ["Beobachten: Eine Nachricht bekommen, wenn jemand anderes diese Seite ändert", "Watch: get an inbox message when someone else changes this page"],
+  ["Neue Seite oder Ablage", "New page or space"],
+  ["Importieren…", "Import…"],
+  ["Exportieren…", "Export…"],
+  ["Markdown, HTML oder ein ZIP, auf Wunsch als eigene Ablage", "Markdown, HTML or a ZIP, optionally as its own space"],
+  ["Eine ganze Ablage als ZIP, PDF oder Word", "A whole space as ZIP, PDF or Word"],
+  ["Alles ausklappen", "Expand all"],
+  ["Alles einklappen", "Collapse all"],
+  ["← Zurück", "← Back"],
 ];

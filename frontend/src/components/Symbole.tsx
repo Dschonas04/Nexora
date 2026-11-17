@@ -9,7 +9,9 @@ type Name =
   | "verlauf"
   | "teilen"
   | "loeschen"
-  | "menue";
+  | "menue"
+  | "plus"
+  | "leiste";
 
 const pfade: Record<Name, ReactElement> = {
   unterseite: (
@@ -48,6 +50,13 @@ const pfade: Record<Name, ReactElement> = {
     </>
   ),
   menue: <path d="M4 7h16M4 12h16M4 17h16" />,
+  plus: <path d="M12 5v14M5 12h14" />,
+  leiste: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+      <path d="M9.5 4.5v15M15.5 10l-2 2 2 2" />
+    </>
+  ),
 };
 
 export default function Symbol({ name, gefuellt = false }: { name: Name; gefuellt?: boolean }) {

@@ -4950,3 +4950,27 @@ textarea::placeholder {
   margin-top: 4px;
   padding-top: 8px;
 }
+
+/* Header of the sidebar: brand left, three icons right. The lists of "+" and
+   the menu hang on the header and take its full width, so they always fit. */
+.sidebar-header {
+  position: relative;
+}
+.kopf-knoepfe {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.kopf-knopf {
+  width: 26px;
+  height: 26px;
+}
+.kopf-knopf.aktiv {
+  background: var(--hover);
+  color: var(--text);
+}
+.sidebar-header .kopf-liste {
+  left: 8px;
+  right: 8px;
+  min-width: 0;
+}

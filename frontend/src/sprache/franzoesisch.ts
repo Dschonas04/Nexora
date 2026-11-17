@@ -1469,4 +1469,12 @@ export const FRANZOESISCH: Record<string, string> = {
   "Width": "Largeur",
   "Watching: you get an inbox message when someone else changes this page": "Suivie : vous recevez un message quand quelqu'un d'autre modifie cette page",
   "Watch: get an inbox message when someone else changes this page": "Suivre : recevoir un message quand quelqu'un d'autre modifie cette page",
+  "New page or space": "Nouvelle page ou espace",
+  "Import…": "Importer…",
+  "Export…": "Exporter…",
+  "Markdown, HTML or a ZIP, optionally as its own space": "Markdown, HTML ou un ZIP, éventuellement comme espace à part",
+  "A whole space as ZIP, PDF or Word": "Un espace entier en ZIP, PDF ou Word",
+  "Expand all": "Tout déplier",
+  "Collapse all": "Tout replier",
+  "← Back": "← Retour",
 };
