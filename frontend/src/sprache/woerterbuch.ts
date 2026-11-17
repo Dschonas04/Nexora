@@ -1579,4 +1579,13 @@ export const PAARE: [string, string][] = [
   ["Sortierung", "Sort"],
   ["← Alle Schlagwörter", "← All tags"],
   ["Ein Schlagwort mit diesem Namen gibt es schon.", "A tag with this name already exists."],
+  ["Meistgenutzt", "Most used"],
+  ["Name des neuen Schlagworts…", "Name of the new tag…"],
+  ["Noch keine Schlagwörter.", "No tags yet."],
+  ["eine Zuordnung", "one assignment"],
+  ["{0} Zuordnungen", "{0} assignments"],
+  ["eine weitere", "one more"],
+  ["{0} weitere", "{0} more"],
+  ["Auf keiner Seite", "Not on any page"],
+  ["Lege eines mit „Neues Schlagwort“ an oder vergib eines im Menü einer Seite unter „Schlagwörter…“.", "Create one with “New tag”, or add one to a page from its menu under “Tags…”."],
 ];

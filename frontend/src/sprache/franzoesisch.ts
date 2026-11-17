@@ -1500,4 +1500,13 @@ export const FRANZOESISCH: Record<string, string> = {
   "← All tags": "← Tous les tags",
   "A tag with this name already exists.": "Un tag portant ce nom existe déjà.",
   "No page carries this tag. It is assigned in a page's menu under “Tags…”.": "Aucune page ne porte ce tag. Il s'attribue dans le menu d'une page, sous « Tags… ».",
+  "Most used": "Les plus utilisés",
+  "Name of the new tag…": "Nom du nouveau tag…",
+  "No tags yet.": "Pas encore de tags.",
+  "one assignment": "une attribution",
+  "{0} assignments": "{0} attributions",
+  "one more": "une de plus",
+  "{0} more": "{0} de plus",
+  "Not on any page": "Sur aucune page",
+  "Create one with “New tag”, or add one to a page from its menu under “Tags…”.": "Créez-en un avec « Nouveau tag » ou ajoutez-en un à une page depuis son menu, sous « Tags… ».",
 };
