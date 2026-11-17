@@ -4926,3 +4926,27 @@ textarea::placeholder {
 .sso-fehler {
   color: var(--fehler-text);
 }
+
+/* Icon buttons in the page header: square, the same height as the word
+   buttons beside them. The name stands in the tooltip. */
+.btn-symbol {
+  padding: 5px 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+.btn-symbol .symbol {
+  display: block;
+}
+/* The menu with three lines holds sections; a hairline between them keeps
+   export and width apart from the page actions above. */
+.klappliste-menue {
+  min-width: 240px;
+  max-height: 70vh;
+}
+.klappliste-menue .klappliste-titel {
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  padding-top: 8px;
+}

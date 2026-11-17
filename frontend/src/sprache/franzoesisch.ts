@@ -1460,4 +1460,13 @@ export const FRANZOESISCH: Record<string, string> = {
   "No client ID entered.": "Aucun ID client saisi.",
   "No public address entered; without it there is no callback address.": "Aucune adresse publique saisie ; sans elle, pas d'adresse de retour.",
   "Issuer reachable, discovery document read.": "Émetteur joignable, document de découverte lu.",
+  "New subpage": "Nouvelle sous-page",
+  "Add to favourites": "Ajouter aux favoris",
+  "Remove from favourites": "Retirer des favoris",
+  "Stop watching": "Ne plus suivre",
+  "Share (public link is on)": "Partager (lien public actif)",
+  "Menu": "Menu",
+  "Width": "Largeur",
+  "Watching: you get an inbox message when someone else changes this page": "Suivie : vous recevez un message quand quelqu'un d'autre modifie cette page",
+  "Watch: get an inbox message when someone else changes this page": "Suivre : recevoir un message quand quelqu'un d'autre modifie cette page",
 };

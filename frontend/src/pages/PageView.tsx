@@ -25,6 +25,7 @@ import { useEingabe, useRueckfrage } from "../components/Rueckfrage";
 import { useAussenklick } from "../klappen";
 import Inhaltsverzeichnis, { useUeberschriften } from "../components/Inhaltsverzeichnis";
 import VorlagenWahl, { AngewandteVorlage, useLeer } from "../components/VorlagenWahl";
+import Symbol from "../components/Symbole";
 
 // Whether the table of contents is open is remembered per browser: whoever
 // works with it wants it on the next page too.
@@ -176,8 +177,6 @@ export default function PageView({
   // page reads its own data and would otherwise not know about it until the next
   // time the page is opened.
   const [anhangTick, setAnhangTick] = useState(0);
-  const [exportOffen, setExportOffen] = useState(false);
-  const [breiteOffen, setBreiteOffen] = useState(false);
   const [mehrOffen, setMehrOffen] = useState(false);
   const [showInhalt, setShowInhalt] = useState(inhaltGemerkt);
   // People who may read this page, for the "@" menu: picking one writes
@@ -190,12 +189,6 @@ export default function PageView({
   // Here too: a click beside it and Escape close it. An open menu above the
   // text is worse than one in the sidebar, because the editor lies underneath
   // it.
-  const exportBereich = useAussenklick<HTMLDivElement>(exportOffen, () =>
-    setExportOffen(false),
-  );
-  const breiteBereich = useAussenklick<HTMLDivElement>(breiteOffen, () =>
-    setBreiteOffen(false),
-  );
   const mehrBereich = useAussenklick<HTMLDivElement>(mehrOffen, () =>
     setMehrOffen(false),
   );
@@ -470,7 +463,7 @@ export default function PageView({
   // the same path later carries the export of a whole space as well.
   const exportieren = (form: "markdown" | "pdf" | "word") => {
     if (!id) return;
-    setExportOffen(false);
+    setMehrOffen(false);
     // An ordinary link instead of fetch: that way the browser takes the file
     // name from the Content-Disposition header, umlauts included.
     window.location.href = `/api/pages/${id}/${form}`;
@@ -710,159 +703,86 @@ export default function PageView({
                   ))}
               </span>
             )}
-            {/* The new page comes into being UNDER this one, not beside it.
-                Whoever creates it here is inside a page and means a subpage; a
-                page on the topmost level is created in the sidebar, where one
-                sees the levels. That is also why the button says "Subpage" and
-                not "New page": it should say where it lands. */}
+            {/* Each action an icon with its name as tooltip: the header was a
+                row of words that ran out of room on a laptop. What is used
+                now and then (width, export, contents, template) sits behind
+                the menu with three lines. The new page comes into being UNDER
+                this one, which is why it says "subpage". */}
             {canEdit && (
-              <button className="btn" onClick={() => onCreateChild(page.id)}>
-                Subpage
+              <button
+                className="btn btn-symbol"
+                onClick={() => onCreateChild(page.id)}
+                title="New subpage"
+                aria-label="New subpage"
+              >
+                <Symbol name="unterseite" />
               </button>
             )}
             <button
-              className={"btn" + (page.isFavorite ? " active" : "")}
+              className={"btn btn-symbol" + (page.isFavorite ? " active" : "")}
               onClick={toggleFav}
+              title={page.isFavorite ? "Remove from favourites" : "Add to favourites"}
+              aria-label={page.isFavorite ? "Remove from favourites" : "Add to favourites"}
+              aria-pressed={!!page.isFavorite}
             >
-              {page.isFavorite ? "Favourited" : "Favourite"}
+              <Symbol name="stern" gefuellt={!!page.isFavorite} />
             </button>
             <button
-              className={"btn" + (page.watching ? " active" : "")}
+              className={"btn btn-symbol" + (page.watching ? " active" : "")}
               onClick={toggleBeobachten}
+              aria-pressed={!!page.watching}
+              aria-label={page.watching ? "Stop watching" : "Watch"}
               title={
                 page.watching
-                  ? "You get an inbox message when someone else changes this page"
-                  : "Get an inbox message when someone else changes this page"
+                  ? "Watching: you get an inbox message when someone else changes this page"
+                  : "Watch: get an inbox message when someone else changes this page"
               }
             >
-              {page.watching ? "Watching" : "Watch"}
+              <Symbol name="auge" />
             </button>
             {frei("versionen") && (
               <button
-                className="btn"
+                className={"btn btn-symbol" + (showVersions ? " active" : "")}
                 onClick={() => setShowVersions((v) => !v)}
+                title="History"
+                aria-label="History"
+                aria-pressed={showVersions}
               >
-                Verlauf
+                <Symbol name="verlauf" />
               </button>
             )}
-            {/* How wide the text should stand. The measure used to be
-                fixed, and on a wide screen a hand's breadth of paper stayed
-                empty left and right while the table beside it wrapped. The
-                choice hangs on the page: everybody should see a table page the
-                way its author set it. */}
-            {canEdit && (
-              <div className="exportmenue" ref={breiteBereich}>
-                <button
-                  className="btn"
-                  title="How wide the text sits on this page"
-                  onClick={() => {
-                    setExportOffen(false);
-                    setBreiteOffen((v) => !v);
-                  }}
-                >
-                  Width ▾
-                </button>
-                {breiteOffen && (
-                  <div
-                    className="klappliste"
-                    onMouseLeave={() => setBreiteOffen(false)}
-                  >
-                    {(
-                      [
-                        [
-                          "",
-                          "Default",
-                          `As the instance sets it (${vorgabeName})`,
-                        ],
-                        ["normal", "Normal", "Set for reading"],
-                        [
-                          "breit",
-                          "Wide",
-                          "More room for tables and images",
-                        ],
-                        ["voll", "Full width", "As wide as the window"],
-                      ] as const
-                    ).map(([wert, titel, erklaerung]) => (
-                      <button
-                        key={wert}
-                        className={
-                          "klappeintrag" +
-                          ((page.width ?? "") === wert ? " gewaehlt" : "")
-                        }
-                        onClick={async () => {
-                          setBreiteOffen(false);
-                          // Show first, save after: the width is one
-                          // adjustment of the type, and waiting for the server
-                          // to answer felt like a loading time.
-                          setPage({ ...page, width: wert });
-                          await api.seiteBreite(page.id, wert).catch(() => {});
-                        }}
-                      >
-                        {titel}
-                        <span className="klappeintrag-hinweis">
-                          {erklaerung}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {/* A menu instead of three buttons: the header is full already, and
-                three formats side by side say no more than one with a
-                choice. */}
-            <div className="exportmenue" ref={exportBereich}>
-              <button className="btn" onClick={() => setExportOffen((v) => !v)}>
-                Export ▾
+            {page.isOwner && frei("freigeben") && (
+              <button
+                className={"btn btn-symbol" + (page.isPublic ? " active" : "")}
+                onClick={() => setShowShare(true)}
+                title={page.isPublic ? "Share (public link is on)" : "Share"}
+                aria-label="Share"
+              >
+                <Symbol name="teilen" />
               </button>
-              {exportOffen && (
-                <div
-                  className="klappliste"
-                  onMouseLeave={() => setExportOffen(false)}
-                >
-                  <button
-                    className="klappeintrag"
-                    onClick={() => exportieren("markdown")}
-                  >
-                    Markdown (.md)
-                  </button>
-                  {/* PDF and Word belong to the paid extras. Markdown does not:
-                      getting at one's own content must never depend on a
-                      licence. */}
-                  {frei("export") && (
-                    <>
-                      <button
-                        className="klappeintrag"
-                        onClick={() => exportieren("pdf")}
-                      >
-                        PDF (.pdf)
-                      </button>
-                      <button
-                        className="klappeintrag"
-                        onClick={() => exportieren("word")}
-                      >
-                        Word (.docx)
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
+            {page.isOwner && (
+              <button
+                className="btn btn-symbol"
+                onClick={() => onDelete(page.id)}
+                title="Delete"
+                aria-label="Delete"
+              >
+                <Symbol name="loeschen" />
+              </button>
+            )}
             <div className="exportmenue" ref={mehrBereich}>
               <button
-                className="btn"
-                aria-label="More"
-                title="More"
-                onClick={() => {
-                  setExportOffen(false);
-                  setBreiteOffen(false);
-                  setMehrOffen((v) => !v);
-                }}
+                className={"btn btn-symbol" + (mehrOffen ? " active" : "")}
+                aria-label="Menu"
+                aria-expanded={mehrOffen}
+                title="Menu"
+                onClick={() => setMehrOffen((v) => !v)}
               >
-                ⋯
+                <Symbol name="menue" />
               </button>
               {mehrOffen && (
-                <div className="klappliste" onMouseLeave={() => setMehrOffen(false)}>
+                <div className="klappliste klappliste-menue">
                   <button
                     className={"klappeintrag" + (showInhalt ? " gewaehlt" : "")}
                     onClick={() => {
@@ -873,26 +793,65 @@ export default function PageView({
                     Contents
                     <span className="klappeintrag-hinweis">The headings of this page beside it</span>
                   </button>
-                  <button className="klappeintrag" onClick={alsVorlageSpeichern}>
-                    Save as template
-                    <span className="klappeintrag-hinweis">Start new pages from this content</span>
+                  {canEdit && (
+                    <button className="klappeintrag" onClick={alsVorlageSpeichern}>
+                      Save as template
+                      <span className="klappeintrag-hinweis">Start new pages from this content</span>
+                    </button>
+                  )}
+                  {/* PDF and Word belong to the paid extras. Markdown does not:
+                      getting at one's own content must never depend on a
+                      licence. */}
+                  <div className="klappliste-titel">Export</div>
+                  <button className="klappeintrag" onClick={() => exportieren("markdown")}>
+                    Markdown (.md)
                   </button>
+                  {frei("export") && (
+                    <>
+                      <button className="klappeintrag" onClick={() => exportieren("pdf")}>
+                        PDF (.pdf)
+                      </button>
+                      <button className="klappeintrag" onClick={() => exportieren("word")}>
+                        Word (.docx)
+                      </button>
+                    </>
+                  )}
+                  {/* How wide the text stands. The choice hangs on the page:
+                      everybody should see a table page the way its author set
+                      it. */}
+                  {canEdit && (
+                    <>
+                      <div className="klappliste-titel">Width</div>
+                      {(
+                        [
+                          ["", "Default", `As the instance sets it (${vorgabeName})`],
+                          ["normal", "Normal", "Set for reading"],
+                          ["breit", "Wide", "More room for tables and images"],
+                          ["voll", "Full width", "As wide as the window"],
+                        ] as const
+                      ).map(([wert, titel, erklaerung]) => (
+                        <button
+                          key={wert}
+                          className={
+                            "klappeintrag" + ((page.width ?? "") === wert ? " gewaehlt" : "")
+                          }
+                          onClick={async () => {
+                            setMehrOffen(false);
+                            // Show first, save after: waiting for the server
+                            // felt like a loading time.
+                            setPage({ ...page, width: wert });
+                            await api.seiteBreite(page.id, wert).catch(() => {});
+                          }}
+                        >
+                          {titel}
+                          <span className="klappeintrag-hinweis">{erklaerung}</span>
+                        </button>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </div>
-            {page.isOwner && frei("freigeben") && (
-              <button
-                className={"btn" + (page.isPublic ? " active" : "")}
-                onClick={() => setShowShare(true)}
-              >
-                Teilen
-              </button>
-            )}
-            {page.isOwner && (
-              <button className="btn" onClick={() => onDelete(page.id)}>
-                Löschen
-              </button>
-            )}
           </div>
         </div>
 

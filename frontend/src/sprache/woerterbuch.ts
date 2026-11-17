@@ -1539,4 +1539,13 @@ export const PAARE: [string, string][] = [
   ["Keine Client-ID eingetragen.", "No client ID entered."],
   ["Keine öffentliche Adresse eingetragen, ohne sie gibt es keine Rücksprungadresse.", "No public address entered; without it there is no callback address."],
   ["Aussteller erreichbar, Discovery-Dokument gelesen.", "Issuer reachable, discovery document read."],
+  ["Neue Unterseite", "New subpage"],
+  ["Zu Favoriten hinzufügen", "Add to favourites"],
+  ["Aus Favoriten entfernen", "Remove from favourites"],
+  ["Nicht mehr beobachten", "Stop watching"],
+  ["Teilen (öffentlicher Link ist an)", "Share (public link is on)"],
+  ["Menü", "Menu"],
+  ["Breite", "Width"],
+  ["Beobachtet: Du bekommst eine Nachricht, wenn jemand anderes diese Seite ändert", "Watching: you get an inbox message when someone else changes this page"],
+  ["Beobachten: Eine Nachricht bekommen, wenn jemand anderes diese Seite ändert", "Watch: get an inbox message when someone else changes this page"],
 ];
