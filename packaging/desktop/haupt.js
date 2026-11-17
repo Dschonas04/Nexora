@@ -101,7 +101,18 @@ function fensterBauen() {
   // koennte ein Verweis im Inhalt das Fenster auf eine fremde Seite umlenken,
   // und die saehe dann aus wie Nexora -- samt Eingabefeld fuer das Passwort.
   fenster.webContents.on('will-navigate', (ereignis, ziel) => {
-    if (!gleicherUrsprung(ziel, adresseLesen()) && !(offline && gleicherUrsprung(ziel, `http://127.0.0.1:${offline.port}`))) {
+    // Erlaubt: die Instanz, der eigene Spiegel, und das Weitergehen innerhalb
+    // der Seite, auf der das Fenster gerade steht. Letzteres braucht die
+    // Anmeldung per SSO: der Server leitet zum Anbieter um (das ist eine
+    // Weiterleitung und kein Klick), und dort schickt man ein Formular ab, das
+    // auf demselben Anbieter bleibt. Ohne diese Ausnahme landete die Anmeldung
+    // im Browser statt im Fenster, und die Anwendung blieb abgemeldet.
+    const hier = fenster.webContents.getURL();
+    const erlaubt =
+      gleicherUrsprung(ziel, adresseLesen()) ||
+      (offline && gleicherUrsprung(ziel, `http://127.0.0.1:${offline.port}`)) ||
+      (hier && !gleicherUrsprung(hier, adresseLesen()) && gleicherUrsprung(ziel, hier) && !hier.startsWith('http://127.0.0.1'));
+    if (!erlaubt) {
       ereignis.preventDefault();
       if (nachDraussenErlaubt(ziel)) shell.openExternal(ziel);
     }
