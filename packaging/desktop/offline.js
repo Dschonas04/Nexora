@@ -139,9 +139,14 @@ class Offline {
       this.holen(server, '/api/pages'),
       this.holen(server, '/api/pages/shared').catch(() => []),
     ]);
+    // Solange Aenderungen eines anderen Kontos warten, bleibt dessen Spiegel
+    // stehen: die neu angelegten Seiten darin gibt es nur hier.
+    const besitzer = this.ausgangKonto();
+    if (besitzer && besitzer !== ich.id) return 0;
     // Ein anderes Konto am selben Rechner bekommt keinen fremden Spiegel.
     const seiten = alt.ich && alt.ich.id === ich.id ? { ...alt.seiten } : {};
-    const alle = [...seitenListe, ...geteilt];
+    const liste = (x) => (Array.isArray(x) ? x : []);
+    const alle = [...liste(seitenListe), ...liste(geteilt)];
     const noetig = alle.filter((m) => !seiten[m.id] || seiten[m.id].updatedAt !== m.updatedAt);
     // Vier gleichzeitig: genug, dass es zuegig geht, und wenig genug, dass der
     // Server nebenher noch fuer die anderen da ist.
@@ -219,7 +224,24 @@ class Offline {
    * Spielt den Ausgang auf den Server. Gibt zurueck, wie viele Aenderungen
    * durchgingen und wie oft zusammengefuehrt werden musste.
    */
+  /** Das Konto, dem die wartenden Aenderungen gehoeren, oder null. */
+  ausgangKonto() {
+    const k = this.ausgang.find((x) => x.konto);
+    return k ? k.konto : this.ausgang.length && this.stand ? this.stand.ich.id : null;
+  }
+
   async ausgangSenden(server) {
+    // Gesendet wird nur mit der Sitzung des Kontos, das die Aenderungen
+    // gemacht hat. Hat sich inzwischen jemand anderes angemeldet, bleibt der
+    // Ausgang liegen: sonst liefen fremde Aenderungen und Loeschungen unter
+    // dessen Namen.
+    const ich = await this.holen(server, '/api/auth/me');
+    const besitzer = this.ausgangKonto();
+    if (besitzer && besitzer !== ich.id) {
+      const f = new Error('Die wartenden Änderungen gehören zu einem anderen Konto.');
+      f.fremdesKonto = true;
+      throw f;
+    }
     let gesendet = 0;
     let zusammengefuehrt = 0;
     let konflikte = 0;
@@ -304,6 +326,7 @@ class Offline {
     if (!op) {
       op = {
         art: 'aendern',
+        konto: this.stand.ich.id,
         id,
         basis: { title: seite.title, content: seite.content, icon: seite.icon, updatedAt: seite.updatedAt },
         neu: {},
@@ -361,7 +384,7 @@ class Offline {
       shared: false,
       updatedAt: jetzt,
     });
-    this.ausgang.push({ art: 'anlegen', id, parentId: seite.parentId, spaceId: seite.spaceId });
+    this.ausgang.push({ art: 'anlegen', konto: this.stand.ich.id, id, parentId: seite.parentId, spaceId: seite.spaceId });
     this.standSichern();
     this.ausgangSichern();
     return seite;
@@ -376,7 +399,7 @@ class Offline {
       this.ausgang = this.ausgang.filter((x) => x.id !== id);
     } else {
       this.ausgang = this.ausgang.filter((x) => !(x.art === 'aendern' && x.id === id));
-      this.ausgang.push({ art: 'loeschen', id });
+      this.ausgang.push({ art: 'loeschen', konto: this.stand.ich.id, id });
     }
     this.standSichern();
     this.ausgangSichern();
@@ -508,7 +531,7 @@ class Offline {
     if (m === 'PUT' && seiteId && p === `/pages/${seiteId}/width`) {
       const k = await this.koerper(req);
       if (st.seiten[seiteId]) st.seiten[seiteId].width = k.width;
-      this.ausgang.push({ art: 'breite', id: seiteId, breite: k.width });
+      this.ausgang.push({ art: 'breite', konto: st.ich.id, id: seiteId, breite: k.width });
       this.standSichern();
       this.ausgangSichern();
       return json(200, { width: k.width });

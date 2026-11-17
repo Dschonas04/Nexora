@@ -20,6 +20,7 @@ let offline = null;
 let modus = 'start'; // 'online' oder 'offline'
 let abgleichLaeuft = false;
 let letzterAbgleich = null;
+let fremdGemeldet = false;
 
 function adresseLesen() {
   try {
@@ -267,7 +268,9 @@ async function pruefen(vonHand = false) {
     }
     if (vonHand && !warteten) melden('Nexora', 'Alles abgeglichen.');
   } catch (f) {
-    if (vonHand) melden('Abgleich nicht möglich', String(f.message || f));
+    if (f && f.fremdesKonto) {
+      if (!fremdGemeldet) melden('Nexora', 'Es warten Änderungen eines anderen Kontos. Melde dich mit diesem Konto an, dann werden sie übertragen.');
+    } else if (vonHand) melden('Abgleich nicht möglich', String(f.message || f));
   } finally {
     abgleichLaeuft = false;
     titelSetzen();
