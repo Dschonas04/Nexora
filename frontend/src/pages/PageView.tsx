@@ -179,6 +179,10 @@ export default function PageView({
   // time the page is opened.
   const [anhangTick, setAnhangTick] = useState(0);
   const [mehrOffen, setMehrOffen] = useState(false);
+  // Tag dialog from the page menu. Up here with the other hooks: below the
+  // early returns it broke the hook order (React error 310).
+  const [schlagwortFenster, setSchlagwortFenster] = useState(false);
+  const [schlagwortNeu, setSchlagwortNeu] = useState("");
   const [showInhalt, setShowInhalt] = useState(inhaltGemerkt);
   // People who may read this page, for the "@" menu: picking one writes
   // @username, which gives a checklist item to them.
@@ -474,8 +478,6 @@ export default function PageView({
   // exists. Otherwise typing "Projekt" twice would produce two separate tags.
   // Tags are managed in a dialog from the page menu. Under the title they
   // pushed the text down and looked like part of the content.
-  const [schlagwortFenster, setSchlagwortFenster] = useState(false);
-  const [schlagwortNeu, setSchlagwortNeu] = useState("");
   const addTag = async (eingabeName: string) => {
     const name = eingabeName.trim();
     if (!name) return;
