@@ -35,7 +35,7 @@ function adresseLesen() {
 function adresseSchreiben(adresse) {
   try {
     fs.mkdirSync(path.dirname(EINSTELLUNGEN()), { recursive: true });
-    fs.writeFileSync(EINSTELLUNGEN(), JSON.stringify({ adresse }, null, 2));
+    fs.writeFileSync(EINSTELLUNGEN(), JSON.stringify({ adresse, anbieter: ANBIETER() }, null, 2));
   } catch (fehler) {
     dialog.showErrorBox('Nicht gespeichert', String(fehler));
   }
@@ -54,10 +54,51 @@ function nachDraussenErlaubt(adresse) {
 /** Ob eine Adresse noch zur eingestellten Instanz gehoert. */
 function gleicherUrsprung(adresse, instanz) {
   try {
-    return new URL(adresse).origin === new URL(instanz).origin;
+    const a = new URL(adresse).origin;
+    return a !== 'null' && a === new URL(instanz).origin;
   } catch {
     return false;
   }
+}
+
+// Anmeldeanbieter (SSO), die das Fenster betreten darf. Nicht "jede Seite, auf
+// der das Fenster gerade steht": eine offene Weiterleitung koennte sonst eine
+// fremde Seite ins Fenster bringen, die dann wie Nexora aussieht. Gelernt wird
+// ein Anbieter nur aus der Weiterleitung, die der Server selbst auf
+// /api/auth/oidc/start ausgibt, und nur mit https.
+const ANBIETER = () => {
+  try {
+    const roh = JSON.parse(fs.readFileSync(EINSTELLUNGEN(), 'utf8'));
+    return Array.isArray(roh.anbieter) ? roh.anbieter : [];
+  } catch {
+    return [];
+  }
+};
+function anbieterMerken(ursprung) {
+  let roh = {};
+  try {
+    roh = JSON.parse(fs.readFileSync(EINSTELLUNGEN(), 'utf8'));
+  } catch {
+    roh = { adresse: adresseLesen() };
+  }
+  roh.anbieter = [...new Set([...(roh.anbieter || []), ursprung])];
+  fs.mkdirSync(path.dirname(EINSTELLUNGEN()), { recursive: true });
+  fs.writeFileSync(EINSTELLUNGEN(), JSON.stringify(roh, null, 2));
+}
+function istAnbieter(adresse) {
+  try {
+    const u = new URL(adresse);
+    return u.protocol === 'https:' && ANBIETER().includes(u.origin);
+  } catch {
+    return false;
+  }
+}
+function zielErlaubt(ziel) {
+  return (
+    gleicherUrsprung(ziel, adresseLesen()) ||
+    (offline && offline.port && gleicherUrsprung(ziel, `http://127.0.0.1:${offline.port}`)) ||
+    istAnbieter(ziel)
+  );
 }
 
 let fenster = null;
@@ -102,21 +143,40 @@ function fensterBauen() {
   // koennte ein Verweis im Inhalt das Fenster auf eine fremde Seite umlenken,
   // und die saehe dann aus wie Nexora -- samt Eingabefeld fuer das Passwort.
   fenster.webContents.on('will-navigate', (ereignis, ziel) => {
-    // Erlaubt: die Instanz, der eigene Spiegel, und das Weitergehen innerhalb
-    // der Seite, auf der das Fenster gerade steht. Letzteres braucht die
-    // Anmeldung per SSO: der Server leitet zum Anbieter um (das ist eine
-    // Weiterleitung und kein Klick), und dort schickt man ein Formular ab, das
-    // auf demselben Anbieter bleibt. Ohne diese Ausnahme landete die Anmeldung
-    // im Browser statt im Fenster, und die Anwendung blieb abgemeldet.
-    const hier = fenster.webContents.getURL();
-    const erlaubt =
-      gleicherUrsprung(ziel, adresseLesen()) ||
-      (offline && gleicherUrsprung(ziel, `http://127.0.0.1:${offline.port}`)) ||
-      (hier && !gleicherUrsprung(hier, adresseLesen()) && gleicherUrsprung(ziel, hier) && !hier.startsWith('http://127.0.0.1'));
+    const erlaubt = zielErlaubt(ziel);
     if (!erlaubt) {
       ereignis.preventDefault();
       if (nachDraussenErlaubt(ziel)) shell.openExternal(ziel);
     }
+  });
+
+  // Weiterleitungen pruefen wie Klicks. Die eine Ausnahme: der Server schickt
+  // beim Start der SSO-Anmeldung zum Anbieter. Dessen Ursprung wird gemerkt,
+  // damit das Formular dort abgeschickt werden kann.
+  // Wo die laufende Navigation begonnen hat. Eine Weiterleitung allein sagt
+  // nicht, woher sie kommt.
+  let navStart = '';
+  fenster.webContents.on('did-start-navigation', (d) => {
+    if (d.isMainFrame && !d.isSameDocument) navStart = d.url;
+  });
+  fenster.webContents.on('will-redirect', (ereignis) => {
+    const ziel = ereignis.url;
+    if (zielErlaubt(ziel)) return;
+    let vomStart = false;
+    let https = false;
+    try {
+      const s = new URL(navStart);
+      vomStart = gleicherUrsprung(navStart, adresseLesen()) && s.pathname === '/api/auth/oidc/start';
+      https = new URL(ziel).protocol === 'https:';
+    } catch {
+      vomStart = false;
+    }
+    if (vomStart && https) {
+      anbieterMerken(new URL(ziel).origin);
+      return;
+    }
+    ereignis.preventDefault();
+    if (nachDraussenErlaubt(ziel)) shell.openExternal(ziel);
   });
 
   fenster.webContents.on('did-fail-load', (_e, code, beschreibung, _url, hauptRahmen) => {

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Die Instanz spricht HTTPS mit einem Zertifikat der Homelab-CA. Android
+     vertraut nur den Wurzeln des Systems; die eigene steht deshalb in der App
+     (res/raw), dazu die vom Nutzer installierten. Klartext bleibt aus. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+            <certificates src="@raw/homelab_root_ca" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
