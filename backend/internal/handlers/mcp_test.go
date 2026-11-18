@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
+
 	"nexora/internal/middleware"
 )
 
@@ -74,5 +76,27 @@ func TestBloeckeAusOhneTitelDoppelt(t *testing.T) {
 	}
 	if len(b) == 0 {
 		t.Fatal("Text fehlt")
+	}
+}
+
+// The real router: chi must route the inner request on its own path, not on
+// the one of the outer /api/mcp request.
+func TestMCPInternMitChi(t *testing.T) {
+	alt := middleware.SchluesselPruefer
+	defer func() { middleware.SchluesselPruefer = alt }()
+	middleware.SchluesselPruefer = func(_ context.Context, k string) (string, bool, bool) { return "u1", true, true }
+	s := &Server{}
+	r := chi.NewRouter()
+	r.HandleFunc("/api/mcp", s.MCP)
+	r.Route("/api", func(r chi.Router) {
+		r.Get("/spaces", func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte(`[{"id":"s1","name":"Handbuch"}]`)) })
+	})
+	s.Intern = r
+	req := httptest.NewRequest("POST", "/api/mcp", strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"ablagen"}}`))
+	req.Header.Set("Authorization", "Bearer nxr_x")
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+	if !strings.Contains(rec.Body.String(), "Handbuch") {
+		t.Fatalf("intern: %s", rec.Body.String())
 	}
 }

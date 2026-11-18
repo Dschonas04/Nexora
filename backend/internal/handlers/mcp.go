@@ -26,6 +26,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
+
 	"nexora/internal/einlesen"
 	"nexora/internal/middleware"
 )
@@ -167,8 +169,18 @@ func (s *Server) MCP(w http.ResponseWriter, r *http.Request) {
 				Error: &mcpFehler{-32700, "parse error"}})
 			return
 		}
+		// Batching left the protocol in 2025-06-18; a small one is still
+		// answered, a large one would let one request fan out into many.
+		if len(liste) > 20 {
+			writeJSON(w, http.StatusOK, mcpAntwort{JSONRPC: "2.0", ID: json.RawMessage("null"),
+				Error: &mcpFehler{-32600, "batch too large (max 20)"}})
+			return
+		}
 		var raus []mcpAntwort
 		for _, a := range liste {
+			if r.Context().Err() != nil {
+				return
+			}
 			if antw, ok := s.mcpEine(r, schluessel, a); ok {
 				raus = append(raus, antw)
 			}
@@ -257,6 +269,10 @@ func (s *Server) intern(ctx context.Context, aussen *http.Request, schluessel, m
 		b, _ := json.Marshal(rumpf)
 		body = bytes.NewReader(b)
 	}
+	// A fresh routing context: chi reuses one it finds in the context, and the
+	// outer one belongs to /api/mcp, so the inner request would be routed
+	// against the wrong path.
+	ctx = context.WithValue(ctx, chi.RouteCtxKey, (*chi.Context)(nil))
 	req, _ := http.NewRequestWithContext(ctx, methode, pfad, body)
 	req.Header.Set("Authorization", "Bearer "+schluessel)
 	if rumpf != nil {
