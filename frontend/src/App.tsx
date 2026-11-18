@@ -32,6 +32,39 @@ function useBrowsertitel() {
   }, [pathname, sprache]);
 }
 
+// Where to go after signing in, when a link to a published space sent the
+// visitor to the login first. Kept in sessionStorage because the SSO sign-in
+// leaves the page and comes back to "/".
+const ZURUECK = "nexora-nach-anmeldung";
+
+function zurueckNach(): string {
+  try {
+    const ziel = sessionStorage.getItem(ZURUECK);
+    if (ziel && ziel.startsWith("/web/")) {
+      sessionStorage.removeItem(ZURUECK);
+      return ziel;
+    }
+  } catch {
+    /* storage blocked: start page */
+  }
+  return "/";
+}
+
+function ZurAnmeldung() {
+  const { pathname } = useLocation();
+  try {
+    sessionStorage.setItem(ZURUECK, pathname);
+  } catch {
+    /* storage blocked: the visitor lands on the start page after signing in */
+  }
+  return <Navigate to="/login" replace />;
+}
+
+function NachAnmeldung() {
+  const ziel = zurueckNach();
+  return ziel === "/" ? <Workspace /> : <Navigate to={ziel} replace />;
+}
+
 export default function App() {
   const { user, loading } = useAuth();
   useBrowsertitel();
@@ -47,13 +80,15 @@ export default function App() {
       {/* Public links stay reachable without a session, so this route comes
           before the redirect below. */}
       <Route path="/share/:token" element={<PublicPage />} />
-      <Route path="/web/:token/:pageId?" element={<WebAblageView />} />
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+      {/* A published space needs a session: without one the way leads to the
+          login, and after it back to the space. */}
+      <Route path="/web/:token/:pageId?" element={user ? <WebAblageView /> : <ZurAnmeldung />} />
+      <Route path="/login" element={user ? <Navigate to={zurueckNach()} replace /> : <Login />} />
       <Route path="/register" element={user ? <Navigate to="/" replace /> : <Register />} />
       {/* Everything else is the app, or the login screen. Workspace owns its
           own nested routes. replace keeps the redirect out of the history, so
           the back button does not bounce between login and app. */}
-      <Route path="/*" element={user ? <Workspace /> : <Navigate to="/login" replace />} />
+      <Route path="/*" element={user ? <NachAnmeldung /> : <Navigate to="/login" replace />} />
     </Routes>
   );
 }

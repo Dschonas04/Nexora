@@ -186,7 +186,7 @@ const ZUSATZ: Record<string, string> = {
   kommentare: "Comments",
   konflikte: "Conflict detection",
   echtzeit: "Editing together",
-  webablage: "Public spaces on the web",
+  webablage: "Spaces by read link",
 };
 
 const ZAHL_TITEL: Record<string, string> = {

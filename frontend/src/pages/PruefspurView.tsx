@@ -73,7 +73,7 @@ const BESCHRIFTUNG: Record<string, string> = {
   "vorlage.aufgehoben": "Template mark lifted (feature removed)",
   "space.exportiert": "Space exported",
   "space.oeffentlich": "Space visibility changed",
-  "space.web": "Space published on the web or taken down",
+  "space.web": "Read link of a space created or removed",
   "gruppe.angelegt": "Group created",
   "gruppe.geloescht": "Group deleted",
   "gruppe.beigetreten": "Added to the group",

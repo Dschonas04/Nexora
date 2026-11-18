@@ -956,8 +956,8 @@ export default function Sidebar(props: Props) {
                       </span>
                     )}
                     {sp.webToken && (
-                      <span className="pill klein offen" title="Published on the web: readable without an account">
-                        web
+                      <span className="pill klein offen" title="Read link active: every signed-in account with the link can read">
+                        Link
                       </span>
                     )}
                     {/* The count is shown only while collapsed: when expanded you
@@ -1054,7 +1054,7 @@ export default function Sidebar(props: Props) {
                           page. */}
                       <div className="sichtbarkeit-hinweis muted small">
                         {sp.webToken
-                          ? "Betrifft angemeldete Konten dieser Instanz. Lesen kann die Ablage außerdem jeder mit der Webadresse."
+                          ? "Betrifft angemeldete Konten dieser Instanz. Mit dem Leselink kann außerdem jedes angemeldete Konto die Ablage lesen."
                           : "Betrifft nur angemeldete Konten dieser Instanz. Ohne Anmeldung bleibt die Ablage unerreichbar."}
                       </div>
                       {/* Business: the whole space on the web. Kept apart from
@@ -1062,7 +1062,7 @@ export default function Sidebar(props: Props) {
                           audience: strangers, not colleagues. */}
                       {frei("webablage") && (
                         <div className="sichtbarkeit-web">
-                          <div className="sichtbarkeit-kopf">On the web</div>
+                          <div className="sichtbarkeit-kopf">Read link</div>
                           {sp.webToken ? (
                             <>
                               <div className="sichtbarkeit-link">
@@ -1070,7 +1070,7 @@ export default function Sidebar(props: Props) {
                                   readOnly
                                   value={`${window.location.origin}/web/${sp.webToken}`}
                                   onFocus={(e) => e.currentTarget.select()}
-                                  aria-label="Web address of this space"
+                                  aria-label="Read link of this space"
                                 />
                                 <button
                                   className="btn"
@@ -1091,9 +1091,9 @@ export default function Sidebar(props: Props) {
                                 onClick={() => void onSpaceWeb(sp.id, false)}
                               >
                                 <span className="sichtbarkeit-text">
-                                  <span className="sichtbarkeit-titel">Stop publishing</span>
+                                  <span className="sichtbarkeit-titel">Remove read link</span>
                                   <span className="sichtbarkeit-erklaerung">
-                                    The address stops working at once. Publishing again creates a new one.
+                                    The link stops working at once. A new read link gets a new address.
                                   </span>
                                 </span>
                               </button>
@@ -1101,9 +1101,9 @@ export default function Sidebar(props: Props) {
                           ) : (
                             <button className="sichtbarkeit-eintrag" onClick={() => void onSpaceWeb(sp.id, true)}>
                               <span className="sichtbarkeit-text">
-                                <span className="sichtbarkeit-titel">Publish on the web</span>
+                                <span className="sichtbarkeit-titel">Create read link</span>
                                 <span className="sichtbarkeit-erklaerung">
-                                  Every page of this space becomes readable without an account, for anyone with the address.
+                                  Every signed-in account with the link can read all pages of this space, without a permission on it. Without signing in nothing is reachable.
                                 </span>
                               </span>
                             </button>

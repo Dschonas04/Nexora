@@ -255,14 +255,6 @@ func main() {
 		// because the ordinary attachment route demands a session.
 		r.With(handlers.VerlangeFunktion(lizenz.Freigeben)).
 			Get("/public/{token}/files/{attId}", h.OeffentlicheDatei)
-		// A whole space published on the web (Business). Same pattern as the
-		// page link: the token is the authorization, nothing can be written.
-		r.Route("/web/{token}", func(r chi.Router) {
-			r.Use(handlers.VerlangeFunktion(lizenz.Webablage))
-			r.Get("/", h.GetWebAblage)
-			r.Get("/pages/{pageId}", h.GetWebSeite)
-			r.Get("/files/{attId}", h.WebDatei)
-		})
 
 		// Everything below requires a valid session cookie. Ownership and sharing
 		// are checked per request inside the handlers, not here.
@@ -566,6 +558,15 @@ func main() {
 			r.Put("/spaces/{id}/public-access", h.SetSpaceOeffentlich)
 			r.With(handlers.VerlangeFunktion(lizenz.Webablage)).
 				Put("/spaces/{id}/web", h.SetSpaceWeb)
+			// A space published by link (Business): every signed-in account
+			// holding the link reads it, without a right on the space. Behind the
+			// session on purpose, nothing of it is reachable without an account.
+			r.Route("/web/{token}", func(r chi.Router) {
+				r.Use(handlers.VerlangeFunktion(lizenz.Webablage))
+				r.Get("/", h.GetWebAblage)
+				r.Get("/pages/{pageId}", h.GetWebSeite)
+				r.Get("/files/{attId}", h.WebDatei)
+			})
 			// The colour of a space in the graph. It lives on the space and
 			// not in the browser so that everyone sees the same picture.
 			r.Put("/spaces/{id}/color", h.SetSpaceFarbe)

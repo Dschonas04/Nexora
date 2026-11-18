@@ -115,7 +115,7 @@ export default function WebAblageView() {
     <div className="oeffentlich">
       <div className="oeffentlich-kopf">
         <span className="oeffentlich-marke">{ablage.name}</span>
-        <span className="oeffentlich-hinweis">Published with Nexora, read only</span>
+        <span className="oeffentlich-hinweis">Shared by read link, read only</span>
         <button className="btn webablage-menue" onClick={() => setMenueOffen((v) => !v)}>
           Pages
         </button>

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-Nexora-Enterprise
 // Copyright (c) 2026 Jonas Groll. See LICENSE-ENTERPRISE.
 
-// Public spaces: a whole space published on the web.
+// Public spaces: a whole space published by link.
 //
-// The share link of a single page passes one page on. A company that keeps its
-// handbook, product documentation or help pages in Nexora wants more: the whole
-// space under one address, with its page tree, readable by anyone without an
-// account. That is this file.
+// A company that keeps its handbook or documentation in Nexora wants the whole
+// space under one address, with its page tree, readable by every signed-in
+// account that has the link, without granting a right on the space to each of
+// them. Only with a session: nothing of it is reachable without an account.
 //
 // The rules are those of the single page link, applied to a space: one random
 // token is the whole authorization, withdrawing drops the token, and only what
