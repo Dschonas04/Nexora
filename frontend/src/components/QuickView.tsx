@@ -16,6 +16,7 @@ import {
 
 import { api } from "../api/client";
 import Fehlergrenze from "./Fehlergrenze";
+import TextEditor from "./TextEditor";
 // Loaded on demand, not bundled: pdf.js and pdf-lib together are large, and
 // most users only view PDFs.
 const PdfMarker = lazy(() => import("./PdfMarker"));
@@ -61,7 +62,32 @@ const NACH_ENDUNG: Record<string, string> = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
 
+// Scripts, configuration and source files: shown in the text editor whatever
+// type the browser claimed (a .sh comes as application/x-sh, a .bat as
+// application/x-msdos-program, many simply as octet-stream). Kept in step with
+// textEndungen in the backend (textersetzen.go).
+const TEXT_ENDUNGEN = new Set(
+  ("txt md markdown log csv tsv json jsonc xml yml yaml toml ini cfg conf config env properties " +
+    "sh bash zsh fish ps1 psm1 psd1 bat cmd vbs py rb pl php lua r go rs c h cpp hpp cc cs " +
+    "java kt kts swift scala dart js mjs cjs ts tsx jsx css scss less html htm vue svelte " +
+    "sql graphql gql proto dockerfile makefile gitignore gitattributes editorconfig tf tfvars " +
+    "hcl nix gradle srt vtt tex bib rst adoc org pem crt csr pub").split(" "),
+);
+
+function textEndung(dateiname: string): string | null {
+  const basis = dateiname.toLowerCase().split(/[\\/]/).pop() ?? "";
+  if (TEXT_ENDUNGEN.has(basis) || TEXT_ENDUNGEN.has(basis.replace(/^\./, ""))) return basis;
+  const endung = basis.includes(".") ? basis.split(".").pop()! : "";
+  return TEXT_ENDUNGEN.has(endung) ? endung : null;
+}
+
 export function echterTyp(mime: string, dateiname = ""): string {
+  // A text file with a non-text type: the name wins, otherwise the editor
+  // would say "no preview" for every shell script. Real text types stay.
+  const t = textEndung(dateiname);
+  if (t && !(mime || "").startsWith("text/") && mime !== "application/json") {
+    return t === "md" || t === "markdown" ? "text/markdown" : t === "json" ? "application/json" : "text/plain";
+  }
   const brauchbar =
     mime &&
     mime !== "application/octet-stream" &&
@@ -101,14 +127,12 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   );
   const [zoom, setZoom] = useState(1);
   const [drehung, setDrehung] = useState(0);
-  const [text, setText] = useState<string | null>(null);
   // Marking is enabled only on request: while no one asks for it the browser
   // viewer remains in use, which is more capable than a custom renderer. The
   // counter forces a reload after saving; without it the viewer might show a
   // cached older revision.
   const [markieren, setMarkieren] = useState(false);
   const [frisch, setFrisch] = useState(0);
-  const [textFehler, setTextFehler] = useState(false);
 
   // Word: content as editor blocks, plus the title and the editing state.
   const [word, setWord] = useState<{
@@ -121,6 +145,16 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   // The latest state from the editor. Held in a reference so that every
   // keystroke does not redraw the whole view.
   const wordStand = useRef<{ title: string; blocks: unknown } | null>(null);
+  // Unsaved edits in the text editor: closing or paging asks first.
+  const ungespeichert = useRef(false);
+  const merkeUngespeichert = useCallback((ja: boolean) => {
+    ungespeichert.current = ja;
+  }, []);
+  const darfWeg = () =>
+    !ungespeichert.current || window.confirm("Ungespeicherte Änderungen verwerfen?");
+  const schliessen = () => {
+    if (darfWeg()) onClose();
+  };
 
   const box = useRef<HTMLDivElement>(null);
   // Remembered so focus can go back where it was when the viewer closes. Without
@@ -134,6 +168,11 @@ export default function QuickView({ dateien, start, onClose }: Props) {
 
   const weiter = useCallback(
     (schritt: number) => {
+      if (
+        ungespeichert.current &&
+        !window.confirm("Ungespeicherte Änderungen verwerfen?")
+      )
+        return;
       setI((alt) => {
         const neu = alt + schritt;
         // Wrap around: from the last file forward lands on the first. With one
@@ -150,8 +189,6 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   useEffect(() => {
     setZoom(1);
     setDrehung(0);
-    setText(null);
-    setTextFehler(false);
     setWord(null);
     setWordFehler(null);
     setBearbeiten(false);
@@ -198,7 +235,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
       if (markieren && e.key !== "Escape") return;
       switch (e.key) {
         case "Escape":
-          onClose();
+          schliessen();
           break;
         case "ArrowRight":
           weiter(1);
@@ -240,28 +277,6 @@ export default function QuickView({ dateien, start, onClose }: Props) {
     };
   }, []);
 
-  // Text is fetched and rendered as text rather than shown in a frame, so an
-  // uploaded HTML file cannot execute in the app's origin. The cut-off keeps a
-  // huge log file from freezing the browser.
-  useEffect(() => {
-    if (!datei || !istText(typ)) return;
-    let abgebrochen = false;
-    fetch(datei.url, { credentials: "include" })
-      .then((r) => {
-        if (!r.ok) throw new Error(String(r.status));
-        return r.text();
-      })
-      .then((t) => {
-        if (!abgebrochen) setText(t.slice(0, 20000));
-      })
-      .catch(() => {
-        if (!abgebrochen) setTextFehler(true);
-      });
-    // Guards against a slow response for a file the reader already left.
-    return () => {
-      abgebrochen = true;
-    };
-  }, [datei?.id, typ, datei?.url]);
 
   if (!datei) return null;
 
@@ -274,7 +289,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   };
 
   return (
-    <div className="qv-overlay" onClick={onClose}>
+    <div className="qv-overlay" onClick={schliessen}>
       <div
         className="qv-box"
         ref={box}
@@ -340,7 +355,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             <a className="btn" href={datei.url} download={datei.filename}>
               Herunterladen
             </a>
-            <button className="btn" onClick={onClose} title="Close (Esc)">
+            <button className="btn" onClick={schliessen} title="Close (Esc)">
               Schließen
             </button>
           </div>
@@ -417,11 +432,17 @@ export default function QuickView({ dateien, start, onClose }: Props) {
             </object>
           )}
           {istText(typ) && (
-            <pre className="qv-text">
-              {textFehler
-                ? "(Vorschau konnte nicht geladen werden)"
-                : (text ?? "Loading…")}
-            </pre>
+            // Rendered as text in a text field, never in a frame: an uploaded
+            // HTML file must not run in the app's origin.
+            <TextEditor
+              key={datei.id}
+              url={datei.url}
+              dateiname={datei.filename}
+              anhangId={datei.id}
+              seiteId={datei.seiteId}
+              darfSchreiben={datei.darfSchreiben}
+              onUngespeichert={merkeUngespeichert}
+            />
           )}
           {istWord(typ) && (
             <div className="qv-word">

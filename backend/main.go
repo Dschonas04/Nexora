@@ -288,6 +288,9 @@ func main() {
 			// not as a form: the browser already holds the finished bytes, and
 			// a form around them would be packaging without content.
 			r.Put("/pages/{id}/attachments/{attId}/pdf", h.PDFErsetzen)
+			// Text attachments (scripts, Markdown, configuration) edited in the
+			// viewer's text editor, written back in place.
+			r.Put("/pages/{id}/attachments/{attId}/text", h.TextErsetzen)
 			r.With(middleware.NurSitzung).Get("/sessions", h.ListSitzungen)
 			r.With(middleware.NurSitzung).Delete("/sessions", h.SitzungenBeenden)
 			r.With(middleware.NurSitzung).Delete("/sessions/{id}", h.SitzungBeenden)

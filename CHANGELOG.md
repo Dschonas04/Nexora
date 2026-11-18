@@ -11,6 +11,14 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 `dschohnas/nexora-{backend,frontend}` on Docker Hub. See
 [Where the images are](README.md#where-the-images-are).
 
+
+## Unreleased
+
+### Added
+
+- Text editor in the attachment viewer: scripts (`.sh`, `.bat`, `.cmd`, `.ps1`), Markdown, configuration (`.yml`, `.toml`, `.ini`, `.env`), source code and logs open with line numbers instead of "no preview", whatever type the browser claimed on upload. Whoever may edit the page can change and save the file in place (Ctrl+S, Tab indents, Windows line endings are kept); a new endpoint `PUT /api/pages/{id}/attachments/{attId}/text` writes it back, updates the search index and records the edit in the audit trail. Closing or paging with unsaved changes asks first.
+- Such files are now also searchable by their content.
+
 ## [Unreleased]
 
 ## [3.6.0]: 2026-11-17

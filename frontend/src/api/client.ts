@@ -814,6 +814,27 @@ export const api = {
     return (await res.json()) as { ok: boolean; bytes: number };
   },
 
+  // A text attachment edited in the viewer, written back in place.
+  textErsetzen: async (seiteId: string, anhangId: string, text: string) => {
+    const res = await fetch(`/api/pages/${seiteId}/attachments/${anhangId}/text`, {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+      body: text,
+    });
+    if (!res.ok) {
+      let msg = res.statusText;
+      try {
+        const j = await res.json();
+        if (j && j.error) msg = j.error;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(msg);
+    }
+    return (await res.json()) as { ok: boolean; bytes: number };
+  },
+
   // One's own profile. The name as JSON, the picture raw: it is already bytes,
   // and sending it through Base64 would make it a third larger.
   profilAendern: (name: string) =>

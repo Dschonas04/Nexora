@@ -38,6 +38,11 @@ func textAusAnhang(ctx context.Context, roh []byte, mime, dateiname string) stri
 		mime == "application/x-yaml":
 		return kuerzen(string(roh))
 
+	// Scripts and configuration often arrive with a non-text type
+	// (application/x-sh, octet-stream); the file name settles it.
+	case istTextDatei(mime, dateiname) && utf8.Valid(roh):
+		return kuerzen(string(roh))
+
 	case mime == "application/pdf" || strings.HasSuffix(strings.ToLower(dateiname), ".pdf"):
 		return kuerzen(ausPDF(ctx, roh))
 	}
