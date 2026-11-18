@@ -93,6 +93,7 @@ const (
 	AktRechnerEntfernt    = "rechner.entfernt"
 	AktWiederherstellung  = "sicherung.eingespielt"
 	AktSpaceOeffentlich   = "space.oeffentlich"
+	AktSpaceWeb           = "space.web"
 	AktSpaceAngelegt      = "space.angelegt"
 	AktSpaceGeloescht     = "space.geloescht"
 	AktKonfigGeaendert    = "konfiguration.geaendert"

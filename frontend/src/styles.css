@@ -3016,6 +3016,94 @@ textarea::placeholder {
   margin-top: 5px;
   line-height: 1.4;
 }
+/* The space on the web: a second block under the three levels. */
+.sichtbarkeit-web {
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  padding-top: 6px;
+}
+.sichtbarkeit-link {
+  display: flex;
+  gap: 4px;
+  padding: 0 8px 4px;
+}
+.sichtbarkeit-link input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  padding: 3px 6px;
+}
+.sichtbarkeit-link .btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  text-decoration: none;
+}
+
+/* A space published on the web: page tree on the left, page on the right. */
+.webablage-rumpf {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.webablage-baum {
+  flex: 0 0 260px;
+  overflow-y: auto;
+  padding: 12px 8px;
+  border-right: 1px solid var(--border);
+  background: var(--flaeche);
+}
+.webablage-baum ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 12px;
+}
+.webablage-baum > ul {
+  padding-left: 0;
+}
+.webablage-baum a {
+  display: block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.webablage-baum a:hover {
+  background: var(--hover);
+}
+.webablage-baum a.aktiv {
+  background: var(--hover);
+  font-weight: 600;
+}
+.webablage-menue {
+  display: none;
+}
+.webablage-rumpf .editor-scroll {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+@media (max-width: 760px) {
+  .webablage-menue {
+    display: inline-block;
+    margin-left: auto;
+  }
+  .webablage-baum {
+    display: none;
+    position: absolute;
+    top: 45px;
+    bottom: 0;
+    left: 0;
+    width: min(300px, 85vw);
+    z-index: 5;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  }
+  .webablage-baum.offen {
+    display: block;
+  }
+}
 
 /* "n more …" under a shortened list. Deliberately set weaker than an entry:
    the line is a hint at more, not a target in itself. */

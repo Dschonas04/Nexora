@@ -205,6 +205,10 @@ export default function Workspace() {
         onRenameSpace={renameSpace}
         onDeleteSpace={deleteSpace}
         onSpaceOeffentlich={setSpaceOeffentlich}
+        onSpaceWeb={async (id, an) => {
+          await api.spaceWeb(id, an);
+          await refreshSpaces();
+        }}
         onMovePage={movePage}
         onOrdnePage={ordnePage}
         onOrdneSpaces={ordneSpaces}

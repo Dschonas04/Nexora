@@ -28,7 +28,7 @@ func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 	// spaces first -- they are the shared ground and therefore usually what one
 	// is looking for.
 	rows, err := s.Pool.Query(r.Context(),
-		`SELECT sp.id, sp.owner_id, sp.name, sp.created_at, sp.oeffentlich, sp.farbe,
+		`SELECT sp.id, sp.owner_id, sp.name, sp.created_at, sp.oeffentlich, sp.farbe, COALESCE(sp.web_token, ''),
 		        (sp.owner_id <> $1) AS fremd,
 		        (sp.owner_id = $1
 		         OR EXISTS (SELECT 1 FROM users WHERE id = $1 AND role = 'admin')
@@ -60,7 +60,10 @@ func (s *Server) ListSpaces(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var sp models.Space
 		if err := rows.Scan(&sp.ID, &sp.OwnerID, &sp.Name, &sp.CreatedAt,
-			&sp.Oeffentlich, &sp.Farbe, &sp.Fremd, &sp.DarfVerwalten); err == nil {
+			&sp.Oeffentlich, &sp.Farbe, &sp.WebToken, &sp.Fremd, &sp.DarfVerwalten); err == nil {
+			if !sp.DarfVerwalten {
+				sp.WebToken = ""
+			}
 			list = append(list, sp)
 		}
 	}

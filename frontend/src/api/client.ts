@@ -90,6 +90,8 @@ export interface Space {
   canManage: boolean;
   /** Colour in the graph as #rrggbb. Empty/missing: the interface hands out one. */
   color?: string;
+  /** Token of the public web address, when the space is published (managers only). */
+  webToken?: string;
 }
 
 // PageMeta is the light shape used for the sidebar, search results and lists.
@@ -136,6 +138,15 @@ export interface Page {
 
 // PublicPage is the reduced shape behind a public link: no ids, no owner,
 // nothing that would give away workspace structure.
+/** A space published on the web, as a visitor without an account sees it. */
+export interface WebAblage {
+  name: string;
+  pages: { id: string; parentId: string | null; title: string; icon: string }[];
+}
+export interface WebSeite extends PublicPage {
+  id: string;
+}
+
 export interface PublicPage {
   title: string;
   content: unknown;
@@ -1335,6 +1346,13 @@ export const api = {
     return req<SearchHit[]>(`/search?${p.toString()}`);
   },
   getPublicPage: (token: string) => req<PublicPage>(`/public/${token}`),
+  spaceWeb: (id: string, published: boolean) =>
+    req<{ published: boolean; webToken: string }>(`/spaces/${id}/web`, {
+      method: "PUT",
+      body: JSON.stringify({ published }),
+    }),
+  getWebAblage: (token: string) => req<WebAblage>(`/web/${token}`),
+  getWebSeite: (token: string, pageId: string) => req<WebSeite>(`/web/${token}/pages/${pageId}`),
 };
 
 /** Inbox by e-mail: the account's choice and whether the instance can send. */

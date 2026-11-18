@@ -52,6 +52,9 @@ type Space struct {
 	// DarfVerwalten tells the interface whether to show buttons for changing
 	// things at all. The decision itself is made again in the backend.
 	DarfVerwalten bool `json:"canManage"`
+	// WebToken is the address of the space on the web, when it is published.
+	// Only those who manage the space get it.
+	WebToken string `json:"webToken,omitempty"`
 	// Farbe is the colour of the space in the graph, as #rrggbb. Empty means:
 	// the interface takes one from its own series.
 	Farbe string `json:"color,omitempty"`

@@ -117,6 +117,10 @@ ALTER TABLE spaces ADD COLUMN IF NOT EXISTS farbe text NOT NULL DEFAULT '';
 -- handler: what it does not know becomes 'nein', so a typo can open nothing.
 ALTER TABLE spaces ADD COLUMN IF NOT EXISTS oeffentlich text NOT NULL DEFAULT 'nein';
 CREATE INDEX IF NOT EXISTS spaces_oeffentlich_idx ON spaces(oeffentlich) WHERE oeffentlich <> 'nein';
+-- A space published on the web: whoever holds the token reads every page of it
+-- without an account. NULL means not published; withdrawing drops the token, so
+-- a later publication issues a new address and old links stay dead.
+ALTER TABLE spaces ADD COLUMN IF NOT EXISTS web_token text UNIQUE;
 
 -- Deleting a space keeps its pages and only clears their space_id.
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS space_id   uuid REFERENCES spaces(id) ON DELETE SET NULL;

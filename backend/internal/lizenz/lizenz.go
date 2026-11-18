@@ -29,6 +29,7 @@ const (
 	Gruppen     Funktion = "gruppen"     // groups, space permissions, space-manager role
 	SSO         Funktion = "sso"         // sign-in through an OIDC provider
 	LDAP        Funktion = "ldap"        // sign-in against LDAP or Active Directory
+	Webablage   Funktion = "webablage"   // a whole space published on the web, readable without an account
 	Anhangsuche Funktion = "anhangsuche" // full text search inside attachments
 	Export      Funktion = "export"      // exporting a whole space
 	Kommentare  Funktion = "kommentare"  // comments on pages
@@ -41,7 +42,7 @@ const (
 var Alle = []Funktion{
 	Versionen, Anhaenge, Freigeben,
 	Pruefspur, Gruppen, SSO, LDAP, Anhangsuche, Export, Kommentare, Konflikte,
-	Echtzeit,
+	Echtzeit, Webablage,
 }
 
 // Stufe is a bundle of features, the thing that is sold.
@@ -76,7 +77,7 @@ var stufenZusatz = map[Stufe][]Funktion{
 	StufeFrei:     {Versionen, Anhaenge, Kommentare, Konflikte},
 	StufeAdvanced: {},
 	StufePro:      {Freigeben, Echtzeit, Export, Anhangsuche},
-	StufeBusiness: {Gruppen, Pruefspur, SSO, LDAP},
+	StufeBusiness: {Gruppen, Pruefspur, SSO, LDAP, Webablage},
 }
 
 // OhneSchluessel reports whether a feature belongs to the free tier and

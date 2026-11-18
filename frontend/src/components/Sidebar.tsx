@@ -79,6 +79,8 @@ interface Props {
   onRenameSpace: (id: string, current: string) => void;
   onDeleteSpace: (id: string) => void;
   onSpaceOeffentlich: (id: string, wert: "nein" | "lesen" | "schreiben") => void;
+  /** Publish a space on the web or take it down (Business). */
+  onSpaceWeb: (id: string, an: boolean) => Promise<void>;
   /** The color of a space. Empty value means: revert to the palette color. */
   onMovePage: (id: string, parentId: string | null, spaceId: string | null) => void;
     /** Reparenting AND reordering in one: the target names the parent level and
@@ -110,6 +112,7 @@ export default function Sidebar(props: Props) {
     onRenameSpace,
     onDeleteSpace,
     onSpaceOeffentlich,
+    onSpaceWeb,
     onMovePage,
     onOrdnePage,
     onOrdneSpaces,
@@ -952,6 +955,11 @@ export default function Sidebar(props: Props) {
                         {sp.publicAccess === "schreiben" ? "offen" : "public"}
                       </span>
                     )}
+                    {sp.webToken && (
+                      <span className="pill klein offen" title="Published on the web: readable without an account">
+                        web
+                      </span>
+                    )}
                     {/* The count is shown only while collapsed: when expanded you
                       can already see the pages. */}
                     {eingeklappt && spacePages.length > 0 && (
@@ -1045,9 +1053,63 @@ export default function Sidebar(props: Props) {
                           reachable anonymously takes the share link of the
                           page. */}
                       <div className="sichtbarkeit-hinweis muted small">
-                        Betrifft nur angemeldete Konten dieser Instanz. Ohne Anmeldung bleibt die
-                        Ablage unerreichbar.
+                        {sp.webToken
+                          ? "Betrifft angemeldete Konten dieser Instanz. Lesen kann die Ablage außerdem jeder mit der Webadresse."
+                          : "Betrifft nur angemeldete Konten dieser Instanz. Ohne Anmeldung bleibt die Ablage unerreichbar."}
                       </div>
+                      {/* Business: the whole space on the web. Kept apart from
+                          the three levels above, because it is a different
+                          audience: strangers, not colleagues. */}
+                      {frei("webablage") && (
+                        <div className="sichtbarkeit-web">
+                          <div className="sichtbarkeit-kopf">On the web</div>
+                          {sp.webToken ? (
+                            <>
+                              <div className="sichtbarkeit-link">
+                                <input
+                                  readOnly
+                                  value={`${window.location.origin}/web/${sp.webToken}`}
+                                  onFocus={(e) => e.currentTarget.select()}
+                                  aria-label="Web address of this space"
+                                />
+                                <button
+                                  className="btn"
+                                  onClick={() =>
+                                    void navigator.clipboard
+                                      ?.writeText(`${window.location.origin}/web/${sp.webToken}`)
+                                      .catch(() => undefined)
+                                  }
+                                >
+                                  Copy
+                                </button>
+                                <a className="btn" href={`/web/${sp.webToken}`} target="_blank" rel="noreferrer">
+                                  Open
+                                </a>
+                              </div>
+                              <button
+                                className="sichtbarkeit-eintrag"
+                                onClick={() => void onSpaceWeb(sp.id, false)}
+                              >
+                                <span className="sichtbarkeit-text">
+                                  <span className="sichtbarkeit-titel">Stop publishing</span>
+                                  <span className="sichtbarkeit-erklaerung">
+                                    The address stops working at once. Publishing again creates a new one.
+                                  </span>
+                                </span>
+                              </button>
+                            </>
+                          ) : (
+                            <button className="sichtbarkeit-eintrag" onClick={() => void onSpaceWeb(sp.id, true)}>
+                              <span className="sichtbarkeit-text">
+                                <span className="sichtbarkeit-titel">Publish on the web</span>
+                                <span className="sichtbarkeit-erklaerung">
+                                  Every page of this space becomes readable without an account, for anyone with the address.
+                                </span>
+                              </span>
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 

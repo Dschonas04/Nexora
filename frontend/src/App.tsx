@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Workspace from "./pages/Workspace";
 import PublicPage from "./pages/PublicPage";
+import WebAblageView from "./pages/WebAblage";
 
 // The browser title per view: tabs, history and search results then say where
 // one is and not seven times "Nexora". A page and a shared page set their own
@@ -46,6 +47,7 @@ export default function App() {
       {/* Public links stay reachable without a session, so this route comes
           before the redirect below. */}
       <Route path="/share/:token" element={<PublicPage />} />
+      <Route path="/web/:token/:pageId?" element={<WebAblageView />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/register" element={user ? <Navigate to="/" replace /> : <Register />} />
       {/* Everything else is the app, or the login screen. Workspace owns its

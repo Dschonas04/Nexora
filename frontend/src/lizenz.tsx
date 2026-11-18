@@ -21,7 +21,8 @@ export type Extra =
   | "export"
   | "kommentare"
   | "konflikte"
-  | "echtzeit";
+  | "echtzeit"
+  | "webablage";
 
 interface Ctx {
   lizenz: Lizenz | null;
