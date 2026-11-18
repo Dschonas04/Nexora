@@ -73,6 +73,19 @@ type webSeiteKurz struct {
 	Icon     string  `json:"icon"`
 }
 
+// webBerechtigt limits a query on pages (alias p) to pages whose owner may
+// write in the space. A page owner can set the space of their own page freely,
+// so without this anybody could slip a page into a company's published space
+// and put it on the web under that name.
+const webBerechtigt = `(p.owner_id = sp.owner_id
+	   OR sp.oeffentlich = 'schreiben'
+	   OR EXISTS (SELECT 1 FROM users u WHERE u.id = p.owner_id AND u.role = 'admin')
+	   OR EXISTS (SELECT 1 FROM space_rechte sr
+	               WHERE sr.space_id = sp.id AND sr.recht IN ('schreiben', 'verwalten')
+	                 AND (sr.user_id = p.owner_id
+	                      OR sr.gruppe_id IN (SELECT gm.gruppe_id FROM gruppen_mitglieder gm
+	                                          WHERE gm.user_id = p.owner_id))))`
+
 // webSpace finds the published space behind a token.
 func (s *Server) webSpace(r *http.Request) (id, name string, ok bool) {
 	token := chi.URLParam(r, "token")
@@ -87,9 +100,10 @@ func (s *Server) webSpace(r *http.Request) (id, name string, ok bool) {
 // webSeiten lists the pages of a published space in the order of the sidebar.
 func (s *Server) webSeiten(r *http.Request, spaceID string) ([]webSeiteKurz, error) {
 	rows, err := s.Pool.Query(r.Context(),
-		`SELECT id::text, parent_id::text, title, icon FROM pages
-		  WHERE space_id = $1 AND deleted_at IS NULL
-		  ORDER BY sort_order, created_at`, spaceID)
+		`SELECT p.id::text, p.parent_id::text, p.title, p.icon
+		   FROM pages p JOIN spaces sp ON sp.id = p.space_id
+		  WHERE p.space_id = $1 AND p.deleted_at IS NULL AND `+webBerechtigt+`
+		  ORDER BY p.sort_order, p.created_at`, spaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -149,8 +163,9 @@ func (s *Server) GetWebSeite(w http.ResponseWriter, r *http.Request) {
 	var p webSeite
 	var inhalt []byte
 	if err := s.Pool.QueryRow(r.Context(),
-		`SELECT id::text, title, content, icon, breite, updated_at FROM pages
-		  WHERE id::text = $1 AND space_id = $2 AND deleted_at IS NULL`,
+		`SELECT p.id::text, p.title, p.content, p.icon, p.breite, p.updated_at
+		   FROM pages p JOIN spaces sp ON sp.id = p.space_id
+		  WHERE p.id::text = $1 AND p.space_id = $2 AND p.deleted_at IS NULL AND `+webBerechtigt,
 		chi.URLParam(r, "pageId"), spaceID).
 		Scan(&p.ID, &p.Title, &inhalt, &p.Icon, &p.Breite, &p.UpdatedAt); err != nil {
 		writeErr(w, http.StatusNotFound, "not found")
@@ -181,7 +196,8 @@ func (s *Server) WebDatei(w http.ResponseWriter, r *http.Request) {
 		`SELECT a.filename, a.mime
 		   FROM attachments a
 		   JOIN pages p ON p.id = a.page_id
-		  WHERE a.id::text = $1 AND p.space_id = $2 AND p.deleted_at IS NULL`,
+		   JOIN spaces sp ON sp.id = p.space_id
+		  WHERE a.id::text = $1 AND p.space_id = $2 AND p.deleted_at IS NULL AND `+webBerechtigt,
 		attID, spaceID).Scan(&filename, &mime); err != nil {
 		writeErr(w, http.StatusNotFound, "nicht gefunden")
 		return
