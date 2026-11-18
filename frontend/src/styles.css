@@ -5525,3 +5525,15 @@ textarea::placeholder {
   justify-content: center;
   margin-bottom: 8px;
 }
+
+/* The ready-to-paste command for connecting an MCP client. */
+.mcp-beispiel {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  background: var(--flaeche);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

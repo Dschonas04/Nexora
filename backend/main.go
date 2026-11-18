@@ -230,6 +230,11 @@ func main() {
 	r.With(handlers.SicherungZugang([]byte(secret), h.SitzungGilt)).
 		Get("/api/system/backup", h.Sicherung)
 
+	// MCP server (beta) for AI assistants. Authenticates with an API key on its
+	// own and runs every tool as a normal API request, see mcp.go.
+	h.Intern = r
+	r.HandleFunc("/api/mcp", h.MCP)
+
 	r.Route("/api", func(r chi.Router) {
 		// Public: no session required. Registration is open, and the very first
 		// account created becomes the workspace admin.

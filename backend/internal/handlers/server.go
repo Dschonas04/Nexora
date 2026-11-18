@@ -45,6 +45,9 @@ type Server struct {
 	// Mail sends inbox messages by e-mail as well. nil without an SMTP server;
 	// then nothing is sent and the setting cannot be switched on.
 	Mail Mailer
+	// Intern is the instance's own router. The MCP server carries out its
+	// tools as ordinary API requests through it, see mcp.go.
+	Intern http.Handler
 }
 
 // writeJSON sends `v` as JSON. An encoding error is intentionally ignored:

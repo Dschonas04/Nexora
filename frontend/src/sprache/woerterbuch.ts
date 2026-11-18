@@ -1641,4 +1641,7 @@ export const PAARE: [string, string][] = [
   ["Ablagen per Leselink", "Spaces by read link"],
   ["Leselink einer Ablage erstellt oder entfernt", "Read link of a space created or removed"],
   ["Per Leselink geteilt, nur zum Lesen", "Shared by read link, read only"],
+  ["MCP-Server", "MCP server"],
+  ["KI-Assistenten wie Claude können über das Model Context Protocol Seiten suchen, lesen und schreiben. Verbunden werden sie mit einem Schlüssel von oben; mit einem Nur-Lese-Schlüssel lesen sie nur.", "AI assistants such as Claude can search, read and write pages through the Model Context Protocol. Connect them with a key from above; a read-only key lets them only read."],
+  ["MCP-Adresse", "MCP address"],
 ];

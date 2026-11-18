@@ -938,6 +938,26 @@ function SchluesselTeil() {
           ))}
         </div>
       )}
+
+      {/* MCP: the same key connects an AI assistant. The config is shown
+          ready to paste; the key itself never appears here. */}
+      <h3>
+        MCP server <span className="pill klein">Beta</span>
+      </h3>
+      <p className="muted small">
+        AI assistants such as Claude can search, read and write pages through the Model Context Protocol. Connect them with a key from above; a read-only key lets them only read.
+      </p>
+      <div className="schluessel-zeile">
+        <input
+          className="input notranslate"
+          readOnly
+          value={`${window.location.origin}/api/mcp`}
+          onFocus={(e) => e.target.select()}
+          aria-label="MCP address"
+        />
+      </div>
+      <pre className="mcp-beispiel notranslate">{`claude mcp add --transport http nexora ${window.location.origin}/api/mcp \\
+  --header "Authorization: Bearer nxr_…"`}</pre>
     </>
   );
 }

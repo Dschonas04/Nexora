@@ -1563,4 +1563,7 @@ export const FRANZOESISCH: Record<string, string> = {
   "Spaces by read link": "Espaces par lien de lecture",
   "Read link of a space created or removed": "Lien de lecture d'un espace créé ou supprimé",
   "Shared by read link, read only": "Partagé par lien de lecture, en lecture seule",
+  "MCP server": "Serveur MCP",
+  "AI assistants such as Claude can search, read and write pages through the Model Context Protocol. Connect them with a key from above; a read-only key lets them only read.": "Les assistants IA comme Claude peuvent rechercher, lire et écrire des pages via le Model Context Protocol. Connectez-les avec une clé ci-dessus ; une clé en lecture seule leur permet seulement de lire.",
+  "MCP address": "Adresse MCP",
 };

@@ -32,3 +32,4 @@ PDF (.pdf)
 Word (.docx)
 SSO
 Link
+Beta
