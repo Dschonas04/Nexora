@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"nexora/internal/lizenz"
 	"nexora/internal/middleware"
 )
 
@@ -77,14 +78,22 @@ type webSeiteKurz struct {
 // write in the space. A page owner can set the space of their own page freely,
 // so without this anybody could slip a page into a company's published space
 // and put it on the web under that name.
-const webBerechtigt = `(p.owner_id = sp.owner_id
+func webBerechtigt() string {
+	// Rights on a space count only while groups and space rights are licensed,
+	// as everywhere else (spaceZugriffSQL). The value is a constant, never input.
+	rechte := "false"
+	if lizenz.Frei(lizenz.Gruppen) {
+		rechte = "true"
+	}
+	return `(p.owner_id = sp.owner_id
 	   OR sp.oeffentlich = 'schreiben'
 	   OR EXISTS (SELECT 1 FROM users u WHERE u.id = p.owner_id AND u.role = 'admin')
-	   OR EXISTS (SELECT 1 FROM space_rechte sr
+	   OR (` + rechte + ` AND EXISTS (SELECT 1 FROM space_rechte sr
 	               WHERE sr.space_id = sp.id AND sr.recht IN ('schreiben', 'verwalten')
 	                 AND (sr.user_id = p.owner_id
 	                      OR sr.gruppe_id IN (SELECT gm.gruppe_id FROM gruppen_mitglieder gm
-	                                          WHERE gm.user_id = p.owner_id))))`
+	                                          WHERE gm.user_id = p.owner_id)))))`
+}
 
 // webSpace finds the published space behind a token.
 func (s *Server) webSpace(r *http.Request) (id, name string, ok bool) {
@@ -102,7 +111,7 @@ func (s *Server) webSeiten(r *http.Request, spaceID string) ([]webSeiteKurz, err
 	rows, err := s.Pool.Query(r.Context(),
 		`SELECT p.id::text, p.parent_id::text, p.title, p.icon
 		   FROM pages p JOIN spaces sp ON sp.id = p.space_id
-		  WHERE p.space_id = $1 AND p.deleted_at IS NULL AND `+webBerechtigt+`
+		  WHERE p.space_id = $1 AND p.deleted_at IS NULL AND `+webBerechtigt()+`
 		  ORDER BY p.sort_order, p.created_at`, spaceID)
 	if err != nil {
 		return nil, err
@@ -165,7 +174,7 @@ func (s *Server) GetWebSeite(w http.ResponseWriter, r *http.Request) {
 	if err := s.Pool.QueryRow(r.Context(),
 		`SELECT p.id::text, p.title, p.content, p.icon, p.breite, p.updated_at
 		   FROM pages p JOIN spaces sp ON sp.id = p.space_id
-		  WHERE p.id::text = $1 AND p.space_id = $2 AND p.deleted_at IS NULL AND `+webBerechtigt,
+		  WHERE p.id::text = $1 AND p.space_id = $2 AND p.deleted_at IS NULL AND `+webBerechtigt(),
 		chi.URLParam(r, "pageId"), spaceID).
 		Scan(&p.ID, &p.Title, &inhalt, &p.Icon, &p.Breite, &p.UpdatedAt); err != nil {
 		writeErr(w, http.StatusNotFound, "not found")
@@ -197,7 +206,7 @@ func (s *Server) WebDatei(w http.ResponseWriter, r *http.Request) {
 		   FROM attachments a
 		   JOIN pages p ON p.id = a.page_id
 		   JOIN spaces sp ON sp.id = p.space_id
-		  WHERE a.id::text = $1 AND p.space_id = $2 AND p.deleted_at IS NULL AND `+webBerechtigt,
+		  WHERE a.id::text = $1 AND p.space_id = $2 AND p.deleted_at IS NULL AND `+webBerechtigt(),
 		attID, spaceID).Scan(&filename, &mime); err != nil {
 		writeErr(w, http.StatusNotFound, "nicht gefunden")
 		return
