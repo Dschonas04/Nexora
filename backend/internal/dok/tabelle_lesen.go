@@ -36,7 +36,42 @@ const (
 	maxTabZeilen    = 5000
 	maxTabSpalten   = 200
 	maxTabTeilBytes = 64 << 20
+	// What all sheet parts together may unpack to.
+	maxTabEingabe = 256 << 20
+	// What the result may hold in total, and one cell at most. Without the
+	// total a single long shared string referenced from every cell, or an
+	// ODS cell repeated across rows, turns a small file into gigabytes of JSON.
+	maxTabAusgabe = 16 << 20
+	maxTabZelle   = 32 << 10
 )
+
+// ausgabe counts the bytes handed out so far against maxTabAusgabe.
+type ausgabe struct{ rest int }
+
+func neueAusgabe() *ausgabe { return &ausgabe{rest: maxTabAusgabe} }
+
+// nimm books a cell value. It returns the value, cut to maxTabZelle, and
+// false once the budget is used up.
+func (a *ausgabe) nimm(s string) (string, bool) {
+	s = kappen(s, maxTabZelle)
+	kosten := len(s) + 4 // quotes, comma and a little for escaping
+	if kosten > a.rest {
+		return "", false
+	}
+	a.rest -= kosten
+	return s, true
+}
+
+// kappen cuts s to at most n bytes without splitting a UTF-8 sequence.
+func kappen(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	for n > 0 && n < len(s) && s[n]&0xC0 == 0x80 {
+		n--
+	}
+	return s[:n]
+}
 
 // AusTabelle reads an .xlsx or .ods file. The format is recognised by the
 // content of the package, not by the name.
@@ -107,19 +142,30 @@ func ausXlsx(dateien map[string]*zip.File, mappeDatei *zip.File) ([]Blatt, error
 	basis1904 := mappe.Datum1904.Wert == "1" || mappe.Datum1904.Wert == "true"
 
 	var aus []Blatt
+	budget := neueAusgabe()
+	eingabe := maxTabEingabe
+	gelesen := map[string]bool{}
 	for i, b := range mappe.Blaetter {
-		if i >= maxBlaetter {
+		if i >= maxBlaetter || eingabe <= 0 || budget.rest <= 0 {
 			break
 		}
 		ziel := ziele[b.RID]
 		if ziel == "" {
 			ziel = "xl/worksheets/sheet" + strconv.Itoa(i+1) + ".xml"
 		}
+		// Several sheet entries pointing at the same part would read and
+		// output it several times.
+		if gelesen[ziel] {
+			continue
+		}
+		gelesen[ziel] = true
 		f, ok := dateien[ziel]
 		if !ok {
 			continue
 		}
-		blatt := xlsxBlatt(teilLesen(f, maxTabTeilBytes), texte, datumsStile, basis1904)
+		roh := teilLesen(f, int64(min(maxTabTeilBytes, eingabe)))
+		eingabe -= len(roh)
+		blatt := xlsxBlatt(roh, texte, datumsStile, basis1904, budget)
 		blatt.Name = b.Name
 		aus = append(aus, blatt)
 	}
@@ -231,7 +277,7 @@ type xlsxZelle struct {
 	Stil  int    `xml:"s,attr"`
 	Wert  string `xml:"v"`
 	Inner struct {
-		Texte []string `xml:"t"`
+		Texte  []string `xml:"t"`
 		Laeufe []struct {
 			T string `xml:"t"`
 		} `xml:"r"`
@@ -240,7 +286,7 @@ type xlsxZelle struct {
 
 // xlsxBlatt streams a worksheet. Rows and cells carry their position, and
 // gaps are filled so the columns line up.
-func xlsxBlatt(roh []byte, texte []string, datumsStile map[int]bool, basis1904 bool) Blatt {
+func xlsxBlatt(roh []byte, texte []string, datumsStile map[int]bool, basis1904 bool, budget *ausgabe) Blatt {
 	var b Blatt
 	d := xml.NewDecoder(bytes.NewReader(roh))
 	zeile := -1
@@ -288,7 +334,11 @@ func xlsxBlatt(roh []byte, texte []string, datumsStile map[int]bool, basis1904 b
 				b.Gekuerzt = true
 				continue
 			}
-			wert := xlsxWert(z, texte, datumsStile, basis1904)
+			wert, ok := budget.nimm(xlsxWert(z, texte, datumsStile, basis1904))
+			if !ok {
+				b.Gekuerzt = true
+				return trimmen(b)
+			}
 			for len(b.Zeilen[zeile]) <= spalte {
 				b.Zeilen[zeile] = append(b.Zeilen[zeile], "")
 			}
@@ -397,6 +447,7 @@ func ausOds(f *zip.File) ([]Blatt, error) {
 	}
 	defer r.Close()
 	d := xml.NewDecoder(io.LimitReader(r, maxTabTeilBytes))
+	budget := neueAusgabe()
 	var aus []Blatt
 	var b *Blatt
 	var zeile []string
@@ -438,8 +489,10 @@ func ausOds(f *zip.File) ([]Blatt, error) {
 				}
 			case "s":
 				if inZelle {
-					n := wiederholung(attr(t, "c"))
-					zelle.WriteString(strings.Repeat(" ", n))
+					n := min(wiederholung(attr(t, "c")), maxTabZelle-zelle.Len())
+					if n > 0 {
+						zelle.WriteString(strings.Repeat(" ", n))
+					}
 				}
 			case "tab":
 				if inZelle {
@@ -451,7 +504,7 @@ func ausOds(f *zip.File) ([]Blatt, error) {
 				}
 			}
 		case xml.CharData:
-			if inZelle {
+			if inZelle && zelle.Len() < maxTabZelle {
 				zelle.Write(t)
 			}
 		case xml.EndElement:
@@ -465,7 +518,15 @@ func ausOds(f *zip.File) ([]Blatt, error) {
 				// A trailing run of empty cells repeated 16000 times only pads
 				// the row to the sheet's width; it is cut off below.
 				for k := 0; k < zellenWdh && len(zeile) < maxTabSpalten; k++ {
-					zeile = append(zeile, wert)
+					w, ok := budget.nimm(wert)
+					if !ok {
+						if b != nil {
+							b.Gekuerzt = true
+							*b = trimmen(*b)
+						}
+						return aus, nil
+					}
+					zeile = append(zeile, w)
 				}
 				if len(zeile) >= maxTabSpalten && b != nil && wert != "" {
 					b.Gekuerzt = true
@@ -485,6 +546,19 @@ func ausOds(f *zip.File) ([]Blatt, error) {
 					// Empty rows repeated a million times are padding as well.
 					if len(zeile) == 0 && k > 0 {
 						break
+					}
+					// The first copy was booked cell by cell; every further
+					// copy costs the same again.
+					if k > 0 {
+						kosten := 0
+						for _, w := range zeile {
+							kosten += len(w) + 4
+						}
+						if kosten > budget.rest {
+							b.Gekuerzt = true
+							break
+						}
+						budget.rest -= kosten
 					}
 					b.Zeilen = append(b.Zeilen, zeile)
 				}

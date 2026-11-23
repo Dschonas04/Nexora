@@ -23,10 +23,10 @@ func paket(t *testing.T, teile map[string]string) []byte {
 
 func TestXlsx(t *testing.T) {
 	roh := paket(t, map[string]string{
-		"xl/workbook.xml": `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Kosten" sheetId="1" r:id="rId1"/></sheets></workbook>`,
+		"xl/workbook.xml":            `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Kosten" sheetId="1" r:id="rId1"/></sheets></workbook>`,
 		"xl/_rels/workbook.xml.rels": `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>`,
-		"xl/sharedStrings.xml": `<sst><si><t>Posten</t></si><si><r><t>Bet</t></r><r><t>rag</t></r></si></sst>`,
-		"xl/styles.xml": `<styleSheet><cellXfs><xf numFmtId="0"/><xf numFmtId="14"/></cellXfs></styleSheet>`,
+		"xl/sharedStrings.xml":       `<sst><si><t>Posten</t></si><si><r><t>Bet</t></r><r><t>rag</t></r></si></sst>`,
+		"xl/styles.xml":              `<styleSheet><cellXfs><xf numFmtId="0"/><xf numFmtId="14"/></cellXfs></styleSheet>`,
 		"xl/worksheets/sheet1.xml": `<worksheet><sheetData>
 <row r="1"><c r="A1" t="s"><v>0</v></c><c r="C1" t="s"><v>1</v></c></row>
 <row r="3"><c r="A3" t="inlineStr"><is><t>Miete</t></is></c><c r="B3" s="1"><v>45658</v></c><c r="C3"><f>1+1</f><v>0.30000000000000004</v></c><c r="D3" t="b"><v>1</v></c></row>
@@ -72,5 +72,65 @@ func TestSpalteAusRef(t *testing.T) {
 		if got, ok := spalteAusRef(ref); !ok || got != want {
 			t.Errorf("%s: %d", ref, got)
 		}
+	}
+}
+
+// A long shared string referenced from every cell must not blow up the result.
+func TestXlsxAusgabeBudget(t *testing.T) {
+	var zellen bytes.Buffer
+	for r := 1; r <= 2000; r++ {
+		zellen.WriteString(`<row>`)
+		for c := 0; c < 100; c++ {
+			zellen.WriteString(`<c t="s"><v>0</v></c>`)
+		}
+		zellen.WriteString(`</row>`)
+	}
+	roh := paket(t, map[string]string{
+		"xl/workbook.xml":          `<workbook><sheets><sheet name="A"/><sheet name="B"/></sheets></workbook>`,
+		"xl/sharedStrings.xml":     `<sst><si><t>` + string(bytes.Repeat([]byte("x"), 100000)) + `</t></si></sst>`,
+		"xl/worksheets/sheet1.xml": `<worksheet><sheetData>` + zellen.String() + `</sheetData></worksheet>`,
+		"xl/worksheets/sheet2.xml": `<worksheet><sheetData>` + zellen.String() + `</sheetData></worksheet>`,
+	})
+	b, err := AusTabelle(roh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gesamt := 0
+	for _, bl := range b {
+		for _, z := range bl.Zeilen {
+			for _, w := range z {
+				if len(w) > maxTabZelle {
+					t.Fatalf("Zelle %d Bytes", len(w))
+				}
+				gesamt += len(w)
+			}
+		}
+	}
+	if gesamt > maxTabAusgabe || !b[0].Gekuerzt {
+		t.Fatalf("gesamt %d, gekürzt %v", gesamt, b[0].Gekuerzt)
+	}
+}
+
+// Repeated ODS rows and cells and text:s count against the budget too.
+func TestOdsAusgabeBudget(t *testing.T) {
+	zelle := `<table:table-cell table:number-columns-repeated="200"><text:p>` + string(bytes.Repeat([]byte("y"), 20000)) + `<text:s text:c="1000000"/></text:p></table:table-cell>`
+	roh := paket(t, map[string]string{
+		"content.xml": `<office:document-content xmlns:office="o" xmlns:table="t" xmlns:text="x"><table:table table:name="A"><table:table-row table:number-rows-repeated="5000">` + zelle + `</table:table-row></table:table></office:document-content>`,
+	})
+	b, err := AusTabelle(roh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gesamt := 0
+	for _, z := range b[0].Zeilen {
+		for _, w := range z {
+			if len(w) > maxTabZelle {
+				t.Fatalf("Zelle %d Bytes", len(w))
+			}
+			gesamt += len(w)
+		}
+	}
+	if gesamt > maxTabAusgabe || !b[0].Gekuerzt {
+		t.Fatalf("gesamt %d, gekürzt %v", gesamt, b[0].Gekuerzt)
 	}
 }
