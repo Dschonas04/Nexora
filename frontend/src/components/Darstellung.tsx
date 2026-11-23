@@ -300,7 +300,7 @@ type FElement = {
   line?: string;
   anchor?: string;
   paragraphs?: FAbsatz[];
-  src?: string;
+  image?: string;
   rows?: string[][];
   rotation?: number;
 };
@@ -308,6 +308,7 @@ export type Praesentation = {
   width: number;
   height: number;
   slides: { background?: string; elements: FElement[] }[];
+  images: Record<string, string>;
   truncated: boolean;
 };
 
@@ -341,8 +342,10 @@ function Folie({ p, folie, nr }: { p: Praesentation; folie: Praesentation["slide
           height: hoch(e.h),
           transform: e.rotation ? `rotate(${e.rotation}deg)` : undefined,
         };
-        if (e.kind === "bild")
-          return <img key={i} className="qv-folie-el" style={rahmen} src={e.src} alt="" />;
+        if (e.kind === "bild") {
+          const src = e.image ? p.images?.[e.image] : undefined;
+          return src ? <img key={i} className="qv-folie-el" style={rahmen} src={src} alt="" /> : null;
+        }
         if (e.kind === "tabelle")
           return (
             <div key={i} className="qv-folie-el" style={rahmen}>

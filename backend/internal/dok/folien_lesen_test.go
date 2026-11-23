@@ -57,7 +57,7 @@ func TestFolienProbe(t *testing.T) {
 			tab = &p.Folien[2].Elemente[i]
 		}
 	}
-	if bild == nil || !strings.HasPrefix(bild.Bild, "data:image/png;base64,") || bild.X != 914400 {
+	if bild == nil || !strings.HasPrefix(p.Bilder[bild.Bild], "data:image/png;base64,") || bild.X != 914400 {
 		t.Fatalf("Bild: %+v", bild)
 	}
 	if tab == nil || len(tab.Zeilen) != 2 || tab.Zeilen[0][0] != "A" || tab.Zeilen[1][1] != "D" {

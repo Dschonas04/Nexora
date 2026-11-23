@@ -32,6 +32,9 @@ type Praesentation struct {
 	Breite int64   `json:"width"`
 	Hoehe  int64   `json:"height"`
 	Folien []Folie `json:"slides"`
+	// Bilder holds every picture once, as a data URL; elements refer to it by
+	// key. A logo on every slide is then sent once and not three hundred times.
+	Bilder map[string]string `json:"images"`
 	// Gekuerzt is set when slides, pictures or text beyond the limits were
 	// left out.
 	Gekuerzt bool `json:"truncated"`
@@ -56,7 +59,7 @@ type Element struct {
 	// Anker is the vertical alignment of text: "t", "ctr" or "b".
 	Anker    string         `json:"anchor,omitempty"`
 	Absaetze []FolienAbsatz `json:"paragraphs,omitempty"`
-	Bild     string         `json:"src,omitempty"`
+	Bild     string         `json:"image,omitempty"` // key into Praesentation.Bilder
 	Zeilen   [][]string     `json:"rows,omitempty"`
 	Drehung  float64        `json:"rotation,omitempty"`
 }
@@ -92,6 +95,12 @@ const (
 	maxFolienBilder  = 40 << 20
 	maxFolienText    = 8 << 20
 	maxFolienTeil    = 16 << 20
+	// Every element costs this much of the text budget on top of its text,
+	// for the numbers and keys that go with it.
+	elementKosten = 160
+	maxSchrift    = 64
+	maxVerweis    = 2048
+	maxPunkt      = 8
 )
 
 // ---- XML shapes ----
@@ -314,6 +323,7 @@ type folienPaket struct {
 	text        int
 	gekuerzt    bool
 	bilderCache map[string]string
+	bilderAus   map[string]string
 }
 
 func (p *folienPaket) lesen(name string) []byte {
@@ -388,7 +398,7 @@ func AusFolien(roh []byte) (Praesentation, error) {
 	if err != nil {
 		return Praesentation{}, errors.New("keine lesbare PowerPoint-Datei")
 	}
-	p := &folienPaket{dateien: map[string]*zip.File{}, eingabe: maxFolienEingabe, bilderCache: map[string]string{}}
+	p := &folienPaket{dateien: map[string]*zip.File{}, eingabe: maxFolienEingabe, bilderCache: map[string]string{}, bilderAus: map[string]string{}}
 	for _, f := range leser.File {
 		p.dateien[f.Name] = f
 	}
@@ -436,6 +446,7 @@ func AusFolien(roh []byte) (Praesentation, error) {
 		return Praesentation{}, errors.New("keine Folien gefunden")
 	}
 	aus.Gekuerzt = aus.Gekuerzt || p.gekuerzt
+	aus.Bilder = p.bilderAus
 	return aus, nil
 }
 
@@ -708,7 +719,7 @@ func (c folienKontext) form(sp pSp, u umrechnung, f *Folie) {
 	if len(e.Absaetze) == 0 && e.Fuellung == "" && e.Linie == "" {
 		return
 	}
-	f.Elemente = append(f.Elemente, e)
+	c.ablegen(f, e)
 }
 
 func (c folienKontext) absaetze(tb *aTxBody, stile []*aLstStyle, aufzaehlungStandard bool) []FolienAbsatz {
@@ -750,15 +761,17 @@ func (c folienKontext) absaetze(tb *aTxBody, stile []*aLstStyle, aufzaehlungStan
 						l.Farbe = m.aufloesen(st.RPr.SolidFill)
 					}
 					if st.RPr.Latin != nil && !strings.HasPrefix(st.RPr.Latin.Typeface, "+") {
-						l.Schrift = st.RPr.Latin.Typeface
+						l.Schrift = kappen(st.RPr.Latin.Typeface, maxSchrift)
 					}
 					if st.RPr.Link != nil {
 						if z := c.rels[st.RPr.Link.ID]; strings.HasPrefix(z, "http://") || strings.HasPrefix(z, "https://") || strings.HasPrefix(z, "mailto:") {
-							l.Verweis = z
+							if len(z) <= maxVerweis {
+								l.Verweis = z
+							}
 						}
 					}
 				}
-				if !c.textBuchen(len(l.Text)) {
+				if !c.textBuchen(len(l.Text) + len(l.Schrift) + len(l.Verweis) + len(l.Farbe) + 24) {
 					return aus
 				}
 				a.Laeufe = append(a.Laeufe, l)
@@ -779,7 +792,7 @@ func (c folienKontext) absaetze(tb *aTxBody, stile []*aLstStyle, aufzaehlungStan
 		switch {
 		case p.PPr != nil && p.PPr.BuNone != nil:
 		case p.PPr != nil && p.PPr.BuChar != nil:
-			a.Aufzaehlung = p.PPr.BuChar.Char
+			a.Aufzaehlung = kappen(p.PPr.BuChar.Char, maxPunkt)
 		case p.PPr != nil && p.PPr.BuAuto != nil:
 			start := p.PPr.BuAuto.StartAt
 			if start == 0 {
@@ -793,6 +806,9 @@ func (c folienKontext) absaetze(tb *aTxBody, stile []*aLstStyle, aufzaehlungStan
 			a.Aufzaehlung = nummerText(p.PPr.BuAuto.Type, n)
 		case aufzaehlungStandard && hatText:
 			a.Aufzaehlung = "•"
+		}
+		if !c.textBuchen(len(a.Aufzaehlung) + 24) {
+			return aus
 		}
 		aus = append(aus, a)
 	}
@@ -849,6 +865,14 @@ func roemisch(n int) string {
 	return s.String()
 }
 
+// ablegen books an element and adds it to the slide.
+func (c folienKontext) ablegen(f *Folie, e Element) {
+	if !c.textBuchen(elementKosten) {
+		return
+	}
+	f.Elemente = append(f.Elemente, e)
+}
+
 func (c folienKontext) textBuchen(n int) bool {
 	if c.p.text+n > maxFolienText {
 		c.p.gekuerzt = true
@@ -881,7 +905,7 @@ func (c folienKontext) bild(pic pPic, u umrechnung, f *Folie) {
 	if ziel == "" || mime == "" {
 		return
 	}
-	src, ok := c.p.bilderCache[ziel]
+	schluessel, ok := c.p.bilderCache[ziel]
 	if !ok {
 		datei, da := c.p.dateien[ziel]
 		if !da {
@@ -894,12 +918,13 @@ func (c folienKontext) bild(pic pPic, u umrechnung, f *Folie) {
 		}
 		roh := teilLesen(datei, int64(rest))
 		c.p.bilder += len(roh)
-		src = "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(roh)
-		c.p.bilderCache[ziel] = src
+		schluessel = strconv.Itoa(len(c.p.bilderAus) + 1)
+		c.p.bilderAus[schluessel] = "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(roh)
+		c.p.bilderCache[ziel] = schluessel
 	}
-	e := Element{Art: "bild", Bild: src, Drehung: float64(x.Rot) / 60000}
+	e := Element{Art: "bild", Bild: schluessel, Drehung: float64(x.Rot) / 60000}
 	e.X, e.Y, e.B, e.H = u.in(*x)
-	f.Elemente = append(f.Elemente, e)
+	c.ablegen(f, e)
 }
 
 func (c folienKontext) tabelle(r pRahmen, u umrechnung, f *Folie) {
@@ -930,7 +955,7 @@ func (c folienKontext) tabelle(r pRahmen, u umrechnung, f *Folie) {
 		}
 		e.Zeilen = append(e.Zeilen, zeile)
 	}
-	f.Elemente = append(f.Elemente, e)
+	c.ablegen(f, e)
 }
 
 // ---- colours ----
