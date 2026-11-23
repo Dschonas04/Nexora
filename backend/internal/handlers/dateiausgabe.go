@@ -71,6 +71,11 @@ func anhangKopf(w http.ResponseWriter, mime, dateiname string) {
 	if darfInsFenster(mime) {
 		w.Header().Set("Content-Type", mime)
 		w.Header().Set("Content-Disposition", "inline"+namensteil(dateiname))
+		// The viewer embeds a PDF in an <object> on the own page. The
+		// general API headers forbid every frame, which makes the browser
+		// refuse to show it there. The own origin may embed it, nobody else.
+		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'self'; base-uri 'none'")
 		return
 	}
 

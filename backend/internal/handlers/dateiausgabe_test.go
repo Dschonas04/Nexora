@@ -98,3 +98,19 @@ func TestSVGBleibtBildOhneSkripte(t *testing.T) {
 		t.Fatalf("Regelwerk: %q", got)
 	}
 }
+
+// The quick view embeds a PDF in an <object> on the own page. A response that
+// forbids every frame leaves that area empty, so inline files allow the own
+// origin and nobody else.
+func TestPdfDarfEingebettetWerden(t *testing.T) {
+	w := httptest.NewRecorder()
+	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'")
+	anhangKopf(w, "application/pdf", "Plan.pdf")
+	if got := w.Header().Get("X-Frame-Options"); got != "SAMEORIGIN" {
+		t.Fatalf("X-Frame-Options %q", got)
+	}
+	if got := w.Header().Get("Content-Security-Policy"); !strings.Contains(got, "frame-ancestors 'self'") {
+		t.Fatalf("CSP %q", got)
+	}
+}
