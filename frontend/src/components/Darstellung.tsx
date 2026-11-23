@@ -15,7 +15,7 @@ import Fehlergrenze from "./Fehlergrenze";
 
 const Editor = lazy(() => import("./Editor"));
 
-export type Darstellungsart = "html" | "markdown" | "csv" | "tabelle";
+export type Darstellungsart = "html" | "markdown" | "csv" | "tabelle" | "folien";
 
 export function darstellungsart(typ: string, dateiname: string): Darstellungsart | null {
   const n = dateiname.toLowerCase();
@@ -28,6 +28,11 @@ export function darstellungsart(typ: string, dateiname: string): Darstellungsart
     /\.(xlsx|xlsm|ods)$/.test(n)
   )
     return "tabelle";
+  if (
+    typ === "application/vnd.openxmlformats-officedocument.presentationml.presentation" ||
+    /\.(pptx|ppsx)$/.test(n)
+  )
+    return "folien";
   return null;
 }
 
@@ -270,6 +275,182 @@ function TabellenAnsicht({ seiteId, anhangId }: { seiteId?: string; anhangId: st
   );
 }
 
+// ---- presentations ----
+
+type FLauf = {
+  text: string;
+  size?: number;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  color?: string;
+  br?: boolean;
+  font?: string;
+  href?: string;
+  baseline?: number;
+};
+type FAbsatz = { align?: string; level?: number; bullet?: string; runs: FLauf[]; size?: number };
+type FElement = {
+  kind: "text" | "bild" | "tabelle";
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  fill?: string;
+  line?: string;
+  anchor?: string;
+  paragraphs?: FAbsatz[];
+  src?: string;
+  rows?: string[][];
+  rotation?: number;
+};
+export type Praesentation = {
+  width: number;
+  height: number;
+  slides: { background?: string; elements: FElement[] }[];
+  truncated: boolean;
+};
+
+const EMU_PRO_PT = 12700;
+const AUSRICHTUNG: Record<string, "left" | "center" | "right" | "justify"> = {
+  l: "left",
+  ctr: "center",
+  r: "right",
+  just: "justify",
+  dist: "justify",
+};
+
+function Folie({ p, folie, nr }: { p: Praesentation; folie: Praesentation["slides"][number]; nr: number }) {
+  // Sizes in the slide's own units, turned into a share of its width: with
+  // container query units the text scales with the sheet like a picture.
+  const breitePt = p.width / EMU_PRO_PT;
+  const schrift = (hundertstel: number) => `${(hundertstel / 100 / breitePt) * 100}cqw`;
+  const quer = (emu: number) => `${(emu / p.width) * 100}%`;
+  const hoch = (emu: number) => `${(emu / p.height) * 100}%`;
+  return (
+    <div
+      className="qv-folie"
+      style={{ aspectRatio: `${p.width} / ${p.height}`, background: folie.background || "#fff" }}
+      aria-label={"Folie " + nr}
+    >
+      {folie.elements.map((e, i) => {
+        const rahmen: React.CSSProperties = {
+          left: quer(e.x),
+          top: hoch(e.y),
+          width: quer(e.w),
+          height: hoch(e.h),
+          transform: e.rotation ? `rotate(${e.rotation}deg)` : undefined,
+        };
+        if (e.kind === "bild")
+          return <img key={i} className="qv-folie-el" style={rahmen} src={e.src} alt="" />;
+        if (e.kind === "tabelle")
+          return (
+            <div key={i} className="qv-folie-el" style={rahmen}>
+              <table className="qv-folie-tabelle" style={{ fontSize: schrift(1400) }}>
+                <tbody>
+                  {(e.rows ?? []).map((z, r) => (
+                    <tr key={r}>
+                      {z.map((c, k) => (r === 0 ? <th key={k}>{c}</th> : <td key={k}>{c}</td>))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        return (
+          <div
+            key={i}
+            className="qv-folie-el qv-folie-text"
+            style={{
+              ...rahmen,
+              background: e.fill,
+              border: e.line ? `1px solid ${e.line}` : undefined,
+              justifyContent: e.anchor === "ctr" ? "center" : e.anchor === "b" ? "flex-end" : "flex-start",
+              padding: `${hoch(45720)} ${quer(91440)}`,
+            }}
+          >
+            {(e.paragraphs ?? []).map((a, k) => {
+              const groesse = a.runs.find((l) => l.size)?.size ?? a.size ?? 1800;
+              return (
+                <p
+                  key={k}
+                  style={{
+                    textAlign: AUSRICHTUNG[a.align ?? ""] ?? "left",
+                    fontSize: schrift(groesse),
+                    paddingLeft: a.level ? quer(a.level * 457200) : undefined,
+                  }}
+                >
+                  {a.bullet && <span className="qv-folie-punkt">{a.bullet}</span>}
+                  {a.runs.length === 0 && "\u00a0"}
+                  {a.runs.map((l, j) => {
+                    if (l.br) return <br key={j} />;
+                    const stil: React.CSSProperties = {
+                      fontSize: l.size ? schrift(l.size) : undefined,
+                      fontWeight: l.bold ? 700 : undefined,
+                      fontStyle: l.italic ? "italic" : undefined,
+                      textDecoration: l.underline ? "underline" : undefined,
+                      color: l.color,
+                      fontFamily: l.font ? `"${l.font.replace(/["\\]/g, "")}", sans-serif` : undefined,
+                      verticalAlign: l.baseline ? (l.baseline > 0 ? "super" : "sub") : undefined,
+                    };
+                    return l.href ? (
+                      <a key={j} style={stil} href={l.href} target="_blank" rel="noreferrer noopener">
+                        {l.text}
+                      </a>
+                    ) : (
+                      <span key={j} style={stil}>
+                        {l.text}
+                      </span>
+                    );
+                  })}
+                </p>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function FolienAnsicht({ seiteId, anhangId }: { seiteId?: string; anhangId: string }) {
+  const [p, setP] = useState<Praesentation | null>(null);
+  const [fehler, setFehler] = useState<string | null>(null);
+  useEffect(() => {
+    if (!seiteId) {
+      setFehler("Vorschau hier nicht verfügbar. Über „Herunterladen“ lässt sich die Datei öffnen.");
+      return;
+    }
+    let weg = false;
+    setP(null);
+    setFehler(null);
+    api
+      .folienLesen(seiteId, anhangId)
+      .then((r) => !weg && setP(r))
+      .catch((e: Error) => !weg && setFehler(e.message));
+    return () => {
+      weg = true;
+    };
+  }, [seiteId, anhangId]);
+  if (fehler) return <div className="qv-none">{fehler}</div>;
+  if (!p) return <div className="qv-none">Wird geladen…</div>;
+  return (
+    <div className="qv-folien">
+      {p.slides.map((f, i) => (
+        <div key={i} className="qv-folie-rahmen">
+          <Folie p={p} folie={f} nr={i + 1} />
+          <div className="qv-folie-nr">{i + 1}</div>
+        </div>
+      ))}
+      {p.truncated && (
+        <div className="qv-folie-nr">
+          Gekürzt angezeigt. Die ganze Datei gibt es über „Herunterladen“.
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Darstellung(props: {
   art: Darstellungsart;
   url: string;
@@ -286,5 +467,7 @@ export default function Darstellung(props: {
       return <CsvAnsicht url={props.url} dateiname={props.dateiname} />;
     case "tabelle":
       return <TabellenAnsicht seiteId={props.seiteId} anhangId={props.anhangId} />;
+    case "folien":
+      return <FolienAnsicht seiteId={props.seiteId} anhangId={props.anhangId} />;
   }
 }

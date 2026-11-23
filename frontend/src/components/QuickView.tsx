@@ -64,6 +64,8 @@ const NACH_ENDUNG: Record<string, string> = {
   xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   xlsm: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ods: "application/vnd.oasis.opendocument.spreadsheet",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ppsx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   html: "text/html",
   htm: "text/html",
   tsv: "text/tab-separated-values",
@@ -387,7 +389,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                   Markieren
                 </button>
               )}
-            {art && art !== "tabelle" && (
+            {art && art !== "tabelle" && art !== "folien" && (
               <button
                 className="btn"
                 aria-pressed={quelltext}
@@ -484,7 +486,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
               </div>
             </object>
           )}
-          {art && (art === "tabelle" || !quelltext) && (
+          {art && (art === "tabelle" || art === "folien" || !quelltext) && (
             <Darstellung
               key={datei.id + (frisch ? ":" + frisch : "")}
               art={art}

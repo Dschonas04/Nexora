@@ -289,6 +289,7 @@ func main() {
 			// attachments license.
 			r.Get("/pages/{id}/attachments/{attId}/word", h.WordLesen)
 			r.Get("/pages/{id}/attachments/{attId}/tabelle", h.TabelleLesen)
+			r.Get("/pages/{id}/attachments/{attId}/folien", h.FolienLesen)
 			r.Put("/pages/{id}/attachments/{attId}/word", h.WordSchreiben)
 			// The annotated version of a PDF, replacing the old one. Raw and
 			// not as a form: the browser already holds the finished bytes, and

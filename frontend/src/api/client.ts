@@ -796,6 +796,10 @@ export const api = {
   // Word attachments: read as editor blocks and write back as .docx.
   wordLesen: (seiteId: string, anhangId: string) =>
     req<{ title: string; blocks: unknown[] }>(`/pages/${seiteId}/attachments/${anhangId}/word`),
+  folienLesen: (seiteId: string, anhangId: string) =>
+    req<import("../components/Darstellung").Praesentation>(
+      `/pages/${seiteId}/attachments/${anhangId}/folien`,
+    ),
   tabelleLesen: (seiteId: string, anhangId: string) =>
     req<{ sheets: { name: string; rows: string[][]; truncated: boolean }[] }>(
       `/pages/${seiteId}/attachments/${anhangId}/tabelle`,
