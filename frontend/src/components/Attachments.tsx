@@ -203,7 +203,7 @@ export default function Attachments({
           // list could show a preview icon that the viewer cannot actually
           // display, or vice versa.
           const typ = echterTyp(a.mime, a.filename);
-          const previewable = zeigbar(typ);
+          const previewable = zeigbar(typ, a.filename);
           return (
             <div key={a.id} className="attachment-row">
               {istBild(typ) ? (

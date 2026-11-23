@@ -17,6 +17,7 @@ import {
 import { api } from "../api/client";
 import Fehlergrenze from "./Fehlergrenze";
 import TextEditor from "./TextEditor";
+import Darstellung, { darstellungsart } from "./Darstellung";
 // Loaded on demand, not bundled: pdf.js and pdf-lib together are large, and
 // most users only view PDFs.
 const PdfMarker = lazy(() => import("./PdfMarker"));
@@ -60,6 +61,27 @@ const NACH_ENDUNG: Record<string, string> = {
   yml: "text/plain",
   yaml: "text/plain",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  xlsm: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ods: "application/vnd.oasis.opendocument.spreadsheet",
+  html: "text/html",
+  htm: "text/html",
+  tsv: "text/tab-separated-values",
+  avif: "image/avif",
+  ico: "image/x-icon",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  ogg: "audio/ogg",
+  oga: "audio/ogg",
+  opus: "audio/ogg",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  flac: "audio/flac",
+  mp4: "video/mp4",
+  m4v: "video/mp4",
+  webm: "video/webm",
+  ogv: "video/ogg",
+  mov: "video/quicktime",
 };
 
 // Scripts, configuration and source files: shown in the text editor whatever
@@ -86,7 +108,12 @@ export function echterTyp(mime: string, dateiname = ""): string {
   // would say "no preview" for every shell script. Real text types stay.
   const t = textEndung(dateiname);
   if (t && !(mime || "").startsWith("text/") && mime !== "application/json") {
-    return t === "md" || t === "markdown" ? "text/markdown" : t === "json" ? "application/json" : "text/plain";
+    if (t === "md" || t === "markdown") return "text/markdown";
+    if (t === "json") return "application/json";
+    if (t === "html" || t === "htm") return "text/html";
+    if (t === "csv") return "text/csv";
+    if (t === "tsv") return "text/tab-separated-values";
+    return "text/plain";
   }
   const brauchbar =
     mime &&
@@ -106,8 +133,11 @@ export const istText = (m: string) =>
 export const istWord = (m: string) =>
   m ===
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-export const zeigbar = (m: string) =>
-  istBild(m) || istPdf(m) || istText(m) || istWord(m);
+export const istAudio = (m: string) => m.startsWith("audio/");
+export const istVideo = (m: string) => m.startsWith("video/");
+export const zeigbar = (m: string, dateiname = "") =>
+  istBild(m) || istPdf(m) || istText(m) || istWord(m) || istAudio(m) || istVideo(m) ||
+  darstellungsart(m, dateiname) !== null;
 
 // Zoom bounds. Below a quarter nothing is recognisable, above eight times the
 // browser starts to struggle with large images.
@@ -165,6 +195,10 @@ export default function QuickView({ dateien, start, onClose }: Props) {
   // Determined once in one place and only that size used afterwards: otherwise
   // the header would come to a different conclusion than the content.
   const typ = datei ? echterTyp(datei.mime, datei.filename) : "";
+  // HTML, Markdown, CSV and spreadsheets open rendered; text-based ones can be
+  // switched to their source to read or edit it.
+  const art = datei ? darstellungsart(typ, datei.filename) : null;
+  const [quelltext, setQuelltext] = useState(false);
 
   const weiter = useCallback(
     (schritt: number) => {
@@ -194,6 +228,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
     setBearbeiten(false);
     setGespeichert(null);
     setMarkieren(false);
+    setQuelltext(false);
     wordStand.current = null;
   }, [datei?.id]);
 
@@ -352,6 +387,24 @@ export default function QuickView({ dateien, start, onClose }: Props) {
                   Markieren
                 </button>
               )}
+            {art && art !== "tabelle" && (
+              <button
+                className="btn"
+                aria-pressed={quelltext}
+                onClick={() => {
+                  if (
+                    quelltext &&
+                    ungespeichert.current &&
+                    !window.confirm("Ungespeicherte Änderungen verwerfen?")
+                  )
+                    return;
+                  ungespeichert.current = false;
+                  setQuelltext((q) => !q);
+                }}
+              >
+                {quelltext ? "Ansicht" : "Quelltext"}
+              </button>
+            )}
             <a className="btn" href={datei.url} download={datei.filename}>
               Herunterladen
             </a>
@@ -431,7 +484,32 @@ export default function QuickView({ dateien, start, onClose }: Props) {
               </div>
             </object>
           )}
-          {istText(typ) && (
+          {art && (art === "tabelle" || !quelltext) && (
+            <Darstellung
+              key={datei.id + (frisch ? ":" + frisch : "")}
+              art={art}
+              url={datei.url}
+              dateiname={datei.filename}
+              anhangId={datei.id}
+              seiteId={datei.seiteId}
+            />
+          )}
+          {istAudio(typ) && (
+            <div className="qv-medium">
+              <div className="qv-medium-name">{datei.filename}</div>
+              <audio key={datei.id} controls preload="metadata" src={datei.url} />
+            </div>
+          )}
+          {istVideo(typ) && (
+            <video
+              key={datei.id}
+              className="qv-video"
+              controls
+              preload="metadata"
+              src={datei.url}
+            />
+          )}
+          {istText(typ) && (!art || quelltext) && (
             // Rendered as text in a text field, never in a frame: an uploaded
             // HTML file must not run in the app's origin.
             <TextEditor
@@ -529,7 +607,7 @@ export default function QuickView({ dateien, start, onClose }: Props) {
               )}
             </div>
           )}
-          {!zeigbar(typ) && (
+          {!zeigbar(typ, datei.filename) && (
             <div className="qv-none">
               Keine Vorschau für diesen Dateityp. Über „Herunterladen“ lässt er
               sich öffnen.
