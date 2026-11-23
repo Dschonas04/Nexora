@@ -13,6 +13,8 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [3.7.0]: 2026-11-23
+
 ### Added
 
 - **MCP server (beta).** `POST /api/mcp` speaks the Model Context Protocol (Streamable HTTP, JSON answers), so AI assistants such as Claude can use the wiki. Authenticated with a personal API key (`Authorization: Bearer nxr_…`). Tools: `suchen`, `ablagen`, `seiten`, `seite_lesen` (Markdown), `seite_anlegen` and `seite_aendern` (Markdown in, replace or append). Every tool runs as an ordinary API request with the caller's key, so permissions, licence checks, audit trail and webhooks apply unchanged and a read-only key cannot write. The account settings show the address and a ready `claude mcp add` command.
@@ -471,7 +473,9 @@ this release; see 2.1.0 for what became free since. Markdown import and export
 are free regardless, because the way out of a system must never sit behind a
 key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
-[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.5.0...main
+[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.7.0...main
+[3.7.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.7.0
+[3.6.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.6.0
 [3.5.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.5.0
 [3.4.2]: https://github.com/Dschonas04/Nexora/releases/tag/v3.4.2
 [3.4.1]: https://github.com/Dschonas04/Nexora/releases/tag/v3.4.1
