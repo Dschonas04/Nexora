@@ -13,6 +13,12 @@ same tags: `ghcr.io/dschonas04/nexora-{backend,frontend}` and, since 2.0.1,
 
 ## [Unreleased]
 
+## [3.7.1]: 2026-11-23
+
+### Fixed
+
+- **PDF preview.** Inline attachments were sent with the general API headers (`X-Frame-Options: DENY`, `frame-ancestors 'none'`), so the browser refused to show a PDF inside the attachment viewer. Inline files may now be embedded by the own origin, nobody else.
+
 ## [3.7.0]: 2026-11-23
 
 ### Added
@@ -473,7 +479,8 @@ this release; see 2.1.0 for what became free since. Markdown import and export
 are free regardless, because the way out of a system must never sit behind a
 key. On 2030-08-19 the whole thing becomes Apache 2.0.
 
-[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.7.0...main
+[Unreleased]: https://github.com/Dschonas04/Nexora/compare/v3.7.1...main
+[3.7.1]: https://github.com/Dschonas04/Nexora/releases/tag/v3.7.1
 [3.7.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.7.0
 [3.6.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.6.0
 [3.5.0]: https://github.com/Dschonas04/Nexora/releases/tag/v3.5.0
