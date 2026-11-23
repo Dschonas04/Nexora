@@ -67,7 +67,7 @@ function HtmlAnsicht({ url, titel }: { url: string; titel: string }) {
     return `<meta http-equiv="Content-Security-Policy" content="${HTML_RICHTLINIE}"><meta charset="utf-8">` + text;
   }, [text]);
   if (fehler) return <div className="qv-none">{fehler}</div>;
-  if (text == null) return <div className="qv-none">Lädt …</div>;
+  if (text == null) return <div className="qv-none">Wird geladen…</div>;
   return (
     <iframe
       className="qv-frame"
@@ -104,12 +104,12 @@ function MarkdownAnsicht({ url }: { url: string }) {
     };
   }, [text]);
   if (fehler || parseFehler) return <div className="qv-none">{fehler || parseFehler}</div>;
-  if (!bloecke) return <div className="qv-none">Lädt …</div>;
+  if (!bloecke) return <div className="qv-none">Wird geladen…</div>;
   return (
     <div className="qv-word">
       <div className="qv-word-blatt">
         <Fehlergrenze text="Diese Datei lässt sich nicht darstellen.">
-          <Suspense fallback={<div className="qv-none">Lädt …</div>}>
+          <Suspense fallback={<div className="qv-none">Wird geladen…</div>}>
             <Editor initialContent={bloecke} editable={false} />
           </Suspense>
         </Fehlergrenze>
@@ -218,7 +218,7 @@ function CsvAnsicht({ url, dateiname }: { url: string; dateiname: string }) {
     [text, dateiname],
   );
   if (fehler) return <div className="qv-none">{fehler}</div>;
-  if (!zeilen) return <div className="qv-none">Lädt …</div>;
+  if (!zeilen) return <div className="qv-none">Wird geladen…</div>;
   return <Tabelle zeilen={zeilen} />;
 }
 
@@ -246,7 +246,7 @@ function TabellenAnsicht({ seiteId, anhangId }: { seiteId?: string; anhangId: st
     };
   }, [seiteId, anhangId]);
   if (fehler) return <div className="qv-none">{fehler}</div>;
-  if (!blaetter) return <div className="qv-none">Lädt …</div>;
+  if (!blaetter) return <div className="qv-none">Wird geladen…</div>;
   const b = blaetter[Math.min(aktiv, blaetter.length - 1)];
   return (
     <div className="qv-mappe">

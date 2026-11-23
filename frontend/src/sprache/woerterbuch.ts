@@ -1628,7 +1628,6 @@ export const PAARE: [string, string][] = [
   ["Nur lesen: Du hast auf dieser Seite keine Schreibrechte.", "Read only: you cannot edit this page."],
   ["Die Datei konnte nicht geladen werden.", "The file could not be loaded."],
   ["Ungespeicherte Änderungen verwerfen?", "Discard unsaved changes?"],
-  ["Lädt …", "Loading…"],
   ["Diese Datei lässt sich nicht darstellen.", "This file could not be displayed."],
   ["Die Tabelle ist leer.", "The table is empty."],
   ["Ansicht", "View"],
